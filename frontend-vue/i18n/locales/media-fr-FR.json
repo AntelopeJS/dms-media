@@ -1,0 +1,191 @@
+{
+  "dms": {
+    "finder": {
+      "actions": {
+        "add_to_favorites": "Ajouter aux favoris",
+        "delete": "Supprimer",
+        "details": "Détails",
+        "download": "Télécharger",
+        "edit_image": "Modifier l'image",
+        "favorite": "Favori",
+        "new_folder": "Nouveau dossier",
+        "open": "Ouvrir",
+        "refresh": "Actualiser",
+        "remove_from_favorites": "Retirer des favoris",
+        "rename": "Renommer",
+        "share": "Partager",
+        "sort": "Trier",
+        "sync": "Synchroniser",
+        "upload": "Importer"
+      },
+      "column": {
+        "elements_count": "{count} élément | {count} éléments",
+        "folders": "Dossiers"
+      },
+      "delete": {
+        "cancel": "Annuler",
+        "confirm_description": "Ce dossier contient {count} élément(s). Cette action est irréversible.",
+        "confirm_title": "Supprimer le dossier ?",
+        "delete": "Supprimer",
+        "file_confirm_description": "Êtes-vous sûr de vouloir supprimer {name} ? Cette action est irréversible.",
+        "file_confirm_title": "Supprimer le fichier ?"
+      },
+      "details": {
+        "elements": "Éléments",
+        "folder_type": "Dossier",
+        "modified": "Modifié",
+        "size": "Taille",
+        "type": "Type"
+      },
+      "drop_zone": "Déposez les fichiers ici",
+      "elements_count": "Dossier vide | {size} - {count} élément | {size} - {count} éléments",
+      "empty": {
+        "description": "Créez un nouveau fichier ou dossier pour commencer",
+        "title": "Aucun fichier ou dossier trouvé"
+      },
+      "file_type": {
+        "default": "Fichier"
+      },
+      "filter": {
+        "all": "Tous les fichiers",
+        "button": "Filtrer",
+        "documents": "Documents",
+        "images": "Images",
+        "other": "Autres",
+        "sort_by": "Trier par",
+        "title": "Type de fichier"
+      },
+      "layout": {
+        "columns": "Colonnes",
+        "grid": "Grille",
+        "list": "Liste"
+      },
+      "navigation": {
+        "next": "Suivant",
+        "previous": "Précédent",
+        "root": "Fichiers"
+      },
+      "new_folder": {
+        "default_name": "Nouveau dossier"
+      },
+      "panel": {
+        "details": "Panneau de détails",
+        "favorites": "Favoris",
+        "recents": "Récents"
+      },
+      "search_placeholder": "Rechercher des fichiers...",
+      "share": {
+        "text": "Partager le fichier : {name}"
+      },
+      "size_units": {
+        "bytes": "o",
+        "gigabytes": "Go",
+        "kilobytes": "Ko",
+        "megabytes": "Mo",
+        "terabytes": "To"
+      },
+      "sort": {
+        "date": "Date",
+        "name": "Nom",
+        "size": "Taille",
+        "type": "Type"
+      },
+      "table": {
+        "modified": "Modifié",
+        "name": "Nom",
+        "size": "Taille",
+        "type": "Type"
+      },
+      "title": "Explorateur de fichiers"
+    }
+  },
+  "dms_media": {
+    "edit": {
+      "apply_crop": "Appliquer le recadrage",
+      "done": "Terminé",
+      "load_error": "L'image n'a pas pu être chargée.",
+      "revert": "Revenir à l'original",
+      "rotate_left": "Pivoter à gauche",
+      "rotate_right": "Pivoter à droite",
+      "title": "Modifier {name}"
+    },
+    "errors": {
+      "action_failed": "L'action a échoué. Veuillez réessayer.",
+      "listing_truncated": "Affichage des {count} premiers éléments ; affinez par dossier ou recherche pour voir le reste.",
+      "upload_needs_folder": "Ouvrez un dossier avant d'importer."
+    },
+    "library": {
+      "files_title": "Vos fichiers"
+    },
+    "storage": {
+      "empty": "Aucun fichier pour l'instant.",
+      "used": "utilisés · {count} fichier | utilisés · {count} fichiers"
+    },
+    "groups": {
+      "document": "Documents",
+      "image": "Images",
+      "pdf": "PDF",
+      "sheet": "Tableurs",
+      "vector": "Vectoriels",
+      "video": "Vidéos"
+    },
+    "picker": {
+      "browse": "Parcourir la bibliothèque",
+      "cancel": "Annuler",
+      "choose": "Choisir",
+      "clear_search": "Effacer",
+      "drop_in": "Déposer pour importer dans « {name} »",
+      "drop_root": "Déposer pour importer",
+      "empty_adjust_hint": "Modifiez votre recherche ou vos filtres.",
+      "empty_filtered_title": "Aucun fichier de ce type ici",
+      "empty_folder_hint": "Glissez des fichiers ici ou importez-les.",
+      "empty_folder_title": "Dossier vide",
+      "empty_recents_title": "Aucun fichier récent",
+      "empty_search_title": "Aucun résultat pour « {query} »",
+      "field_add": "Ajouter depuis la bibliothèque",
+      "field_browse": "Parcourir",
+      "field_empty_file": "Choisir un fichier",
+      "field_empty_hint": "Depuis la bibliothèque de médias",
+      "field_empty_image": "Choisir une image",
+      "field_manage": "Gérer la sélection",
+      "field_remove": "Retirer",
+      "field_replace": "Remplacer",
+      "filter_all": "Tous les types",
+      "import": "Importer",
+      "items_meta": "{count} élément · {size} | {count} éléments · {size}",
+      "locations": "Emplacements",
+      "max_reached": "Vous pouvez sélectionner au maximum {count} élément(s).",
+      "move": "Déplacer vers…",
+      "move_confirm": "Déplacer",
+      "move_title": "Déplacer « {name} »",
+      "no_preview": "Aucun aperçu disponible pour ce fichier.",
+      "not_accepted": "Type de fichier non accepté",
+      "preview_empty": "Sélectionnez un fichier pour afficher l'aperçu",
+      "preview_error": "Le fichier de cet asset n'a pas pu être chargé.",
+      "preview_panel": "Panneau d'aperçu",
+      "recents": "Récents",
+      "restricted": "certains types ne sont pas acceptés",
+      "results_count": "{count} résultat pour « {query} » | {count} résultats pour « {query} »",
+      "search_placeholder": "Rechercher dans la bibliothèque…",
+      "search_results": "Résultats",
+      "select": "Sélectionner",
+      "select_count": "Sélectionner ({count})",
+      "selected": "{count} sélectionné(s)",
+      "selection_count": "{count} sélectionné · {size} | {count} sélectionnés · {size}",
+      "selection_empty": "Aucune sélection",
+      "zoom": "Taille des vignettes"
+    },
+    "title": "Bibliothèque de médias"
+  },
+  "common": {
+    "time": {
+      "relative_days_ago": "Il y a un jour | Il y a {count} jours",
+      "relative_future": "Dans le futur",
+      "relative_hours_ago": "Il y a une heure | Il y a {count} heures",
+      "relative_minutes_ago": "Il y a une minute | Il y a {count} minutes",
+      "relative_months_ago": "Il y a un mois | Il y a {count} mois",
+      "relative_weeks_ago": "Il y a une semaine | Il y a {count} semaines",
+      "relative_years_ago": "Il y a un an | Il y a {count} ans"
+    }
+  }
+}

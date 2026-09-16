@@ -1,0 +1,191 @@
+{
+  "dms": {
+    "finder": {
+      "actions": {
+        "add_to_favorites": "Add to favorites",
+        "delete": "Delete",
+        "details": "Details",
+        "download": "Download",
+        "edit_image": "Edit image",
+        "favorite": "Favorite",
+        "new_folder": "New Folder",
+        "open": "Open",
+        "refresh": "Refresh",
+        "remove_from_favorites": "Remove from favorites",
+        "rename": "Rename",
+        "share": "Share",
+        "sort": "Sort",
+        "sync": "Sync",
+        "upload": "Upload"
+      },
+      "column": {
+        "elements_count": "{count} element | {count} elements",
+        "folders": "Folders"
+      },
+      "delete": {
+        "cancel": "Cancel",
+        "confirm_description": "This folder contains {count} item(s). This action cannot be undone.",
+        "confirm_title": "Delete folder?",
+        "delete": "Delete",
+        "file_confirm_description": "Are you sure you want to delete {name}? This action cannot be undone.",
+        "file_confirm_title": "Delete file?"
+      },
+      "details": {
+        "elements": "Elements",
+        "folder_type": "Folder",
+        "modified": "Modified",
+        "size": "Size",
+        "type": "Type"
+      },
+      "drop_zone": "Drop files here",
+      "elements_count": "Empty folder | {size} - {count} item | {size} - {count} items",
+      "empty": {
+        "description": "Create a new file or folder to get started",
+        "title": "No files or folders found"
+      },
+      "file_type": {
+        "default": "File"
+      },
+      "filter": {
+        "all": "All files",
+        "button": "Filter",
+        "documents": "Documents",
+        "images": "Images",
+        "other": "Other",
+        "sort_by": "Sort by",
+        "title": "File type"
+      },
+      "layout": {
+        "columns": "Columns",
+        "grid": "Grid",
+        "list": "List"
+      },
+      "navigation": {
+        "next": "Next",
+        "previous": "Previous",
+        "root": "Files"
+      },
+      "new_folder": {
+        "default_name": "New Folder"
+      },
+      "panel": {
+        "details": "Details panel",
+        "favorites": "Favorites",
+        "recents": "Recents"
+      },
+      "search_placeholder": "Search files...",
+      "share": {
+        "text": "Share file: {name}"
+      },
+      "size_units": {
+        "bytes": "B",
+        "gigabytes": "GB",
+        "kilobytes": "KB",
+        "megabytes": "MB",
+        "terabytes": "TB"
+      },
+      "sort": {
+        "date": "Date",
+        "name": "Name",
+        "size": "Size",
+        "type": "Type"
+      },
+      "table": {
+        "modified": "Modified",
+        "name": "Name",
+        "size": "Size",
+        "type": "Type"
+      },
+      "title": "File Explorer"
+    }
+  },
+  "dms_media": {
+    "edit": {
+      "apply_crop": "Apply crop",
+      "done": "Done",
+      "load_error": "The image could not be loaded.",
+      "revert": "Revert to original",
+      "rotate_left": "Rotate left",
+      "rotate_right": "Rotate right",
+      "title": "Edit {name}"
+    },
+    "errors": {
+      "action_failed": "Action failed. Please try again.",
+      "listing_truncated": "Showing the first {count} items; refine folders or search to see the rest.",
+      "upload_needs_folder": "Open a folder before uploading."
+    },
+    "library": {
+      "files_title": "Your files"
+    },
+    "storage": {
+      "empty": "No files yet.",
+      "used": "used · {count} file | used · {count} files"
+    },
+    "groups": {
+      "document": "Documents",
+      "image": "Images",
+      "pdf": "PDF",
+      "sheet": "Spreadsheets",
+      "vector": "Vectors",
+      "video": "Videos"
+    },
+    "picker": {
+      "browse": "Browse library",
+      "cancel": "Cancel",
+      "choose": "Choose",
+      "clear_search": "Clear",
+      "drop_in": "Drop to upload into “{name}”",
+      "drop_root": "Drop to upload",
+      "empty_adjust_hint": "Adjust your search or filters.",
+      "empty_filtered_title": "No files of this type here",
+      "empty_folder_hint": "Drag files here or upload them.",
+      "empty_folder_title": "Empty folder",
+      "empty_recents_title": "No recent files",
+      "empty_search_title": "No results for “{query}”",
+      "field_add": "Add from the library",
+      "field_browse": "Browse",
+      "field_empty_file": "Choose a file",
+      "field_empty_hint": "From the media library",
+      "field_empty_image": "Choose an image",
+      "field_manage": "Manage selection",
+      "field_remove": "Remove",
+      "field_replace": "Replace",
+      "filter_all": "All types",
+      "import": "Upload",
+      "items_meta": "{count} item · {size} | {count} items · {size}",
+      "locations": "Locations",
+      "max_reached": "You can select at most {count} item(s).",
+      "move": "Move to…",
+      "move_confirm": "Move",
+      "move_title": "Move “{name}”",
+      "no_preview": "No preview available for this file.",
+      "not_accepted": "File type not accepted",
+      "preview_empty": "Select a file to show the preview",
+      "preview_error": "The file for this asset could not be loaded.",
+      "preview_panel": "Preview panel",
+      "recents": "Recents",
+      "restricted": "some types are not accepted",
+      "results_count": "{count} result for “{query}” | {count} results for “{query}”",
+      "search_placeholder": "Search the library…",
+      "search_results": "Results",
+      "select": "Select",
+      "select_count": "Select ({count})",
+      "selected": "{count} selected",
+      "selection_count": "{count} selected · {size} | {count} selected · {size}",
+      "selection_empty": "No selection",
+      "zoom": "Thumbnail size"
+    },
+    "title": "Media Library"
+  },
+  "common": {
+    "time": {
+      "relative_days_ago": "A day ago | {count} days ago",
+      "relative_future": "In the future",
+      "relative_hours_ago": "An hour ago | {count} hours ago",
+      "relative_minutes_ago": "A minute ago | {count} minutes ago",
+      "relative_months_ago": "A month ago | {count} months ago",
+      "relative_weeks_ago": "A week ago | {count} weeks ago",
+      "relative_years_ago": "A year ago | {count} years ago"
+    }
+  }
+}

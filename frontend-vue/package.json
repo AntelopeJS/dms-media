@@ -1,0 +1,35 @@
+{
+	"name": "@antelopejs/dms-media-frontend-vue",
+	"version": "0.0.1",
+	"private": true,
+	"type": "module",
+	"main": "./dms.frontend.ts",
+	"packageManager": "pnpm@10.6.5",
+	"scripts": {
+		"dev": "pnpm --dir ../playground frontend:dev",
+		"build": "pnpm --dir ../playground exec ajs-dms build",
+		"typecheck": "pnpm --dir \"${DMS_FRONTEND_WORKSPACE:?Set DMS_FRONTEND_WORKSPACE to the generated Inertia workspace}\" typecheck",
+		"format": "prettier --write .",
+		"lint": "eslint .",
+		"lint:fix": "eslint . --fix",
+		"test": "vitest run"
+	},
+	"dependencies": {
+		"@vueuse/core": "^13.0.0",
+		"hookable": "^5.5.3",
+		"tailwind-variants": "^3.1.1",
+		"vue": "^3.5.18",
+		"vue-advanced-cropper": "^2.8.9",
+		"zod": "^3.24.2"
+	},
+	"devDependencies": {
+		"@nuxt/ui": "4.10.0",
+		"@typescript-eslint/parser": "^8.0.0",
+		"eslint": "^9.0.0",
+		"eslint-plugin-vue": "^10.0.0",
+		"prettier": "^3.5.3",
+		"prettier-plugin-tailwindcss": "^0.6.11",
+		"typescript": "^5.8.2",
+		"vitest": "^3.2.4"
+	}
+}

@@ -1,0 +1,27 @@
+{
+  "app": {
+    "media_demo": {
+      "attachment_description": "N'importe quel asset de la bibliothèque, sans filtre de type.",
+      "attachment_label": "Pièce jointe",
+      "cover_description": "Image unique avec dossier lié (Demo covers) provisionné depuis le binding du champ.",
+      "cover_label": "Image de couverture",
+      "form_description": "Toutes les variantes du champ AssetType, adossées à la bibliothèque de médias.",
+      "form_title": "Démo médias",
+      "gallery_description": "Jusqu'à 4 images choisies partout où vos droits le permettent.",
+      "gallery_label": "Galerie",
+      "success": "Enregistré !"
+    },
+    "welcome": {
+      "email_label": "Adresse e-mail",
+      "email_placeholder": "jeanne{'@'}exemple.com",
+      "form_description": "Envoyez-nous un message et nous vous répondrons rapidement.",
+      "form_title": "Contactez-nous",
+      "message_label": "Message",
+      "message_placeholder": "Comment pouvons-nous vous aider ?",
+      "name_label": "Nom complet",
+      "name_placeholder": "Jeanne Dupont",
+      "submit": "Envoyer le message",
+      "success": "Votre message a été envoyé."
+    }
+  }
+}

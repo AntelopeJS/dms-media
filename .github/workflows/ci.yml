@@ -1,0 +1,51 @@
+name: ci
+
+on:
+  push:
+    branches:
+      - main
+  # No branch filter: the lint wave stacks pull requests on top of each other,
+  # and a filter on `main` left every intermediate step ungated -- only the
+  # secret scanner ran.
+  pull_request:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+jobs:
+  ubuntu:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      COREPACK_DEFAULT_TO_LATEST: 0
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          # .nvmrc is the version of record. oxlint needs at least 22.18 to
+          # read a TypeScript config, which every value there clears.
+          node-version-file: .nvmrc
+      # Node's bundled corepack predates the pnpm version pinned in
+      # packageManager. Pinned so a corepack release cannot break every
+      # build at once.
+      - run: npm i -g --force corepack@0.34.0 && corepack enable
+      - run: pnpm install --frozen-lockfile && pnpm --dir frontend-vue install --frozen-lockfile
+      - run: pnpm lint
+      # tsconfig.json is the config the editors and oxlint's type-aware pass
+      # read; tsconfig.build.json is the one the build uses. Without this the
+      # first is never exercised, and a resolution failure there degrades every
+      # type-aware rule to `any` without failing anything.
+      - run: pnpm typecheck
+      # Unused dependencies only. `pnpm knip:all` also reports dead files and
+      # exports, which need a human to confirm, so they stay out of the gate.
+      - run: pnpm knip
+      - run: pnpm build
+      - run: pnpm test:unit
+      # The frontend typecheck is left out: it needs a running DMS backend for
+      # `ajs-dms prepare` to fetch the layers, so the DMS auto-imports are
+      # missing without one and the check cannot pass here.
