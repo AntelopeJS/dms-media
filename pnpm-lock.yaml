@@ -40,8 +40,8 @@ importers:
         version: 3.24.4
     devDependencies:
       '@antelopejs/core':
-        specifier: '>=2.0.0 <3'
-        version: 2.0.1(@types/node@24.13.3)
+        specifier: '>=1.7.0 <2'
+        version: 1.7.0(@types/node@24.13.3)
       '@antelopejs/tooling-configs':
         specifier: '>=0.0.6 <1.0.0'
         version: 0.0.6(knip@6.34.0)(oxfmt@0.66.0)(oxlint@1.81.0(oxlint-tsgolint@7.0.2001))
@@ -93,8 +93,8 @@ importers:
 
 packages:
 
-  '@antelopejs/core@2.0.1':
-    resolution: {integrity: sha512-DVoyXFysNc3cxxF80p30KyWIi3HwgMw6/T4joI9Av3WgL2vgTVmoUkuxrPNr94JRv3xHKLxVOsiZ2DH9zrjW7w==}
+  '@antelopejs/core@1.7.0':
+    resolution: {integrity: sha512-2VdIAGPGQXRtmabq3jds9T7iFXPsRByqJHeBhk6s6fgnZwW4Z0zZVP3ForkwoY18+rn/aUpv6UkxVYr95ApYeA==}
     hasBin: true
 
   '@antelopejs/interface-api-util@0.1.2':
@@ -2766,7 +2766,7 @@ packages:
 
 snapshots:
 
-  '@antelopejs/core@2.0.1(@types/node@24.13.3)':
+  '@antelopejs/core@1.7.0(@types/node@24.13.3)':
     dependencies:
       '@antelopejs/interface-core': 0.0.13
       '@types/proper-lockfile': 4.1.4
