@@ -40,8 +40,8 @@ importers:
         version: 3.24.4
     devDependencies:
       '@antelopejs/core':
-        specifier: 1.4.11
-        version: 1.4.11(@types/node@24.13.3)
+        specifier: '>=2.0.0 <3'
+        version: 2.0.0(@types/node@24.13.3)
       '@antelopejs/tooling-configs':
         specifier: '>=0.0.6 <1.0.0'
         version: 0.0.6(knip@6.34.0)(oxfmt@0.66.0)(oxlint@1.81.0(oxlint-tsgolint@7.0.2001))
@@ -93,8 +93,8 @@ importers:
 
 packages:
 
-  '@antelopejs/core@1.4.11':
-    resolution: {integrity: sha512-Fsk0n0yBqs+s3mDmCPWkSJOEFsTWMLTt7UKoOk4cGh4F94byZJSFjnBkEzy+F5t3V8Wr4QUS3ke5YKmATIGGyA==}
+  '@antelopejs/core@2.0.0':
+    resolution: {integrity: sha512-2g64Oz/P0ccyar9ASQlG/fRCtAR+CMG+VRbb9KWzKksoFcsF/bIORtr2VrU7oo6PgKhmrxuTL+saL64eELFAag==}
     hasBin: true
 
   '@antelopejs/interface-api-util@0.1.2':
@@ -1308,10 +1308,6 @@ packages:
     resolution: {integrity: sha512-aCj4O5wKyszjMmDT4tZj93kxyydN/K5zPWSCe6/0AV/AA1pqe5ZBIw0a2ZfPQV7lL5/yb5HsUreJ6UFAF1tEQw==}
     engines: {node: '>=18'}
 
-  cli-progress@3.12.0:
-    resolution: {integrity: sha512-tRkV3HJ1ASwm19THiiLIXLO7Im7wlTuKnvkYaTkyoAPefqjNg7W7DHKUlGRxy9vxDvbyCYQkQozvptuMkGCg8A==}
-    engines: {node: '>=4'}
-
   cli-spinners@3.4.0:
     resolution: {integrity: sha512-bXfOC4QcT1tKXGorxL3wbJm6XJPDqEnij2gQ2m7ESQuE+/z9YFIWnl/5RpTiKWbMq3EVKR4fRLJGn6DVfu0mpw==}
     engines: {node: '>=18.20'}
@@ -1657,6 +1653,7 @@ packages:
 
   glob@10.5.0:
     resolution: {integrity: sha512-DfXN8DfhJ7NH3Oe7cFmu3NCu1wKbkReJ8TorzSAFbSKrlNaQSKfIzqYqVY8zlbs2NLBbWpRiU52GX2PbaBVNkg==}
+    deprecated: Old versions of glob are not supported, and contain widely publicized security vulnerabilities, which have been fixed in the current version. Please update. Support for old versions may be purchased (at exorbitant rates) by contacting i@izs.me
     hasBin: true
 
   glob@13.0.6:
@@ -1665,6 +1662,7 @@ packages:
 
   glob@7.2.3:
     resolution: {integrity: sha512-nFR0zLpU2YCaRxwoCJvL6UvCH2JFyFVIvwTLsIf21AuHlMskA1hhTdk+LlYJtOlYt9v6dvszD2BGRqBL+iQK9Q==}
+    deprecated: Old versions of glob are not supported, and contain widely publicized security vulnerabilities, which have been fixed in the current version. Please update. Support for old versions may be purchased (at exorbitant rates) by contacting i@izs.me
 
   gopd@1.2.0:
     resolution: {integrity: sha512-ZUKRh6/kUFoAiTAtTYPZJ3hw9wNxx+BIBOijnlG9PnrJsCcSjs1wyyD6vJpaYtgnzDrKYRSqf3OO6Rfa93xsRg==}
@@ -1722,6 +1720,7 @@ packages:
 
   inflight@1.0.6:
     resolution: {integrity: sha512-k92I/b08q4wvFscXCLvqfsHCrjrF7yiXsQuIVvVE7N82W3+aqpzuUdBbfhWcy/FZR3/4IgflMgKLOsvPDrGCJA==}
+    deprecated: This module is not supported, and leaks memory. Do not use it. Check out lru-cache if you want a good and tested way to coalesce async requests by a key value, which is much more comprehensive and powerful.
 
   inherits@2.0.4:
     resolution: {integrity: sha512-k/vGaX4/Yla3WzyMCvTQOXYeIHvqOKtnqBduzTHpzpQZzAskKMhZ2K+EnBiSM9zGSoIFeMpXKxa4dYeZIQqewQ==}
@@ -2762,13 +2761,12 @@ packages:
 
 snapshots:
 
-  '@antelopejs/core@1.4.11(@types/node@24.13.3)':
+  '@antelopejs/core@2.0.0(@types/node@24.13.3)':
     dependencies:
       '@antelopejs/interface-core': 0.0.13
       '@types/proper-lockfile': 4.1.4
       boxen: 8.0.1
       chalk: 4.1.2
-      cli-progress: 3.12.0
       commander: 13.1.0
       figlet: 1.11.2
       inly: 5.0.1
@@ -3756,10 +3754,6 @@ snapshots:
   cli-cursor@5.0.0:
     dependencies:
       restore-cursor: 5.1.0
-
-  cli-progress@3.12.0:
-    dependencies:
-      string-width: 4.2.3
 
   cli-spinners@3.4.0: {}
 
