@@ -46,7 +46,7 @@
   "dependencies": {
     "@antelopejs/interface-api": ">=0.0.13 <1.0.0",
     "@antelopejs/interface-api-util": ">=0.1.2 <1.0.0",
-    "@antelopejs/interface-core": ">=0.0.12 <1.0.0",
+    "@antelopejs/interface-core": ">=0.0.13 <1.0.0",
     "@antelopejs/interface-database": ">=0.1.7 <1.0.0",
     "@antelopejs/interface-database-decorators": ">=0.1.6 <1.0.0",
     "@antelopejs/interface-dms": ">=0.0.1 <1.0.0",
@@ -57,7 +57,7 @@
   },
   "devDependencies": {
     "@antelopejs/core": "1.4.11",
-    "@antelopejs/tooling-configs": "^0.0.4",
+    "@antelopejs/tooling-configs": ">=0.0.6 <1.0.0",
     "@types/chai": "^4.3.20",
     "@types/mocha": "^10",
     "@types/node": "^24.0.0",
