@@ -72,7 +72,7 @@ export const PREVIEWABLE_TYPES = [
  * Formats for which image editing is offered in the UI.
  *
  * Mirror of `EDITABLE_IMAGE_MIMETYPES` in `src/routes/media/delivery.ts`
- * (the backend 422 guard): this layer is copied by ajs-dms at prepare time
+ * (the backend 422 guard): this layer is copied by ajs dms at prepare time
  * and cannot resolve imports into the backend `src/` tree, so keep both
  * lists in sync when adding a format.
  */

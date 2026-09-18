@@ -47,5 +47,5 @@ jobs:
       - run: pnpm build
       - run: pnpm test:unit
       # The frontend typecheck is left out: it needs a running DMS backend for
-      # `ajs-dms prepare` to fetch the layers, so the DMS auto-imports are
+      # `ajs dms prepare` to fetch the layers, so the DMS auto-imports are
       # missing without one and the check cannot pass here.

@@ -6,7 +6,7 @@
   "scripts": {
     "dev": "ajs project run -w",
     "build": "rimraf dist && tsc -p tsconfig.build.json",
-    "frontend:dev": "ajs-dms dev"
+    "frontend:dev": "ajs dms dev"
   },
   "dependencies": {
     "@antelopejs/dms": ">=0.3.5 <1.0.0",
@@ -16,6 +16,7 @@
     "@antelopejs/interface-dms": ">=0.0.1 <1.0.0"
   },
   "devDependencies": {
+    "@antelopejs/core": "1.8.0",
     "@antelopejs/dms-frontend": ">=0.2.0 <1.0.0",
     "@types/node": "^22.14.1",
     "rimraf": "^6.0.1",

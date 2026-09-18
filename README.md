@@ -97,7 +97,7 @@ Consumer modules should declare `@antelopejs/dms-media` as an AntelopeJS depende
 ```bash
 pnpm install
 pnpm dev            # backend, via playground (ajs project run -w -p playground)
-pnpm frontend:dev   # Vue 3 Inertia frontend, from playground (ajs-dms dev)
+pnpm frontend:dev   # Vue 3 Inertia frontend, from playground (ajs dms dev)
 pnpm test           # build + full mocha suite (unit + HTTP integration)
 pnpm test:unit      # resolver / bindings / derivatives unit tests only
 ```
