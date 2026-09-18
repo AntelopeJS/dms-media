@@ -1,5 +1,22 @@
 # Changelog
 
+## v0.0.4
+
+[compare changes](https://github.com/AntelopeJS/dms-media/compare/v0.0.3...v0.0.4)
+
+### 💅 Refactors
+
+- **frontend:** Import the SDK through #dms/frontend-module ([#7](https://github.com/AntelopeJS/dms-media/pull/7))
+
+### 🏡 Chore
+
+- Require @antelopejs/core 1.7 ([#5](https://github.com/AntelopeJS/dms-media/pull/5))
+- Align community files with the organization defaults ([#6](https://github.com/AntelopeJS/dms-media/pull/6))
+
+### ❤️ Contributors
+
+- Antony Rizzitelli <rizzitelli.antony@pm.me>
+
 ## v0.0.3
 
 [compare changes](https://github.com/AntelopeJS/dms-media/compare/v0.0.2...v0.0.3)
