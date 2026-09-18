@@ -9,7 +9,7 @@
     "frontend:dev": "ajs-dms dev"
   },
   "dependencies": {
-    "@antelopejs/dms": ">=0.0.1 <1.0.0",
+    "@antelopejs/dms": ">=0.3.5 <1.0.0",
     "@antelopejs/dms-media": "file:..",
     "@antelopejs/interface-api": ">=0.0.13 <1.0.0",
     "@antelopejs/interface-core": ">=0.0.13 <1.0.0",
