@@ -37,7 +37,7 @@ const HTTP_UNPROCESSABLE_ENTITY = 422;
  * rasterize or flatten anything else (SVG, animated sources).
  *
  * Mirrored in `frontend-vue/app/utils/finder/mime.ts` for the UI
- * affordances: the frontend module is copied by ajs-dms at prepare time and
+ * affordances: the frontend module is copied by ajs dms at prepare time and
  * cannot resolve imports into the backend `src/` tree, so keep both
  * lists in sync when adding a format.
  */

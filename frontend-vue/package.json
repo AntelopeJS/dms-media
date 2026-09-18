@@ -7,7 +7,7 @@
 	"packageManager": "pnpm@10.6.5",
 	"scripts": {
 		"dev": "pnpm --dir ../playground frontend:dev",
-		"build": "pnpm --dir ../playground exec ajs-dms build",
+		"build": "pnpm --dir ../playground exec ajs dms build",
 		"typecheck": "pnpm --dir \"${DMS_FRONTEND_WORKSPACE:?Set DMS_FRONTEND_WORKSPACE to the generated Inertia workspace}\" typecheck",
 		"format": "prettier --write .",
 		"lint": "eslint .",
