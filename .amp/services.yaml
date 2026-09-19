@@ -1,0 +1,15 @@
+services:
+  dms-media-backend:
+    command: pnpm dev
+    port: 5010
+    health: /api/onboarding/informations
+
+  dms-media-frontend:
+    command: >-
+      until curl -fsS http://127.0.0.1:5010/api/onboarding/informations >/dev/null; do sleep 0.5; done;
+      pnpm frontend:dev
+    port: 3001
+    health: /
+    portal:
+      title: AntelopeJS DMS Media
+      description: DMS media playground
