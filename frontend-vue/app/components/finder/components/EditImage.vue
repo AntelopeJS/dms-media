@@ -92,7 +92,7 @@ function revert(): void {
     class="max-w-3xl"
   >
     <template #body>
-      <ClientOnly>
+      <DmsClientOnly>
         <Cropper
           v-if="imageUrl"
           ref="cropperRef"
@@ -105,7 +105,7 @@ function revert(): void {
         >
           {{ t("dms_media.edit.load_error") }}
         </p>
-      </ClientOnly>
+      </DmsClientOnly>
     </template>
     <template #footer>
       <div class="flex w-full items-center justify-between gap-2">

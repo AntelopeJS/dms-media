@@ -173,7 +173,7 @@ watch(
         shouldHighlight && 'bg-primary-500/10',
       ]"
     >
-      <ClientOnly>
+      <DmsClientOnly>
         <UTree :items="treeItems" size="xs" class="w-full">
           <template #recent-file="{ item }: { item: RecentFileTreeItem }">
             <button
@@ -259,7 +259,7 @@ watch(
             </div>
           </div>
         </template>
-      </ClientOnly>
+      </DmsClientOnly>
     </div>
   </FinderCorePanel>
 </template>
