@@ -28,6 +28,9 @@ export default defineConfig({
       },
       config: {
         homepage: "/welcome",
+        auth: {
+          jwtSecret: "dev",
+        },
         meta: {
           title: "AntelopeJS Media",
           description: "AntelopeJS DMS media library playground",
