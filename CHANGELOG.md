@@ -1,5 +1,22 @@
 # Changelog
 
+## v0.0.5
+
+[compare changes](https://github.com/AntelopeJS/dms-media/compare/v0.0.4...v0.0.5)
+
+### 💅 Refactors
+
+- **frontend:** Use DMS client-only component ([#10](https://github.com/AntelopeJS/dms-media/pull/10))
+
+### 🏡 Chore
+
+- Update DMS CLI invocations ([#8](https://github.com/AntelopeJS/dms-media/pull/8))
+- Add orb playground setup ([#9](https://github.com/AntelopeJS/dms-media/pull/9))
+
+### ❤️ Contributors
+
+- Antony Rizzitelli <rizzitelli.antony@pm.me>
+
 ## v0.0.4
 
 [compare changes](https://github.com/AntelopeJS/dms-media/compare/v0.0.3...v0.0.4)
