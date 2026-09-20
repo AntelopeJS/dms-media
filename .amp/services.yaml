@@ -7,9 +7,18 @@ services:
   dms-media-frontend:
     command: >-
       until curl -fsS http://127.0.0.1:5010/api/onboarding/informations >/dev/null; do sleep 0.5; done;
-      pnpm frontend:dev
+      export DMS_CLIENT_BASE_URL="$DMS_GATEWAY_URL";
+      pnpm exec ajs dms dev -b http://127.0.0.1:5010 -p 3001
     port: 3001
+    env:
+      DMS_GATEWAY_URL: ${services.dms-gateway.publicURL}
+      DMS_TRUSTED_PROXY_HOPS: "1"
     health: /
+
+  dms-gateway:
+    command: node .amp/gateway.mjs
+    port: 3002
+    health: /__gateway_health
     portal:
       title: AntelopeJS DMS Media
       description: DMS media playground
