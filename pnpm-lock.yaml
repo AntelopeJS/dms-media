@@ -41,7 +41,7 @@ importers:
     devDependencies:
       '@antelopejs/core':
         specifier: '>=1.8.0 <2'
-        version: 1.8.0(@types/node@24.13.3)
+        version: 1.9.0(@types/node@24.13.3)
       '@antelopejs/tooling-configs':
         specifier: '>=0.0.6 <1.0.0'
         version: 0.0.6(knip@6.34.0)(oxfmt@0.66.0)(oxlint@1.81.0(oxlint-tsgolint@7.0.2001))
@@ -93,8 +93,8 @@ importers:
 
 packages:
 
-  '@antelopejs/core@1.8.0':
-    resolution: {integrity: sha512-aH0t8YsPT76Fvgt+p83mFsfIFqNp5QMON4ZhNnK3ov7/2SepRFimakcrT2llrz8GArLHmrGwbvO/3kTh+I+ZjA==}
+  '@antelopejs/core@1.9.0':
+    resolution: {integrity: sha512-M34InFniN5PXuhjVipsZCFGx3AvqNXBPqzhcdwf0GG0+LhdKt8s7Svz2kcRyS4UzaCKTaKK820II/HmEuQkvkg==}
     hasBin: true
 
   '@antelopejs/interface-api-util@0.1.2':
@@ -116,6 +116,9 @@ packages:
 
   '@antelopejs/interface-core@0.0.13':
     resolution: {integrity: sha512-zMVhW5OefmVNRLHvd3rPQTaShy+k9w6+cOhqOryyfxgVyRZ18nBlV8VSq9TuPkFIo5OGNAXFybOf54DRSnPVsw==}
+
+  '@antelopejs/interface-core@0.1.0':
+    resolution: {integrity: sha512-49mmTXREMNNEigWpmubwQD7fSrIIvmcTb9L8L79zQcDWTToud/GIap40vaKWmkbN1oGbjOB4ael/agqZ/ejYSg==}
 
   '@antelopejs/interface-data-api@0.1.9':
     resolution: {integrity: sha512-LQBroBvJc/iTciLXf2QVsZW5gtqj7i5MfD3IP1sCLUZBZDeRLErhxgdHrlI+e6IcoCzTrTlBYe2FivmGb4T8mg==}
@@ -2766,9 +2769,9 @@ packages:
 
 snapshots:
 
-  '@antelopejs/core@1.8.0(@types/node@24.13.3)':
+  '@antelopejs/core@1.9.0(@types/node@24.13.3)':
     dependencies:
-      '@antelopejs/interface-core': 0.0.13
+      '@antelopejs/interface-core': 0.1.0
       '@types/proper-lockfile': 4.1.4
       boxen: 8.0.1
       chalk: 4.1.2
@@ -2800,6 +2803,10 @@ snapshots:
       '@antelopejs/interface-core': 0.0.13
 
   '@antelopejs/interface-core@0.0.13':
+    dependencies:
+      reflect-metadata: 0.2.2
+
+  '@antelopejs/interface-core@0.1.0':
     dependencies:
       reflect-metadata: 0.2.2
 
