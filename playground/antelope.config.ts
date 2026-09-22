@@ -1,6 +1,10 @@
 import { defineConfig } from "@antelopejs/interface-core/config";
 
 const dmsClientUrl = process.env.DMS_CLIENT_BASE_URL;
+const dmsDevClientPort = 3001;
+const dmsDevClientOrigins = ["localhost", "127.0.0.1"].map(
+  (host) => `http://${host}:${dmsDevClientPort}`,
+);
 
 export default defineConfig({
   name: "playground",
@@ -70,7 +74,7 @@ export default defineConfig({
       },
       config: {
         storagePath: ".antelope/file-storage",
-        baseUrl: "http://127.0.0.1:5010",
+        baseUrl: "${@api.API_PUBLIC_BASE_URL}",
         defaultVisibility: "private",
       },
     },
@@ -88,7 +92,7 @@ export default defineConfig({
       source: {
         type: "package",
         package: "@antelopejs/api",
-        version: "1.2.5",
+        version: "1.3.0",
       },
       config: {
         servers: [
@@ -100,8 +104,7 @@ export default defineConfig({
         ],
         cors: {
           allowedOrigins: [
-            "http://localhost:3001",
-            "http://127.0.0.1:3001",
+            ...dmsDevClientOrigins,
             /^https:\/\/[^/]+\.onamp\.dev$/,
             ...(dmsClientUrl ? [dmsClientUrl] : []),
           ],
