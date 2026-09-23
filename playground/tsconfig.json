@@ -1,8 +1,8 @@
 {
   "compilerOptions": {
-    "moduleResolution": "nodenext",
+    "moduleResolution": "bundler",
     "target": "esnext",
-    "module": "nodenext",
+    "module": "commonjs",
     "lib": ["ES2020"],
     "allowJs": true,
     "outDir": "dist",
@@ -17,7 +17,10 @@
     "declaration": true,
     "sourceMap": true,
     "useDefineForClassFields": true,
-    "rootDir": "src"
+    "rootDir": "src",
+    "types": ["node"],
+    "incremental": true,
+    "tsBuildInfoFile": "dist/.tsbuildinfo"
   },
   "include": ["./src/**/*.ts"]
 }
