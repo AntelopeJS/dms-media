@@ -1,9 +1,8 @@
 {
   "compilerOptions": {
-    "noEmit": true,
     "moduleResolution": "bundler",
     "target": "esnext",
-    "module": "preserve",
+    "module": "commonjs",
     "lib": ["esnext", "dom"],
     "allowJs": true,
     "outDir": "dist",
@@ -23,7 +22,10 @@
     "paths": {
       "@antelopejs/dms-media/*": ["./src/*"]
     },
-    "rootDir": "src"
+    "rootDir": "src",
+    "types": ["node", "mocha"],
+    "incremental": true,
+    "tsBuildInfoFile": "dist/.tsbuildinfo"
   },
   "include": ["./src/**/*.ts"]
 }

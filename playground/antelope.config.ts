@@ -15,6 +15,8 @@ export default defineConfig({
         path: ".",
         watchDir: ["src"],
         installCommand: ["pnpm build"],
+        // Not `pnpm build`: it starts with `rimraf dist`, and the running module is loaded from dist.
+        reloadCommand: ["pnpm exec tsc"],
       },
     },
     "dms-media": {
@@ -23,6 +25,8 @@ export default defineConfig({
         path: "..",
         watchDir: ["src"],
         installCommand: ["pnpm build"],
+        // Not `pnpm build`: it starts with `rimraf dist`, and the running module is loaded from dist.
+        reloadCommand: ["pnpm exec tsc"],
       },
       config: {},
     },

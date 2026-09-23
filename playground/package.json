@@ -5,7 +5,7 @@
   "main": "dist/index.js",
   "scripts": {
     "dev": "ajs project run -w",
-    "build": "rimraf dist && tsc -p tsconfig.build.json",
+    "build": "rimraf dist && tsc",
     "frontend:dev": "ajs dms dev"
   },
   "dependencies": {
@@ -20,7 +20,7 @@
     "@antelopejs/dms-frontend": "0.2.1",
     "@types/node": "^22.14.1",
     "rimraf": "^6.0.1",
-    "typescript": "^5.8.3"
+    "typescript": "^6.0.3"
   },
   "packageManager": "pnpm@10.2.0",
   "pnpm": {
