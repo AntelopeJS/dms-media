@@ -27,14 +27,15 @@ jobs:
           CHANNEL: ${{ inputs.channel }}
           DEFAULT_BRANCH: ${{ github.event.repository.default_branch }}
         run: |
-          test "$GITHUB_REF" = "refs/heads/$DEFAULT_BRANCH" || {
-            echo "Releases must run from the default branch ($DEFAULT_BRANCH)." >&2
-            exit 1
-          }
           case "$CHANNEL" in
-            latest|next) ;;
+            latest) release_branch=$DEFAULT_BRANCH ;;
+            next) release_branch=next ;;
             *) echo "Unsupported npm channel: $CHANNEL" >&2; exit 1 ;;
           esac
+          test "$GITHUB_REF" = "refs/heads/$release_branch" || {
+            echo "The $CHANNEL channel must be released from the $release_branch branch, not $GITHUB_REF." >&2
+            exit 1
+          }
           node <<'NODE'
           const pkg = require('./package.json')
           const errors = []
@@ -55,7 +56,7 @@ jobs:
 
   release:
     needs: validate
-    uses: AntelopeJS/.github/.github/workflows/release-npm-public.yml@1df63ee37c5ecb869124cb58f199cef1e19dd138
+    uses: AntelopeJS/.github/.github/workflows/release-npm-public.yml@f4ce81591d09d271a480fd796e12a725cc973e0f
     with:
       channel: ${{ inputs.channel }}
     secrets:
