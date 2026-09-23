@@ -36,10 +36,8 @@ jobs:
       - run: npm i -g --force corepack@0.34.0 && corepack enable
       - run: pnpm install --frozen-lockfile && pnpm --dir frontend-vue install --frozen-lockfile
       - run: pnpm lint
-      # tsconfig.json is the config the editors and oxlint's type-aware pass
-      # read; tsconfig.build.json is the one the build uses. Without this the
-      # first is never exercised, and a resolution failure there degrades every
-      # type-aware rule to `any` without failing anything.
+      # oxlint's type-aware pass degrades to `any` on a broken tsconfig
+      # without failing, so the typecheck is what catches it.
       - run: pnpm typecheck
       # Unused dependencies only. `pnpm knip:all` also reports dead files and
       # exports, which need a human to confirm, so they stay out of the gate.
