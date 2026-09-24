@@ -102,6 +102,8 @@ pnpm test           # build + full mocha suite (unit + HTTP integration)
 pnpm test:unit      # resolver / bindings / derivatives unit tests only
 ```
 
+The playground connects to MongoDB at `mongodb://localhost:27017` by default. Set `MONGO_URL` to point it at another instance, e.g. `MONGO_URL=mongodb://127.0.0.1:27019 pnpm dev`.
+
 The frontend entry is `frontend-vue/dms.frontend.ts`. It registers the existing `DmsMedia` and nested `Finder` component names. Use relative imports for module-local files because the Inertia adapter copies the frontend separately from the backend. The adapter discovers locale files and `app/config/shortcuts-registry.ts`; no Nuxt installation is required.
 
 The playground uses the `@antelopejs/dms-frontend` CLI. Run `pnpm --dir frontend-vue install` and `pnpm --dir frontend-vue test` for frontend tests. Set `DMS_FRONTEND_WORKSPACE` to the generated Inertia workspace before running `pnpm --dir frontend-vue typecheck`.
