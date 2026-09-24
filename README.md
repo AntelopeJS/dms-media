@@ -26,13 +26,13 @@ ajs project modules add @antelopejs/dms-media
 - **Lazy image derivatives** — named presets (config) rendered by sharp on first request, cached in storage under a config-hashed cache key, served via `GET /media/:assetId/:presetId/:filename` and the authenticated `read-url` endpoint. Changing a preset invalidates naturally (new hash); a daily cron sweeps stale keys.
 - **Server-side image editing** — `transform` (normalized crop, 90° rotations) and `revert`; the pristine original is preserved on first edit and derivatives are invalidated.
 - **`AssetType` form field** — registers the `asset` data type whose widget (`DmsMediaAssetPicker`) opens the Finder as a picker. Declaring a `binding` auto-provisions a linked folder under the `Content` root (idempotency key = binding id) whose ACL derives from the declared permission mapping; linked folders cannot be renamed, moved, deleted or re-ACLed through the API.
-- **Media page** — root `Media` nav category with the `Library` page (full-page Finder), guarded by the `media.access` permission.
+- **Media page** — root `Media` nav category with the `Library` page (full-page Finder), guarded by its default DMS page permission `settings.media.assets`.
 
 ## Static permissions
 
 | Permission | Effect |
 |---|---|
-| `media.access` | See the Media page; grants `read` at the root via the default root ACL |
+| `settings.media.assets` | Default permission of the media page (registered by the DMS, not by this module): see the page; grants `read` at the root via the default root ACL |
 | `media.upload` | Grants `write` at the root via the default root ACL |
 | `media.folders.manage` | Grants `manage` at the root via the default root ACL; always kept in control of linked folders |
 | `media.permissions.manage` | Global gate for editing folder ACLs and flipping visibility |
@@ -47,7 +47,7 @@ Per-folder rights are the single authority for operations: upload requires `writ
 		"config": {
 			"storage": "media",
 			"rootAcl": [
-				{ "subject": { "kind": "permission", "id": "media.access" }, "rights": ["read"] }
+				{ "subject": { "kind": "permission", "id": "settings.media.assets" }, "rights": ["read"] }
 			],
 			"presets": [
 				{ "id": "thumb", "width": 300, "height": 300, "fit": "cover", "format": "webp", "quality": 80 }

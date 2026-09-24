@@ -7,10 +7,10 @@ import {
   resolveRootRights,
 } from "../../../acl/resolver";
 import {
-  MEDIA_ACCESS_PERMISSION,
   MEDIA_FOLDERS_MANAGE_PERMISSION,
   MEDIA_UPLOAD_PERMISSION,
 } from "../../../constants";
+import { MEDIA_PAGE_PERMISSION } from "../../../pages/media";
 import type { MediaFolder } from "../../../db/tables";
 import type { AclEntry } from "../../../types";
 
@@ -67,7 +67,7 @@ describe("[unit] acl/resolver — resolveFolderAccess", () => {
     const folders = [buildFolder({ id: "root" })];
     const reader = resolveFolderAccess(
       folders,
-      buildActor([MEDIA_ACCESS_PERMISSION]),
+      buildActor([MEDIA_PAGE_PERMISSION]),
       DEFAULT_ROOT_ACL,
     );
     expect(reader.readable.has("root")).to.equal(true);
@@ -145,7 +145,7 @@ describe("[unit] acl/resolver — resolveFolderAccess", () => {
 
     const outsider = resolveFolderAccess(
       folders,
-      buildActor([MEDIA_ACCESS_PERMISSION]),
+      buildActor([MEDIA_PAGE_PERMISSION]),
       [],
     );
     expect(outsider.readable.has("articles-assets")).to.equal(false);
@@ -175,7 +175,7 @@ describe("[unit] acl/resolver — resolveFolderAccess", () => {
     ];
     const actor = resolveFolderAccess(
       folders,
-      buildActor([MEDIA_ACCESS_PERMISSION]),
+      buildActor([MEDIA_PAGE_PERMISSION]),
       [],
     );
     expect(actor.readable.size).to.equal(0);
@@ -188,7 +188,7 @@ describe("[unit] acl/resolver — resolveFolderAccess", () => {
     const folders = [buildFolder({ id: "orphan", parentId: "gone" })];
     const reader = resolveFolderAccess(
       folders,
-      buildActor([MEDIA_ACCESS_PERMISSION]),
+      buildActor([MEDIA_PAGE_PERMISSION]),
       DEFAULT_ROOT_ACL,
     );
     expect(reader.readable.has("orphan")).to.equal(true);
@@ -273,7 +273,7 @@ describe("[unit] acl/resolver — resolveFolderAccess", () => {
     ];
     const reader = resolveFolderAccess(
       folders,
-      buildActor([MEDIA_ACCESS_PERMISSION]),
+      buildActor([MEDIA_PAGE_PERMISSION]),
       DEFAULT_ROOT_ACL,
     );
     expect(reader.readable.has("sane")).to.equal(true);

@@ -1,13 +1,13 @@
 import {
-  MEDIA_ACCESS_PERMISSION,
   MEDIA_FOLDERS_MANAGE_PERMISSION,
   MEDIA_UPLOAD_PERMISSION,
 } from "../constants";
+import { MEDIA_PAGE_PERMISSION } from "../pages/media";
 import type { AclEntry } from "../types";
 
 export const DEFAULT_ROOT_ACL: AclEntry[] = [
   {
-    subject: { kind: "permission", id: MEDIA_ACCESS_PERMISSION },
+    subject: { kind: "permission", id: MEDIA_PAGE_PERMISSION },
     rights: ["read"],
   },
   {

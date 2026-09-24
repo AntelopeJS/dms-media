@@ -2,11 +2,11 @@ import type { AxiosInstance } from "axios";
 import { expect } from "chai";
 import { RegisterAssetBinding } from "../../asset-type/bindings";
 import {
-  MEDIA_ACCESS_PERMISSION,
   MEDIA_FOLDERS_MANAGE_PERMISSION,
   MEDIA_PERMISSIONS_MANAGE_PERMISSION,
   MEDIA_UPLOAD_PERMISSION,
 } from "../../constants";
+import { MEDIA_PAGE_PERMISSION } from "../../pages/media";
 import type { AclEntry } from "../../types";
 import {
   rawGet,
@@ -155,17 +155,17 @@ async function createWorldRoles(): Promise<WorldRoles> {
     secretTeam,
     latecomer,
   ] = await Promise.all([
-    createRole("media-viewer", [MEDIA_ACCESS_PERMISSION]),
+    createRole("media-viewer", [MEDIA_PAGE_PERMISSION]),
     createRole("media-uploader", [
-      MEDIA_ACCESS_PERMISSION,
+      MEDIA_PAGE_PERMISSION,
       MEDIA_UPLOAD_PERMISSION,
     ]),
     createRole("media-folder-manager", [
-      MEDIA_ACCESS_PERMISSION,
+      MEDIA_PAGE_PERMISSION,
       MEDIA_FOLDERS_MANAGE_PERMISSION,
     ]),
     createRole("media-permissions-manager", [
-      MEDIA_ACCESS_PERMISSION,
+      MEDIA_PAGE_PERMISSION,
       MEDIA_FOLDERS_MANAGE_PERMISSION,
       MEDIA_PERMISSIONS_MANAGE_PERMISSION,
     ]),
@@ -219,7 +219,7 @@ async function buildWorldFolders(
   await setFolderAcl(owner, vault, []);
   await setFolderAcl(owner, pocket, [roleEntry(secretTeamRoleId, ["read"])]);
   await setFolderAcl(owner, readOnlyCorner, [
-    permissionEntry(MEDIA_ACCESS_PERMISSION, ["read"]),
+    permissionEntry(MEDIA_PAGE_PERMISSION, ["read"]),
   ]);
   const flip = await owner.post(`/api/media/folders/${publicZone}/visibility`, {
     visibility: "public",
@@ -302,7 +302,7 @@ describe("[integration] media permissions — multi-actor ACL enforcement", () =
       expect(tree.root).to.deep.equal({ write: false, manage: false });
     });
 
-    it("shows only root-inherited folders to a media.access holder", async () => {
+    it("shows only root-inherited folders to a media page permission holder", async () => {
       const tree = await fetchTree(sessions.viewer.client);
       const library = findById(tree, folders.library);
       expect(library, "library").to.not.equal(undefined);
@@ -364,7 +364,9 @@ describe("[integration] media permissions — multi-actor ACL enforcement", () =
     it("unions permission and role subjects across multiple roles", async () => {
       const tree = await fetchTree(sessions.hybrid.client);
       const library = findById(tree, folders.library);
-      expect(library, "library via media.access").to.not.equal(undefined);
+      expect(library, "library via the media page permission").to.not.equal(
+        undefined,
+      );
       expect((library as TreeFolderNode).rights.read).to.equal(true);
       const restricted = findById(tree, folders.restricted);
       expect(restricted, "restricted via secret-team").to.not.equal(undefined);
@@ -874,7 +876,7 @@ describe("[integration] media permissions — multi-actor ACL enforcement", () =
     it("grants access on the next request when the role gains a permission", async () => {
       const before = await fetchTree(sessions.latecomer.client);
       expect(before.folders).to.deep.equal([]);
-      await setRolePermissions(roles.latecomer, [MEDIA_ACCESS_PERMISSION]);
+      await setRolePermissions(roles.latecomer, [MEDIA_PAGE_PERMISSION]);
       const after = await fetchTree(sessions.latecomer.client);
       expect(
         findById(after, folders.library),
