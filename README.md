@@ -9,7 +9,7 @@
 
 AntelopeJS DMS module providing an asset/media library: upload, folders, delivery derivatives and light image editing, with per-folder permissions that reuse the DMS authorization system. Ships a Finder-style file explorer (frontend) and an `AssetType` field to reference library assets from forms.
 
-See [docs/PRD.md](./docs/PRD.md) for the architecture and product spec, and [AGENTS.md](./AGENTS.md) for code conventions.
+See [AGENTS.md](./AGENTS.md) for code conventions.
 
 ## Installation
 
@@ -113,4 +113,4 @@ The playground uses the `@antelopejs/dms-frontend` CLI. Run `pnpm --dir frontend
 - Abandoned staged uploads are expired by the storage backend (e.g. S3 lifecycle rule on the `__staging__/` prefix), not by this module — `interface-file-storage` exposes no listing.
 - Multi-user ACL scenarios are covered by resolver unit tests; HTTP integration tests run as the owner because the DMS invite flow does not expose invite tokens over HTTP (see the DMS module's `TESTING.md` for the matching upstream limitation).
 - Folder visibility applies to the folder's direct assets (no recursive visibility inheritance); assets inherit or override individually.
-- Cover cropping is centred (no focal point) and reference counting ("used in N records") is out of scope — see the PRD's v2 list.
+- Cover cropping is centred (no focal point), and reference counting ("used in N records") is not supported yet.
