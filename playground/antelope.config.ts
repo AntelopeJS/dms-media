@@ -54,7 +54,7 @@ export default defineConfig({
         version: "^1.3.1",
       },
       config: {
-        url: "mongodb://localhost:27017",
+        url: process.env.MONGO_URL ?? "mongodb://localhost:27017",
         database: "playground_dms_media",
       },
       importOverrides: [],
