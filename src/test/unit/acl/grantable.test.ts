@@ -5,6 +5,7 @@ import {
 import { expect } from "chai";
 import { filterGrantablePermissions } from "../../../acl/grantable";
 import { OWNER_WILDCARD_PERMISSION } from "../../../constants";
+import { MEDIA_PAGE_PERMISSION } from "../../../pages/media";
 
 const MODULE_PAGE_PERMISSION = "classified.page";
 const MODULE_ACTION_PERMISSION = "classified.page.table.edit";
@@ -21,11 +22,11 @@ describe("[unit] acl/grantable — filterGrantablePermissions", () => {
 
   it("keeps regular permissions untouched", () => {
     const filtered = filterGrantablePermissions(
-      new Set([REGULAR_PERMISSION, "media.access"]),
+      new Set([REGULAR_PERMISSION, MEDIA_PAGE_PERMISSION]),
     );
     expect([...filtered].sort()).to.deep.equal([
       REGULAR_PERMISSION,
-      "media.access",
+      MEDIA_PAGE_PERMISSION,
     ]);
   });
 

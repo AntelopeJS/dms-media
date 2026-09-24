@@ -59,7 +59,7 @@ What is missing is the second nature of file: **library assets** — reusable, w
 Indexing the ACL on **permissions** (and not only on roles) is the central insight: it reuses the stable DMS permission registry and makes access to bound folders follow automatically from the form rights, with no second system and no synchronization.
 
 ### Static module permissions (existing DMS registry)
-- `media.access` — see the library.
+- `settings.media.assets` — default DMS permission of the media page: see the library (registered by the DMS page, not by this module).
 - `media.upload` — upload.
 - `media.folders.manage` — create/rename/move/delete folders.
 - `media.permissions.manage` — set/edit the ACLs.
@@ -146,6 +146,6 @@ Indexing the ACL on **permissions** (and not only on roles) is the central insig
 
 - **Orphan folders** (consumer deleted, module uninstalled): keep the files, access falling back to admin-only, "orphans" section — to be confirmed.
 - **Folder bound by two bindings**: union of the ACL entries of both consumers (intended behaviour for shared assets) — to be confirmed.
-- **Default root ACL**: exact values in the settings (proposed: `read`+`write` for holders of `media.access`/`media.upload`).
+- **Default root ACL**: exact values in the settings (proposed: `read`+`write` for holders of `settings.media.assets`/`media.upload`).
 - **Frontend cropping library** for the editing UI (PR #128 does not provide one yet).
 - Result of the **registry audit**: which ones cross module boundaries, which ones require a prior promotion on the DMS side.

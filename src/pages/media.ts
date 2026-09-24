@@ -1,28 +1,26 @@
 import {
   Category,
+  GetPermissionId,
   PageController,
   RegisterPage,
   settingsCategory,
 } from "@antelopejs/interface-dms/page";
 import { DefaultLayout } from "@antelopejs/interface-dms/base";
 import { CustomComponent } from "@antelopejs/interface-dms/base/custom";
-import { MEDIA_ACCESS_PERMISSION } from "../constants";
 
 const MEDIA_LIBRARY_COMPONENT = "dms-media-library";
 
 // Media section of the settings area, mirroring the built-in "User settings"
-// group. `authOnly` keeps the section itself grant-free: pages inside carry
-// the real permissions, and the settings index only shows the group when at
-// least one page in it is accessible.
+// group. Pages inside carry their own default permissions, and the settings
+// index only shows the group when at least one page in it is accessible.
 export const mediaSettingsCategory = Category("media", {
   category: settingsCategory,
   displayName: "Media",
   icon: "i-ph-images",
   order: 2,
-  authOnly: true,
 });
 
-// Single entry point to the media library, gated by the media permission.
+// Single entry point to the media library, gated by its default page permission.
 @RegisterPage()
 export class SettingsAssetsPage extends PageController(
   "assets",
@@ -31,9 +29,19 @@ export class SettingsAssetsPage extends PageController(
     icon: "i-ph-images",
     category: mediaSettingsCategory,
     description: "Browse and manage the media library",
-    permission: { id: MEDIA_ACCESS_PERMISSION },
   },
   DefaultLayout({ fullWidth: true }),
 ) {
   static content = CustomComponent(MEDIA_LIBRARY_COMPONENT);
 }
+
+function requirePagePermissionId(page: typeof SettingsAssetsPage): string {
+  const permissionId = GetPermissionId(page);
+  if (!permissionId) {
+    throw new Error(`Page ${page.name} has no registered permission`);
+  }
+  return permissionId;
+}
+
+export const MEDIA_PAGE_PERMISSION =
+  requirePagePermissionId(SettingsAssetsPage);
