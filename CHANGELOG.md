@@ -1,5 +1,37 @@
 # Changelog
 
+## v0.1.0
+
+[compare changes](https://github.com/AntelopeJS/dms-media/compare/v0.0.5...v0.1.0)
+
+### 🩹 Fixes
+
+- Route playground through public gateway ([#12](https://github.com/AntelopeJS/dms-media/pull/12))
+
+### 💅 Refactors
+
+- **build:** Merge tsconfig.build.json into tsconfig.json ([#16](https://github.com/AntelopeJS/dms-media/pull/16))
+- **permissions:** ⚠️  Use the DMS default page permissions ([#20](https://github.com/AntelopeJS/dms-media/pull/20))
+
+### 🏡 Chore
+
+- **playground:** Configure dms frontend 0.2.1 ([#11](https://github.com/AntelopeJS/dms-media/pull/11))
+- **agents:** Install Node 24 in setup script ([#13](https://github.com/AntelopeJS/dms-media/pull/13))
+- **playground:** Derive api urls from config variables ([#14](https://github.com/AntelopeJS/dms-media/pull/14))
+
+### 🤖 CI
+
+- **release:** Release next from a dedicated branch and restore requireCommits ([#17](https://github.com/AntelopeJS/dms-media/pull/17))
+- **release:** Reference the shared release workflows through v1 ([#18](https://github.com/AntelopeJS/dms-media/pull/18))
+
+#### ⚠️ Breaking Changes
+
+- **permissions:** ⚠️  Use the DMS default page permissions ([#20](https://github.com/AntelopeJS/dms-media/pull/20))
+
+### ❤️ Contributors
+
+- Antony Rizzitelli <rizzitelli.antony@pm.me>
+
 ## v0.0.5
 
 [compare changes](https://github.com/AntelopeJS/dms-media/compare/v0.0.4...v0.0.5)
