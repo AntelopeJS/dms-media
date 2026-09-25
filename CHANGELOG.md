@@ -1,5 +1,22 @@
 # Changelog
 
+## v0.1.1
+
+[compare changes](https://github.com/AntelopeJS/dms-media/compare/v0.1.0...v0.1.1)
+
+### 🩹 Fixes
+
+- **library:** Fit the assets page to the viewport instead of scrolling it ([#22](https://github.com/AntelopeJS/dms-media/pull/22))
+
+### 🏡 Chore
+
+- Remove PRD from repository ([#21](https://github.com/AntelopeJS/dms-media/pull/21))
+
+### ❤️ Contributors
+
+- Alessandro Aloisio ([@alessaloisio](http://github.com/alessaloisio))
+- Antony Rizzitelli <rizzitelli.antony@pm.me>
+
 ## v0.1.0
 
 [compare changes](https://github.com/AntelopeJS/dms-media/compare/v0.0.5...v0.1.0)
