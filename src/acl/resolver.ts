@@ -125,11 +125,9 @@ function groupChildrenByParent(
   return childrenByParent;
 }
 
+/** Orphans (parent row missing) are not roots: they fail closed with no rights. */
 function collectRoots(folders: readonly MediaFolder[]): MediaFolder[] {
-  const knownIds = new Set(folders.map((folder) => folder._id));
-  return folders.filter(
-    (folder) => !folder.parentId || !knownIds.has(folder.parentId),
-  );
+  return folders.filter((folder) => !folder.parentId);
 }
 
 function collectFolderRights(

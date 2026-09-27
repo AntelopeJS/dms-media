@@ -72,15 +72,36 @@ function buildChildPath(parent: MediaFolder | undefined): string[] {
   return parent ? [...parent.path, parent._id] : [];
 }
 
+type FolderTreeModels = Pick<MediaRequestContext, "folderModel" | "assetModel">;
+
 async function deleteFolderAssets(
-  context: MediaRequestContext,
+  context: FolderTreeModels,
   folderIds: string[],
 ): Promise<void> {
-  if (folderIds.length === 0) return;
   const assets = await context.assetModel.getBy("folderId", ...folderIds);
   await Promise.all(
     assets.map((asset) => deleteMediaAsset(context.assetModel, asset._id)),
   );
+}
+
+/**
+ * Deletes folder rows first, then cascades from the database rather than the
+ * request snapshot, so children and assets written concurrently under a
+ * deleted folder are removed instead of left orphaned.
+ */
+export async function deleteFolderTree(
+  context: FolderTreeModels,
+  folderIds: string[],
+): Promise<void> {
+  let pending = folderIds;
+  while (pending.length > 0) {
+    await Promise.all(pending.map((id) => context.folderModel.delete(id)));
+    const [lateChildren] = await Promise.all([
+      context.folderModel.getBy("parentId", ...pending),
+      deleteFolderAssets(context, pending),
+    ]);
+    pending = lateChildren.map((child) => child._id);
+  }
 }
 
 async function applyFolderMove(
@@ -272,8 +293,7 @@ export class MediaFoldersController extends Controller("/api/media") {
       );
     }
     const folderIds = [folderId, ...descendants.map((child) => child._id)];
-    await deleteFolderAssets(context, folderIds);
-    await Promise.all(folderIds.map((id) => context.folderModel.delete(id)));
+    await deleteFolderTree(context, folderIds);
     return { ok: true };
   }
 }

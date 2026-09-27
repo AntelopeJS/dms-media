@@ -184,14 +184,20 @@ describe("[unit] acl/resolver — resolveFolderAccess", () => {
     expect(actor.shells.size).to.equal(0);
   });
 
-  it("treats folders with a missing parent as roots", () => {
-    const folders = [buildFolder({ id: "orphan", parentId: "gone" })];
+  it("grants no rights to folders whose parent is missing", () => {
+    const folders = [
+      buildFolder({ id: "orphan", parentId: "gone" }),
+      buildFolder({ id: "orphan-child", parentId: "orphan" }),
+    ];
     const reader = resolveFolderAccess(
       folders,
-      buildActor([MEDIA_PAGE_PERMISSION]),
+      buildActor([MEDIA_PAGE_PERMISSION, MEDIA_FOLDERS_MANAGE_PERMISSION]),
       DEFAULT_ROOT_ACL,
     );
-    expect(reader.readable.has("orphan")).to.equal(true);
+    expect(reader.readable.size).to.equal(0);
+    expect(reader.writable.size).to.equal(0);
+    expect(reader.manageable.size).to.equal(0);
+    expect(reader.shells.size).to.equal(0);
   });
 
   it("grants every root right to the owner wildcard", () => {
@@ -218,7 +224,7 @@ describe("[unit] acl/resolver — resolveFolderAccess", () => {
     expect(rights.has("manage")).to.equal(false);
   });
 
-  it("falls back to inheritance when a stored ACL is malformed", () => {
+  it("fails closed instead of inheriting when a stored ACL is malformed", () => {
     const folders = [
       buildFolder({ id: "root", acl: editorsRoleAcl }),
       buildFolder({ id: "broken", parentId: "root", rawAcl: "{not json" }),
@@ -228,7 +234,8 @@ describe("[unit] acl/resolver — resolveFolderAccess", () => {
       buildActor([], ["editors"]),
       [],
     );
-    expect(editor.writable.has("broken")).to.equal(true);
+    expect(editor.writable.has("root")).to.equal(true);
+    expect(editor.readable.has("broken")).to.equal(false);
   });
 
   it("locks down a child with an explicit empty ACL under a permissive parent", () => {
