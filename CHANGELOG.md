@@ -1,5 +1,17 @@
 # Changelog
 
+## v0.1.2
+
+[compare changes](https://github.com/AntelopeJS/dms-media/compare/v0.1.1...v0.1.2)
+
+### 🩹 Fixes
+
+- **db:** Fail closed on orphan folders and drop unused media indexes ([#25](https://github.com/AntelopeJS/dms-media/pull/25))
+
+### ❤️ Contributors
+
+- Antony Rizzitelli <rizzitelli.antony@pm.me>
+
 ## v0.1.1
 
 [compare changes](https://github.com/AntelopeJS/dms-media/compare/v0.1.0...v0.1.1)
