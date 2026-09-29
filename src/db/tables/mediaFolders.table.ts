@@ -16,17 +16,14 @@ export class MediaFolder extends Table {
   @Field("string")
   declare _id: string;
 
-  @Index()
   @CreationTime()
   @Field("date")
   declare createdAt: Date;
 
-  @Index()
   @UpdateTime()
   @Field("date")
   declare updatedAt: Date;
 
-  @Index()
   @Field("string")
   declare name: string;
 

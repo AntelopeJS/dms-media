@@ -30,14 +30,12 @@ describe("[unit] acl/entries — parseFolderAcl", () => {
     expect(parseFolderAcl(folder)).to.deep.equal([READ_ENTRY]);
   });
 
-  it("ignores malformed JSON", () => {
-    expect(parseFolderAcl(folderWithAcl("{not json"))).to.equal(undefined);
+  it("fails closed on malformed JSON", () => {
+    expect(parseFolderAcl(folderWithAcl("{not json"))).to.deep.equal([]);
   });
 
-  it("ignores JSON that is not an array", () => {
-    expect(parseFolderAcl(folderWithAcl('{"subject":"x"}'))).to.equal(
-      undefined,
-    );
+  it("fails closed on JSON that is not an array", () => {
+    expect(parseFolderAcl(folderWithAcl('{"subject":"x"}'))).to.deep.equal([]);
   });
 });
 

@@ -16,12 +16,10 @@ export class MediaAsset extends Table {
   @Field("string")
   declare _id: string;
 
-  @Index()
   @CreationTime()
   @Field("date")
   declare createdAt: Date;
 
-  @Index()
   @UpdateTime()
   @Field("date")
   declare updatedAt: Date;
@@ -30,7 +28,6 @@ export class MediaAsset extends Table {
   @Field("string")
   declare folderId: string;
 
-  @Index()
   @Field("string")
   declare name: string;
 
@@ -77,7 +74,6 @@ export class MediaAsset extends Table {
   @Field("string")
   declare originalKey?: string;
 
-  @Index()
   @Field("string")
   declare createdBy: string;
 }
