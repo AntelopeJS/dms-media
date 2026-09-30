@@ -33,7 +33,7 @@
     "frontend:dev": "cd playground && pnpm frontend:dev",
     "dev": "ajs project run -w -p playground",
     "lint:fix": "oxlint --fix --max-warnings=1000000 && oxfmt . && pnpm --dir frontend-vue lint:fix",
-    "lint": "oxlint && oxfmt --check . && pnpm --dir frontend-vue lint",
+    "lint": "oxlint && oxfmt --check . && pnpm --dir frontend-vue lint && antelopejs-check-interface-ranges",
     "typecheck": "tsc --noEmit",
     "format": "oxfmt . && pnpm --dir frontend-vue format",
     "test": "pnpm run build && ajs module test .",
@@ -58,7 +58,7 @@
   },
   "devDependencies": {
     "@antelopejs/core": ">=1.9.1 <2",
-    "@antelopejs/tooling-configs": ">=0.0.6 <1.0.0",
+    "@antelopejs/tooling-configs": ">=0.0.7 <1.0.0",
     "@types/chai": "^4.3.20",
     "@types/mocha": "^10",
     "@types/node": "^24.0.0",
