@@ -1,5 +1,21 @@
 # Changelog
 
+## v0.1.3
+
+[compare changes](https://github.com/AntelopeJS/dms-media/compare/v0.1.2...v0.1.3)
+
+### 💅 Refactors
+
+- **library:** Fill the panel instead of measuring the viewport ([#32](https://github.com/AntelopeJS/dms-media/pull/32))
+
+### 🏡 Chore
+
+- **lint:** Check @antelopejs/interface-* ranges ([#31](https://github.com/AntelopeJS/dms-media/pull/31))
+
+### ❤️ Contributors
+
+- Antony Rizzitelli <rizzitelli.antony@pm.me>
+
 ## v0.1.2
 
 [compare changes](https://github.com/AntelopeJS/dms-media/compare/v0.1.1...v0.1.2)

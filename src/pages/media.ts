@@ -30,7 +30,7 @@ export class SettingsAssetsPage extends PageController(
     category: mediaSettingsCategory,
     description: "Browse and manage the media library",
   },
-  DefaultLayout({ fullWidth: true }),
+  DefaultLayout({ fullWidth: true, fillHeight: true }),
 ) {
   static content = CustomComponent(MEDIA_LIBRARY_COMPONENT);
 }
