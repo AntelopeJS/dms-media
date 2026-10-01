@@ -141,7 +141,7 @@ function rowClass(item: MockItemPublic): string {
 						<DmsMediaPickerNameEdit
 							v-if="renamingId === item.id"
 							:name="item.name"
-							@commit="(name) => commitRename(item, name)"
+							@commit="(name: string) => commitRename(item, name)"
 							@cancel="cancelRename"
 						/>
 						<template v-else>{{ item.name }}</template>

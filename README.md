@@ -27,6 +27,7 @@ pnpm lint       # oxlint + oxfmt, both packages, then eslint over frontend-vue
 pnpm typecheck  # tsc over both packages
 pnpm knip       # unused dependencies, both packages
 pnpm test       # module backend suite
+pnpm test:frontend  # typechecks the frontend layer against the DMS layer
 ```
 
 To run the playground, install it too: it is a project of its own, outside the
