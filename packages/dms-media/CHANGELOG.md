@@ -1,5 +1,30 @@
 # Changelog
 
+## v0.2.0
+
+[compare changes](https://github.com/AntelopeJS/dms-media/compare/v0.1.4...v0.2.0)
+
+### 🚀 Enhancements
+
+- ⚠️  Move the public API to @antelopejs/interface-dms-media ([#34](https://github.com/AntelopeJS/dms-media/pull/34))
+
+### 🩹 Fixes
+
+- **playground:** Start the playground on a fresh clone ([#35](https://github.com/AntelopeJS/dms-media/pull/35))
+- **frontend:** Typecheck the layer in CI and fix its type errors ([#36](https://github.com/AntelopeJS/dms-media/pull/36))
+
+### 🏡 Chore
+
+- **playground:** Run api ^1.3.1 and open module source ranges ([#33](https://github.com/AntelopeJS/dms-media/pull/33))
+
+#### ⚠️ Breaking Changes
+
+- ⚠️  Move the public API to @antelopejs/interface-dms-media ([#34](https://github.com/AntelopeJS/dms-media/pull/34))
+
+### ❤️ Contributors
+
+- Antony Rizzitelli <rizzitelli.antony@pm.me>
+
 ## v0.1.4
 
 [compare changes](https://github.com/AntelopeJS/dms-media/compare/v0.1.3...v0.1.4)
