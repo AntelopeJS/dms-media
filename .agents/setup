@@ -124,7 +124,7 @@ install_dependencies() {
   pnpm build
   # The playground and the frontend module are projects of their own, outside
   # the workspace, each with its own lockfile.
-  pnpm --dir packages/dms-media/playground install --frozen-lockfile --force --ignore-workspace
+  pnpm --dir packages/dms-media/playground install --frozen-lockfile --ignore-workspace
   pnpm --dir packages/dms-media/frontend-vue install --frozen-lockfile
 }
 

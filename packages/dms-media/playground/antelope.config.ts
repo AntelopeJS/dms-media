@@ -14,7 +14,6 @@ export default defineConfig({
         type: "local",
         path: ".",
         watchDir: ["src"],
-        installCommand: ["pnpm build"],
         // Not `pnpm build`: it starts with `rimraf dist`, and the running module is loaded from dist.
         reloadCommand: ["pnpm exec tsc"],
       },
@@ -24,7 +23,9 @@ export default defineConfig({
         type: "local",
         path: "..",
         watchDir: ["src"],
-        installCommand: ["pnpm build"],
+        // One ordered chain: the interface, then the module, then the playground that
+        // imports the interface. Separate per-module commands run in parallel and race.
+        installCommand: ["pnpm build", "pnpm --dir playground build"],
         // Not `pnpm build`: it starts with `rimraf dist`, and the running module is loaded from dist.
         reloadCommand: ["pnpm exec tsc"],
       },

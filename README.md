@@ -28,3 +28,12 @@ pnpm typecheck  # tsc over both packages
 pnpm knip       # unused dependencies, both packages
 pnpm test       # module backend suite
 ```
+
+To run the playground, install it too: it is a project of its own, outside the
+workspace, and links the interface package from the tree. Then start it with
+MongoDB running on `localhost:27017` (or `MONGO_URL` set):
+
+```bash
+pnpm --dir packages/dms-media/playground install --frozen-lockfile --ignore-workspace
+pnpm dev        # builds the interface, the module and the playground in order, then starts the backend
+```

@@ -116,7 +116,7 @@ pnpm test:unit      # resolver / bindings / derivatives unit tests only
 pnpm test:reload    # hot reload of a consumer and of the module, in a real project
 ```
 
-The playground is a project of its own: install it with `pnpm --dir playground install --ignore-workspace`.
+The playground is a project of its own, outside the workspace: install it with `pnpm --dir playground install --ignore-workspace` before `pnpm dev`. It links `@antelopejs/interface-dms-media` from `packages/interface-dms-media`, and `pnpm dev` builds the interface, the module and the playground in that order before starting the backend.
 
 The playground connects to MongoDB at `mongodb://localhost:27017` by default. Set `MONGO_URL` to point it at another instance, e.g. `MONGO_URL=mongodb://127.0.0.1:27019 pnpm dev`.
 
