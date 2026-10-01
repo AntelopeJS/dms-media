@@ -13,6 +13,7 @@
 import assert from "node:assert/strict";
 import { createRequire } from "node:module";
 import fs from "node:fs/promises";
+import net from "node:net";
 import os from "node:os";
 import path from "node:path";
 import { after, before, describe, it } from "node:test";
@@ -27,7 +28,18 @@ const PACKAGE_ROOT = path.resolve(
   "..",
 );
 const PERMISSIONS_FILE = path.join(PACKAGE_ROOT, "dist", "permissions.js");
-const API_PORT = 5029;
+function findFreePort() {
+  return new Promise((resolve, reject) => {
+    const server = net.createServer();
+    server.once("error", reject);
+    server.listen(0, "127.0.0.1", () => {
+      const { port } = server.address();
+      server.close(() => resolve(port));
+    });
+  });
+}
+
+const API_PORT = await findFreePort();
 const BASE_URL = `http://127.0.0.1:${API_PORT}`;
 const JWT_SECRET = "reload-test-secret";
 const MONGO_BINARY_VERSION = "8.0.8";

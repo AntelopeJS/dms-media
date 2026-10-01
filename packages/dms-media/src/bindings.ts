@@ -24,6 +24,7 @@ export function addAssetBinding(id: string, config: AssetBindingConfig): void {
 
 export function removeAssetBinding(id: string): void {
   registeredBindings.delete(id);
+  provisionedTenants.clear();
 }
 
 export function getRegisteredBindings(): AssetBindingConfig[] {
