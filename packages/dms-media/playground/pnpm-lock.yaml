@@ -21,8 +21,8 @@ importers:
         specifier: '>=0.2.8 <1.0.0'
         version: 0.3.1(82f585b8262594fc49808f69de7c08f3)
       '@antelopejs/interface-dms-media':
-        specifier: file:../../interface-dms-media
-        version: file:../../interface-dms-media(@antelopejs/interface-api@0.0.13(@antelopejs/interface-core@0.1.1))(@antelopejs/interface-core@0.1.1)(@antelopejs/interface-dms@0.3.1(82f585b8262594fc49808f69de7c08f3))
+        specifier: link:../../interface-dms-media
+        version: link:../../interface-dms-media
     devDependencies:
       '@antelopejs/core':
         specifier: 1.10.1
@@ -112,13 +112,6 @@ packages:
     resolution: {integrity: sha512-xvaxQ/JRbOuJc9d8hpTLu3EI3xpr4HX12u/PXZE+I8FCutNOJ2D8GcUGM91VsIeU3OuiFoY+p1emlV8q/rjAMQ==}
     peerDependencies:
       '@antelopejs/interface-core': '>=0.1.1 <1.0.0'
-
-  '@antelopejs/interface-dms-media@file:../../interface-dms-media':
-    resolution: {directory: ../../interface-dms-media, type: directory}
-    peerDependencies:
-      '@antelopejs/interface-api': '>=0.0.13 <1.0.0'
-      '@antelopejs/interface-core': '>=0.1.1 <1.0.0'
-      '@antelopejs/interface-dms': '>=0.2.8 <1.0.0'
 
   '@antelopejs/interface-dms@0.3.1':
     resolution: {integrity: sha512-2K4ODwixoCDvTz8bqXCvI/cUGSYm0T5WFJGzzD9SUszaxDh+q9JJQmMZWvmk1UXcmiDuC/71t9dG+6517ku7lg==}
@@ -1398,13 +1391,6 @@ snapshots:
     dependencies:
       '@antelopejs/interface-core': 0.1.1
     optional: true
-
-  '@antelopejs/interface-dms-media@file:../../interface-dms-media(@antelopejs/interface-api@0.0.13(@antelopejs/interface-core@0.1.1))(@antelopejs/interface-core@0.1.1)(@antelopejs/interface-dms@0.3.1(82f585b8262594fc49808f69de7c08f3))':
-    dependencies:
-      '@antelopejs/interface-api': 0.0.13(@antelopejs/interface-core@0.1.1)
-      '@antelopejs/interface-core': 0.1.1
-      '@antelopejs/interface-dms': 0.3.1(82f585b8262594fc49808f69de7c08f3)
-      zod: 3.24.4
 
   '@antelopejs/interface-dms@0.3.1(82f585b8262594fc49808f69de7c08f3)':
     dependencies:
