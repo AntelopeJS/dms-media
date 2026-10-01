@@ -24,7 +24,7 @@ const breadcrumbs = computed<BreadcrumbItemWithClick[]>(() => {
     },
   };
 
-  return folders
+  const items = folders
     .map((id, index, arr): BreadcrumbItemWithClick | undefined => {
       const folder = map.value.folders.get(id);
       if (!folder) return;
@@ -40,8 +40,9 @@ const breadcrumbs = computed<BreadcrumbItemWithClick[]>(() => {
             : undefined,
       };
     })
-    .filter((f): f is BreadcrumbItemWithClick => f !== undefined)
-    .toSpliced(0, 0, root);
+    .filter((f): f is BreadcrumbItemWithClick => f !== undefined);
+
+  return [root, ...items];
 });
 
 const hiddenItems = computed<DropdownMenuItem[]>(() => {

@@ -119,7 +119,7 @@ function itemTitle(item: MockItemPublic): string | undefined {
 			<DmsMediaPickerNameEdit
 				v-if="renamingId === item.id"
 				:name="item.name"
-				@commit="(name) => commitRename(item, name)"
+				@commit="(name: string) => commitRename(item, name)"
 				@cancel="cancelRename"
 			/>
 			<div

@@ -195,7 +195,7 @@ watch(
             <UContextMenu
               :items="favoriteContextMenu"
               @update:open="
-                (isOpen) => isOpen && handleContextMenu(item.value as string)
+                (isOpen: boolean) => isOpen && handleContextMenu(item.value as string)
               "
             >
               <button

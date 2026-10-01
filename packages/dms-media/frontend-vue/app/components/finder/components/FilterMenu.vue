@@ -53,10 +53,10 @@ const isFilterChecked = (type: FilterType) => {
   return current.includes(type);
 };
 
-const filterItems = computed<DropdownMenuItem[]>(() => [
+const filterItems = computed<DropdownMenuItem[][]>(() => [
   [{ label: t("dms.finder.filter.title"), type: "label" }],
   [
-    ...FILTER_TYPES.map((type) => ({
+    ...FILTER_TYPES.map((type): DropdownMenuItem => ({
       label: t(FILTER_LABELS[type]),
       icon: FILTER_ICONS[type],
       type: "checkbox",
@@ -67,7 +67,7 @@ const filterItems = computed<DropdownMenuItem[]>(() => [
   ],
   [{ label: t("dms.finder.filter.sort_by"), type: "label" }],
   [
-    ...SORT_OPTIONS.map((option) => ({
+    ...SORT_OPTIONS.map((option): DropdownMenuItem => ({
       label: t(SORT_LABELS[option]),
       icon: SORT_ICONS[option],
       type: "checkbox",

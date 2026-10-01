@@ -122,7 +122,7 @@ The playground connects to MongoDB at `mongodb://localhost:27017` by default. Se
 
 The frontend entry is `frontend-vue/dms.frontend.ts`. It registers the existing `DmsMedia` and nested `Finder` component names. Use relative imports for module-local files because the Inertia adapter copies the frontend separately from the backend. The adapter discovers locale files and `app/config/shortcuts-registry.ts`; no Nuxt installation is required.
 
-The playground uses the `@antelopejs/dms-frontend` CLI. Run `pnpm --dir frontend-vue install` and `pnpm --dir frontend-vue test` for frontend tests. Set `DMS_FRONTEND_WORKSPACE` to the generated Inertia workspace before running `pnpm --dir frontend-vue typecheck`.
+The playground uses the `@antelopejs/dms-frontend` CLI. Run `pnpm --dir frontend-vue install` and `pnpm --dir frontend-vue test` for frontend tests. `pnpm test:frontend` typechecks the layer against the DMS layer (`ajs dms verify-source`), without a running backend; CI runs it.
 
 ## Known limitations (v1)
 

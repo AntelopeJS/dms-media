@@ -205,7 +205,7 @@ watch([currentFile, selectedItems], updateSelectedRow, {
             :ghost-ref="getGhostRef(row.original.id)"
           >
             <FinderLayoutViewCardGhost
-              :ref="(el) => setRowGhostRef(row.original.id, el)"
+              :ref="(el: unknown) => setRowGhostRef(row.original.id, el)"
               :icon="getItemIcon(row.original)"
               :preview="getItemPreview(row.original)"
             />
