@@ -1,4 +1,4 @@
-name: Release
+name: Release DMS media module
 
 on:
   workflow_dispatch:
@@ -8,9 +8,7 @@ on:
         required: true
         default: latest
         type: choice
-        options:
-          - latest
-          - next
+        options: [latest, next]
 
 permissions:
   contents: write
@@ -18,6 +16,7 @@ permissions:
 
 jobs:
   validate:
+    name: Validate module release metadata
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -37,8 +36,24 @@ jobs:
             exit 1
           }
           node <<'NODE'
-          const pkg = require('./package.json')
+          const pkg = require('./packages/dms-media/package.json')
+          const iface = require('./packages/interface-dms-media/package.json')
           const errors = []
+          // The interface sitting in the tree only has to SATISFY the range the
+          // module publishes. The module implements the interface, so it caps it
+          // below the next minor (`>=<floor> <0.<minor+1>.0`): a breaking
+          // interface minor must never reach a dms-media that does not
+          // implement it.
+          const compare = (a, b) => {
+            const parts = (v) => v.split('-')[0].split('.').map(Number)
+            const [x, y] = [parts(a), parts(b)]
+            return x[0] - y[0] || x[1] - y[1] || x[2] - y[2]
+          }
+          const satisfiesImplementedRange = (version, range) => {
+            const match = /^>=(0\.(\d+)\.\d+) <(0\.(\d+)\.0)$/.exec(range ?? '')
+            if (!match || Number(match[4]) !== Number(match[2]) + 1) return false
+            return compare(version, match[1]) >= 0 && compare(version, match[3]) < 0
+          }
           if (pkg.name !== '@antelopejs/dms-media') errors.push('name must be @antelopejs/dms-media')
           if (pkg.repository?.url !== 'git+https://github.com/AntelopeJS/dms-media.git') {
             errors.push('repository.url must point at AntelopeJS/dms-media')
@@ -48,16 +63,40 @@ jobs:
           if (pkg.publishConfig?.registry !== 'https://registry.npmjs.org/') {
             errors.push('publishConfig.registry must be the public npm registry')
           }
+          if (JSON.stringify(pkg.antelopeJs?.implements) !== JSON.stringify(['@antelopejs/interface-dms-media'])) {
+            errors.push('antelopeJs.implements must be exactly ["@antelopejs/interface-dms-media"]')
+          }
+          if (!satisfiesImplementedRange(iface.version, pkg.dependencies?.['@antelopejs/interface-dms-media'])) {
+            errors.push(`dependencies["@antelopejs/interface-dms-media"] must be ">=<floor> <0.<minor+1>.0" and accept ${iface.version}`)
+          }
           if (errors.length) {
             console.error(errors.join('\n'))
             process.exit(1)
           }
           NODE
 
+      # This workflow never publishes the interface. The module depends on it
+      # through `>=<interface version> <0.<minor+1>.0`, the floor being the
+      # interface version sitting in the tree. Releasing the module before that
+      # exact version exists on npm would publish a manifest nobody can install.
+      - name: Verify the interface version is resolvable on npm
+        run: |
+          name=$(node -p "require('./packages/interface-dms-media/package.json').name")
+          version=$(node -p "require('./packages/interface-dms-media/package.json').version")
+          # `npm view` exits non-zero on a 404, and the step runs under `bash -e`:
+          # without swallowing that status the job dies on npm's own error and
+          # never prints what the operator has to do next.
+          resolved=$(npm view "$name@$version" version --registry=https://registry.npmjs.org/) || resolved=""
+          test "$resolved" = "$version" || {
+            echo "$name@$version is not resolvable on https://registry.npmjs.org/; run \"Release DMS media interface\" first." >&2
+            exit 1
+          }
+
   release:
     needs: validate
     uses: AntelopeJS/.github/.github/workflows/release-npm-public.yml@v1
     with:
       channel: ${{ inputs.channel }}
+      package-directory: packages/dms-media
     secrets:
       RELEASE_GITHUB_TOKEN: ${{ secrets.RELEASE_GITHUB_TOKEN }}

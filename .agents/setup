@@ -122,8 +122,10 @@ start_mongodb() {
 install_dependencies() {
   pnpm install --frozen-lockfile
   pnpm build
-  pnpm --dir playground install --frozen-lockfile --force
-  pnpm --dir frontend-vue install --frozen-lockfile
+  # The playground and the frontend module are projects of their own, outside
+  # the workspace, each with its own lockfile.
+  pnpm --dir packages/dms-media/playground install --frozen-lockfile --force --ignore-workspace
+  pnpm --dir packages/dms-media/frontend-vue install --frozen-lockfile
 }
 
 run_step "Install Node.js $NODE_MAJOR" install_node

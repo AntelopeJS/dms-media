@@ -1,0 +1,63 @@
+name: Release DMS media interface
+
+on:
+  workflow_dispatch:
+    inputs:
+      channel:
+        description: npm distribution channel
+        required: true
+        default: latest
+        type: choice
+        options: [latest, next]
+
+permissions:
+  contents: write
+  id-token: write
+
+jobs:
+  validate:
+    name: Validate interface release metadata
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Validate release source and package metadata
+        env:
+          CHANNEL: ${{ inputs.channel }}
+          DEFAULT_BRANCH: ${{ github.event.repository.default_branch }}
+        run: |
+          case "$CHANNEL" in
+            latest) release_branch=$DEFAULT_BRANCH ;;
+            next) release_branch=next ;;
+            *) echo "Unsupported npm channel: $CHANNEL" >&2; exit 1 ;;
+          esac
+          test "$GITHUB_REF" = "refs/heads/$release_branch" || {
+            echo "The $CHANNEL channel must be released from the $release_branch branch, not $GITHUB_REF." >&2
+            exit 1
+          }
+          node <<'NODE'
+          const pkg = require('./packages/interface-dms-media/package.json')
+          const errors = []
+          if (pkg.name !== '@antelopejs/interface-dms-media') errors.push('name must be @antelopejs/interface-dms-media')
+          if (pkg.repository?.url !== 'git+https://github.com/AntelopeJS/dms-media.git') {
+            errors.push('repository.url must point at AntelopeJS/dms-media')
+          }
+          if (pkg.publishConfig?.access !== 'public') errors.push('publishConfig.access must be public')
+          if (pkg.publishConfig?.provenance !== true) errors.push('publishConfig.provenance must be true')
+          if (pkg.publishConfig?.registry !== 'https://registry.npmjs.org/') {
+            errors.push('publishConfig.registry must be the public npm registry')
+          }
+          if (errors.length) {
+            console.error(errors.join('\n'))
+            process.exit(1)
+          }
+          NODE
+
+  release:
+    needs: validate
+    uses: AntelopeJS/.github/.github/workflows/release-npm-public.yml@v1
+    with:
+      channel: ${{ inputs.channel }}
+      package-directory: packages/interface-dms-media
+    secrets:
+      RELEASE_GITHUB_TOKEN: ${{ secrets.RELEASE_GITHUB_TOKEN }}
