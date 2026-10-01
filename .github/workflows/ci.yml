@@ -20,30 +20,53 @@ jobs:
   ubuntu:
     runs-on: ubuntu-latest
     timeout-minutes: 30
-    env:
-      COREPACK_DEFAULT_TO_LATEST: 0
     steps:
       - uses: actions/checkout@v4
+
+      # Before setup-node: its pnpm cache resolves the store by running pnpm.
+      # No version input — the root package.json `packageManager` is the pin.
+      - uses: pnpm/action-setup@v4
 
       - uses: actions/setup-node@v4
         with:
           # .nvmrc is the version of record. oxlint needs at least 22.18 to
           # read a TypeScript config, which every value there clears.
           node-version-file: .nvmrc
-      # Node's bundled corepack predates the pnpm version pinned in
-      # packageManager. Pinned so a corepack release cannot break every
-      # build at once.
-      - run: npm i -g --force corepack@0.34.0 && corepack enable
-      - run: pnpm install --frozen-lockfile && pnpm --dir frontend-vue install --frozen-lockfile
-      - run: pnpm lint
+          cache: pnpm
+          # The frontend module is a project of its own, with its own lockfile;
+          # without it the cache key ignores half of what the job installs.
+          cache-dependency-path: |
+            pnpm-lock.yaml
+            packages/dms-media/frontend-vue/pnpm-lock.yaml
+
+      # The whole workspace, root included: the shared oxlint, oxfmt and
+      # TypeScript configs live there and both packages extend them. The module
+      # resolves the interface to the workspace sibling through
+      # `link-workspace-packages`.
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm --dir packages/dms-media/frontend-vue install --frozen-lockfile
+
+      # Interface first: it is the contract, and the module builds against it.
+      - run: pnpm --dir packages/interface-dms-media lint
+      - run: pnpm --dir packages/interface-dms-media typecheck
+      - run: pnpm --dir packages/interface-dms-media knip
+      - run: pnpm --dir packages/interface-dms-media build
+      # Asserts the exports map still describes the built output.
+      - run: pnpm --dir packages/interface-dms-media check:exports
+
+      - run: pnpm --dir packages/dms-media lint
       # oxlint's type-aware pass degrades to `any` on a broken tsconfig
       # without failing, so the typecheck is what catches it.
-      - run: pnpm typecheck
+      - run: pnpm --dir packages/dms-media typecheck
       # Unused dependencies only. `pnpm knip:all` also reports dead files and
       # exports, which need a human to confirm, so they stay out of the gate.
-      - run: pnpm knip
-      - run: pnpm build
-      - run: pnpm test:unit
+      - run: pnpm --dir packages/dms-media knip
+      - run: pnpm --dir packages/dms-media build
+      - run: pnpm --dir packages/dms-media test:unit
+      # Boots a real project in watch mode and reloads a consumer and the
+      # module itself: dms-media's routes, permissions and pages must stay
+      # registered and be evaluated again from the edited files (#26).
+      - run: pnpm --dir packages/dms-media test:reload
       # The frontend typecheck is left out: it needs a running DMS backend for
       # `ajs dms prepare` to fetch the layers, so the DMS auto-imports are
       # missing without one and the check cannot pass here.

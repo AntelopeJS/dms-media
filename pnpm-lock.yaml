@@ -7,6 +7,21 @@ settings:
 importers:
 
   .:
+    devDependencies:
+      '@antelopejs/tooling-configs':
+        specifier: '>=0.0.7 <1.0.0'
+        version: 0.0.7(knip@6.34.0)(oxfmt@0.66.0)(oxlint@1.81.0(oxlint-tsgolint@7.0.2001))
+      oxfmt:
+        specifier: ^0.66.0
+        version: 0.66.0
+      oxlint:
+        specifier: 1.81.0
+        version: 1.81.0(oxlint-tsgolint@7.0.2001)
+      oxlint-tsgolint:
+        specifier: ^7.0.2001
+        version: 7.0.2001
+
+  packages/dms-media:
     dependencies:
       '@antelopejs/interface-api':
         specifier: '>=0.0.13 <1.0.0'
@@ -26,6 +41,9 @@ importers:
       '@antelopejs/interface-dms':
         specifier: '>=0.2.8 <1.0.0'
         version: 0.3.1(82f585b8262594fc49808f69de7c08f3)
+      '@antelopejs/interface-dms-media':
+        specifier: '>=0.1.0 <0.2.0'
+        version: link:../interface-dms-media
       '@antelopejs/interface-file-storage':
         specifier: '>=0.1.3 <1.0.0'
         version: 0.1.3(@antelopejs/interface-core@0.1.1)
@@ -69,6 +87,52 @@ importers:
       mongodb-memory-server-core:
         specifier: ^11.0.1
         version: 11.2.0(socks@2.8.9)
+      oxfmt:
+        specifier: ^0.66.0
+        version: 0.66.0
+      oxlint:
+        specifier: 1.81.0
+        version: 1.81.0(oxlint-tsgolint@7.0.2001)
+      oxlint-tsgolint:
+        specifier: ^7.0.2001
+        version: 7.0.2001
+      release-it:
+        specifier: ^19.2.4
+        version: 19.2.4(@types/node@24.13.3)
+      release-it-changelogen:
+        specifier: ^0.1.0
+        version: 0.1.0(changelogen@0.5.7)(release-it@19.2.4(@types/node@24.13.3))(semver@7.8.5)
+      rimraf:
+        specifier: ^6.1.3
+        version: 6.1.3
+      typescript:
+        specifier: ^6.0.3
+        version: 6.0.3
+
+  packages/interface-dms-media:
+    dependencies:
+      zod:
+        specifier: ~3.24.2
+        version: 3.24.4
+    devDependencies:
+      '@antelopejs/interface-api':
+        specifier: '>=0.0.13 <1.0.0'
+        version: 0.0.13(@antelopejs/interface-core@0.1.1)
+      '@antelopejs/interface-core':
+        specifier: '>=0.1.1 <1.0.0'
+        version: 0.1.1
+      '@antelopejs/interface-dms':
+        specifier: '>=0.2.8 <1.0.0'
+        version: 0.3.1(82f585b8262594fc49808f69de7c08f3)
+      '@antelopejs/tooling-configs':
+        specifier: '>=0.0.7 <1.0.0'
+        version: 0.0.7(knip@6.34.0)(oxfmt@0.66.0)(oxlint@1.81.0(oxlint-tsgolint@7.0.2001))
+      '@types/node':
+        specifier: ^24.0.0
+        version: 24.13.3
+      knip:
+        specifier: ^6.34.0
+        version: 6.34.0
       oxfmt:
         specifier: ^0.66.0
         version: 0.66.0
@@ -1025,6 +1089,7 @@ packages:
 
   '@types/parse-path@7.1.0':
     resolution: {integrity: sha512-EULJ8LApcVEPbrfND0cRQqutIOdiIgJ1Mgrhpy755r14xMohPTEpkV/k28SJvuOs9bHRFW8x+KeDAEPiGQPB9Q==}
+    deprecated: This is a stub types definition. parse-path provides its own type definitions, so you do not need this installed.
 
   '@types/proper-lockfile@4.1.4':
     resolution: {integrity: sha512-uo2ABllncSqg9F1D4nugVl9v93RmjxF6LJzQLMLDdPaXCUIDPeOJ21Gbqi43xNKzBi/WQ0Q0dICqufzQbMjipQ==}
@@ -2271,10 +2336,6 @@ packages:
     resolution: {integrity: sha512-V7+vQEJ06Z+c5tSye8S+nHUfI51xoXIXjHQ99cQtKUkQqqO1kO/KCJUfZXuB47h/YBlDhah2H3hdUGXn8ie0oA==}
     engines: {node: '>=8.6'}
 
-  picomatch@4.0.5:
-    resolution: {integrity: sha512-RvwwcruNjI1ncT5xRakeyS9Lf8lcItv34KD+aif+VH9kduAyfYBipGh12274xtenIPZ119/R9BdTBa8gAwSh0A==}
-    engines: {node: '>=12'}
-
   picomatch@4.0.7:
     resolution: {integrity: sha512-qcJu88Q2IWqJsDD529JKMdwGm/dvInW4HvQnRwiH9JtihJvzGOscDtHE3x1pBKeUOTysQ8kVmLnJ2kJu7yhcGA==}
     engines: {node: '>=12'}
@@ -2717,11 +2778,6 @@ packages:
 
   yallist@4.0.0:
     resolution: {integrity: sha512-3wdGidZyq5PB084XLES5TpOSRA3wjXAlIWMhum2kRcv/41Sn2emQ0dycQW4uZXLejwKvg6EsvbdlVL+FYEct7A==}
-
-  yaml@2.9.0:
-    resolution: {integrity: sha512-2AvhNX3mb8zd6Zy7INTtSpl1F15HW6Wnqj0srWlkKLcpYl/gMIMJiyuGq2KeI2YFxUPjdlB+3Lc10seMLtL4cA==}
-    engines: {node: '>= 14.6'}
-    hasBin: true
 
   yaml@2.9.1:
     resolution: {integrity: sha512-3NxN8+78OdzbT7C/WjGsyfPAtJaN3FNDsWxv7Y7mcDsT/oOmgW8BpyQQFFBnvZE3j9Y2Sdz1ULFLezL7Eb2yFw==}
@@ -3949,10 +4005,6 @@ snapshots:
     dependencies:
       walk-up-path: 4.0.0
 
-  fdir@6.5.0(picomatch@4.0.5):
-    optionalDependencies:
-      picomatch: 4.0.5
-
   fdir@6.5.0(picomatch@4.0.7):
     optionalDependencies:
       picomatch: 4.0.7
@@ -4325,7 +4377,7 @@ snapshots:
       strip-json-comments: 5.0.3
       tinyglobby: 0.2.17
       unbash: 4.0.11
-      yaml: 2.9.0
+      yaml: 2.9.1
       zod: 4.5.4
 
   locate-path@5.0.0:
@@ -4803,8 +4855,6 @@ snapshots:
 
   picomatch@2.3.2: {}
 
-  picomatch@4.0.5: {}
-
   picomatch@4.0.7: {}
 
   pipe-io@4.0.1: {}
@@ -5193,8 +5243,8 @@ snapshots:
 
   tinyglobby@0.2.15:
     dependencies:
-      fdir: 6.5.0(picomatch@4.0.5)
-      picomatch: 4.0.5
+      fdir: 6.5.0(picomatch@4.0.7)
+      picomatch: 4.0.7
 
   tinyglobby@0.2.17:
     dependencies:
@@ -5304,8 +5354,6 @@ snapshots:
   y18n@5.0.8: {}
 
   yallist@4.0.0: {}
-
-  yaml@2.9.0: {}
 
   yaml@2.9.1: {}
 

@@ -4,7 +4,11 @@ import {
   antelopePreset,
 } from "@antelopejs/tooling-configs/oxc/lint";
 
-export default defineConfig({
+/**
+ * The repository-wide rule set. Package configs spread it and add only what is
+ * specific to them, so the rules themselves are declared once.
+ */
+export const sharedLintConfig = {
   extends: [
     antelopePreset({
       // Turned on repository-wide with the import-sorting pass, so the
@@ -12,30 +16,13 @@ export default defineConfig({
       importSorting: false,
     }),
   ],
-  // Front-end sources, which oxlint cannot lint yet: they move with the
-  // front-end migration.
-  ignorePatterns: [...ANTELOPE_IGNORE_PATTERNS, "frontend-vue/**"],
+  ignorePatterns: ANTELOPE_IGNORE_PATTERNS,
   options: {
     typeAware: true,
-    // Ceiling on the warning debt, so CI catches the new ones.
-    //
-    // The drop from 73 is mostly the preset and the test override, not debt
-    // paid: 0.0.4 leaves eight anti-slop rules off and the suites stop being
-    // measured as functions. Twelve were actual fixes. Zero means "nothing
-    // the current rule set reports", not "nothing left".
+    // Ceiling on the warning debt, so CI catches the new ones. Zero means
+    // "nothing the current rule set reports", not "nothing left".
     maxWarnings: 0,
   },
-  overrides: [
-    {
-      files: ["src/test/**/*.test.ts"],
-      rules: {
-        // A `describe` block is not a function anyone splits, and an integration
-        // suite's length is its coverage. These ceilings are about code someone has
-        // to hold in their head at once, which is not what a test file asks of a
-        // reader.
-        "eslint/max-lines": "off",
-        "eslint/max-lines-per-function": "off",
-      },
-    },
-  ],
-});
+};
+
+export default defineConfig(sharedLintConfig);

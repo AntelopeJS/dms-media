@@ -1,0 +1,12 @@
+{
+  "extends": "../../tsconfig.json",
+  "compilerOptions": {
+    // tsgolint resolves node: builtins to an error type acting as `any`
+    // without this, which makes every type-aware rule blind to them.
+    "types": ["node"],
+    "rootDir": "src",
+    "outDir": "dist",
+    "tsBuildInfoFile": "dist/.tsbuildinfo"
+  },
+  "include": ["src/**/*.ts"]
+}

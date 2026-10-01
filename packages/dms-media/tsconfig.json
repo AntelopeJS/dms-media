@@ -1,0 +1,12 @@
+{
+  "extends": "../../tsconfig.json",
+  "compilerOptions": {
+    "lib": ["esnext", "dom"],
+    "allowJs": true,
+    "outDir": "dist",
+    "rootDir": "src",
+    "types": ["node", "mocha"],
+    "tsBuildInfoFile": "dist/.tsbuildinfo"
+  },
+  "include": ["./src/**/*.ts"]
+}

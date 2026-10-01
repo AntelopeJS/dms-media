@@ -1,0 +1,34 @@
+{
+  "name": "playground",
+  "version": "0.0.1",
+  "license": "Apache-2.0",
+  "main": "dist/index.js",
+  "scripts": {
+    "dev": "ajs project run -w",
+    "build": "rimraf dist && tsc",
+    "frontend:dev": "ajs dms dev"
+  },
+  "dependencies": {
+    "@antelopejs/dms": ">=0.5.0 <1.0.0",
+    "@antelopejs/interface-api": ">=0.0.13 <1.0.0",
+    "@antelopejs/interface-core": ">=0.1.1 <1.0.0",
+    "@antelopejs/interface-dms": ">=0.2.8 <1.0.0",
+    "@antelopejs/interface-dms-media": "file:../../interface-dms-media"
+  },
+  "devDependencies": {
+    "@antelopejs/core": "1.10.1",
+    "@antelopejs/dms-frontend": "0.3.2",
+    "@types/node": "^22.14.1",
+    "rimraf": "^6.0.1",
+    "typescript": "^6.0.3"
+  },
+  "packageManager": "pnpm@10.2.0",
+  "antelopeJs": {
+    "baseUrl": "dist",
+    "paths": {
+      "@/*": [
+        "*"
+      ]
+    }
+  }
+}

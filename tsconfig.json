@@ -1,11 +1,13 @@
 {
+  // Shared compiler options for both packages. Nothing here may carry a path:
+  // `extends` resolves relative paths against the file that declares them, so
+  // `rootDir`, `outDir` and `tsBuildInfoFile` stay in the package configs.
+  "files": [],
   "compilerOptions": {
-    "moduleResolution": "bundler",
     "target": "esnext",
     "module": "commonjs",
-    "lib": ["esnext", "dom"],
-    "allowJs": true,
-    "outDir": "dist",
+    "moduleResolution": "bundler",
+    "lib": ["esnext"],
     "strict": true,
     "noImplicitAny": true,
     "esModuleInterop": true,
@@ -14,18 +16,11 @@
     "preserveConstEnums": true,
     "experimentalDecorators": true,
     "emitDecoratorMetadata": true,
+    "useDefineForClassFields": true,
     "declaration": true,
     "sourceMap": true,
-    "useDefineForClassFields": true,
-    "noUnusedLocals": true,
-    "noUnusedParameters": true,
-    "paths": {
-      "@antelopejs/dms-media/*": ["./src/*"]
-    },
-    "rootDir": "src",
-    "types": ["node", "mocha"],
     "incremental": true,
-    "tsBuildInfoFile": "dist/.tsbuildinfo"
-  },
-  "include": ["./src/**/*.ts"]
+    "noUnusedLocals": true,
+    "noUnusedParameters": true
+  }
 }
