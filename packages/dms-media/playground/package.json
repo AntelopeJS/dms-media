@@ -16,7 +16,7 @@
     "@antelopejs/interface-dms-media": "link:../../interface-dms-media"
   },
   "devDependencies": {
-    "@antelopejs/core": "1.10.1",
+    "@antelopejs/core": "1.13.4",
     "@antelopejs/dms-frontend": "0.3.2",
     "@types/node": "^22.14.1",
     "rimraf": "^6.0.1",
