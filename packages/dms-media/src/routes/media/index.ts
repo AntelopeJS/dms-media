@@ -1,4 +1,7 @@
+export * from "./access";
+export * from "./asset-actions";
 export * from "./assets";
+export * from "./bulk";
 export * from "./constants";
 export * from "./context";
 export * from "./controller";
@@ -6,6 +9,7 @@ export * from "./delivery";
 export * from "./dto";
 export * from "./folders";
 export * from "./library";
+export * from "./manage";
 export * from "./overview";
 export * from "./storage-keys";
 export * from "./transform";

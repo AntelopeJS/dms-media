@@ -1,6 +1,9 @@
 import { Get, JSONBody, Parameter, Post } from "@antelopejs/interface-api";
 import { assert, assertValidation } from "@antelopejs/interface-api-util";
 import { HasPermission } from "@antelopejs/interface-dms/permissions";
+import { GetModel } from "@antelopejs/interface-database-decorators";
+import { UserModel } from "@antelopejs/interface-dms/auth/db";
+import { getMediaConfig } from "../../config";
 import { MEDIA_PERMISSIONS_MANAGE_PERMISSION } from "../../constants";
 import type { MediaAsset } from "../../db";
 import { loadStarredTargets, setStarred } from "../../library/favorites";
@@ -22,6 +25,7 @@ import {
   starterFoldersSchema,
 } from "../../validation/library.schema";
 import { MAX_UPLOAD_SIZE_BYTES } from "../../validation/media.schema";
+import { requireReadableAsset } from "./assets";
 import { MediaApiController } from "./controller";
 import {
   getDescendantFolders,
@@ -207,6 +211,37 @@ export class MediaLibraryController extends MediaApiController {
       folders: searchFolders(scopedFolders, query.q).map((folder) =>
         buildFolderDto(context, folder, { starredIds: starred.folderIds }),
       ),
+    };
+  }
+
+  @Get("/assets/:assetId/details")
+  async details(@Parameter("assetId", "param") assetId: string) {
+    const context = await this.resolveContext();
+    const asset = await requireReadableAsset(context, assetId);
+    const folder = requireVisibleFolder(context, asset.folderId);
+    const [starred, uploader] = await Promise.all([
+      loadStarredTargets(this.owner(context)),
+      GetModel(UserModel).get(asset.createdBy),
+    ]);
+    const dto = buildAssetDto(context, asset, starred.assetIds);
+    return {
+      asset: dto,
+      folder: buildFolderDto(context, folder, {
+        starredIds: starred.folderIds,
+      }),
+      path: [...folder.path, folder._id]
+        .map((id) => context.foldersById.get(id))
+        .filter((entry) => entry !== undefined)
+        .map((entry) => ({ id: entry._id, name: entry.name })),
+      uploadedBy: uploader ? uploader.name || uploader.email : null,
+      presets: isDescribableImage(asset.mimetype)
+        ? [...getMediaConfig().presets.values()].map((preset) => ({
+            id: preset.id,
+            width: preset.width ?? null,
+            height: preset.height ?? null,
+            url: `/media/${asset._id}/${preset.id}/${encodeURIComponent(asset.name)}`,
+          }))
+        : [],
     };
   }
 

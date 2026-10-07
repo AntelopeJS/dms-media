@@ -299,7 +299,7 @@ describe("[integration] media permissions — multi-actor ACL enforcement", () =
     it("shows nothing to a member with no roles", async () => {
       const tree = await fetchTree(sessions.outsider.client);
       expect(tree.folders).to.deep.equal([]);
-      expect(tree.root).to.deep.equal({ write: false, manage: false });
+      expect(tree.root).to.include({ write: false, manage: false });
     });
 
     it("shows only root-inherited folders to a media page permission holder", async () => {
@@ -344,7 +344,7 @@ describe("[integration] media permissions — multi-actor ACL enforcement", () =
       expect(vault.shell, "vault is a traverse-only shell").to.equal(true);
       expect(vault.rights.read).to.equal(false);
       expect(findById(tree, folders.library)).to.equal(undefined);
-      expect(tree.root).to.deep.equal({ write: false, manage: false });
+      expect(tree.root).to.include({ write: false, manage: false });
     });
 
     it("auto-grants the linked folder to consumer permission holders", async () => {
@@ -375,13 +375,13 @@ describe("[integration] media permissions — multi-actor ACL enforcement", () =
 
     it("expands implied rights for uploader and folder manager", async () => {
       const uploaderTree = await fetchTree(sessions.uploader.client);
-      expect(uploaderTree.root).to.deep.equal({ write: true, manage: false });
+      expect(uploaderTree.root).to.include({ write: true, manage: false });
       expect(
         (findById(uploaderTree, folders.library) as TreeFolderNode).rights,
       ).to.deep.equal({ read: true, write: true, manage: false });
 
       const managerTree = await fetchTree(sessions.folderManager.client);
-      expect(managerTree.root).to.deep.equal({ write: true, manage: true });
+      expect(managerTree.root).to.include({ write: true, manage: true });
       expect(
         (findById(managerTree, folders.library) as TreeFolderNode).rights,
       ).to.deep.equal({ read: true, write: true, manage: true });

@@ -33,6 +33,7 @@ export async function uploadAsset(
   filename: string,
   mimetype: string,
   body: Buffer,
+  batchId?: string,
 ): Promise<UploadedAsset> {
   const presign = await client.post("/api/media/upload/presign", {
     folderId,
@@ -51,6 +52,7 @@ export async function uploadAsset(
     folderId,
     resourceKey: presign.data.resourceKey,
     filename,
+    batchId,
   });
   expect(confirm.status, "confirm").to.equal(HTTP_OK);
   return confirm.data.asset;
