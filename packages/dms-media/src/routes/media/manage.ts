@@ -168,8 +168,8 @@ export class MediaManageController extends MediaApiController {
 
   @Get("/presets/cache")
   async presetCache() {
-    const context = await this.resolveContext();
-    const translator = createMediaTranslator(context.user.language);
+    await this.resolveContext();
+    const translator = createMediaTranslator(this.requestLanguage());
     const sweep = getLastSweep();
     const minutes = (seconds: number) =>
       Math.round(seconds / SECONDS_PER_MINUTE);

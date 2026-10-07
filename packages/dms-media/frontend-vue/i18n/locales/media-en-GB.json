@@ -1,116 +1,46 @@
 {
-	"common": {
-		"time": {
-			"relative_days_ago": "A day ago | {count} days ago",
-			"relative_future": "In the future",
-			"relative_hours_ago": "An hour ago | {count} hours ago",
-			"relative_minutes_ago": "A minute ago | {count} minutes ago",
-			"relative_months_ago": "A month ago | {count} months ago",
-			"relative_weeks_ago": "A week ago | {count} weeks ago",
-			"relative_years_ago": "A year ago | {count} years ago"
-		}
-	},
-	"dms": {
-		"finder": {
-			"actions": {
-				"add_to_favorites": "Add to favorites",
-				"delete": "Delete",
-				"details": "Details",
-				"download": "Download",
-				"edit_image": "Edit image",
-				"favorite": "Favorite",
-				"new_folder": "New Folder",
-				"open": "Open",
-				"refresh": "Refresh",
-				"remove_from_favorites": "Remove from favorites",
-				"rename": "Rename",
-				"share": "Share",
-				"sort": "Sort",
-				"sync": "Sync",
-				"upload": "Upload"
-			},
-			"column": {
-				"elements_count": "{count} element | {count} elements",
-				"folders": "Folders"
-			},
-			"delete": {
-				"cancel": "Cancel",
-				"confirm_description": "This folder contains {count} item(s). This action cannot be undone.",
-				"confirm_title": "Delete folder?",
-				"delete": "Delete",
-				"file_confirm_description": "Are you sure you want to delete {name}? This action cannot be undone.",
-				"file_confirm_title": "Delete file?"
-			},
-			"details": {
-				"elements": "Elements",
-				"folder_type": "Folder",
-				"modified": "Modified",
-				"size": "Size",
-				"type": "Type"
-			},
-			"drop_zone": "Drop files here",
-			"elements_count": "Empty folder | {size} - {count} item | {size} - {count} items",
-			"empty": {
-				"description": "Create a new file or folder to get started",
-				"title": "No files or folders found"
-			},
-			"file_type": {
-				"default": "File"
-			},
-			"filter": {
-				"all": "All files",
-				"button": "Filter",
-				"documents": "Documents",
-				"images": "Images",
-				"other": "Other",
-				"sort_by": "Sort by",
-				"title": "File type"
-			},
-			"layout": {
-				"columns": "Columns",
-				"grid": "Grid",
-				"list": "List"
-			},
-			"navigation": {
-				"next": "Next",
-				"previous": "Previous",
-				"root": "Files"
-			},
-			"new_folder": {
-				"default_name": "New Folder"
-			},
-			"panel": {
-				"details": "Details panel",
-				"favorites": "Favorites",
-				"recents": "Recents"
-			},
-			"search_placeholder": "Search files...",
-			"share": {
-				"text": "Share file: {name}"
-			},
-			"size_units": {
-				"bytes": "B",
-				"gigabytes": "GB",
-				"kilobytes": "KB",
-				"megabytes": "MB",
-				"terabytes": "TB"
-			},
-			"sort": {
-				"date": "Date",
-				"name": "Name",
-				"size": "Size",
-				"type": "Type"
-			},
-			"table": {
-				"modified": "Modified",
-				"name": "Name",
-				"size": "Size",
-				"type": "Type"
-			},
-			"title": "File Explorer"
-		}
-	},
 	"dms_media": {
+		"access": {
+			"description": "Who can see, upload to and manage each folder, and which files are public. Folders inherit their parent until you give them their own rules.",
+			"title": "Access & visibility"
+		},
+		"actions": {
+			"access": "Access & visibility",
+			"back": "Back",
+			"cancel": "Cancel",
+			"clear_selection": "Clear selection",
+			"close": "Close",
+			"collapse": "Collapse",
+			"copy_link": "Copy link",
+			"delete": "Delete",
+			"delete_folder": "Delete folder…",
+			"download": "Download",
+			"edit_image": "Edit image",
+			"expand": "Expand",
+			"forward": "Forward",
+			"got_it": "Got it",
+			"more": "More actions",
+			"move": "Move to…",
+			"move_here": "Move here",
+			"new_folder": "New folder",
+			"new_folder_root": "New folder at the root",
+			"new_subfolder": "New subfolder",
+			"open": "Open",
+			"open_details": "Open details",
+			"preview": "Preview",
+			"rename": "Rename",
+			"retry": "Try again",
+			"select_all": "Select all",
+			"select_file": "Select {name}",
+			"star": "Star",
+			"undo": "Undo",
+			"unstar": "Remove star",
+			"upload": "Upload",
+			"upload_files": "Upload files",
+			"upload_here": "Upload here",
+			"visibility": "Visibility",
+			"why_locked": "Why is this locked?"
+		},
 		"activity": {
 			"asset_alt": "{actor} described {name}",
 			"asset_delete": "{actor} deleted {name}",
@@ -130,34 +60,354 @@
 			"upload_batch": "{actor} finished an upload to {name}",
 			"upload_batch_many": "{actor} finished an upload to {name}"
 		},
-		"edit": {
-			"apply_crop": "Apply crop",
-			"done": "Done",
-			"load_error": "The image could not be loaded.",
-			"revert": "Revert to original",
-			"rotate_left": "Rotate left",
-			"rotate_right": "Rotate right",
-			"title": "Edit {name}"
+		"alt": {
+			"failed": "Not saved, try again",
+			"hint": "Used wherever this image is shown",
+			"label": "Alt text",
+			"missing": "Missing",
+			"missing_long": "No alt text yet",
+			"placeholder": "Describe the image for screen readers and search engines",
+			"read_only": "You can't edit this folder",
+			"saved": "Saved",
+			"saving": "Saving…",
+			"set": "Set"
 		},
-		"errors": {
-			"action_failed": "Action failed. Please try again.",
-			"listing_truncated": "Showing the first {count} items; refine folders or search to see the rest.",
-			"upload_needs_folder": "Open a folder before uploading."
+		"blocks": {
+			"access_editor": {
+				"description": "Folder rules and visibility",
+				"name": "Access editor"
+			},
+			"activity": {
+				"description": "Who uploaded, edited or deleted what",
+				"name": "Activity"
+			},
+			"attention": {
+				"description": "Missing alt text, failed uploads, large files",
+				"name": "Needs attention"
+			},
+			"browse": {
+				"description": "Layout row of folders and activity",
+				"name": "Folders and activity"
+			},
+			"content": {
+				"description": "Layout of the overview",
+				"name": "Overview content"
+			},
+			"explorer": {
+				"description": "Browse, upload, move, rename and delete files and folders",
+				"name": "File explorer"
+			},
+			"field_code": {
+				"description": "How to declare an asset field",
+				"name": "Field declaration"
+			},
+			"field_demo": {
+				"description": "A live form with asset fields",
+				"name": "Field demo"
+			},
+			"field_snippet": {
+				"description": "Code to copy",
+				"name": "Field snippet"
+			},
+			"file_details": {
+				"description": "Viewer, alt text, visibility, delivery links and history",
+				"name": "File details"
+			},
+			"first_run": {
+				"description": "Starter folders for an empty library",
+				"name": "First run"
+			},
+			"folders": {
+				"description": "Top-level folders with their size",
+				"name": "Folders"
+			},
+			"health": {
+				"description": "Storage and what needs attention",
+				"name": "Library health"
+			},
+			"image_editor": {
+				"description": "Crop and rotate images, then save or revert",
+				"name": "Image editor"
+			},
+			"kpis": {
+				"description": "Files, storage, public files and missing alt text",
+				"name": "Library figures"
+			},
+			"largest_folders": {
+				"description": "The folders using the most space",
+				"name": "Largest folders"
+			},
+			"linked_detail": {
+				"description": "The field and rights behind a linked folder",
+				"name": "Linked folder details"
+			},
+			"linked_explainer": {
+				"description": "Why linked folders are locked",
+				"name": "Linked folders explainer"
+			},
+			"linked_folders": {
+				"description": "Folders created by asset fields",
+				"name": "Linked folders"
+			},
+			"preset_cache": {
+				"description": "Clean-up schedule and link lifetimes",
+				"name": "Cache"
+			},
+			"preset_cards": {
+				"description": "Every delivery size with its URL and cache key",
+				"name": "Preset sizes"
+			},
+			"preset_config": {
+				"description": "The presets as project configuration",
+				"name": "Configuration"
+			},
+			"preset_details": {
+				"description": "Layout of the cache and configuration",
+				"name": "Preset cache and configuration"
+			},
+			"recent": {
+				"description": "The newest files of the library",
+				"name": "Recently added"
+			},
+			"recent_row": {
+				"description": "Layout row of the recent files",
+				"name": "Recent files row"
+			},
+			"storage": {
+				"description": "Storage by type and largest folders",
+				"name": "Storage"
+			},
+			"storage_types": {
+				"description": "Bytes used by each kind of file",
+				"name": "Storage by type"
+			},
+			"upload_history": {
+				"description": "Recent upload batches",
+				"name": "Upload history"
+			},
+			"upload_queue": {
+				"description": "Files uploading now, with their progress and failures",
+				"name": "Upload queue"
+			},
+			"upload_strip": {
+				"description": "Drop files to upload them to the last folder used",
+				"name": "Upload strip"
+			}
 		},
-		"groups": {
-			"document": "Documents",
-			"image": "Images",
-			"pdf": "PDF",
-			"sheet": "Spreadsheets",
-			"vector": "Vectors",
-			"video": "Videos"
+		"bulk": {
+			"label": "Selection actions",
+			"move": "Move to…",
+			"select_all": "Select all {count}",
+			"selected": "{count} file selected | {count} files selected",
+			"zip": "Download .zip",
+			"zip_limit": "A zip holds at most {count} files"
+		},
+		"columns": {
+			"alt": "Alt text",
+			"dimensions": "Dimensions",
+			"modified": "Modified",
+			"name": "Name",
+			"original": "Original",
+			"size": "Size",
+			"type": "Type",
+			"visibility": "Visibility"
+		},
+		"description": "Images, videos and documents of the workspace, with who can see them and how they are delivered.",
+		"dialogs": {
+			"already_here": "Already in this folder",
+			"delete_files": {
+				"confirm": "Delete file | Delete {count} files",
+				"description": "{size} will be freed. Deleted files can't be recovered.",
+				"make_private": "Make private instead",
+				"more": "and {count} more",
+				"public_description": "Pages or emails that embed it will show a broken image.",
+				"public_title": "{count} file is public | {count} files are public",
+				"title": "Delete {count} file? | Delete {count} files?",
+				"usage_note": "Where a file is used isn't tracked yet: check the pages that may embed it."
+			},
+			"delete_folder": {
+				"confirm": "Delete folder",
+				"description": "Subfolders and their files are deleted too. This can't be undone.",
+				"files": "Files",
+				"freed": "Space freed",
+				"public_files": "Public files that will stop working",
+				"subfolders": "Subfolders",
+				"title": "Delete {name} and everything in it?"
+			},
+			"destination": {
+				"confirm": "Choose files",
+				"confirm_count": "Upload {count} file | Upload {count} files",
+				"description": "Files live in folders: pick the one they go to. Your choice is remembered next time.",
+				"title": "Where should the files go?"
+			},
+			"find_folder": "Find a folder",
+			"locked": {
+				"allowed": "You can upload, rename and edit the files inside. To rename the folder, move it or change who can upload, edit the field definition in code.",
+				"description": "An asset field created this folder and decides who can use it.",
+				"managed_by": "Managed by",
+				"see_linked": "Linked folders",
+				"title": "{name} is linked to a field"
+			},
+			"move": {
+				"files_title": "Move {count} file to… | Move {count} files to…",
+				"folder_title": "Move {name} to…"
+			},
+			"move_inside_itself": "A folder can't go inside itself",
+			"name_forbidden": "A name can't contain / or \\",
+			"name_required": "Enter a name",
+			"name_too_long": "That name is too long",
+			"new_folder": {
+				"at_root": "At the root of the library",
+				"confirm": "Create folder",
+				"inside": "Inside {name}",
+				"label": "Name",
+				"title": "New folder"
+			},
+			"no_folder_match": "No folder matches",
+			"no_right_here": "You can't add files here",
+			"no_upload_here": "You can't upload here",
+			"rename": {
+				"confirm": "Rename",
+				"file_description": "Renaming keeps every link working.",
+				"folder_title": "Rename folder",
+				"label": "Name",
+				"title": "Rename file"
+			},
+			"visibility": {
+				"confirm": "Apply to {count} file | Apply to {count} files",
+				"description": "Public files are served from the CDN to anyone with the link. Private ones need a signed-in teammate with folder access.",
+				"title": "Visibility of {count} file | Visibility of {count} files"
+			}
+		},
+		"drop": {
+			"limit": "Up to {size} per file",
+			"pick_folder": "Open a folder you can upload to, or drop onto one in the tree",
+			"title": "Drop {count} file to upload to {name} | Drop {count} files to upload to {name}"
+		},
+		"editor": {
+			"description": "Nothing is written until you save. The original upload stays available to revert to.",
+			"title": "Edit image"
+		},
+		"empty": {
+			"error_description": "Check your connection and try again.",
+			"error_title": "The library didn't load",
+			"folder_description": "Drop files here, or upload from your computer. Files inherit this folder's visibility.",
+			"folder_read_only": "Nothing has been added here yet.",
+			"folder_title": "{name} is empty",
+			"limits": "Images, videos and documents · up to {size} per file",
+			"root_description": "Files live in folders, and folders decide who can see them. Create a folder to start.",
+			"root_title": "Start your media library",
+			"search_description": "Search looks at file names, alt text and folder names in every folder you can open. Try fewer words or clear the filters.",
+			"search_title": "Nothing matches “{query}”",
+			"see_access": "See who has access",
+			"shell_description": "Its access is limited to some roles. Ask an owner if you need a file from here.",
+			"shell_title": "You can see {name}, not its files",
+			"view_missing_alt_description": "Images without alt text show here until someone describes them.",
+			"view_missing_alt_title": "Every image is described",
+			"view_recent_description": "Files you and your team upload show here first.",
+			"view_recent_title": "No recent files",
+			"view_starred_description": "Star a file or folder from its menu to find it here.",
+			"view_starred_title": "Nothing starred yet"
+		},
+		"explorer": {
+			"details": "Details",
+			"file_count": "no files | {count} file | {count} files",
+			"files": "Files",
+			"folder_count": "no folders | {count} folder | {count} folders",
+			"folders": "Folders",
+			"load_more": "Load {count} more",
+			"location": "Location",
+			"locations": "Locations",
+			"no_files_here": "No files here",
+			"no_folders": "No folders yet",
+			"sidebar": "Library navigation",
+			"storage": "Storage",
+			"storage_files": "{count} files",
+			"storage_quota": "of the {quota} plan",
+			"toggle_details": "Details panel"
+		},
+		"field": {
+			"code": {
+				"description": "The field and the linked folder it provisions, in your module.",
+				"title": "Declare the field"
+			},
+			"demo": {
+				"cover": "Cover image",
+				"cover_description": "One image.",
+				"description": "A live form with the three shapes of the field. Nothing is saved.",
+				"gallery": "Gallery",
+				"gallery_description": "Up to 8 images, in order. The first one is the cover.",
+				"spec_sheet": "Spec sheet",
+				"spec_sheet_description": "One PDF.",
+				"title": "Try the field"
+			},
+			"description": "How other pages attach library files. The asset field shows what is attached and opens the library as a picker.",
+			"title": "Asset field & picker"
+		},
+		"file": {
+			"description": "A file of the library, its alt text, visibility and delivery links.",
+			"preserved": "Preserved",
+			"title": "File"
+		},
+		"files": {
+			"description": "Browse, upload and organise every image, video and document. Click to select, double-click to open, drag onto a folder to move.",
+			"title": "All files"
+		},
+		"inspector": {
+			"hint": "Select a file to see its details, alt text and visibility.",
+			"your_rights": "Your rights"
 		},
 		"library": {
-			"files_title": "Your files",
 			"root": "Library"
 		},
+		"lightbox": {
+			"next": "Next file",
+			"position": "{index} of {total}",
+			"previous": "Previous file"
+		},
+		"linked": {
+			"banner": {
+				"description": "Upload, rename and edit files in these folders as usual. To rename a folder or change who can upload, edit the field definition.",
+				"title": "Managed by code"
+			},
+			"columns": {
+				"accepts": "Accepts",
+				"field": "Field",
+				"files": "Files",
+				"folder": "Folder",
+				"path": "Location",
+				"uploaders": "Who can upload",
+				"visibility": "Visibility"
+			},
+			"description": "Folders created automatically by asset fields on other pages. Their access follows the page that owns the field, so they can't be renamed, moved or deleted here.",
+			"empty": "No linked folders yet",
+			"empty_description": "A folder appears here when a module declares an asset field with a binding.",
+			"table": "Linked folders",
+			"title": "Linked folders"
+		},
+		"markers": {
+			"linked": "Linked to a field",
+			"linked_to": "Linked to {binding}",
+			"locked": "Locked",
+			"no_alt": "No alt",
+			"own_rules": "Own rules",
+			"public": "Public",
+			"read_only": "Read only",
+			"traverse_only": "You can see this folder, not its files"
+		},
+		"nav": {
+			"developers": "Developers",
+			"library": "Library",
+			"manage": "Manage"
+		},
 		"overview": {
+			"activity": {
+				"empty": "Nothing happened yet",
+				"title": "Activity"
+			},
 			"attention": {
+				"empty": "Nothing needs attention",
+				"empty_description": "Every image is described and every upload went through.",
 				"failed_uploads": "Uploads that failed today",
 				"failed_uploads_detail": "Retry them from the Uploads page",
 				"large_files": "Files over 20 MB",
@@ -166,14 +416,19 @@
 				"missing_alt_detail": "None is public yet | 1 is public on the storefront | {files} are public on the storefront",
 				"own_rules": "{name} has its own access rules",
 				"own_rules_detail": "Only the roles it names can open it",
-				"own_rules_value": "Check"
+				"own_rules_value": "Check",
+				"title": "Needs attention"
 			},
+			"description": "What's new, what needs attention and how much space the library uses.",
 			"folders": {
-				"detail": "No files | 1 file · {size} | {files} files · {size}"
+				"detail": "No files | 1 file · {size} | {files} files · {size}",
+				"empty": "No folder yet",
+				"title": "Folders"
 			},
 			"kpis": {
 				"files": "Files",
 				"files_detail": "+{files} uploaded in the last 30 days",
+				"label": "Library at a glance",
 				"missing_alt": "Missing alt text",
 				"missing_alt_detail": "No public image is missing it | 1 is public on the storefront | {files} are public on the storefront",
 				"public": "Public files",
@@ -183,65 +438,149 @@
 				"storage_quota_detail": "{percent}% of the {quota} plan"
 			},
 			"largest": {
-				"detail": "1 file | {files} files"
+				"detail": "1 file | {files} files",
+				"empty": "No files yet",
+				"title": "Largest folders"
 			},
+			"open_library": "Open library",
 			"storage": {
 				"hint": "Used by {files} files, originals of edited images included",
-				"segment": "{type} · {files} · {size}"
+				"segment": "{type} · {files} · {size}",
+				"title": "Storage by type"
+			},
+			"title": "Overview",
+			"upload": "Upload files"
+		},
+		"permissions": {
+			"folders_manage": {
+				"description": "Create, rename, move and delete folders; always in control of linked folders",
+				"title": "Manage media folders"
+			},
+			"permissions_manage": {
+				"description": "Edit folder access rules and make files public or private",
+				"title": "Manage media access"
+			},
+			"upload": {
+				"description": "Upload files into the folders this permission can write to",
+				"title": "Upload media"
 			}
 		},
 		"picker": {
-			"browse": "Browse library",
-			"cancel": "Cancel",
-			"choose": "Choose",
-			"clear_search": "Clear",
-			"drop_in": "Drop to upload into “{name}”",
-			"drop_root": "Drop to upload",
-			"empty_adjust_hint": "Adjust your search or filters.",
-			"empty_filtered_title": "No files of this type here",
-			"empty_folder_hint": "Drag files here or upload them.",
-			"empty_folder_title": "Empty folder",
-			"empty_recents_title": "No recent files",
-			"empty_search_title": "No results for “{query}”",
-			"field_add": "Add from the library",
-			"field_browse": "Browse",
-			"field_empty_file": "Choose a file",
-			"field_empty_hint": "From the media library",
-			"field_empty_image": "Choose an image",
-			"field_manage": "Manage selection",
-			"field_remove": "Remove",
-			"field_replace": "Replace",
-			"filter_all": "All types",
-			"import": "Upload",
-			"items_meta": "{count} item · {size} | {count} items · {size}",
-			"locations": "Locations",
-			"max_reached": "You can select at most {count} item(s).",
-			"move": "Move to…",
-			"move_confirm": "Move",
-			"move_title": "Move “{name}”",
-			"no_preview": "No preview available for this file.",
-			"not_accepted": "File type not accepted",
-			"preview_empty": "Select a file to show the preview",
-			"preview_error": "The file for this asset could not be loaded.",
-			"preview_panel": "Preview panel",
-			"recents": "Recents",
-			"restricted": "some types are not accepted",
-			"results_count": "{count} result for “{query}” | {count} results for “{query}”",
-			"search_placeholder": "Search the library…",
-			"search_results": "Results",
-			"select": "Select",
-			"select_count": "Select ({count})",
-			"selected": "{count} selected",
-			"selection_count": "{count} selected · {size} | {count} selected · {size}",
-			"selection_empty": "No selection",
-			"zoom": "Thumbnail size"
+			"full": "The field is full: remove a file to pick another",
+			"not_accepted": "This field accepts {types}"
 		},
-		"storage": {
-			"empty": "No files yet.",
-			"used": "used · {count} file | used · {count} files"
+		"presets": {
+			"description": "Named image sizes. Each one is rendered the first time it's requested, cached in storage and served from a stable URL. Use them in templates instead of the full-size original.",
+			"title": "Delivery presets"
+		},
+		"rights": {
+			"manage": "Manage",
+			"none": "None",
+			"read": "View",
+			"write": "Upload"
+		},
+		"search": {
+			"clear": "Clear search",
+			"crumb": "Search",
+			"folders": "Folders {count}",
+			"in": "In: {scope}",
+			"matched_alt": "Alt text",
+			"modified_30d": "Last 30 days",
+			"modified_7d": "Last 7 days",
+			"modified_any": "Modified any time",
+			"modified_year": "This year",
+			"placeholder": "Search the library",
+			"results_for": "Results for “{query}”",
+			"scope_all": "whole library",
+			"visibility_any": "Any visibility",
+			"visibility_private": "Private",
+			"visibility_public": "Public",
+			"where": "Name, alt text and folder"
+		},
+		"shortcuts": {
+			"clear": "Clear selection",
+			"component": "Media library",
+			"delete": "Delete",
+			"description": "They work anywhere in the explorer, except while typing.",
+			"details": "Details panel",
+			"edit": "Edit image",
+			"groups": {
+				"files": "Files",
+				"navigate": "Navigate",
+				"view": "View"
+			},
+			"help": "Show shortcuts",
+			"move": "Move",
+			"new_folder": "New folder",
+			"next": "Next file",
+			"open": "Open details",
+			"preview": "Preview",
+			"previous": "Previous file",
+			"rename": "Rename",
+			"search": "Search the library",
+			"select_all": "Select all",
+			"title": "Shortcuts",
+			"upload": "Upload files",
+			"view_columns": "Columns",
+			"view_grid": "Grid",
+			"view_list": "List"
+		},
+		"smart_views": {
+			"missing-alt": "Missing alt text",
+			"recent": "Recents",
+			"starred": "Starred"
+		},
+		"sort": {
+			"asc": "Ascending",
+			"date": "Date added",
+			"desc": "Descending",
+			"name": "Name",
+			"size": "Size",
+			"type": "Type"
+		},
+		"status": {
+			"failed": "{count} upload failed | {count} uploads failed",
+			"items": "{count} item | {count} items",
+			"selected": "{count} selected | {count} selected",
+			"tile_size": "Tile size",
+			"uploading": "Uploading {done} of {total}"
 		},
 		"title": "Media",
+		"toasts": {
+			"alt_failed": "Alt text wasn't saved",
+			"delete_failed": "Couldn't delete",
+			"deleted": "{count} file deleted",
+			"download_failed": "Couldn't download",
+			"drop_needs_folder": "Open a folder you can upload to first",
+			"folder_create_failed": "Couldn't create the folder",
+			"folder_created": "{name} created",
+			"folder_deleted": "{name} deleted",
+			"folder_moved": "{name} moved",
+			"link_copied": "Link copied",
+			"move_failed": "Couldn't move",
+			"moved": "{count} file moved",
+			"partial": "{done} done, {refused} refused",
+			"rename_failed": "Couldn't rename",
+			"star_failed": "Couldn't update the star",
+			"undo_move": "Moved {count} file",
+			"uploading": "Uploading {count} file to {name} | Uploading {count} files to {name}",
+			"visibility_done": "Visibility updated for {count} file",
+			"visibility_failed": "Couldn't change visibility",
+			"zip_failed": "Couldn't prepare the zip"
+		},
+		"type_single": {
+			"archive": "Archive",
+			"audio": "Audio",
+			"document": "Document",
+			"image": "Image",
+			"other": "File",
+			"pdf": "PDF",
+			"spreadsheet": "Spreadsheet",
+			"vector": "Vector",
+			"video": "Video"
+		},
 		"types": {
+			"all": "All types",
 			"archive": "Archives",
 			"audio": "Audio",
 			"document": "Documents",
@@ -252,10 +591,50 @@
 			"vector": "Vectors",
 			"video": "Videos"
 		},
+		"uploads": {
+			"description": "Files go straight to storage, get checked, then appear in their folder. Keep working: uploads continue in the background and one failure never stops the rest.",
+			"history": {
+				"by": "By",
+				"complete": "All uploaded",
+				"empty": "No upload yet",
+				"empty_description": "Batches show here once files are uploaded.",
+				"failed": "Failed",
+				"files": "Files",
+				"finished": "Finished",
+				"folder": "Folder",
+				"partial": "Some failed",
+				"result": "Result",
+				"size": "Size",
+				"title": "Recent batches"
+			},
+			"title": "Uploads",
+			"upload": "Upload files"
+		},
+		"views": {
+			"columns": "Columns",
+			"grid": "Grid",
+			"label": "View",
+			"list": "List"
+		},
 		"visibility": {
+			"folder_short": "Folder",
 			"inherit": "Same as folder",
 			"private": "Private",
 			"public": "Public"
+		},
+		"visibility_choice": {
+			"inherit": {
+				"description": "Follows the folder: changes when the folder does",
+				"label": "Same as folder"
+			},
+			"private": {
+				"description": "Signed-in teammates with folder access · links expire in 5 min",
+				"label": "Private"
+			},
+			"public": {
+				"description": "Anyone with the link · cached by the CDN for up to 1 h",
+				"label": "Public"
+			}
 		}
 	}
 }

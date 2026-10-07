@@ -11,6 +11,8 @@ import { MediaAssetModel, MediaFolderModel } from "../../db";
 import { type MediaEventInput, recordMediaEvent } from "../../library/events";
 import { type MediaRequestContext, resolveMediaContext } from "./context";
 
+const CONTENT_LANGUAGE_HEADER = "x-content-language";
+
 /**
  * Base of every `/api/media` controller: the tenant-scoped models and the
  * authenticated member a request resolves its folder access from.
@@ -44,6 +46,13 @@ export class MediaApiController extends Controller("/api/media") {
     input: MediaEventInput,
   ): Promise<void> {
     return recordMediaEvent(context, input);
+  }
+
+  /** The interface language of the dashboard that sent the request. */
+  protected requestLanguage(): string | undefined {
+    const header = this.ctx.rawRequest.headers[CONTENT_LANGUAGE_HEADER];
+    const language = Array.isArray(header) ? header[0] : header;
+    return language || this.user.language;
   }
 
   /** The query string as plain values, for schema parsing. */

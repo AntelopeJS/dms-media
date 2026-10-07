@@ -82,7 +82,7 @@ export class MediaOverviewController extends MediaApiController {
       assets,
       folders,
       stats: computeFolderStats(context.folders, assets),
-      translator: createMediaTranslator(context.user.language),
+      translator: createMediaTranslator(this.requestLanguage()),
       visibilityOf: (asset: MediaAsset) =>
         resolveEffectiveVisibility(
           asset,

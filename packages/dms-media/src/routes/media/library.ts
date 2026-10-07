@@ -114,6 +114,7 @@ export class MediaLibraryController extends MediaApiController {
       },
       canManagePermissions,
       maxUploadBytes: MAX_UPLOAD_SIZE_BYTES,
+      quotaBytes: getMediaConfig().storageQuotaBytes ?? null,
     };
   }
 
