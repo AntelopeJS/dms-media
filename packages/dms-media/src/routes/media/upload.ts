@@ -1,11 +1,6 @@
+import { MediaApiController } from "./controller";
 import { randomUUID } from "node:crypto";
-import {
-  Context,
-  Controller,
-  JSONBody,
-  Post,
-  type RequestContext,
-} from "@antelopejs/interface-api";
+import { JSONBody, Post } from "@antelopejs/interface-api";
 import { assert, assertValidation } from "@antelopejs/interface-api-util";
 import {
   CreateReadUrl,
@@ -14,23 +9,14 @@ import {
   isStagedKey,
   PromoteFile,
 } from "@antelopejs/interface-file-storage";
-import { RoleModel, TenantMemberModel } from "@antelopejs/interface-dms/db";
-import { AuthTenantMember } from "@antelopejs/interface-dms/guards";
-import { TenantScopedModel } from "@antelopejs/interface-dms/tenant-scoped-model";
-import type { User } from "@antelopejs/interface-dms/auth/db";
 import sharp from "sharp";
 import { getMediaConfig } from "../../config";
 import { ORIGINAL_FILENAME_METADATA_KEY } from "../../constants";
-import { MediaAssetModel, MediaFolderModel } from "../../db";
 import {
   confirmUploadSchema,
   presignSchema,
 } from "../../validation/media.schema";
-import {
-  type MediaRequestContext,
-  requireFolderRight,
-  resolveMediaContext,
-} from "./context";
+import { requireFolderRight } from "./context";
 import { buildAssetDto } from "./dto";
 
 const HTTP_BAD_REQUEST = 400;
@@ -67,29 +53,7 @@ export async function probeImageDimensions(
   }
 }
 
-export class MediaUploadController extends Controller("/api/media") {
-  @Context()
-  declare ctx: RequestContext;
-
-  @TenantScopedModel(MediaFolderModel)
-  declare folderModel: MediaFolderModel;
-
-  @TenantScopedModel(MediaAssetModel)
-  declare assetModel: MediaAssetModel;
-
-  @TenantScopedModel(RoleModel)
-  declare roleModel: RoleModel;
-
-  @TenantScopedModel(TenantMemberModel)
-  declare memberModel: TenantMemberModel;
-
-  @AuthTenantMember()
-  declare user: User;
-
-  private resolveContext(): Promise<MediaRequestContext> {
-    return resolveMediaContext(this);
-  }
-
+export class MediaUploadController extends MediaApiController {
   @Post("/upload/presign")
   async presign(@JSONBody() body: unknown) {
     const { folderId, filename, size, mimetype } = assertValidation(body, (v) =>

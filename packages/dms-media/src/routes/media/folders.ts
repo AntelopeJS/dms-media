@@ -1,22 +1,16 @@
+import { MediaApiController } from "./controller";
 import {
-  Context,
-  Controller,
   Delete,
   Get,
   JSONBody,
   Parameter,
   Post,
   Put,
-  type RequestContext,
 } from "@antelopejs/interface-api";
 import { assert, assertValidation } from "@antelopejs/interface-api-util";
-import { RoleModel, TenantMemberModel } from "@antelopejs/interface-dms/db";
-import { AuthTenantMember } from "@antelopejs/interface-dms/guards";
-import { TenantScopedModel } from "@antelopejs/interface-dms/tenant-scoped-model";
-import type { User } from "@antelopejs/interface-dms/auth/db";
 import { serializeAcl } from "../../acl";
 import { deleteMediaAsset } from "../../asset-lifecycle";
-import { MediaAssetModel, type MediaFolder, MediaFolderModel } from "../../db";
+import { type MediaFolder } from "../../db";
 import {
   createFolderSchema,
   folderAclSchema,
@@ -30,7 +24,6 @@ import {
   getDescendantFolders,
   type MediaRequestContext,
   requireFolderRight,
-  resolveMediaContext,
 } from "./context";
 import { buildAssetDto, listVisibleFolders, readFolderAclEntries } from "./dto";
 
@@ -141,29 +134,7 @@ function assertMoveTargetOutsideSubtree(
   assert(!insideItself, HTTP_BAD_REQUEST, "Cannot move a folder inside itself");
 }
 
-export class MediaFoldersController extends Controller("/api/media") {
-  @Context()
-  declare ctx: RequestContext;
-
-  @TenantScopedModel(MediaFolderModel)
-  declare folderModel: MediaFolderModel;
-
-  @TenantScopedModel(MediaAssetModel)
-  declare assetModel: MediaAssetModel;
-
-  @TenantScopedModel(RoleModel)
-  declare roleModel: RoleModel;
-
-  @TenantScopedModel(TenantMemberModel)
-  declare memberModel: TenantMemberModel;
-
-  @AuthTenantMember()
-  declare user: User;
-
-  private resolveContext(): Promise<MediaRequestContext> {
-    return resolveMediaContext(this);
-  }
-
+export class MediaFoldersController extends MediaApiController {
   @Get("/tree")
   async tree() {
     const context = await this.resolveContext();

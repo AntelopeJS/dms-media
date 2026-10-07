@@ -1,27 +1,16 @@
+import { MediaApiController } from "./controller";
 import {
-  Context,
-  Controller,
   Delete,
   Get,
   JSONBody,
   Parameter,
   Post,
-  type RequestContext,
 } from "@antelopejs/interface-api";
 import { assert, assertValidation } from "@antelopejs/interface-api-util";
 import { CreateReadUrl } from "@antelopejs/interface-file-storage";
-import { RoleModel, TenantMemberModel } from "@antelopejs/interface-dms/db";
-import { AuthTenantMember } from "@antelopejs/interface-dms/guards";
-import { TenantScopedModel } from "@antelopejs/interface-dms/tenant-scoped-model";
-import type { User } from "@antelopejs/interface-dms/auth/db";
 import { deleteMediaAsset } from "../../asset-lifecycle";
 import { getMediaConfig } from "../../config";
-import {
-  type MediaAsset,
-  MediaAssetModel,
-  type MediaFolder,
-  MediaFolderModel,
-} from "../../db";
+import { type MediaAsset, MediaAssetModel, type MediaFolder } from "../../db";
 import { ensureDerivative } from "../../derivatives";
 import type { MediaPresetConfig } from "../../presets";
 import {
@@ -38,7 +27,6 @@ import {
   assertPermissionsManager,
   type MediaRequestContext,
   requireFolderRight,
-  resolveMediaContext,
 } from "./context";
 import { assertDerivableAsset, requirePreset } from "./delivery";
 import { buildAssetDto, resolveEffectiveVisibility } from "./dto";
@@ -110,29 +98,7 @@ function matchesSearch(asset: MediaAsset, term: string, mime: string): boolean {
   return matchesTerm && matchesMime;
 }
 
-export class MediaAssetsController extends Controller("/api/media") {
-  @Context()
-  declare ctx: RequestContext;
-
-  @TenantScopedModel(MediaFolderModel)
-  declare folderModel: MediaFolderModel;
-
-  @TenantScopedModel(MediaAssetModel)
-  declare assetModel: MediaAssetModel;
-
-  @TenantScopedModel(RoleModel)
-  declare roleModel: RoleModel;
-
-  @TenantScopedModel(TenantMemberModel)
-  declare memberModel: TenantMemberModel;
-
-  @AuthTenantMember()
-  declare user: User;
-
-  private resolveContext(): Promise<MediaRequestContext> {
-    return resolveMediaContext(this);
-  }
-
+export class MediaAssetsController extends MediaApiController {
   @Get("/assets")
   async listAll() {
     const context = await this.resolveContext();
