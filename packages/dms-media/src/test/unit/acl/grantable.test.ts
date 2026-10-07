@@ -5,7 +5,7 @@ import {
 import { expect } from "chai";
 import { filterGrantablePermissions } from "../../../acl/grantable";
 import { OWNER_WILDCARD_PERMISSION } from "../../../constants";
-import { MEDIA_PAGE_PERMISSION } from "../../../pages/media";
+import { MEDIA_PAGE_PERMISSION } from "../../../pages/files";
 
 const MODULE_PAGE_PERMISSION = "classified.page";
 const MODULE_ACTION_PERMISSION = "classified.page.table.edit";

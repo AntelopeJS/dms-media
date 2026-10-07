@@ -7,28 +7,28 @@ import {
   MEDIA_PERMISSIONS_MANAGE_PERMISSION,
   MEDIA_UPLOAD_PERMISSION,
 } from "./constants";
-import { MEDIA_PAGE_PERMISSION } from "./pages/media";
+import { MEDIA_PAGE_PERMISSION } from "./pages/files";
 
 const MEDIA_PERMISSIONS: Permission[] = [
   {
     id: MEDIA_UPLOAD_PERMISSION,
-    title: "Upload media",
+    title: "$dms_media.permissions.upload.title",
     icon: "i-ph-upload-simple",
-    description: "Upload files into writable folders",
+    description: "$dms_media.permissions.upload.description",
     dependencies: [MEDIA_PAGE_PERMISSION],
   },
   {
     id: MEDIA_FOLDERS_MANAGE_PERMISSION,
-    title: "Manage media folders",
+    title: "$dms_media.permissions.folders_manage.title",
     icon: "i-ph-folder-plus",
-    description: "Create, rename, move and delete media folders",
+    description: "$dms_media.permissions.folders_manage.description",
     dependencies: [MEDIA_PAGE_PERMISSION],
   },
   {
     id: MEDIA_PERMISSIONS_MANAGE_PERMISSION,
-    title: "Manage media permissions",
+    title: "$dms_media.permissions.permissions_manage.title",
     icon: "i-ph-lock-key",
-    description: "Edit folder access rules of the media library",
+    description: "$dms_media.permissions.permissions_manage.description",
     dependencies: [MEDIA_PAGE_PERMISSION],
   },
 ];

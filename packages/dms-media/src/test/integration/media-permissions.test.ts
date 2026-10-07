@@ -6,7 +6,7 @@ import {
   MEDIA_PERMISSIONS_MANAGE_PERMISSION,
   MEDIA_UPLOAD_PERMISSION,
 } from "../../constants";
-import { MEDIA_PAGE_PERMISSION } from "../../pages/media";
+import { MEDIA_PAGE_PERMISSION } from "../../pages/files";
 import type { AclEntry } from "../../types";
 import {
   rawGet,

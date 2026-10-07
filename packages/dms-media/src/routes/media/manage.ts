@@ -8,6 +8,7 @@ import { getLastSweep, SWEEP_DERIVATIVES_SCHEDULE } from "../../crons";
 import { MediaEventModel, type MediaFolder } from "../../db";
 import { folderPath } from "../../library/activity";
 import { buildUploadBatches } from "../../library/batches";
+import { createMediaTranslator } from "../../library/i18n";
 import { loadAssetsInFolders } from "../../library/listing";
 import { presetCacheKey } from "../../presets";
 import { batchSummarySchema } from "../../validation/library.schema";
@@ -20,6 +21,19 @@ import { type MediaRequestContext, requireFolderRight } from "./context";
 import { parseDerivatives } from "./storage-keys";
 
 const HTTP_NOT_FOUND = 404;
+const SECONDS_PER_MINUTE = 60;
+const PRESETS_TEXTS = "$dms_media.presets";
+const CRON_MINUTE_INDEX = 0;
+const CRON_HOUR_INDEX = 1;
+const TIME_PART_LENGTH = 2;
+
+/** `0 4 * * *` → `04:00`. */
+function describeCronTime(schedule: string): string {
+  const parts = schedule.split(" ");
+  const pad = (value: string | undefined) =>
+    (value ?? "0").padStart(TIME_PART_LENGTH, "0");
+  return `${pad(parts[CRON_HOUR_INDEX])}:${pad(parts[CRON_MINUTE_INDEX])}`;
+}
 const EVENTS_SCANNED = 1000;
 
 interface SourcePage {
@@ -149,6 +163,51 @@ export class MediaManageController extends MediaApiController {
       write: permissionIdsWith(config, "write"),
       manage: permissionIdsWith(config, "manage"),
       fromPage: Boolean(config.permissionsFromPage),
+    };
+  }
+
+  @Get("/presets/cache")
+  async presetCache() {
+    const context = await this.resolveContext();
+    const translator = createMediaTranslator(context.user.language);
+    const sweep = getLastSweep();
+    const minutes = (seconds: number) =>
+      Math.round(seconds / SECONDS_PER_MINUTE);
+    return {
+      items: [
+        {
+          id: "sweep",
+          label: translator.t(`${PRESETS_TEXTS}.cache.sweep`, {
+            time: describeCronTime(SWEEP_DERIVATIVES_SCHEDULE),
+          }),
+          value: sweep
+            ? translator.formatNumber(sweep.removedFiles)
+            : translator.t(`${PRESETS_TEXTS}.cache.sweep_pending`),
+          detail: sweep
+            ? translator.t(`${PRESETS_TEXTS}.cache.sweep_detail`, {
+                date: sweep.finishedAt.toISOString().slice(0, 10),
+              })
+            : `${PRESETS_TEXTS}.cache.sweep_pending_detail`,
+        },
+        {
+          id: "public",
+          label: `${PRESETS_TEXTS}.cache.public`,
+          value: translator.t(`${PRESETS_TEXTS}.cache.minutes`, {
+            count: minutes(PUBLIC_READ_URL_TTL_SECONDS),
+          }),
+          type: "mono",
+          detail: `${PRESETS_TEXTS}.cache.public_detail`,
+        },
+        {
+          id: "private",
+          label: `${PRESETS_TEXTS}.cache.private`,
+          value: translator.t(`${PRESETS_TEXTS}.cache.minutes`, {
+            count: minutes(PRIVATE_READ_URL_TTL_SECONDS),
+          }),
+          type: "mono",
+          detail: `${PRESETS_TEXTS}.cache.private_detail`,
+        },
+      ],
     };
   }
 

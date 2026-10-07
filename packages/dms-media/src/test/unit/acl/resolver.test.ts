@@ -10,7 +10,7 @@ import {
   MEDIA_FOLDERS_MANAGE_PERMISSION,
   MEDIA_UPLOAD_PERMISSION,
 } from "../../../constants";
-import { MEDIA_PAGE_PERMISSION } from "../../../pages/media";
+import { MEDIA_PAGE_PERMISSION } from "../../../pages/files";
 import type { MediaFolder } from "../../../db/tables";
 import type { AclEntry } from "../../../types";
 
