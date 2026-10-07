@@ -1,6 +1,11 @@
 import { parseFolderAcl } from "../../acl";
 import type { MediaAsset, MediaFolder } from "../../db";
 import type { AclEntry, AssetVisibility, FolderVisibility } from "../../types";
+import type { FolderStats } from "../../library/folder-stats";
+import {
+  type AssetTypeGroup,
+  resolveTypeGroup,
+} from "../../library/type-groups";
 import type { MediaRequestContext } from "./context";
 
 export interface FolderRightsDto {
@@ -21,6 +26,9 @@ export interface MediaFolderDto {
   createdAt: Date;
   updatedAt: Date;
   rights: FolderRightsDto;
+  fileCount: number;
+  size: number;
+  starred: boolean;
 }
 
 export interface MediaAssetDto {
@@ -36,13 +44,22 @@ export interface MediaAssetDto {
   effectiveVisibility: FolderVisibility;
   url: string;
   hasOriginal: boolean;
+  typeGroup: AssetTypeGroup;
+  starred: boolean;
   createdAt: Date;
   updatedAt: Date;
+}
+
+/** What a folder DTO adds to the folder row: its counts and the caller's star. */
+export interface FolderDtoExtras {
+  stats?: FolderStats;
+  starredIds?: Set<string>;
 }
 
 export function buildFolderDto(
   context: MediaRequestContext,
   folder: MediaFolder,
+  extras: FolderDtoExtras = {},
 ): MediaFolderDto {
   const shell = context.access.shells.has(folder._id);
   return {
@@ -61,19 +78,35 @@ export function buildFolderDto(
       write: context.access.writable.has(folder._id),
       manage: context.access.manageable.has(folder._id),
     },
+    fileCount: extras.stats?.fileCount ?? 0,
+    size: extras.stats?.size ?? 0,
+    starred: extras.starredIds?.has(folder._id) ?? false,
   };
+}
+
+export function isFolderVisible(
+  context: MediaRequestContext,
+  folder: MediaFolder,
+): boolean {
+  return (
+    context.access.readable.has(folder._id) ||
+    context.access.shells.has(folder._id)
+  );
 }
 
 export function listVisibleFolders(
   context: MediaRequestContext,
+  statsByFolder: Map<string, FolderStats> = new Map(),
+  starredIds: Set<string> = new Set(),
 ): MediaFolderDto[] {
   return context.folders
-    .filter(
-      (folder) =>
-        context.access.readable.has(folder._id) ||
-        context.access.shells.has(folder._id),
-    )
-    .map((folder) => buildFolderDto(context, folder));
+    .filter((folder) => isFolderVisible(context, folder))
+    .map((folder) =>
+      buildFolderDto(context, folder, {
+        stats: statsByFolder.get(folder._id),
+        starredIds,
+      }),
+    );
 }
 
 export function resolveEffectiveVisibility(
@@ -91,6 +124,7 @@ export function buildDeliveryPath(asset: MediaAsset): string {
 export function buildAssetDto(
   context: MediaRequestContext,
   asset: MediaAsset,
+  starredIds: Set<string> = new Set(),
 ): MediaAssetDto {
   const folder = context.foldersById.get(asset.folderId);
   return {
@@ -106,6 +140,8 @@ export function buildAssetDto(
     effectiveVisibility: resolveEffectiveVisibility(asset, folder),
     url: buildDeliveryPath(asset),
     hasOriginal: Boolean(asset.originalKey),
+    typeGroup: resolveTypeGroup(asset.mimetype),
+    starred: starredIds.has(asset._id),
     createdAt: asset.createdAt,
     updatedAt: asset.updatedAt,
   };

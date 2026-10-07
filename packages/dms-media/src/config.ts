@@ -6,12 +6,15 @@ export interface DmsMediaConfig {
   rootAcl?: AclEntry[];
   storage?: string;
   presets?: MediaPresetConfig[];
+  /** Storage plan of the library, in bytes: the overview shows usage against it. */
+  storageQuotaBytes?: number;
 }
 
 interface ResolvedMediaConfig {
   rootAcl: AclEntry[];
   storage?: string;
   presets: Map<string, MediaPresetConfig>;
+  storageQuotaBytes?: number;
 }
 
 function buildPresetMap(
@@ -30,6 +33,7 @@ export function configureMediaModule(config: DmsMediaConfig): void {
     rootAcl: config.rootAcl ?? DEFAULT_ROOT_ACL,
     storage: config.storage,
     presets: buildPresetMap(config.presets ?? DEFAULT_PRESETS),
+    storageQuotaBytes: config.storageQuotaBytes,
   };
 }
 

@@ -1,5 +1,11 @@
 import { MediaApiController } from "./controller";
 import {
+  moveAsset,
+  removeAsset,
+  setAssetVisibility,
+  updateAssetDetails,
+} from "./asset-actions";
+import {
   Delete,
   Get,
   JSONBody,
@@ -8,9 +14,8 @@ import {
 } from "@antelopejs/interface-api";
 import { assert, assertValidation } from "@antelopejs/interface-api-util";
 import { CreateReadUrl } from "@antelopejs/interface-file-storage";
-import { deleteMediaAsset } from "../../asset-lifecycle";
 import { getMediaConfig } from "../../config";
-import { type MediaAsset, MediaAssetModel, type MediaFolder } from "../../db";
+import { type MediaAsset, MediaAssetModel } from "../../db";
 import { ensureDerivative } from "../../derivatives";
 import type { MediaPresetConfig } from "../../presets";
 import {
@@ -23,24 +28,9 @@ import {
   PREVIEW_URL_TTL_SECONDS,
   PRIVATE_READ_URL_TTL_SECONDS,
 } from "./constants";
-import {
-  assertPermissionsManager,
-  type MediaRequestContext,
-  requireFolderRight,
-} from "./context";
+import { type MediaRequestContext, requireFolderRight } from "./context";
 import { assertDerivableAsset, requirePreset } from "./delivery";
-import { buildAssetDto, resolveEffectiveVisibility } from "./dto";
-
-function changesEffectiveVisibility(
-  asset: MediaAsset,
-  sourceFolder: MediaFolder,
-  targetFolder: MediaFolder,
-): boolean {
-  return (
-    resolveEffectiveVisibility(asset, sourceFolder) !==
-    resolveEffectiveVisibility(asset, targetFolder)
-  );
-}
+import { buildAssetDto } from "./dto";
 
 const HTTP_NOT_FOUND = 404;
 const MAX_SEARCH_RESULTS = 100;
@@ -193,8 +183,7 @@ export class MediaAssetsController extends MediaApiController {
     const changes = assertValidation(body, (v) => updateAssetSchema.parse(v));
     const context = await this.resolveContext();
     const asset = await requireReadableAsset(context, assetId);
-    requireFolderRight(context, asset.folderId, "write");
-    await context.assetModel.update(assetId, changes);
+    await updateAssetDetails(context, asset, changes);
     return { ok: true };
   }
 
@@ -208,12 +197,7 @@ export class MediaAssetsController extends MediaApiController {
     );
     const context = await this.resolveContext();
     const asset = await requireReadableAsset(context, assetId);
-    const sourceFolder = requireFolderRight(context, asset.folderId, "write");
-    const targetFolder = requireFolderRight(context, folderId, "write");
-    if (changesEffectiveVisibility(asset, sourceFolder, targetFolder)) {
-      await assertPermissionsManager(context);
-    }
-    await context.assetModel.update(assetId, { folderId });
+    await moveAsset(context, asset, folderId);
     return { ok: true };
   }
 
@@ -227,9 +211,7 @@ export class MediaAssetsController extends MediaApiController {
     );
     const context = await this.resolveContext();
     const asset = await requireReadableAsset(context, assetId);
-    requireFolderRight(context, asset.folderId, "manage");
-    await assertPermissionsManager(context);
-    await context.assetModel.update(assetId, { visibility });
+    await setAssetVisibility(context, asset, visibility);
     return { ok: true };
   }
 
@@ -237,8 +219,7 @@ export class MediaAssetsController extends MediaApiController {
   async deleteAsset(@Parameter("assetId", "param") assetId: string) {
     const context = await this.resolveContext();
     const asset = await requireReadableAsset(context, assetId);
-    requireFolderRight(context, asset.folderId, "write");
-    await deleteMediaAsset(context.assetModel, assetId);
+    await removeAsset(context, asset);
     return { ok: true };
   }
 }

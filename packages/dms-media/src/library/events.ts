@@ -4,6 +4,7 @@ import type { User } from "@antelopejs/interface-dms/auth/db";
 import { type MediaEvent, MediaEventModel } from "../db";
 
 export const MEDIA_EVENT_KINDS = [
+  "asset.upload",
   "upload.batch",
   "asset.delete",
   "asset.move",

@@ -78,8 +78,9 @@ export class MediaUploadController extends MediaApiController {
 
   @Post("/upload/confirm")
   async confirm(@JSONBody() body: unknown) {
-    const { folderId, resourceKey, filename } = assertValidation(body, (v) =>
-      confirmUploadSchema.parse(v),
+    const { folderId, resourceKey, filename, batchId } = assertValidation(
+      body,
+      (v) => confirmUploadSchema.parse(v),
     );
     const context = await this.resolveContext();
     requireFolderRight(context, folderId, "write");
@@ -120,6 +121,14 @@ export class MediaUploadController extends MediaApiController {
     });
     const asset = await context.assetModel.get(assetId);
     assert(asset, HTTP_BAD_REQUEST, "Asset creation failed");
+    await this.record(context, {
+      kind: "asset.upload",
+      targetName: asset.name,
+      folderId,
+      assetId,
+      size: asset.size,
+      details: batchId ? { batchId } : undefined,
+    });
     return { asset: buildAssetDto(context, asset) };
   }
 }

@@ -54,7 +54,7 @@ export const folderAclSchema = z.object({
   entries: z.array(aclEntrySchema).nullable(),
 });
 
-const MAX_UPLOAD_SIZE_BYTES = 500 * 1024 * 1024;
+export const MAX_UPLOAD_SIZE_BYTES = 500 * 1024 * 1024;
 
 export const presignSchema = z.object({
   folderId: z.string().min(1),
@@ -67,6 +67,7 @@ export const confirmUploadSchema = z.object({
   folderId: z.string().min(1),
   resourceKey: z.string().min(1),
   filename: nameSchema,
+  batchId: z.string().min(1).max(MAX_NAME_LENGTH).optional(),
 });
 
 export const updateAssetSchema = z.object({

@@ -10,6 +10,7 @@ import {
 import { assert, assertValidation } from "@antelopejs/interface-api-util";
 import { serializeAcl } from "../../acl";
 import { deleteMediaAsset } from "../../asset-lifecycle";
+import { forgetFavorites } from "../../library/favorites";
 import { type MediaFolder } from "../../db";
 import {
   createFolderSchema,
@@ -25,7 +26,7 @@ import {
   type MediaRequestContext,
   requireFolderRight,
 } from "./context";
-import { buildAssetDto, listVisibleFolders, readFolderAclEntries } from "./dto";
+import { readFolderAclEntries } from "./dto";
 
 const HTTP_BAD_REQUEST = 400;
 const HTTP_FORBIDDEN = 403;
@@ -135,26 +136,6 @@ function assertMoveTargetOutsideSubtree(
 }
 
 export class MediaFoldersController extends MediaApiController {
-  @Get("/tree")
-  async tree() {
-    const context = await this.resolveContext();
-    return {
-      folders: listVisibleFolders(context),
-      root: {
-        write: context.rootRights.has("write"),
-        manage: context.rootRights.has("manage"),
-      },
-    };
-  }
-
-  @Get("/folders/:folderId/assets")
-  async listAssets(@Parameter("folderId", "param") folderId: string) {
-    const context = await this.resolveContext();
-    requireFolderRight(context, folderId, "read");
-    const assets = await context.assetModel.getByFolder(folderId);
-    return { assets: assets.map((asset) => buildAssetDto(context, asset)) };
-  }
-
   @Get("/folders/:folderId/acl")
   async getAcl(@Parameter("folderId", "param") folderId: string) {
     const context = await this.resolveContext();
@@ -177,6 +158,11 @@ export class MediaFoldersController extends MediaApiController {
       path: buildChildPath(parent),
       visibility: "private",
     });
+    await this.record(context, {
+      kind: "folder.create",
+      targetName: name,
+      folderId: parentId,
+    });
     return { id: folderId };
   }
 
@@ -196,6 +182,12 @@ export class MediaFoldersController extends MediaApiController {
       folderId,
     );
     await context.folderModel.update(folderId, { name });
+    await this.record(context, {
+      kind: "folder.rename",
+      targetName: name,
+      folderId,
+      details: { previous: folder.name },
+    });
     return { ok: true };
   }
 
@@ -215,6 +207,12 @@ export class MediaFoldersController extends MediaApiController {
     assertMoveTargetOutsideSubtree(folder, targetParentId, newParent);
     assertUniqueSiblingName(context, folder.name, targetParentId, folderId);
     await applyFolderMove(context, folder, newParent);
+    await this.record(context, {
+      kind: "folder.move",
+      targetName: folder.name,
+      folderId,
+      details: { destination: newParent?.name ?? "" },
+    });
     return { ok: true };
   }
 
@@ -227,9 +225,15 @@ export class MediaFoldersController extends MediaApiController {
       folderVisibilitySchema.parse(v),
     );
     const context = await this.resolveContext();
-    requireFolderRight(context, folderId, "manage");
+    const folder = requireFolderRight(context, folderId, "manage");
     await assertPermissionsManager(context);
     await context.folderModel.update(folderId, { visibility });
+    await this.record(context, {
+      kind: "folder.visibility",
+      targetName: folder.name,
+      folderId,
+      details: { visibility: `$dms_media.visibility.${visibility}` },
+    });
     return { ok: true };
   }
 
@@ -245,6 +249,11 @@ export class MediaFoldersController extends MediaApiController {
     await assertPermissionsManager(context);
     await context.folderModel.update(folderId, {
       json_acl: serializeAcl(entries ?? undefined) ?? "",
+    });
+    await this.record(context, {
+      kind: "folder.acl",
+      targetName: folder.name,
+      folderId,
     });
     return { ok: true };
   }
@@ -264,7 +273,23 @@ export class MediaFoldersController extends MediaApiController {
       );
     }
     const folderIds = [folderId, ...descendants.map((child) => child._id)];
+    const assets = await context.assetModel.getBy("folderId", ...folderIds);
     await deleteFolderTree(context, folderIds);
+    await forgetFavorites(context.tenantId, [
+      ...folderIds,
+      ...assets.map((asset) => asset._id),
+    ]);
+    await this.record(context, {
+      kind: "folder.delete",
+      targetName: folder.name,
+      folderId: folder.parentId,
+      count: assets.length,
+      size: assets.reduce((total, asset) => total + asset.size, 0),
+      details: {
+        files: assets.length,
+        folders: folderIds.length,
+      },
+    });
     return { ok: true };
   }
 }

@@ -38,6 +38,16 @@ export class MediaTransformController extends MediaApiController {
     );
     const updated = await context.assetModel.get(assetId);
     assert(updated, HTTP_CONFLICT, "Asset disappeared during transform");
+    await this.record(context, {
+      kind: "asset.transform",
+      targetName: updated.name,
+      folderId: updated.folderId,
+      assetId,
+      details: {
+        width: updated.width ?? 0,
+        height: updated.height ?? 0,
+      },
+    });
     return { asset: buildAssetDto(context, updated) };
   }
 
@@ -54,6 +64,12 @@ export class MediaTransformController extends MediaApiController {
     await revertImageTransform(context.assetModel, asset);
     const updated = await context.assetModel.get(assetId);
     assert(updated, HTTP_CONFLICT, "Asset disappeared during revert");
+    await this.record(context, {
+      kind: "asset.revert",
+      targetName: updated.name,
+      folderId: updated.folderId,
+      assetId,
+    });
     return { asset: buildAssetDto(context, updated) };
   }
 }
