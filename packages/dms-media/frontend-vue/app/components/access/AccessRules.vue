@@ -42,7 +42,8 @@ const addItems = computed(() => {
 	const roles = (props.subjects?.roles ?? [])
 		.filter((role) => !taken.has(`role:${role.id}`) && matches(role.name))
 		.map((role) => ({ label: role.name, icon: 'i-ph-users-three', onSelect: () => add({ kind: 'role', id: role.id }) }))
-	const permissions = (props.subjects?.permissions ?? [])
+	const permissions = [...(props.subjects?.permissions ?? [])]
+		.sort((left, right) => Number(right.id.startsWith('media.')) - Number(left.id.startsWith('media.')))
 		.filter((permission) => !taken.has(`permission:${permission.id}`) && (matches(permission.id) || matches(t(permission.title.replace(/^\$/, '')))))
 		.slice(0, 40)
 		.map((permission) => ({ label: permission.id, icon: 'i-ph-key', onSelect: () => add({ kind: 'permission', id: permission.id }) }))

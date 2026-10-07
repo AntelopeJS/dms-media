@@ -225,10 +225,10 @@ watch(stencilRatio, async () => {
 	cropper.value?.refresh()
 })
 
-defineShortcuts({
+definePageShortcuts(() => ({
 	meta_s: { usingInput: true, handler: () => void save() },
 	escape: discard,
-})
+}))
 </script>
 
 <template>

@@ -92,6 +92,12 @@ export function useLibraryTree() {
 		}
 	}
 
+	function adjustView(view: keyof MediaTree['views'], delta: number): void {
+		if (!tree.value) return
+		const count = Math.max(tree.value.views[view] + delta, 0)
+		tree.value = { ...tree.value, views: { ...tree.value.views, [view]: count } }
+	}
+
 	function canWrite(folderId: string | null | undefined): boolean {
 		if (!folderId) return false
 		return Boolean(foldersById.value.get(folderId)?.rights.write)
@@ -108,6 +114,7 @@ export function useLibraryTree() {
 		refresh,
 		patchFolder,
 		adjustCounts,
+		adjustView,
 		canWrite,
 	}
 }

@@ -49,7 +49,8 @@
 			"visibility_public": "Anyone with a link, cached by the CDN. Links never change.",
 			"visibility_saved": "Visibility of {name} updated",
 			"visibility_title": "Visibility of files in this folder",
-			"who": "Who"
+			"who": "Who",
+			"rules": "Rules"
 		},
 		"actions": {
 			"access": "Access & visibility",
@@ -270,7 +271,7 @@
 				"description": "{size} will be freed. Deleted files can't be recovered.",
 				"make_private": "Make private instead",
 				"more": "and {count} more",
-				"public_description": "Pages or emails that embed it will show a broken image.",
+				"public_description": "Pages or emails that embed it will show a broken image. | Pages or emails that embed them will show a broken image.",
 				"public_title": "{count} file is public | {count} files are public",
 				"title": "Delete {count} file? | Delete {count} files?",
 				"usage_note": "Where a file is used isn't tracked yet: check the pages that may embed it."
@@ -810,7 +811,7 @@
 		"toasts": {
 			"alt_failed": "Alt text wasn't saved",
 			"delete_failed": "Couldn't delete",
-			"deleted": "{count} file deleted",
+			"deleted": "{count} file deleted | {count} files deleted",
 			"download_failed": "Couldn't download",
 			"drop_needs_folder": "Open a folder you can upload to first",
 			"folder_create_failed": "Couldn't create the folder",
@@ -819,13 +820,13 @@
 			"folder_moved": "{name} moved",
 			"link_copied": "Link copied",
 			"move_failed": "Couldn't move",
-			"moved": "{count} file moved",
+			"moved": "{count} file moved | {count} files moved",
 			"partial": "{done} done, {refused} refused",
 			"rename_failed": "Couldn't rename",
 			"star_failed": "Couldn't update the star",
-			"undo_move": "Moved {count} file",
+			"undo_move": "Moved {count} file | Moved {count} files",
 			"uploading": "Uploading {count} file to {name} | Uploading {count} files to {name}",
-			"visibility_done": "Visibility updated for {count} file",
+			"visibility_done": "Visibility updated for {count} file | Visibility updated for {count} files",
 			"visibility_failed": "Couldn't change visibility",
 			"zip_failed": "Couldn't prepare the zip"
 		},

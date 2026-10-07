@@ -51,7 +51,7 @@ const size = computed(() => props.assets.reduce((total, asset) => total + asset.
 				tone="warning"
 				size="sm"
 				:title="t('dms_media.dialogs.delete_files.public_title', { count: publicAssets.length }, publicAssets.length)"
-				:description="t('dms_media.dialogs.delete_files.public_description')"
+				:description="t('dms_media.dialogs.delete_files.public_description', publicAssets.length)"
 			/>
 			<p class="text-muted text-[13px]">
 				{{ t('dms_media.dialogs.delete_files.usage_note') }}

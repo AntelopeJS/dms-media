@@ -49,7 +49,8 @@
 			"visibility_public": "Quiconque a un lien, mis en cache par le CDN. Les liens ne changent jamais.",
 			"visibility_saved": "Visibilité de {name} mise à jour",
 			"visibility_title": "Visibilité des fichiers de ce dossier",
-			"who": "Qui"
+			"who": "Qui",
+			"rules": "Règles"
 		},
 		"actions": {
 			"access": "Accès et visibilité",
@@ -270,7 +271,7 @@
 				"description": "{size} seront libérés. Les fichiers supprimés ne peuvent pas être récupérés.",
 				"make_private": "Rendre privé à la place",
 				"more": "et {count} de plus",
-				"public_description": "Les pages ou e-mails qui l'intègrent afficheront une image cassée.",
+				"public_description": "Les pages ou e-mails qui l'intègrent afficheront une image cassée. | Les pages ou e-mails qui les intègrent afficheront une image cassée.",
 				"public_title": "{count} fichier est public | {count} fichiers sont publics",
 				"title": "Supprimer {count} fichier ? | Supprimer {count} fichiers ?",
 				"usage_note": "L'utilisation des fichiers n'est pas encore suivie : vérifiez les pages qui peuvent les intégrer."
@@ -810,7 +811,7 @@
 		"toasts": {
 			"alt_failed": "Le texte alternatif n'a pas été enregistré",
 			"delete_failed": "Suppression impossible",
-			"deleted": "{count} fichier(s) supprimé(s)",
+			"deleted": "{count} fichier supprimé | {count} fichiers supprimés",
 			"download_failed": "Téléchargement impossible",
 			"drop_needs_folder": "Ouvrez d'abord un dossier où vous pouvez importer",
 			"folder_create_failed": "Impossible de créer le dossier",
@@ -819,13 +820,13 @@
 			"folder_moved": "{name} déplacé",
 			"link_copied": "Lien copié",
 			"move_failed": "Déplacement impossible",
-			"moved": "{count} fichier(s) déplacé(s)",
+			"moved": "{count} fichier déplacé | {count} fichiers déplacés",
 			"partial": "{done} faits, {refused} refusés",
 			"rename_failed": "Renommage impossible",
 			"star_failed": "Impossible de mettre à jour le favori",
-			"undo_move": "{count} fichier(s) déplacé(s)",
+			"undo_move": "{count} fichier déplacé | {count} fichiers déplacés",
 			"uploading": "Import de {count} fichier dans {name} | Import de {count} fichiers dans {name}",
-			"visibility_done": "Visibilité mise à jour pour {count} fichier(s)",
+			"visibility_done": "Visibilité mise à jour pour {count} fichier | Visibilité mise à jour pour {count} fichiers",
 			"visibility_failed": "Impossible de changer la visibilité",
 			"zip_failed": "Impossible de préparer le zip"
 		},

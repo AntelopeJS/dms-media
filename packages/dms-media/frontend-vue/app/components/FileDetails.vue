@@ -105,12 +105,12 @@ function edit(): void {
 	if (asset.value && file.canWrite.value && isEditableAsset(asset.value)) void navigateDms(editorLink(asset.value.id))
 }
 
-defineShortcuts({
+definePageShortcuts(() => ({
 	arrowleft: () => open(file.previous.value?.id),
 	arrowright: () => open(file.next.value?.id),
 	e: edit,
 	' ': fullscreen,
-})
+}))
 </script>
 
 <template>

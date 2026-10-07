@@ -136,7 +136,7 @@ onMounted(() => void loadTree())
 						<div class="flex min-w-0 flex-1 flex-wrap items-center gap-2">
 							<UIcon name="i-ph-folder-simple" class="text-muted size-4" />
 							<span class="text-highlighted text-sm font-semibold">{{ folder.name }}</span>
-							<span class="text-dimmed font-mono text-[11px]">{{ t('dms_media.explorer.file_count', { count: folder.fileCount }, folder.fileCount) }}</span>
+							<span class="text-dimmed font-mono text-[11px]">{{ t('dms_media.explorer.file_count', { count: foldersById.get(folder.id)?.fileCount ?? 0 }, foldersById.get(folder.id)?.fileCount ?? 0) }}</span>
 							<UBadge v-if="summary.isOwn" :label="t('dms_media.markers.own_rules')" icon="i-ph-lock-simple" color="warning" variant="subtle" size="sm" />
 							<UBadge v-else :label="t('dms_media.access.inherited_from', { name: source })" icon="i-ph-arrow-elbow-left-up" color="neutral" variant="subtle" size="sm" />
 							<UBadge v-if="folder.bound" :label="t('dms_media.markers.linked_to', { binding: folder.binding })" icon="i-ph-link-simple" color="primary" variant="subtle" size="sm" />
@@ -174,7 +174,7 @@ onMounted(() => void loadTree())
 						<DmsBanner v-if="!summary.canEdit" tone="info" size="sm" :title="folder.bound ? t('dms_media.access.linked_read_only') : t('dms_media.access.read_only')" :description="folder.bound ? t('dms_media.access.linked_read_only_description') : t('dms_media.access.read_only_description')" />
 					</div>
 				</DmsCard>
-				<DmsCard :padded="false">
+				<DmsCard :title="t('dms_media.access.rules')" :padded="false">
 					<AccessRules
 						:entries="shownEntries"
 						:can-edit="summary.canEdit && (summary.isOwn || isDirty)"

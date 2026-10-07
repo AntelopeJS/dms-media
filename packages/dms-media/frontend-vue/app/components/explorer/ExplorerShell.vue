@@ -79,6 +79,7 @@ function onContentDrop(event: DragEvent): void {
 
 const stopListening = uploads.onUploaded((asset) => {
 	library.tree.adjustCounts(asset.folderId, 1, asset.size)
+	if (needsAltText(asset)) library.tree.adjustView('missingAlt', 1)
 	const current = library.listing.location.value
 	if (current.kind === 'folder' && current.folderId === asset.folderId) library.listing.insertAsset(asset)
 })
@@ -106,7 +107,7 @@ function onKey(run: () => unknown) {
 	return () => void run()
 }
 
-defineShortcuts({
+definePageShortcuts(() => ({
 	u: onKey(() => isBrowse && commands.upload()),
 	shift_n: onKey(() => isBrowse && commands.newFolder()),
 	' ': onKey(() => single.value && commands.preview(single.value)),
@@ -123,7 +124,7 @@ defineShortcuts({
 	'3': onKey(() => update({ view: 'columns' })),
 	i: onKey(() => update({ showDetails: !prefs.value.showDetails })),
 	'shift_?': onKey(() => commands.showShortcuts()),
-})
+}))
 
 defineExpose({ library, focusSearch: () => toolbar.value?.focusSearch() })
 </script>

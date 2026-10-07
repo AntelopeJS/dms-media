@@ -39,6 +39,7 @@ export function createMediaLibrary(options: MediaLibraryOptions) {
 	const backStack = ref<LibraryLocation[]>([])
 	const forwardStack = ref<LibraryLocation[]>([])
 	const lastFolderId = ref<string | null>(null)
+	const beforeSearch = ref<LibraryLocation>({ kind: 'root' })
 
 	const currentFolder = computed(() => {
 		const current = listing.location.value
@@ -72,6 +73,7 @@ export function createMediaLibrary(options: MediaLibraryOptions) {
 			forwardStack.value = []
 		}
 		selection.clear()
+		if (next.kind !== 'search') beforeSearch.value = next
 		if (next.kind === 'folder') lastFolderId.value = next.folderId
 		if (next.kind === 'root') lastFolderId.value = null
 		await listing.setLocation(next)
@@ -104,10 +106,7 @@ export function createMediaLibrary(options: MediaLibraryOptions) {
 	}
 
 	function clearSearch(): Promise<void> {
-		const previous = [...backStack.value]
-			.reverse()
-			.find((entry) => entry.kind !== 'search')
-		return open(previous ?? { kind: 'root' }, false)
+		return open(beforeSearch.value, false)
 	}
 
 	return {
@@ -142,7 +141,7 @@ type LibraryCore = ReturnType<typeof createMediaLibrary>
 function reportOutcome(library: LibraryCore, outcome: BulkOutcome, doneKey: string): void {
 	if (outcome.refused.length === 0) {
 		library.toast.add({
-			title: library.t(doneKey, { count: outcome.done.length }),
+			title: library.t(doneKey, { count: outcome.done.length }, outcome.done.length),
 			color: 'success',
 			icon: 'i-ph-check-circle',
 		})
@@ -181,6 +180,9 @@ export function createLibraryActions(library: LibraryCore) {
 		listing.patchAsset(asset.id, { alt })
 		try {
 			await api.updateAsset(asset.id, { alt })
+			const wasMissing = needsAltText(asset)
+			const isMissing = needsAltText({ ...asset, alt })
+			if (wasMissing !== isMissing) tree.adjustView('missingAlt', isMissing ? 1 : -1)
 			return true
 		} catch (error) {
 			listing.patchAsset(asset.id, { alt: asset.alt })
@@ -223,7 +225,7 @@ export function createLibraryActions(library: LibraryCore) {
 
 	function offerUndoMove(ids: string[], sourceId: string): void {
 		library.toast.add({
-			title: t('dms_media.toasts.undo_move', { count: ids.length }),
+			title: t('dms_media.toasts.undo_move', { count: ids.length }, ids.length),
 			color: 'neutral',
 			actions: [
 				{
@@ -255,11 +257,13 @@ export function createLibraryActions(library: LibraryCore) {
 		const starred = !target.starred
 		if (kind === 'asset') listing.patchAsset(target.id, { starred })
 		else tree.patchFolder(target.id, { starred })
+		tree.adjustView('starred', starred ? 1 : -1)
 		try {
 			await api.star(kind, target.id, starred)
 		} catch (error) {
 			if (kind === 'asset') listing.patchAsset(target.id, { starred: !starred })
 			else tree.patchFolder(target.id, { starred: !starred })
+			tree.adjustView('starred', starred ? -1 : 1)
 			library.notifyFailure(error, 'dms_media.toasts.star_failed')
 		}
 	}

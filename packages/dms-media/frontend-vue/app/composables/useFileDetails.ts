@@ -95,7 +95,7 @@ export function useFileDetails(assetId: Ref<string | undefined>) {
 			const outcome = await api.moveAssets([current.id], folderId)
 			if (outcome.refused.length) throw { data: { message: outcome.refused[0]?.message } }
 			await load(current.id)
-			toast.add({ title: t('dms_media.toasts.moved', { count: 1 }), color: 'success' })
+			toast.add({ title: t('dms_media.toasts.moved', { count: 1 }, 1), color: 'success' })
 		} catch (cause) {
 			useApiError(cause, { title: t('dms_media.toasts.move_failed') })
 		}
@@ -107,7 +107,7 @@ export function useFileDetails(assetId: Ref<string | undefined>) {
 		try {
 			const outcome = await api.deleteAssets([current.id])
 			if (outcome.refused.length) throw { data: { message: outcome.refused[0]?.message } }
-			toast.add({ title: t('dms_media.toasts.deleted', { count: 1 }), color: 'success', icon: 'i-ph-trash' })
+			toast.add({ title: t('dms_media.toasts.deleted', { count: 1 }, 1), color: 'success', icon: 'i-ph-trash' })
 			return true
 		} catch (cause) {
 			useApiError(cause, { title: t('dms_media.toasts.delete_failed') })

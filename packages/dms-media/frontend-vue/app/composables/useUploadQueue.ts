@@ -36,6 +36,8 @@ type UploadListener = (asset: MediaAsset) => void
 const CONCURRENCY = 2
 const FINAL_STATUSES = new Set<UploadStatus>(['done', 'failed', 'rejected', 'cancelled'])
 const HTTP_SUCCESS_LIMIT = 300
+/** Headers a browser sets itself and refuses from a script. */
+const FORBIDDEN_REQUEST_HEADERS = new Set(['content-length', 'host', 'connection', 'accept-encoding'])
 
 const items = ref<UploadItem[]>([])
 const isPaused = ref(false)
@@ -80,8 +82,10 @@ function putFile(
 		const request = new XMLHttpRequest()
 		requests.set(id, request)
 		request.open('PUT', url)
-		for (const [name, value] of Object.entries(headers))
-			request.setRequestHeader(name, value)
+		for (const [name, value] of Object.entries(headers)) {
+			if (!FORBIDDEN_REQUEST_HEADERS.has(name.toLowerCase()))
+				request.setRequestHeader(name, value)
+		}
 		request.upload.onprogress = (event) => patch(id, { loaded: event.loaded })
 		request.onload = () =>
 			request.status < HTTP_SUCCESS_LIMIT

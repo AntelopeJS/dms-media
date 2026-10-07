@@ -11,7 +11,6 @@ const props = withDefaults(
 	{ tone: 'primary', size: 'md', dismissible: true },
 )
 const emit = defineEmits<{ dismiss: [] }>()
-const { t } = useI18n()
 const isOpen = ref(true)
 
 const widthClass = computed(
@@ -26,30 +25,21 @@ function onOpenChange(open: boolean): void {
 <template>
 	<UModal
 		v-model:open="isOpen"
+		:title="title"
+		:description="description"
 		:dismissible="dismissible"
+		:close="dismissible ? { onClick: () => emit('dismiss') } : false"
 		:ui="{ content: widthClass, footer: 'justify-end gap-2' }"
 		@update:open="onOpenChange"
 	>
-		<template #header>
-			<DmsIconWell v-if="icon" :icon="icon" :tone="tone" />
-			<div class="min-w-0 flex-1">
-				<h2 class="text-highlighted text-[17px] leading-tight font-semibold tracking-tight">
-					{{ title }}
-				</h2>
-				<p v-if="description" class="text-muted mt-1 text-[13px]">
-					{{ description }}
-				</p>
-			</div>
-			<UButton
-				v-if="dismissible"
-				icon="i-ph-x"
-				color="neutral"
-				variant="ghost"
-				size="sm"
-				square
-				:aria-label="t('dms_media.actions.close')"
-				@click="emit('dismiss')"
-			/>
+		<template #title>
+			<span class="flex items-center gap-3">
+				<DmsIconWell v-if="icon" :icon="icon" :tone="tone" />
+				<span class="text-highlighted text-[17px] leading-tight font-semibold tracking-tight">{{ title }}</span>
+			</span>
+		</template>
+		<template v-if="description" #description>
+			<span :class="icon && 'ps-12'">{{ description }}</span>
 		</template>
 		<template #body>
 			<slot />
