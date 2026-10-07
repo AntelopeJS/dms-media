@@ -96,6 +96,8 @@ export class MediaOverviewPage extends PageController(
         id: "upload",
         label: `${TEXTS}.upload`,
         icon: "i-ph-upload-simple",
+        variant: ButtonVariant.solid,
+        color: "primary",
         target: { type: "page", url: `${MEDIA_ROUTES.uploads}?pick=1` },
       },
     ],

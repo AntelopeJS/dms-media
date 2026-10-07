@@ -3,6 +3,7 @@ import { DefaultDataTypes } from "@antelopejs/interface-dms/base/data-types/defa
 import { DefaultLayout } from "@antelopejs/interface-dms/base/layouts";
 import { TableView } from "@antelopejs/interface-dms/base/table-view";
 import { DefaultDisplays } from "@antelopejs/interface-dms/base/table-view/column-display";
+import { ButtonVariant } from "@antelopejs/interface-dms/base/types/button";
 import { PageController, RegisterPage } from "@antelopejs/interface-dms/page";
 import { MEDIA_ROUTES } from "../library/links";
 import { libraryCategory } from "./category";
@@ -86,6 +87,8 @@ export class MediaUploadsPage extends PageController(
         id: "upload",
         label: `${TEXTS}.upload`,
         icon: "i-ph-upload-simple",
+        variant: ButtonVariant.solid,
+        color: "primary",
         target: { type: "page", url: `${MEDIA_ROUTES.uploads}?pick=1` },
       },
     ],

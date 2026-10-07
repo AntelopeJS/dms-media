@@ -1,8 +1,55 @@
 {
 	"dms_media": {
 		"access": {
+			"add": "Ajouter un rôle ou une permission",
+			"applies_to": "S'applique au {count} fichier directement dans {name} | S'applique aux {count} fichiers directement dans {name}",
+			"can_manage": "Peuvent gérer",
+			"can_read": "Peuvent voir",
+			"can_write": "Peuvent importer",
+			"chain": "D'où viennent les règles",
 			"description": "Qui peut voir chaque dossier, y importer et le gérer, et quels fichiers sont publics. Un dossier hérite de son parent tant que vous ne lui donnez pas ses propres règles.",
-			"title": "Accès et visibilité"
+			"find_subject": "Chercher un rôle ou une permission",
+			"folders": "Dossiers",
+			"grant": "{right} pour {who}",
+			"implied": "Gérer inclut importer, importer inclut voir",
+			"inherit": "Hériter du parent",
+			"inherit_confirm": "Hériter des règles",
+			"inherit_description": "Ses propres règles sont supprimées et celles du parent s'appliquent à nouveau.",
+			"inherit_title": "Faire hériter {name} des règles de son parent ?",
+			"inherited_from": "Hérité de {name}",
+			"legend_shell": "Traversée seule pour certains",
+			"linked_read_only": "Les règles viennent du champ",
+			"linked_read_only_description": "Qui peut voir et importer suit la page qui possède le champ. Changez-le dans la définition du champ.",
+			"load_failed": "Impossible de charger l'accès du dossier",
+			"no_overrides": "Les fichiers suivent le dossier, sauf si vous les changez un par un.",
+			"no_rules": "Personne n'a accès par ces règles.",
+			"nobody": "Personne",
+			"overrides": "{count} fichier ici fait exception : {names} | {count} fichiers ici font exception : {names}",
+			"own_rules": "Lui donner ses propres règles",
+			"permission_id": "permission · {id}",
+			"permissions": "Permissions",
+			"pick_folder": "Choisissez un dossier",
+			"pick_folder_description": "Choisissez un dossier à gauche pour voir qui peut l'ouvrir.",
+			"public_confirm": "Rendre public",
+			"public_description": "Quiconque a un lien peut ouvrir ses fichiers, servis par le CDN. Ses sous-dossiers gardent leur propre réglage.",
+			"public_restricted": "Ce dossier a ses propres règles d'accès",
+			"public_title": "Rendre {name} public ?",
+			"read_only": "Vous voyez les règles sans pouvoir les changer",
+			"read_only_description": "Changer l'accès demande la permission d'accès aux médias et le droit de gérer le dossier.",
+			"remove": "Retirer {who}",
+			"role_members": "rôle · {count} membres",
+			"roles": "Rôles",
+			"rules_here": "règles définies ici",
+			"save": "Enregistrer les règles",
+			"save_failed": "Impossible d'enregistrer les règles",
+			"saved": "Règles d'accès enregistrées",
+			"title": "Accès et visibilité",
+			"unsaved": "Modifications non enregistrées",
+			"visibility_private": "Seules les personnes qui voient le dossier. Les liens sont signés et expirent après 5 min.",
+			"visibility_public": "Quiconque a un lien, mis en cache par le CDN. Les liens ne changent jamais.",
+			"visibility_saved": "Visibilité de {name} mise à jour",
+			"visibility_title": "Visibilité des fichiers de ce dossier",
+			"who": "Qui"
 		},
 		"actions": {
 			"access": "Accès et visibilité",
@@ -202,6 +249,9 @@
 			"zip": "Télécharger le .zip",
 			"zip_limit": "Un zip contient au plus {count} fichiers"
 		},
+		"code": {
+			"label": "Code"
+		},
 		"columns": {
 			"alt": "Texte alt.",
 			"dimensions": "Dimensions",
@@ -285,8 +335,44 @@
 			"title": "Déposez {count} fichier pour l'importer dans {name} | Déposez {count} fichiers pour les importer dans {name}"
 		},
 		"editor": {
+			"applied_first": "appliquée d'abord",
+			"aspect_ratio": "Format",
+			"aspects": {
+				"free": "Libre",
+				"original": "original"
+			},
+			"crop_free": "Recadrer",
+			"crop_to": "Recadrer en {ratio}",
 			"description": "Rien n'est écrit avant d'enregistrer. L'original importé reste disponible pour revenir en arrière.",
-			"title": "Retoucher l'image"
+			"discard": "Abandonner",
+			"heading": "Retoucher {name}",
+			"load_failed": "L'image n'a pas chargé",
+			"load_failed_description": "Le fichier a peut-être été déplacé ou le lien a expiré. Réessayez.",
+			"no_changes": "Aucune modification : déplacez le cadre ou pivotez l'image.",
+			"not_editable": "Ce fichier ne peut pas être retouché",
+			"not_editable_description": "Seules les images JPEG, PNG, WebP, AVIF, TIFF et GIF peuvent être recadrées et pivotées.",
+			"original": "Original",
+			"original_first": "L'import est conservé comme original au premier enregistrement : vous pourrez revenir en arrière.",
+			"original_kept": "L'original importé est conservé : vous pouvez le rétablir à tout moment.",
+			"pending": "Modifications en attente",
+			"reset": "Réinitialiser",
+			"revert_description": "Chaque recadrage et rotation est annulé et l'original importé est rétabli.",
+			"revert_failed": "Impossible de rétablir",
+			"revert_title": "Rétablir l'original ?",
+			"revert_to_original": "Rétablir l'original",
+			"reverted": "Original rétabli",
+			"rotate_change": "Pivoter de {degrees}°",
+			"rotate_left": "Pivoter à gauche",
+			"rotate_right": "Pivoter à droite",
+			"save": "Enregistrer la modification | Enregistrer {count} modifications",
+			"save_failed": "L'image n'a pas été enregistrée : vos modifications sont toujours là",
+			"saved": "Image mise à jour",
+			"saved_description": "Chaque taille est régénérée à la prochaine demande.",
+			"sizes": "Rendu des tailles",
+			"title": "Retoucher l'image",
+			"zoom_in": "Zoom avant",
+			"zoom_out": "Zoom arrière",
+			"save_none": "Enregistrer"
 		},
 		"empty": {
 			"error_description": "Vérifiez votre connexion et réessayez.",
@@ -329,6 +415,11 @@
 		"field": {
 			"code": {
 				"description": "Le champ et le dossier lié qu'il crée, dans votre module.",
+				"notes": {
+					"binding": "Une liaison crée un dossier lié sous Content, où vont les imports du champ.",
+					"rights": "Les droits du dossier suivent la page : qui voit la page peut voir, qui peut la modifier peut importer.",
+					"value": "La valeur est un identifiant de fichier, ou un tableau d'identifiants avec multiple."
+				},
 				"title": "Déclarer le champ"
 			},
 			"demo": {
@@ -344,14 +435,87 @@
 			"description": "Comment les autres pages rattachent des fichiers de la bibliothèque. Le champ affiche ce qui est rattaché et ouvre la bibliothèque comme sélecteur.",
 			"title": "Champ fichier et sélecteur"
 		},
+		"field_widget": {
+			"add_file": "Ajouter des fichiers",
+			"add_image": "Ajouter des images",
+			"add_pdf": "Ajouter des PDF",
+			"browse": "Parcourir",
+			"choose_file": "Choisir un fichier",
+			"choose_hint": "Depuis la bibliothèque",
+			"choose_hint_upload": "Depuis la bibliothèque, ou déposez un fichier ici pour l'importer dans {name}",
+			"choose_image": "Choisir une image",
+			"choose_pdf": "Choisir un PDF",
+			"count": "{count} sur {max}",
+			"cover": "Couverture",
+			"crop": "Recadrer",
+			"left": "{count} restant(s)",
+			"missing_alt": "{count} image n'a pas de texte alternatif. | {count} images n'ont pas de texte alternatif.",
+			"remove": "Retirer {name}",
+			"reorder_hint": "Glissez pour réordonner. La première image est la couverture.",
+			"replace": "Remplacer",
+			"upload_to": "Importer dans {name}"
+		},
 		"file": {
+			"asset_id": "Identifiant",
+			"autosave": "Les modifications s'enregistrent automatiquement",
+			"delete": "Supprimer le fichier",
+			"delivery_private": "Ce fichier est privé : le lien stable redirige les membres connectés ayant accès au dossier vers un lien valable 5 minutes.",
+			"delivery_public": "Ce fichier est public : ses liens sont servis par le CDN et ne changent jamais. Utilisez une taille dans les gabarits plutôt que l'original.",
 			"description": "Un fichier de la bibliothèque, son texte alternatif, sa visibilité et ses liens de diffusion.",
+			"edited": "Retouché",
+			"folder": "Dossier",
+			"fullscreen": "Plein écran",
+			"information": "Informations",
+			"inherit_detail": "{name} est {visibility}",
+			"move": "Déplacer…",
+			"navigate_hint": "Fichier précédent / suivant",
+			"no_history": "Aucune modification enregistrée",
+			"not_found": "Ce fichier n'est pas disponible",
+			"not_found_description": "Il a été supprimé, ou vous ne pouvez pas ouvrir son dossier.",
 			"preserved": "Conservé",
-			"title": "Fichier"
+			"see_presets": "Voir toutes les tailles de diffusion",
+			"stable_link": "Lien stable",
+			"tabs": {
+				"delivery": "Diffusion",
+				"details": "Détails",
+				"history": "Historique",
+				"usage": "Utilisation"
+			},
+			"title": "Fichier",
+			"uploaded": "Importé",
+			"usage_description": "Les pages et e-mails qui intègrent ce fichier ne sont pas encore suivis. Vérifiez-les avant de supprimer ou de rendre le fichier privé.",
+			"usage_title": "L'utilisation n'est pas encore suivie",
+			"visibility_locked": "Changer la visibilité demande la permission d'accès aux médias et le droit de gérer le dossier.",
+			"visibility_saved": "Visibilité mise à jour"
 		},
 		"files": {
 			"description": "Parcourez, importez et rangez chaque image, vidéo et document. Cliquez pour sélectionner, double-cliquez pour ouvrir, glissez sur un dossier pour déplacer.",
 			"title": "Tous les fichiers"
+		},
+		"first_run": {
+			"create": "Créer ces {count} dossiers",
+			"created": "Dossiers créés",
+			"description": "Les fichiers vivent dans des dossiers, et les dossiers décident qui peut les voir. Partez d'une structure suggérée, ou créez la vôtre.",
+			"folders": {
+				"brand": {
+					"description": "Logos, charte",
+					"name": "Marque"
+				},
+				"catalog": {
+					"description": "Photos produits",
+					"name": "Catalogue"
+				},
+				"documents": {
+					"description": "Fiches techniques, contrats",
+					"name": "Documents"
+				},
+				"marketing": {
+					"description": "Campagnes, réseaux sociaux",
+					"name": "Marketing"
+				}
+			},
+			"hint": "Vous pourrez les renommer ou les supprimer",
+			"title": "Lancez votre médiathèque"
 		},
 		"inspector": {
 			"hint": "Sélectionnez un fichier pour voir ses détails, son texte alternatif et sa visibilité.",
@@ -380,6 +544,17 @@
 				"visibility": "Visibilité"
 			},
 			"description": "Dossiers créés automatiquement par les champs fichier d'autres pages. Leur accès suit la page qui possède le champ : ils ne peuvent pas être renommés, déplacés ou supprimés ici.",
+			"detail": {
+				"always": "toujours",
+				"binding": "Liaison",
+				"can_do": "Ce que vous pouvez faire ici",
+				"can_do_description": "Importer, renommer et retoucher les fichiers, changer leur texte alternatif et leur visibilité. Le dossier lui-même est verrouillé : modifiez la définition du champ pour le renommer ou changer qui peut importer.",
+				"created": "Créé",
+				"definition": "Définition du champ",
+				"identity": "L'identifiant de liaison est l'identité du dossier : renommer folderName dans le code renomme le dossier au prochain démarrage.",
+				"open": "Ouvrir le dossier"
+			},
+			"detail_failed": "Impossible de charger ce dossier lié",
 			"empty": "Aucun dossier lié pour l'instant",
 			"empty_description": "Un dossier apparaît ici quand un module déclare un champ fichier avec une liaison.",
 			"table": "Dossiers liés",
@@ -466,12 +641,98 @@
 			}
 		},
 		"picker": {
+			"add_files": "Ajouter le fichier | Ajouter {count} fichiers",
+			"add_images": "Ajouter l'image | Ajouter {count} images",
+			"count": "{count} sélectionné | {count} sélectionnés",
+			"count_after": "{picked} nouveau(x) · {total} sur {max} après ajout",
+			"description": "Choisissez des fichiers de la bibliothèque, ou importez-en de nouveaux.",
 			"full": "Le champ est plein : retirez un fichier pour en choisir un autre",
-			"not_accepted": "Ce champ accepte {types}"
+			"full_hint": "Désélectionnez un fichier pour en choisir un autre",
+			"not_accepted": "Ce champ accepte {types}",
+			"title": "Choisir dans la bibliothèque"
 		},
 		"presets": {
+			"box": "Cadre",
+			"cache": {
+				"minutes": "1 min | {count} min",
+				"private": "Fichiers privés : liens signés",
+				"private_detail": "Jamais mis en cache",
+				"public": "Fichiers publics : CDN",
+				"public_detail": "Les liens ne changent jamais",
+				"sweep": "Nettoyage nocturne à {time}",
+				"sweep_detail": "Dernier passage le {date} : anciennes tailles supprimées",
+				"sweep_pending": "Pas encore lancé",
+				"sweep_pending_detail": "Les anciennes tailles restent en cache jusqu'au prochain nettoyage ; les nouvelles demandes utilisent les réglages actuels",
+				"title": "Cache"
+			},
+			"config": {
+				"hint": "Modifier un format lui donne une nouvelle clé de cache : les URL existantes servent la nouvelle taille sans purge.",
+				"title": "Configuration"
+			},
 			"description": "Des tailles d'image nommées. Chacune est générée à la première demande, mise en cache dans le stockage et servie depuis une URL stable. Utilisez-les dans les gabarits plutôt que l'original en pleine taille.",
-			"title": "Formats de diffusion"
+			"fit": "Ajust.",
+			"format": "Format",
+			"key": "clé {key}",
+			"load_failed": "Impossible de charger les formats",
+			"original": "original",
+			"quality": "Qualité",
+			"rendered": "{count} générés",
+			"required": "Requis",
+			"same": "Identique",
+			"title": "Formats de diffusion",
+			"usage": {
+				"custom": "Une taille de votre projet.",
+				"preview": "Aperçu plein écran et pages de la boutique.",
+				"thumb": "Grille de la bibliothèque, sélecteurs et aperçus de champ."
+			}
+		},
+		"queue": {
+			"added": "ajouté à {name}",
+			"cancel": "Annuler cet import",
+			"cancel_remaining": "Annuler le reste",
+			"checking_detail": "lecture des dimensions",
+			"clear_finished": "Effacer les terminés",
+			"current": "Imports en cours",
+			"dismiss": "Ignorer",
+			"empty_description": "Les fichiers que vous importez apparaissent ici avec leur progression. Ils continuent pendant que vous travaillez ailleurs.",
+			"empty_title": "Aucun import en cours",
+			"failed_description": "Les autres fichiers sont bien passés. | {count} autre fichier est bien passé. | Les {count} autres fichiers sont bien passés.",
+			"failed_title": "{count} fichier n'a pas été importé | {count} fichiers n'ont pas été importés",
+			"minutes_left": "environ {count} min restantes",
+			"of_files": "sur {count} fichiers",
+			"pause": "Pause",
+			"paused": "en pause",
+			"reasons": {
+				"connection": "Connexion perdue · les autres fichiers ont continué",
+				"server": "Le serveur a refusé le fichier",
+				"storage": "Le stockage a refusé le fichier",
+				"too_large": "Au-delà de la limite de {size} · compressez-le ou demandez une limite plus haute"
+			},
+			"resume": "Reprendre",
+			"retry_count": "Relancer {count} fichier | Relancer {count} fichiers",
+			"seconds_left": "environ {count} s restantes",
+			"states": {
+				"done": "Importés",
+				"failed": "Échecs",
+				"uploading": "En cours",
+				"waiting": "En attente"
+			},
+			"status": {
+				"cancelled": "Annulé",
+				"checking": "Vérification",
+				"done": "Prêt",
+				"failed": "Échec",
+				"rejected": "Refusé",
+				"uploading": "Envoi",
+				"waiting": "En attente"
+			},
+			"uploading_detail": "vers {name} · direct au stockage",
+			"waiting_detail": "prochain pour {name}"
+		},
+		"recent": {
+			"empty": "Aucun fichier pour l'instant",
+			"title": "Ajouts récents",
+			"view_all": "Tout voir"
 		},
 		"rights": {
 			"manage": "Gérer",
@@ -590,6 +851,15 @@
 			"spreadsheet": "Tableurs",
 			"vector": "Vectoriels",
 			"video": "Vidéos"
+		},
+		"upload_strip": {
+			"choose": "Choisir des fichiers",
+			"description": "Ils vont dans le dernier dossier utilisé. Changez-le avant de déposer.",
+			"description_first": "Choisissez d'abord le dossier de destination.",
+			"drop_now": "Relâchez pour importer dans {name}",
+			"pick_folder": "Choisir un dossier",
+			"see_progress": "Voir la progression",
+			"title": "Déposez des fichiers n'importe où sur la page"
 		},
 		"uploads": {
 			"description": "Les fichiers partent directement vers le stockage, sont vérifiés, puis apparaissent dans leur dossier. Continuez à travailler : les imports se poursuivent en arrière-plan et un échec n'arrête jamais les autres.",
