@@ -60,7 +60,7 @@ export interface ReadUrl {
 /** Typed calls to the media API, through the authenticated DMS fetch. */
 export function useMediaApi() {
 	const { $authFetch } = useAuthFetch()
-	const post = <T>(path: string, body?: unknown) =>
+	const post = <T>(path: string, body?: object) =>
 		$authFetch<T>(`${API}${path}`, { method: 'POST', body })
 
 	return {
@@ -117,7 +117,7 @@ export function useMediaApi() {
 		deleteAssets: (ids: string[]) =>
 			post<BulkOutcome>('/assets/bulk/delete', { ids }),
 		zip: (ids: string[]) =>
-			$authFetch<Blob>(`${API}/assets/zip`, {
+			$authFetch<Blob, 'blob'>(`${API}/assets/zip`, {
 				method: 'POST',
 				body: { ids },
 				responseType: 'blob',

@@ -41,7 +41,8 @@ export interface BulkOutcome {
 function describeFailure(id: string, error: unknown): BulkRefusal {
   if (error instanceof HTTPResult) {
     const body: unknown = error.getBody();
-    return { id, status: error.getStatus(), message: String(body ?? "") };
+    const message = typeof body === "string" ? body : JSON.stringify(body);
+    return { id, status: error.getStatus(), message: message ?? "" };
   }
   return {
     id,
@@ -57,7 +58,7 @@ async function applyToEach(
   operation: AssetOperation,
 ): Promise<BulkOutcome> {
   const outcome: BulkOutcome = { done: [], refused: [] };
-  for (const id of [...new Set(ids)]) {
+  for (const id of new Set(ids)) {
     try {
       const asset = await requireReadableAsset(context, id);
       await operation(context, asset);

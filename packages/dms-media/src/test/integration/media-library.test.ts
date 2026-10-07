@@ -3,7 +3,7 @@ import { expect } from "chai";
 import {
   ONE_PIXEL_PNG,
   PNG_MIMETYPE,
-  uploadAsset,
+  uploadAssetInBatch,
   uploadTextAsset,
 } from "../helpers/assets";
 import { authorizedClient } from "../helpers/http";
@@ -55,14 +55,12 @@ describe("[integration] media library — listings, search, bulk and overview", 
       })
     ).data.id;
     for (const name of ["oak-b.png", "oak-a.png", "walnut.png"]) {
-      const asset = await uploadAsset(
-        client,
-        childId,
-        name,
-        PNG_MIMETYPE,
-        ONE_PIXEL_PNG,
-        BATCH_ID,
-      );
+      const asset = await uploadAssetInBatch(client, childId, {
+        filename: name,
+        mimetype: PNG_MIMETYPE,
+        body: ONE_PIXEL_PNG,
+        batchId: BATCH_ID,
+      });
       ids[name] = asset.id;
     }
     ids["notes.txt"] = (await uploadTextAsset(client, childId, "notes.txt")).id;
@@ -273,7 +271,7 @@ describe("[integration] media library — listings, search, bulk and overview", 
         item.title === "$dms_media.activity.asset_upload_many" &&
         item.params.count === "3",
     );
-    expect(batch).to.exist;
+    expect(batch).to.not.equal(undefined);
     const history = await client.get(
       `/api/media/assets/${ids["oak-b.png"]}/history`,
     );

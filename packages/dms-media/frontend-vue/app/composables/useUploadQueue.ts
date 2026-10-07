@@ -61,13 +61,22 @@ function isFinal(item: UploadItem): boolean {
 	return FINAL_STATUSES.has(item.status)
 }
 
+class UploadError extends Error {
+	constructor(
+		readonly failure: UploadFailure,
+		message?: string,
+	) {
+		super(message ?? failure)
+	}
+}
+
 function putFile(
 	id: string,
 	url: string,
 	headers: Record<string, string>,
 	file: File,
 ): Promise<void> {
-	return new Promise((resolve, reject) => {
+	return new Promise<void>((resolve, reject) => {
 		const request = new XMLHttpRequest()
 		requests.set(id, request)
 		request.open('PUT', url)
@@ -81,16 +90,7 @@ function putFile(
 		request.onerror = () => reject(new UploadError('connection'))
 		request.onabort = () => reject(new UploadError('connection', 'aborted'))
 		request.send(file)
-	}).finally(() => requests.delete(id)) as Promise<void>
-}
-
-class UploadError extends Error {
-	constructor(
-		readonly failure: UploadFailure,
-		message?: string,
-	) {
-		super(message ?? failure)
-	}
+	}).finally(() => requests.delete(id))
 }
 
 function describeFailure(error: unknown): Pick<UploadItem, 'failure' | 'message'> {

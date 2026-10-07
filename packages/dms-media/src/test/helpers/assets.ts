@@ -27,14 +27,29 @@ export interface RawRedirectResponse {
   cacheControl: string | null;
 }
 
-export async function uploadAsset(
+export interface BatchFile {
+  filename: string;
+  mimetype: string;
+  body: Buffer;
+  batchId?: string;
+}
+
+export function uploadAsset(
   client: AxiosInstance,
   folderId: string,
   filename: string,
   mimetype: string,
   body: Buffer,
-  batchId?: string,
 ): Promise<UploadedAsset> {
+  return uploadAssetInBatch(client, folderId, { filename, mimetype, body });
+}
+
+export async function uploadAssetInBatch(
+  client: AxiosInstance,
+  folderId: string,
+  file: BatchFile,
+): Promise<UploadedAsset> {
+  const { filename, mimetype, body, batchId } = file;
   const presign = await client.post("/api/media/upload/presign", {
     folderId,
     filename,
