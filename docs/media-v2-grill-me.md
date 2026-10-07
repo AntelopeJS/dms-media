@@ -107,13 +107,12 @@ snippet. Every custom block carries `.meta({ name, description, icon })` with
 every write a role can withhold is an `.action()` of its block.
 
 **Q2.7 Which actions are declared on blocks?**
-Read actions are free. The explorer declares `star` (favorites); the rest of
-the writes are already guarded by folder rights and the three static
+None. Every write is already guarded by folder rights and the three static
 permissions, which are the single authority the API enforces: adding a second
 gate per block would let a role show a button the ACL then refuses, or the
 reverse. Blocks expose those rights to the UI (the tree answers `rights` per
 folder and the root rights), so a button only shows when the API will accept
-it.
+it. Starring is personal and needs no gate.
 
 **Q2.8 Nav badges?**
 None. A count of every file is noise in a sidebar, the uploads in progress
@@ -174,11 +173,19 @@ is this locked?", which explains the binding and links to Linked folders
 (M11). Folders carry a link marker.
 
 **Q3.9 Keyboard shortcuts?**
-`/` search, `U` upload, `⇧N` new folder, `Space` preview, `↵` open, `E` edit,
+`⌘/` search (`/` alone belongs to the dashboard's navigation search), `U` upload, `⇧N` new folder, `Space` preview, `↵` open, `E` edit,
 `F2` rename, `M` move, `⌫` delete, `⌘A` select all, `1` `2` `3` views, `I`
 details panel, `?` shortcuts sheet, `Esc` clears. Bound on the explorer only,
-ignored while typing in a field (M12). They are also listed in the DMS
+ignored while typing in a field and while a dialog or a menu is open, so Escape,
+Enter and Space reach the overlay (M12). They are also listed in the DMS
 shortcuts registry so they show in the account's shortcuts page.
+
+**Q3.9b How is the overview localized when stock blocks take no parameters?**
+`StatGroup`, `KeyValueList`, `NavCardGrid` and `Meter` translate a `$` key but
+cannot interpolate a count. Their routes answer texts already written in the
+dashboard's language (the `x-content-language` header every block fetch
+carries, else the member's language), from the module's own locale files and
+with the same plural rules, so the overview keeps stock blocks.
 
 **Q3.10 Optimistic updates?**
 Rename, move, alt text, visibility, delete and new folder patch the local store

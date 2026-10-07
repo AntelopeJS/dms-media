@@ -15,7 +15,7 @@ const { t } = useI18n()
 			role="listbox"
 			aria-multiselectable="true"
 			:aria-label="t('dms_media.explorer.files')"
-			:style="{ gridTemplateColumns: `repeat(auto-fill, minmax(${prefs.tileSize}px, 1fr))` }"
+			:style="{ gridTemplateColumns: `repeat(auto-fill, minmax(min(${prefs.tileSize}px, calc(50% - 4px)), 1fr))` }"
 		>
 			<AssetTile v-for="asset in assets" :key="asset.id" :asset="asset" />
 		</div>
