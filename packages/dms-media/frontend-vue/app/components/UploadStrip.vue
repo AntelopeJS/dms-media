@@ -108,7 +108,7 @@ function onFilesChosen(event: Event): void {
 		:class="isDragging ? 'border-(--ui-primary) bg-(--dms-accent-tint)' : 'border-(--ui-border-accented)'"
 	>
 		<DmsIconWell icon="i-ph-cloud-arrow-up" tone="primary" />
-		<div class="min-w-0 flex-1">
+		<div class="min-w-48 flex-1">
 			<p class="text-highlighted text-sm font-semibold">
 				{{ isDragging && destination ? t('dms_media.upload_strip.drop_now', { name: destination.name }) : t('dms_media.upload_strip.title') }}
 			</p>
