@@ -24,6 +24,10 @@
       "sharp",
       "mongodb-memory-server-core",
       "esbuild"
-    ]
+    ],
+    "overrides": {
+      "tinypool@<2.1.2": "^2.1.2",
+      "undici@>=6.0.0 <6.28.1": "^6.28.1"
+    }
   }
 }
