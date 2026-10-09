@@ -8,7 +8,7 @@ import { getLastSweep, SWEEP_DERIVATIVES_SCHEDULE } from "../../crons";
 import { MediaEventModel, type MediaFolder } from "../../db";
 import { folderPath } from "../../library/activity";
 import { buildUploadBatches } from "../../library/batches";
-import { createMediaTranslator } from "../../library/i18n";
+import { composedText, countParam } from "../../library/composed-text";
 import { loadAssetsInFolders } from "../../library/listing";
 import { presetCacheKey } from "../../presets";
 import { batchSummarySchema } from "../../validation/library.schema";
@@ -169,41 +169,38 @@ export class MediaManageController extends MediaApiController {
   @Get("/presets/cache")
   async presetCache() {
     await this.resolveContext();
-    const translator = createMediaTranslator(this.requestLanguage());
     const sweep = getLastSweep();
     const minutes = (seconds: number) =>
-      Math.round(seconds / SECONDS_PER_MINUTE);
+      composedText(`${PRESETS_TEXTS}.cache.minutes`, {
+        count: countParam(Math.round(seconds / SECONDS_PER_MINUTE)),
+      });
     return {
       items: [
         {
           id: "sweep",
-          label: translator.t(`${PRESETS_TEXTS}.cache.sweep`, {
+          label: composedText(`${PRESETS_TEXTS}.cache.sweep`, {
             time: describeCronTime(SWEEP_DERIVATIVES_SCHEDULE),
           }),
           value: sweep
-            ? translator.formatNumber(sweep.removedFiles)
-            : translator.t(`${PRESETS_TEXTS}.cache.sweep_pending`),
+            ? sweep.removedFiles
+            : `${PRESETS_TEXTS}.cache.sweep_pending`,
           detail: sweep
-            ? translator.t(`${PRESETS_TEXTS}.cache.sweep_detail`, {
-                date: sweep.finishedAt.toISOString().slice(0, 10),
+            ? composedText(`${PRESETS_TEXTS}.cache.sweep_detail`, {
+                date: { type: "date", value: sweep.finishedAt.toISOString() },
               })
             : `${PRESETS_TEXTS}.cache.sweep_pending_detail`,
         },
         {
           id: "public",
           label: `${PRESETS_TEXTS}.cache.public`,
-          value: translator.t(`${PRESETS_TEXTS}.cache.minutes`, {
-            count: minutes(PUBLIC_READ_URL_TTL_SECONDS),
-          }),
+          value: minutes(PUBLIC_READ_URL_TTL_SECONDS),
           type: "mono",
           detail: `${PRESETS_TEXTS}.cache.public_detail`,
         },
         {
           id: "private",
           label: `${PRESETS_TEXTS}.cache.private`,
-          value: translator.t(`${PRESETS_TEXTS}.cache.minutes`, {
-            count: minutes(PRIVATE_READ_URL_TTL_SECONDS),
-          }),
+          value: minutes(PRIVATE_READ_URL_TTL_SECONDS),
           type: "mono",
           detail: `${PRESETS_TEXTS}.cache.private_detail`,
         },

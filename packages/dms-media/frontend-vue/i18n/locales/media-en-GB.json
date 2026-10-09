@@ -540,7 +540,6 @@
 				"field": "Field",
 				"files": "Files",
 				"folder": "Folder",
-				"path": "Location",
 				"uploaders": "Who can upload",
 				"visibility": "Visibility"
 			},
@@ -853,6 +852,13 @@
 			"vector": "Vectors",
 			"video": "Videos"
 		},
+		"units": {
+			"b": "{value} B",
+			"kb": "{value} KB",
+			"mb": "{value} MB",
+			"gb": "{value} GB",
+			"tb": "{value} TB"
+		},
 		"upload_strip": {
 			"choose": "Choose files",
 			"description": "They go to the last folder you used. Change it before you drop.",
@@ -865,7 +871,6 @@
 		"uploads": {
 			"description": "Files go straight to storage, get checked, then appear in their folder. Keep working: uploads continue in the background and one failure never stops the rest.",
 			"history": {
-				"by": "By",
 				"complete": "All uploaded",
 				"empty": "No upload yet",
 				"empty_description": "Batches show here once files are uploaded.",
@@ -876,7 +881,9 @@
 				"partial": "Some failed",
 				"result": "Result",
 				"size": "Size",
-				"title": "Recent batches"
+				"title": "Recent batches",
+				"by_line": "by {name}",
+				"failed_detail": "1 of {total} failed | {failed} of {total} failed"
 			},
 			"title": "Uploads",
 			"upload": "Upload files"

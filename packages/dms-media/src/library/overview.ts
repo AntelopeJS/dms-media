@@ -7,6 +7,7 @@ import type { NavCardItem } from "@antelopejs/interface-dms/base/nav-card-grid";
 import type { StatGroupItem } from "@antelopejs/interface-dms/base/stat-group";
 import type { MediaAsset, MediaFolder } from "../db";
 import type { FolderStats } from "./folder-stats";
+import { composedBytes, composedText, countParam } from "./composed-text";
 import type { MediaTranslator } from "./i18n";
 import { folderLink, MEDIA_ROUTES, viewLink } from "./links";
 import { sumSizeByTypeGroup, countByTypeGroup } from "./listing";
@@ -62,23 +63,22 @@ function missingAlt(assets: MediaAsset[]): MediaAsset[] {
 }
 
 function storageItem(input: OverviewInput): StatGroupItem {
-  const { translator, quotaBytes } = input;
+  const { quotaBytes } = input;
   const size = totalSize(input.assets);
   const usedPercent = quotaBytes ? percentOf(size, quotaBytes) : undefined;
   return {
     id: "storage",
     icon: "i-ph-hard-drives",
     eyebrow: `${TEXTS}.kpis.storage`,
-    value: translator.formatBytes(size),
+    value: composedBytes(size),
     detail:
       usedPercent === undefined
-        ? translator.t(`${TEXTS}.kpis.storage_detail`, {
-            count: input.assets.length,
-            files: translator.formatNumber(input.assets.length),
+        ? composedText(`${TEXTS}.kpis.storage_detail`, {
+            files: countParam(input.assets.length),
           })
-        : translator.t(`${TEXTS}.kpis.storage_quota_detail`, {
+        : composedText(`${TEXTS}.kpis.storage_quota_detail`, {
             percent: usedPercent,
-            quota: translator.formatBytes(quotaBytes ?? 0),
+            quota: composedBytes(quotaBytes ?? 0),
           }),
     detailTone:
       (usedPercent ?? 0) >= QUOTA_WARNING_PERCENT ? "warning" : "neutral",
@@ -86,7 +86,7 @@ function storageItem(input: OverviewInput): StatGroupItem {
 }
 
 export function buildKpiItems(input: OverviewInput): StatGroupItem[] {
-  const { assets, translator } = input;
+  const { assets } = input;
   const since = input.now.getTime() - RECENT_WINDOW_DAYS * MS_PER_DAY;
   const uploaded = assets.filter((asset) => asset.createdAt.getTime() >= since);
   const publicCount = assets.filter(
@@ -102,9 +102,8 @@ export function buildKpiItems(input: OverviewInput): StatGroupItem[] {
       icon: "i-ph-files",
       eyebrow: `${TEXTS}.kpis.files`,
       value: assets.length,
-      detail: translator.t(`${TEXTS}.kpis.files_detail`, {
-        count: uploaded.length,
-        files: translator.formatNumber(uploaded.length),
+      detail: composedText(`${TEXTS}.kpis.files_detail`, {
+        files: countParam(uploaded.length),
       }),
       detailTone: uploaded.length > 0 ? "success" : "neutral",
       to: MEDIA_ROUTES.files,
@@ -115,7 +114,7 @@ export function buildKpiItems(input: OverviewInput): StatGroupItem[] {
       icon: "i-ph-globe",
       eyebrow: `${TEXTS}.kpis.public`,
       value: publicCount,
-      detail: translator.t(`${TEXTS}.kpis.public_detail`, {
+      detail: composedText(`${TEXTS}.kpis.public_detail`, {
         percent: percentOf(publicCount, assets.length),
       }),
     },
@@ -125,9 +124,8 @@ export function buildKpiItems(input: OverviewInput): StatGroupItem[] {
       tone: undescribed.length > 0 ? "warning" : "success",
       eyebrow: `${TEXTS}.kpis.missing_alt`,
       value: undescribed.length,
-      detail: translator.t(`${TEXTS}.kpis.missing_alt_detail`, {
-        count: publicUndescribed,
-        files: translator.formatNumber(publicUndescribed),
+      detail: composedText(`${TEXTS}.kpis.missing_alt_detail`, {
+        files: countParam(publicUndescribed),
       }),
       detailTone: publicUndescribed > 0 ? "warning" : "neutral",
       to: viewLink("missing-alt"),
@@ -182,7 +180,6 @@ function folderPathLabel(
 }
 
 export function buildLargestFolders(input: OverviewInput): KeyValueListItem[] {
-  const { translator } = input;
   const foldersById = new Map(
     input.folders.map((folder) => [folder._id, folder]),
   );
@@ -194,11 +191,10 @@ export function buildLargestFolders(input: OverviewInput): KeyValueListItem[] {
   return leafSized.map(({ folder, stats }) => ({
     id: folder._id,
     label: folderPathLabel(folder, foldersById),
-    value: translator.formatBytes(stats?.size ?? 0),
+    value: composedBytes(stats?.size ?? 0),
     type: "mono",
-    detail: translator.t(`${TEXTS}.largest.detail`, {
-      count: stats?.fileCount ?? 0,
-      files: translator.formatNumber(stats?.fileCount ?? 0),
+    detail: composedText(`${TEXTS}.largest.detail`, {
+      files: countParam(stats?.fileCount ?? 0),
     }),
     to: folderLink(folder._id),
   }));
@@ -210,7 +206,7 @@ export interface AttentionInput extends OverviewInput {
 }
 
 export function buildAttentionItems(input: AttentionInput): KeyValueListItem[] {
-  const { translator, assets } = input;
+  const { assets } = input;
   const undescribed = missingAlt(assets);
   const large = assets.filter((asset) => asset.size > LARGE_FILE_BYTES);
   const items: KeyValueListItem[] = [];
@@ -221,12 +217,11 @@ export function buildAttentionItems(input: AttentionInput): KeyValueListItem[] {
     items.push({
       id: "missing-alt",
       label: `${TEXTS}.attention.missing_alt`,
-      value: translator.formatNumber(undescribed.length),
+      value: undescribed.length,
       type: "status",
       tone: "warning",
-      detail: translator.t(`${TEXTS}.attention.missing_alt_detail`, {
-        count: publicCount,
-        files: translator.formatNumber(publicCount),
+      detail: composedText(`${TEXTS}.attention.missing_alt_detail`, {
+        files: countParam(publicCount),
       }),
       to: viewLink("missing-alt"),
     });
@@ -235,7 +230,7 @@ export function buildAttentionItems(input: AttentionInput): KeyValueListItem[] {
     items.push({
       id: "failed-uploads",
       label: `${TEXTS}.attention.failed_uploads`,
-      value: translator.formatNumber(input.failedUploads),
+      value: input.failedUploads,
       type: "status",
       tone: "error",
       detail: `${TEXTS}.attention.failed_uploads_detail`,
@@ -246,11 +241,11 @@ export function buildAttentionItems(input: AttentionInput): KeyValueListItem[] {
     items.push({
       id: "large-files",
       label: `${TEXTS}.attention.large_files`,
-      value: translator.formatNumber(large.length),
+      value: large.length,
       type: "status",
       tone: "neutral",
-      detail: translator.t(`${TEXTS}.attention.large_files_detail`, {
-        size: translator.formatBytes(totalSize(large)),
+      detail: composedText(`${TEXTS}.attention.large_files_detail`, {
+        size: composedBytes(totalSize(large)),
       }),
       to: `${MEDIA_ROUTES.files}?view=recent&sort=size&direction=desc`,
     });
@@ -258,10 +253,10 @@ export function buildAttentionItems(input: AttentionInput): KeyValueListItem[] {
   for (const folder of input.restrictedFolders) {
     items.push({
       id: `restricted-${folder._id}`,
-      label: translator.t(`${TEXTS}.attention.own_rules`, {
+      label: composedText(`${TEXTS}.attention.own_rules`, {
         name: folder.name,
       }),
-      value: translator.t(`${TEXTS}.attention.own_rules_value`),
+      value: `${TEXTS}.attention.own_rules_value`,
       type: "status",
       tone: "info",
       detail: `${TEXTS}.attention.own_rules_detail`,

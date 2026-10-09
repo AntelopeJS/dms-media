@@ -27,12 +27,8 @@ const history = TableView.fromSource({
     folder: {
       name: `${TEXTS}.history.folder`,
       type: new DefaultDataTypes.StringType(),
+      display: new DefaultDisplays.TwoLineDisplay({ subField: "byLine" }),
       order: 1,
-    },
-    by: {
-      name: `${TEXTS}.history.by`,
-      type: new DefaultDataTypes.StringType(),
-      order: 2,
     },
     files: {
       name: `${TEXTS}.history.files`,
@@ -58,6 +54,7 @@ const history = TableView.fromSource({
       }),
       display: new DefaultDisplays.StatusPillDisplay({
         tones: { complete: "success", partial: "warning", failed: "error" },
+        subField: "resultDetail",
       }),
       order: 5,
     },

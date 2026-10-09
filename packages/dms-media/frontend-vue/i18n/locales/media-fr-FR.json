@@ -540,7 +540,6 @@
 				"field": "Champ",
 				"files": "Fichiers",
 				"folder": "Dossier",
-				"path": "Emplacement",
 				"uploaders": "Qui peut importer",
 				"visibility": "Visibilité"
 			},
@@ -853,6 +852,13 @@
 			"vector": "Vectoriels",
 			"video": "Vidéos"
 		},
+		"units": {
+			"b": "{value} B",
+			"kb": "{value} KB",
+			"mb": "{value} MB",
+			"gb": "{value} GB",
+			"tb": "{value} TB"
+		},
 		"upload_strip": {
 			"choose": "Choisir des fichiers",
 			"description": "Ils vont dans le dernier dossier utilisé. Changez-le avant de déposer.",
@@ -865,7 +871,6 @@
 		"uploads": {
 			"description": "Les fichiers partent directement vers le stockage, sont vérifiés, puis apparaissent dans leur dossier. Continuez à travailler : les imports se poursuivent en arrière-plan et un échec n'arrête jamais les autres.",
 			"history": {
-				"by": "Par",
 				"complete": "Tout importé",
 				"empty": "Aucun import pour l'instant",
 				"empty_description": "Les lots apparaissent ici une fois les fichiers importés.",
@@ -876,7 +881,9 @@
 				"partial": "Certains ont échoué",
 				"result": "Résultat",
 				"size": "Taille",
-				"title": "Lots récents"
+				"title": "Lots récents",
+				"by_line": "par {name}",
+				"failed_detail": "1 sur {total} en échec | {failed} sur {total} en échec"
 			},
 			"title": "Imports",
 			"upload": "Importer des fichiers"

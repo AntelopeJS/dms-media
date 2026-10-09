@@ -52,10 +52,10 @@ const linkedFolders = TableView.fromSource({
     single: true,
   },
   columns: {
-    folder: { ...stringColumn("folder", 1), sortable: true },
-    path: {
-      ...stringColumn("path", 2),
-      display: new DefaultDisplays.MonoDisplay({}),
+    folder: {
+      ...stringColumn("folder", 1),
+      sortable: true,
+      display: new DefaultDisplays.TwoLineDisplay({ subField: "path" }),
     },
     field: {
       ...stringColumn("field", 3),

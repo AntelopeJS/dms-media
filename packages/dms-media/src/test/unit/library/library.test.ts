@@ -1,6 +1,7 @@
 import { expect } from "chai";
 import { buildActivityItems } from "../../../library/activity";
 import { buildUploadBatches } from "../../../library/batches";
+import { composedBytes, composedText } from "../../../library/composed-text";
 import { computeFolderStats } from "../../../library/folder-stats";
 import { createMediaTranslator, resolveLocale } from "../../../library/i18n";
 import { countByTypeGroup, pageAssets } from "../../../library/listing";
@@ -188,6 +189,31 @@ describe("[unit] library — activity and batches", () => {
       files: 2,
       failed: 1,
       result: "partial",
+    });
+    expect(batch?.resultDetail).to.deep.equal({
+      key: "dms_media.uploads.history.failed_detail",
+      params: { failed: { type: "count", value: 1 }, total: 3 },
+    });
+    expect(batch?.byLine.key).to.equal("dms_media.uploads.history.by_line");
+  });
+});
+
+describe("[unit] library — composed texts", () => {
+  it("writes a byte size in its largest unit, rounded like the explorer", () => {
+    expect(composedBytes(512)).to.deep.equal({
+      key: "dms_media.units.b",
+      params: { value: { type: "number", value: 512 } },
+    });
+    expect(composedBytes(3.25 * 1024 * 1024).params?.value).to.deep.equal({
+      type: "number",
+      value: 3.3,
+    });
+    expect(composedBytes(42 * 1024).key).to.equal("dms_media.units.kb");
+  });
+
+  it("drops the leading $ of a key", () => {
+    expect(composedText("$dms_media.title")).to.deep.equal({
+      key: "dms_media.title",
     });
   });
 });

@@ -243,7 +243,11 @@ describe("[integration] media library — listings, search, bulk and overview", 
     expect(
       kpis.data.items.map((item: { id: string }) => item.id),
     ).to.deep.equal(["files", "storage", "public", "missing-alt"]);
-    expect(kpis.data.items[0].detail).to.match(/uploaded in the last 30 days/);
+    expect(kpis.data.items[0].detail.key).to.equal(
+      "dms_media.overview.kpis.files_detail",
+    );
+    expect(kpis.data.items[0].detail.params.files.type).to.equal("count");
+    expect(kpis.data.items[1].value.key).to.match(/^dms_media\.units\./);
     const storage = await client.get("/api/media/stats/storage");
     expect(storage.data.segments.length).to.be.at.least(2);
     expect(storage.data.valueLabel).to.match(/B$/);

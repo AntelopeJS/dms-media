@@ -1,5 +1,7 @@
+import type { ComposedText } from "@antelopejs/interface-dms/base/types";
 import type { MediaEvent, MediaFolder } from "../db";
 import { folderPath } from "./activity";
+import { composedText, countParam } from "./composed-text";
 import { readEventDetails } from "./events";
 
 export interface UploadBatchRow {
@@ -7,12 +9,18 @@ export interface UploadBatchRow {
   folderId: string;
   folder: string;
   by: string;
+  byLine: ComposedText;
   files: number;
   failed: number;
   size: number;
-  result: "complete" | "partial" | "failed";
+  result: UploadBatchResult;
+  resultDetail: ComposedText | null;
   finishedAt: string;
 }
+
+type UploadBatchResult = "complete" | "partial" | "failed";
+
+const HISTORY_TEXTS = "dms_media.uploads.history";
 
 interface BatchAccumulator {
   id: string;
@@ -76,10 +84,20 @@ export function buildUploadBatches(
       folderId: batch.folderId,
       folder: folderPath(batch.folderId, foldersById),
       by: batch.by,
+      byLine: composedText(`${HISTORY_TEXTS}.by_line`, { name: batch.by }),
       files: batch.files,
       failed: batch.failed,
       size: batch.size,
       result: resultOf(batch),
+      resultDetail: failureDetail(batch),
       finishedAt: batch.finishedAt.toISOString(),
     }));
+}
+
+function failureDetail(batch: BatchAccumulator): ComposedText | null {
+  if (batch.failed === 0) return null;
+  return composedText(`${HISTORY_TEXTS}.failed_detail`, {
+    failed: countParam(batch.failed),
+    total: batch.files + batch.failed,
+  });
 }
