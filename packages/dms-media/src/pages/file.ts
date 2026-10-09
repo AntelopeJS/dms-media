@@ -33,7 +33,7 @@ const panel = Tab({
   .meta(blockMeta("file_tabs", "i-ph-tabs"))
   .child(
     "details",
-    VStack({ spacing: DETAILS_SPACING })
+    VStack({ spacing: DETAILS_SPACING, alignment: "stretch" })
       .meta(blockMeta("file_details", "i-ph-list-bullets"))
       .child(
         "properties",

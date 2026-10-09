@@ -11,6 +11,7 @@ import {
   parseFolderAcl,
   resolveFolderAccess,
 } from "../acl";
+import type { StatGroupItem } from "@antelopejs/interface-dms/base/stat-group";
 import type { MediaFolder } from "../db";
 import type { AclEntry, AclRight } from "../types";
 
@@ -96,6 +97,26 @@ export function summarizeRights(
     }
   }
   return summary;
+}
+
+const RIGHT_ICONS: Record<AclRight, string> = {
+  read: "i-ph-eye",
+  write: "i-ph-pencil-simple",
+  manage: "i-ph-shield-check",
+};
+const ACCESS_TEXTS = "$dms_media.access";
+
+/** The counters of the access page: how many members hold each right, with a few of their names. */
+export function buildRightsStats(rights: RightsSummary): StatGroupItem[] {
+  return (Object.keys(RIGHT_ICONS) as AclRight[]).map((right) => ({
+    id: right,
+    icon: RIGHT_ICONS[right],
+    eyebrow: `${ACCESS_TEXTS}.can_${right}`,
+    value: rights[right].count,
+    detail:
+      rights[right].sample.map((member) => member.name).join(", ") ||
+      `${ACCESS_TEXTS}.nobody`,
+  }));
 }
 
 export interface ChainLink {

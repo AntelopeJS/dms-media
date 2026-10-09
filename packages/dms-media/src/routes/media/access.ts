@@ -10,6 +10,7 @@ import { getMediaConfig } from "../../config";
 import { MEDIA_PERMISSIONS_MANAGE_PERMISSION } from "../../constants";
 import {
   buildInheritanceChain,
+  buildRightsStats,
   loadMemberActors,
   resolveEffectiveRules,
   summarizeRights,
@@ -118,6 +119,24 @@ export class MediaAccessController extends MediaApiController {
           visibility: asset.visibility,
         })),
     };
+  }
+
+  @Get("/folders/:folderId/access/stats")
+  async accessStats(@Parameter("folderId", "param") folderId: string) {
+    const context = await this.resolveContext();
+    requireVisibleFolder(context, folderId);
+    const members = await loadMemberActors({
+      tenantId: context.tenantId,
+      memberModel: this.memberModel,
+      roleModel: this.roleModel,
+    });
+    const rights = summarizeRights(
+      context.folders,
+      folderId,
+      getMediaConfig().rootAcl,
+      members,
+    );
+    return { items: buildRightsStats(rights) };
   }
 
   @Get("/access/subjects")

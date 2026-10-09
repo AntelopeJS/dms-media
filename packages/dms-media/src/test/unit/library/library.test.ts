@@ -1,4 +1,5 @@
 import { expect } from "chai";
+import { buildRightsStats } from "../../../library/access";
 import { buildActivityItems } from "../../../library/activity";
 import { buildUploadBatches } from "../../../library/batches";
 import { composedBytes, composedText } from "../../../library/composed-text";
@@ -238,5 +239,23 @@ describe("[unit] library — zip", () => {
     expect(uniqueEntryName("Photo.jpg", taken)).to.equal("Photo (2).jpg");
     expect(uniqueEntryName("notes", taken)).to.equal("notes");
     expect(uniqueEntryName("notes", taken)).to.equal("notes (2)");
+  });
+});
+
+describe("[unit] library — access counters", () => {
+  it("counts each right with a few member names, or nobody", () => {
+    const member = { userId: "u1", name: "Ada" };
+    const items = buildRightsStats({
+      read: { count: 2, sample: [member, { userId: "u2", name: "Bo" }] },
+      write: { count: 1, sample: [member] },
+      manage: { count: 0, sample: [] },
+    });
+    expect(
+      items.map((item) => [item.id, item.value, item.detail]),
+    ).to.deep.equal([
+      ["read", 2, "Ada, Bo"],
+      ["write", 1, "Ada"],
+      ["manage", 0, "$dms_media.access.nobody"],
+    ]);
   });
 });

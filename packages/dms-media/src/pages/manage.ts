@@ -3,6 +3,8 @@ import { CustomComponent } from "@antelopejs/interface-dms/base/custom";
 import { DefaultDataTypes } from "@antelopejs/interface-dms/base/data-types/default-types";
 import { Grid, GridRow } from "@antelopejs/interface-dms/base/grid";
 import { KeyValueList } from "@antelopejs/interface-dms/base/key-value-list";
+import { VStack } from "@antelopejs/interface-dms/base/stack";
+import { StatGroup } from "@antelopejs/interface-dms/base/stat-group";
 import { TableView } from "@antelopejs/interface-dms/base/table-view";
 import { DefaultDisplays } from "@antelopejs/interface-dms/base/table-view/column-display";
 import { PageController, RegisterPage } from "@antelopejs/interface-dms/page";
@@ -14,6 +16,40 @@ const LINKED_TEXTS = "$dms_media.linked";
 const PRESETS_TEXTS = "$dms_media.presets";
 const GAP = "1rem";
 const MIN_COLUMN_WIDTH = "320px";
+const ACCESS_TREE_WIDTH = "280px";
+const ACCESS_DETAIL_SPAN = 2;
+const ACCESS_RIGHTS_COUNT = 3;
+
+const accessFolder = VStack({ spacing: GAP, alignment: "stretch" })
+  .meta(blockMeta("access_folder", "i-ph-folder-simple"))
+  .child(
+    "summary",
+    CustomComponent("DmsMediaAccessFolder").meta(
+      blockMeta("access_summary", "i-ph-folder-simple"),
+    ),
+  )
+  .child(
+    "rights",
+    StatGroup({
+      layout: "cards",
+      columns: ACCESS_RIGHTS_COUNT,
+      fetchUrl: "/api/media/folders/{{query.folder}}/access/stats",
+      skeletonCount: ACCESS_RIGHTS_COUNT,
+      label: `${ACCESS_TEXTS}.rights_label`,
+    }).meta(blockMeta("access_rights", "i-ph-users-three")),
+  )
+  .child(
+    "rules",
+    CustomComponent("DmsMediaAccessRulesCard").meta(
+      blockMeta("access_rules", "i-ph-list-checks"),
+    ),
+  )
+  .child(
+    "visibility",
+    CustomComponent("DmsMediaAccessVisibility").meta(
+      blockMeta("access_visibility", "i-ph-globe"),
+    ),
+  );
 
 @RegisterPage()
 export class MediaAccessPage extends PageController("access", {
@@ -23,9 +59,20 @@ export class MediaAccessPage extends PageController("access", {
   icon: "i-ph-shield-check",
   order: 0,
 }) {
-  static editor = CustomComponent("DmsMediaAccessEditor").meta(
-    blockMeta("access_editor", "i-ph-shield-check"),
-  );
+  static editor = Grid({ gap: GAP, minColumnWidth: ACCESS_TREE_WIDTH })
+    .meta(blockMeta("access_editor", "i-ph-shield-check"))
+    .child(
+      "row",
+      GridRow()
+        .meta(blockMeta("access_editor", "i-ph-rows"))
+        .child(
+          "tree",
+          CustomComponent("DmsMediaAccessTree").meta(
+            blockMeta("access_tree", "i-ph-tree-structure"),
+          ),
+        )
+        .child("folder", accessFolder, { colSpan: ACCESS_DETAIL_SPAN }),
+    );
 }
 
 const stringColumn = (name: string, order: number) => ({

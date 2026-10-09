@@ -50,7 +50,8 @@
 			"visibility_saved": "Visibility of {name} updated",
 			"visibility_title": "Visibility of files in this folder",
 			"who": "Who",
-			"rules": "Rules"
+			"rules": "Rules",
+			"rights_label": "Who can open this folder"
 		},
 		"actions": {
 			"access": "Access & visibility",
@@ -280,6 +281,30 @@
 			"file_details": {
 				"name": "File details",
 				"description": "The editable properties above the file's information"
+			},
+			"access_tree": {
+				"name": "Folder tree",
+				"description": "The folders whose access you can review"
+			},
+			"access_folder": {
+				"name": "Selected folder",
+				"description": "The summary, members, rules and visibility of the selected folder"
+			},
+			"access_summary": {
+				"name": "Folder summary",
+				"description": "Where the folder's rules come from and whether you can change them"
+			},
+			"access_rights": {
+				"name": "Members by right",
+				"description": "How many members can read, upload to and manage the folder"
+			},
+			"access_rules": {
+				"name": "Access rules",
+				"description": "The roles and permissions the folder grants, editable with own rules"
+			},
+			"access_visibility": {
+				"name": "Folder visibility",
+				"description": "Whether the folder's files are public or private"
 			}
 		},
 		"bulk": {

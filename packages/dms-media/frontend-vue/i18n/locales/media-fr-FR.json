@@ -50,7 +50,8 @@
 			"visibility_saved": "Visibilité de {name} mise à jour",
 			"visibility_title": "Visibilité des fichiers de ce dossier",
 			"who": "Qui",
-			"rules": "Règles"
+			"rules": "Règles",
+			"rights_label": "Qui peut ouvrir ce dossier"
 		},
 		"actions": {
 			"access": "Accès et visibilité",
@@ -280,6 +281,30 @@
 			"file_details": {
 				"name": "Détails du fichier",
 				"description": "Les propriétés modifiables au-dessus des informations du fichier"
+			},
+			"access_tree": {
+				"name": "Arborescence",
+				"description": "Les dossiers dont vous pouvez vérifier l'accès"
+			},
+			"access_folder": {
+				"name": "Dossier sélectionné",
+				"description": "Le résumé, les membres, les règles et la visibilité du dossier sélectionné"
+			},
+			"access_summary": {
+				"name": "Résumé du dossier",
+				"description": "D'où viennent les règles du dossier et si vous pouvez les modifier"
+			},
+			"access_rights": {
+				"name": "Membres par droit",
+				"description": "Combien de membres peuvent lire, importer et gérer le dossier"
+			},
+			"access_rules": {
+				"name": "Règles d'accès",
+				"description": "Les rôles et permissions que le dossier accorde, modifiables avec des règles propres"
+			},
+			"access_visibility": {
+				"name": "Visibilité du dossier",
+				"description": "Si les fichiers du dossier sont publics ou privés"
 			}
 		},
 		"bulk": {
