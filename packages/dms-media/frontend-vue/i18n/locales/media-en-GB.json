@@ -157,10 +157,6 @@
 				"description": "Code to copy",
 				"name": "Field snippet"
 			},
-			"file_details": {
-				"description": "Viewer, alt text, visibility, delivery links and history",
-				"name": "File details"
-			},
 			"first_run": {
 				"description": "Starter folders for an empty library",
 				"name": "First run"
@@ -240,6 +236,50 @@
 			"upload_strip": {
 				"description": "Drop files to upload them to the last folder used",
 				"name": "Upload strip"
+			},
+			"file_header": {
+				"name": "File header",
+				"description": "Name, visibility, path, previous and next file, copy, download and edit"
+			},
+			"file_content": {
+				"name": "File content",
+				"description": "The viewer next to the file's tabs"
+			},
+			"file_preview": {
+				"name": "File viewer",
+				"description": "Preview of the file with the other files of its folder"
+			},
+			"file_panel": {
+				"name": "File panel",
+				"description": "The card holding the file's tabs"
+			},
+			"file_tabs": {
+				"name": "File tabs",
+				"description": "Details, delivery, history and usage of the file"
+			},
+			"file_properties": {
+				"name": "File properties",
+				"description": "Name, alt text, folder and visibility, saved as you type"
+			},
+			"file_information": {
+				"name": "File information",
+				"description": "Upload date, uploader, type and asset id"
+			},
+			"file_delivery": {
+				"name": "Delivery links",
+				"description": "The stable link and the preset links of the file"
+			},
+			"file_history": {
+				"name": "File history",
+				"description": "Everything that happened to the file"
+			},
+			"file_usage": {
+				"name": "File usage",
+				"description": "Where the file is embedded"
+			},
+			"file_details": {
+				"name": "File details",
+				"description": "The editable properties above the file's information"
 			}
 		},
 		"bulk": {
@@ -487,7 +527,8 @@
 			"usage_description": "Pages and emails that embed this file aren't tracked yet. Check them before you delete or make the file private.",
 			"usage_title": "Usage isn't tracked yet",
 			"visibility_locked": "Changing visibility needs the media access permission and manage rights on the folder.",
-			"visibility_saved": "Visibility updated"
+			"visibility_saved": "Visibility updated",
+			"modified_value": "{date}"
 		},
 		"files": {
 			"description": "Browse, upload and organise every image, video and document. Click to select, double-click to open, drag onto a folder to move.",

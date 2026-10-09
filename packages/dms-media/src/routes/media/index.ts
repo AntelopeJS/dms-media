@@ -7,6 +7,7 @@ export * from "./context";
 export * from "./controller";
 export * from "./delivery";
 export * from "./dto";
+export * from "./file";
 export * from "./folders";
 export * from "./library";
 export * from "./manage";

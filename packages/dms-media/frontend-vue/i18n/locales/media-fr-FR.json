@@ -157,10 +157,6 @@
 				"description": "Code à copier",
 				"name": "Extrait de code"
 			},
-			"file_details": {
-				"description": "Visionneuse, texte alternatif, visibilité, liens de diffusion et historique",
-				"name": "Détails du fichier"
-			},
 			"first_run": {
 				"description": "Dossiers de départ pour une bibliothèque vide",
 				"name": "Premiers pas"
@@ -240,6 +236,50 @@
 			"upload_strip": {
 				"description": "Déposer des fichiers dans le dernier dossier utilisé",
 				"name": "Bandeau d'import"
+			},
+			"file_header": {
+				"name": "En-tête du fichier",
+				"description": "Nom, visibilité, chemin, fichier précédent et suivant, copie, téléchargement et édition"
+			},
+			"file_content": {
+				"name": "Contenu du fichier",
+				"description": "La visionneuse à côté des onglets du fichier"
+			},
+			"file_preview": {
+				"name": "Visionneuse",
+				"description": "Aperçu du fichier avec les autres fichiers de son dossier"
+			},
+			"file_panel": {
+				"name": "Panneau du fichier",
+				"description": "La carte qui contient les onglets du fichier"
+			},
+			"file_tabs": {
+				"name": "Onglets du fichier",
+				"description": "Détails, diffusion, historique et utilisation du fichier"
+			},
+			"file_properties": {
+				"name": "Propriétés du fichier",
+				"description": "Nom, texte alternatif, dossier et visibilité, enregistrés à la saisie"
+			},
+			"file_information": {
+				"name": "Informations du fichier",
+				"description": "Date d'import, auteur, type et identifiant"
+			},
+			"file_delivery": {
+				"name": "Liens de diffusion",
+				"description": "Le lien stable et les liens des formats du fichier"
+			},
+			"file_history": {
+				"name": "Historique du fichier",
+				"description": "Tout ce qui est arrivé au fichier"
+			},
+			"file_usage": {
+				"name": "Utilisation du fichier",
+				"description": "Où le fichier est intégré"
+			},
+			"file_details": {
+				"name": "Détails du fichier",
+				"description": "Les propriétés modifiables au-dessus des informations du fichier"
 			}
 		},
 		"bulk": {
@@ -487,7 +527,8 @@
 			"usage_description": "Les pages et e-mails qui intègrent ce fichier ne sont pas encore suivis. Vérifiez-les avant de supprimer ou de rendre le fichier privé.",
 			"usage_title": "L'utilisation n'est pas encore suivie",
 			"visibility_locked": "Changer la visibilité demande la permission d'accès aux médias et le droit de gérer le dossier.",
-			"visibility_saved": "Visibilité mise à jour"
+			"visibility_saved": "Visibilité mise à jour",
+			"modified_value": "{date}"
 		},
 		"files": {
 			"description": "Parcourez, importez et rangez chaque image, vidéo et document. Cliquez pour sélectionner, double-cliquez pour ouvrir, glissez sur un dossier pour déplacer.",

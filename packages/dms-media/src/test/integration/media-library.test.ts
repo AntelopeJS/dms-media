@@ -189,6 +189,21 @@ describe("[integration] media library — listings, search, bulk and overview", 
     ).to.deep.equal(["thumb", "preview"]);
   });
 
+  it("serves the file page information list and tab counts", async () => {
+    const assetId = ids["oak-a.png"];
+    const information = await client.get(
+      `/api/media/assets/${assetId}/information`,
+    );
+    expect(information.status).to.equal(HTTP_OK);
+    expect(
+      information.data.items.map((item: { id: string }) => item.id),
+    ).to.deep.equal(["uploaded", "modified", "type", "asset-id"]);
+    expect(information.data.items[0].detail).to.equal("Test Owner");
+    expect(information.data.items[3].value).to.equal(assetId);
+    const counts = await client.get(`/api/media/assets/${assetId}/tab-counts`);
+    expect(counts.data).to.deep.equal({ delivery: 3 });
+  });
+
   it("moves, changes visibility and deletes in bulk, reporting refusals", async () => {
     const moved = await client.post("/api/media/assets/bulk/move", {
       ids: [ids["oak-b.png"], "missing-asset"],
