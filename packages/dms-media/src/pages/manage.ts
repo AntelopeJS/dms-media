@@ -58,6 +58,7 @@ export class MediaAccessPage extends PageController("access", {
   category: manageCategory,
   icon: "i-ph-shield-check",
   order: 0,
+  noComponentPermissions: true,
 }) {
   static editor = Grid({ gap: GAP, minColumnWidth: ACCESS_TREE_WIDTH })
     .meta(blockMeta("access_editor", "i-ph-shield-check"))

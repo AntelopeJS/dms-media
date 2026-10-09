@@ -952,7 +952,8 @@
 				"failed_detail": "1 of {total} failed | {failed} of {total} failed"
 			},
 			"title": "Uploads",
-			"upload": "Upload files"
+			"upload": "Upload files",
+			"no_writable_folder": "You can't upload to any folder yet: ask an admin for upload access."
 		},
 		"views": {
 			"columns": "Columns",

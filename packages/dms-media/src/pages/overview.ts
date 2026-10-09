@@ -12,6 +12,7 @@ import { PageController, RegisterPage } from "@antelopejs/interface-dms/page";
 import { MEDIA_ROUTES } from "../library/links";
 import { libraryCategory } from "./category";
 import { blockMeta } from "./texts";
+import { uploadAvailability } from "./upload-availability";
 
 const TEXTS = "$dms_media.overview";
 const GAP = "1rem";
@@ -94,6 +95,7 @@ export class MediaOverviewPage extends PageController(
       },
       {
         id: "upload",
+        availability: uploadAvailability,
         label: `${TEXTS}.upload`,
         icon: "i-ph-upload-simple",
         variant: ButtonVariant.solid,

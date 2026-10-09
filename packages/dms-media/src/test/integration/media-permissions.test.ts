@@ -6,7 +6,9 @@ import {
   MEDIA_PERMISSIONS_MANAGE_PERMISSION,
   MEDIA_UPLOAD_PERMISSION,
 } from "../../constants";
+import { GetPermissionId } from "@antelopejs/interface-dms/page";
 import { MEDIA_PAGE_PERMISSION } from "../../pages/files";
+import { MediaUploadsPage } from "../../pages/uploads";
 import type { AclEntry } from "../../types";
 import {
   rawGet,
@@ -888,6 +890,44 @@ describe("[integration] media permissions — multi-actor ACL enforcement", () =
       await setRolePermissions(roles.latecomer, []);
       const tree = await fetchTree(sessions.latecomer.client);
       expect(tree.folders).to.deep.equal([]);
+    });
+  });
+
+  describe("upload header button", () => {
+    const uploadsPagePermission = GetPermissionId(MediaUploadsPage) ?? "";
+
+    async function uploadButton(client: AxiosInstance) {
+      const layout = await client.get("/dms/pagelayout", {
+        params: { slug: "/media/uploads" },
+      });
+      expect(layout.status).to.equal(HTTP_OK);
+      return layout.data.layout.options.headerActions[0];
+    }
+
+    after(async () => {
+      await setRolePermissions(roles.latecomer, []);
+    });
+
+    it("is disabled for a member who can upload to no folder", async () => {
+      await setRolePermissions(roles.latecomer, [
+        MEDIA_PAGE_PERMISSION,
+        uploadsPagePermission,
+      ]);
+      const button = await uploadButton(sessions.latecomer.client);
+      expect(button).to.include({
+        disabled: true,
+        disabledReason: "$dms_media.uploads.no_writable_folder",
+      });
+    });
+
+    it("is enabled once the member may upload somewhere", async () => {
+      await setRolePermissions(roles.latecomer, [
+        MEDIA_PAGE_PERMISSION,
+        uploadsPagePermission,
+        MEDIA_UPLOAD_PERMISSION,
+      ]);
+      const button = await uploadButton(sessions.latecomer.client);
+      expect(button.disabled).to.not.equal(true);
     });
   });
 

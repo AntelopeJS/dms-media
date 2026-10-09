@@ -82,8 +82,8 @@ function changeVisibility(visibility: AssetVisibility): void {
 		<UFormField :label="t('dms_media.columns.visibility')">
 			<FileVisibility :asset="asset" :folder="details.folder" :can-change="file.canChangeVisibility.value" @change="changeVisibility" />
 		</UFormField>
-		<div class="border-default flex items-center justify-between gap-2 border-t pt-3">
-			<UButton v-if="file.canWrite.value" icon="i-ph-trash" color="error" variant="ghost" size="sm" :label="t('dms_media.file.delete')" @click="remove" />
+		<div v-if="file.canWrite.value" class="border-default flex items-center justify-between gap-2 border-t pt-3">
+			<UButton icon="i-ph-trash" color="error" variant="ghost" size="sm" :label="t('dms_media.file.delete')" @click="remove" />
 			<span class="text-dimmed ms-auto text-[12px]">{{ t('dms_media.file.autosave') }}</span>
 		</div>
 		<DmsEyebrow :label="t('dms_media.file.information')" tone="muted" class="-mb-3" />

@@ -952,7 +952,8 @@
 				"failed_detail": "1 sur {total} en échec | {failed} sur {total} en échec"
 			},
 			"title": "Imports",
-			"upload": "Importer des fichiers"
+			"upload": "Importer des fichiers",
+			"no_writable_folder": "Vous ne pouvez importer dans aucun dossier : demandez l'accès en import à un administrateur."
 		},
 		"views": {
 			"columns": "Colonnes",

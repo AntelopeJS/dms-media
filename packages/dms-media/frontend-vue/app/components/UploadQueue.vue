@@ -13,6 +13,7 @@ const route = useDmsRoute()
 const router = useDmsRouter()
 const { t } = useI18n()
 const tree = ref<MediaTree | null>(null)
+const canUpload = computed(() => Boolean(tree.value?.folders.some((folder) => folder.rights.write)))
 const fileInput = useTemplateRef<HTMLInputElement>('fileInput')
 const destination = ref<{ id: string; name: string } | null>(null)
 const isBannerDismissed = ref(false)
@@ -118,6 +119,7 @@ function onFilesChosen(event: Event): void {
 }
 
 onMounted(() => {
+	void api.tree().then((loaded) => (tree.value ??= loaded)).catch(() => undefined)
 	if (route.query.pick) {
 		void router.replace({ path: route.path, query: {} })
 		void pickFiles()
@@ -277,7 +279,7 @@ onBeforeUnmount(() => localPreviews.forEach((url) => URL.revokeObjectURL(url)))
 			icon="i-ph-cloud-arrow-up"
 			:title="t('dms_media.queue.empty_title')"
 			:description="t('dms_media.queue.empty_description')"
-			:actions="[{ label: t('dms_media.actions.upload_files'), icon: 'i-ph-upload-simple', onClick: pickFiles }]"
+			:actions="canUpload ? [{ label: t('dms_media.actions.upload_files'), icon: 'i-ph-upload-simple', onClick: pickFiles }] : []"
 		/>
 		<input ref="fileInput" type="file" multiple class="hidden" @change="onFilesChosen" />
 	</div>

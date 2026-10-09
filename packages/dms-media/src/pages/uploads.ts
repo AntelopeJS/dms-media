@@ -8,6 +8,7 @@ import { PageController, RegisterPage } from "@antelopejs/interface-dms/page";
 import { MEDIA_ROUTES } from "../library/links";
 import { libraryCategory } from "./category";
 import { blockMeta } from "./texts";
+import { uploadAvailability } from "./upload-availability";
 
 const TEXTS = "$dms_media.uploads";
 const HISTORY_PAGE_SIZE = 10;
@@ -82,6 +83,7 @@ export class MediaUploadsPage extends PageController(
     headerActions: [
       {
         id: "upload",
+        availability: uploadAvailability,
         label: `${TEXTS}.upload`,
         icon: "i-ph-upload-simple",
         variant: ButtonVariant.solid,

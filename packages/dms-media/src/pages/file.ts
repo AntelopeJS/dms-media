@@ -92,6 +92,7 @@ export class MediaFilePage extends PageController(
     hidden: true,
     order: 3,
     validation: { requiredQueryParams: [ASSET_QUERY_PARAM] },
+    noComponentPermissions: true,
   },
   DefaultLayout({ hideHeader: true }),
 ) {
@@ -132,6 +133,7 @@ export class MediaEditorPage extends PageController(
     hidden: true,
     order: 4,
     validation: { requiredQueryParams: [ASSET_QUERY_PARAM] },
+    noComponentPermissions: true,
   },
   DefaultLayout({ hideHeader: true }),
 ) {
