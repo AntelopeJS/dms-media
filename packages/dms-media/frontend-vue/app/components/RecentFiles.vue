@@ -10,7 +10,7 @@ const tree = ref<MediaTree | null>(null)
 const isLoading = ref(true)
 const SKELETONS = 6
 
-onMounted(async () => {
+async function load(): Promise<void> {
 	try {
 		const [recent, loadedTree] = await Promise.all([api.recent(), api.tree()])
 		assets.value = recent.assets
@@ -18,7 +18,14 @@ onMounted(async () => {
 	} finally {
 		isLoading.value = false
 	}
+}
+
+let stopRefresh: (() => void) | undefined
+onMounted(() => {
+	void load()
+	stopRefresh = onPageBlocksRefresh(() => void load())
 })
+onBeforeUnmount(() => stopRefresh?.())
 
 const foldersById = computed(() => new Map((tree.value?.folders ?? []).map((folder) => [folder.id, folder])))
 </script>

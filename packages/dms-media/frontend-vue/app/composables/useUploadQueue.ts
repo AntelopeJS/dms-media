@@ -170,6 +170,7 @@ export function useUploadQueue() {
 					size: done.reduce((total, item) => total + item.size, 0),
 				})
 				.catch(() => undefined)
+				.then(() => refreshPageBlocks())
 		}
 	}
 
