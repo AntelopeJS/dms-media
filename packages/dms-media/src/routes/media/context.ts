@@ -77,7 +77,7 @@ export async function resolveActorAccess(
     roleIds,
     deps.roleModel,
   );
-  const permissions = filterGrantablePermissions(rawPermissions);
+  const permissions = await filterGrantablePermissions(rawPermissions);
   const actor: AclActor = { permissions, roleIds };
   const rootAcl = getMediaConfig().rootAcl;
   await ensureTenantBindings(deps.tenantId, deps.folderModel);

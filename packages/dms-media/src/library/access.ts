@@ -58,7 +58,7 @@ export async function loadMemberActors(
       return {
         member: { userId: user._id, name: user.name || user.email },
         actor: {
-          permissions: filterGrantablePermissions(permissions),
+          permissions: await filterGrantablePermissions(permissions),
           roleIds: member.roleIds,
         },
       };
