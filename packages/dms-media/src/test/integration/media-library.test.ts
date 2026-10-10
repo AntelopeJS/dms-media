@@ -288,7 +288,8 @@ describe("[integration] media library — listings, search, bulk and overview", 
     expect(kpis.data.items[1].value.key).to.match(/^dms_media\.units\./);
     const storage = await client.get("/api/media/stats/storage");
     expect(storage.data.segments.length).to.be.at.least(2);
-    expect(storage.data.valueLabel).to.match(/B$/);
+    expect(storage.data.valueLabel.key).to.match(/^dms_media\.units\./);
+    expect(storage.data.hint.params.files.type).to.equal("count");
     const largest = await client.get("/api/media/stats/largest");
     expect(largest.data.items[0].label).to.contain("›");
     const attention = await client.get("/api/media/stats/attention");

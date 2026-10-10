@@ -27,3 +27,9 @@ export function announceLibraryChange(): void {
   pending = setTimeout(() => void publishNow(), COALESCE_WINDOW_MS);
   pending.unref?.();
 }
+
+/** Drops an announcement still waiting, when the module stops. */
+export function cancelLibraryChange(): void {
+  clearTimeout(pending);
+  pending = undefined;
+}
