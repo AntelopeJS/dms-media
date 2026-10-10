@@ -2,6 +2,7 @@ import { GetModel } from "@antelopejs/interface-database-decorators";
 import { Logging } from "@antelopejs/interface-core/logging";
 import type { User } from "@antelopejs/interface-dms/auth/db";
 import { type MediaEvent, MediaEventModel } from "../db";
+import { announceLibraryChange } from "./realtime";
 
 export const MEDIA_EVENT_KINDS = [
   "asset.upload",
@@ -40,6 +41,9 @@ export interface MediaEventActor {
   user: User;
 }
 
+/** Each uploaded file is announced once, by the report of its batch. */
+const SILENT_KINDS: ReadonlySet<MediaEventKind> = new Set(["asset.upload"]);
+
 /** Records an activity entry; a failure is logged and never fails the write. */
 export async function recordMediaEvent(
   actor: MediaEventActor,
@@ -60,6 +64,7 @@ export async function recordMediaEvent(
   } catch (error) {
     Logging.Error("Failed to record a media event", error);
   }
+  if (!SILENT_KINDS.has(input.kind)) announceLibraryChange();
 }
 
 export function readEventDetails(event: MediaEvent): MediaEventDetails {

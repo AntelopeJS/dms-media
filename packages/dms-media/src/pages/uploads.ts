@@ -9,6 +9,7 @@ import { MEDIA_ROUTES } from "../library/links";
 import { libraryCategory } from "./category";
 import { blockMeta } from "./texts";
 import { uploadAvailability } from "./upload-availability";
+import { MEDIA_LIBRARY_TOPIC } from "../constants";
 
 const TEXTS = "$dms_media.uploads";
 const HISTORY_PAGE_SIZE = 10;
@@ -16,6 +17,7 @@ const HISTORY_PAGE_SIZE = 10;
 const history = TableView.fromSource({
   caption: `${TEXTS}.history.title`,
   fetchUrl: "/api/media/upload/batches",
+  realtimeTopic: MEDIA_LIBRARY_TOPIC,
   layout: "compact",
   pageSize: HISTORY_PAGE_SIZE,
   emptyStates: {

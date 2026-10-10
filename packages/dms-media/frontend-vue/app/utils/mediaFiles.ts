@@ -16,6 +16,9 @@ export const MEDIA_ROUTES = {
 	presets: '/media/presets',
 } as const
 
+/** Realtime topic the backend publishes on after each write to the library. */
+export const MEDIA_LIBRARY_TOPIC = 'media.library'
+
 export const TYPE_GROUP_ICONS: Record<AssetTypeGroup, string> = {
 	image: 'i-ph-image',
 	video: 'i-ph-film-strip',

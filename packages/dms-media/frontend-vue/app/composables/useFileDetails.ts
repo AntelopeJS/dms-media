@@ -54,7 +54,6 @@ export function useFileDetails(assetId: Ref<string | undefined>) {
 		patch({ name })
 		try {
 			await api.updateAsset(current.id, { name })
-			refreshPageBlocks()
 			return true
 		} catch (cause) {
 			patch({ name: current.name })
@@ -69,7 +68,6 @@ export function useFileDetails(assetId: Ref<string | undefined>) {
 		try {
 			await api.updateAsset(current.id, { alt })
 			patch({ alt })
-			refreshPageBlocks()
 			return true
 		} catch (cause) {
 			useApiError(cause, { title: t('dms_media.toasts.alt_failed') })
@@ -84,7 +82,6 @@ export function useFileDetails(assetId: Ref<string | undefined>) {
 			const outcome = await api.setAssetsVisibility([current.id], visibility)
 			if (outcome.refused.length) throw { data: { message: outcome.refused[0]?.message } }
 			await load(current.id)
-			refreshPageBlocks()
 			toast.add({ title: t('dms_media.file.visibility_saved'), color: 'success', icon: 'i-ph-check-circle' })
 		} catch (cause) {
 			useApiError(cause, { title: t('dms_media.toasts.visibility_failed') })
@@ -98,7 +95,6 @@ export function useFileDetails(assetId: Ref<string | undefined>) {
 			const outcome = await api.moveAssets([current.id], folderId)
 			if (outcome.refused.length) throw { data: { message: outcome.refused[0]?.message } }
 			await load(current.id)
-			refreshPageBlocks()
 			toast.add({ title: t('dms_media.toasts.moved', { count: 1 }, 1), color: 'success' })
 		} catch (cause) {
 			useApiError(cause, { title: t('dms_media.toasts.move_failed') })

@@ -20,12 +20,10 @@ async function load(): Promise<void> {
 	}
 }
 
-let stopRefresh: (() => void) | undefined
-onMounted(() => {
-	void load()
-	stopRefresh = onPageBlocksRefresh(() => void load())
+onMounted(() => void load())
+useRealtimeTopic(MEDIA_LIBRARY_TOPIC, (event) => {
+	if ('type' in event) void load()
 })
-onBeforeUnmount(() => stopRefresh?.())
 
 const foldersById = computed(() => new Map((tree.value?.folders ?? []).map((folder) => [folder.id, folder])))
 </script>

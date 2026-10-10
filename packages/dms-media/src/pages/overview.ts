@@ -13,6 +13,7 @@ import { MEDIA_ROUTES } from "../library/links";
 import { libraryCategory } from "./category";
 import { blockMeta } from "./texts";
 import { uploadAvailability } from "./upload-availability";
+import { MEDIA_LIBRARY_TOPIC } from "../constants";
 
 const TEXTS = "$dms_media.overview";
 const GAP = "1rem";
@@ -28,6 +29,7 @@ const storage = Card({ title: `${TEXTS}.storage.title` })
     "byType",
     Meter({
       fetchUrl: "/api/media/stats/storage",
+      realtimeTopic: MEDIA_LIBRARY_TOPIC,
       legend: true,
       size: "md",
       format: "none",
@@ -38,6 +40,7 @@ const storage = Card({ title: `${TEXTS}.storage.title` })
     KeyValueList({
       title: `${TEXTS}.largest.title`,
       fetchUrl: "/api/media/stats/largest",
+      realtimeTopic: MEDIA_LIBRARY_TOPIC,
       card: false,
       dense: true,
       skeletonCount: 3,
@@ -48,6 +51,7 @@ const storage = Card({ title: `${TEXTS}.storage.title` })
 const attention = KeyValueList({
   title: `${TEXTS}.attention.title`,
   fetchUrl: "/api/media/stats/attention",
+  realtimeTopic: MEDIA_LIBRARY_TOPIC,
   skeletonCount: 3,
   empty: {
     title: `${TEXTS}.attention.empty`,
@@ -58,6 +62,7 @@ const attention = KeyValueList({
 const folders = NavCardGrid({
   title: `${TEXTS}.folders.title`,
   fetchUrl: "/api/media/stats/folders",
+  realtimeTopic: MEDIA_LIBRARY_TOPIC,
   columns: FOLDER_COLUMNS,
   skeletonCount: FOLDER_COLUMNS,
   empty: { title: `${TEXTS}.folders.empty` },
@@ -66,6 +71,7 @@ const folders = NavCardGrid({
 const activity = ActivityFeed({
   title: `${TEXTS}.activity.title`,
   fetchUrl: `/api/media/activity?limit=${ACTIVITY_LENGTH}`,
+  realtimeTopic: MEDIA_LIBRARY_TOPIC,
   maxItems: ACTIVITY_LENGTH,
   groupByDay: false,
   card: true,
@@ -117,6 +123,7 @@ export class MediaOverviewPage extends PageController(
     layout: "cards",
     columns: KPI_COUNT,
     fetchUrl: "/api/media/stats/kpis",
+    realtimeTopic: MEDIA_LIBRARY_TOPIC,
     skeletonCount: KPI_COUNT,
     label: `${TEXTS}.kpis.label`,
   }).meta(blockMeta("kpis", "i-ph-chart-line-up"));

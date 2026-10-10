@@ -81,7 +81,6 @@ export const useAccessEditor = createSharedComposable(() => {
 			await api.setFolderAcl(folder.value.id, entries)
 			toast.add({ title: t('dms_media.access.saved'), color: 'success', icon: 'i-ph-shield-check' })
 			await Promise.all([loadSummary(folder.value.id), loadTree()])
-			refreshPageBlocks()
 		} catch (error) {
 			useApiError(error, { title: t('dms_media.access.save_failed') })
 		} finally {
@@ -112,7 +111,6 @@ export const useAccessEditor = createSharedComposable(() => {
 			await api.setFolderVisibility(current.id, visibility)
 			toast.add({ title: t('dms_media.access.visibility_saved', { name: current.name }), color: 'success' })
 			await Promise.all([loadSummary(current.id), loadTree()])
-			refreshPageBlocks()
 		}
 		if (visibility === 'private') return apply().catch((error) => useApiError(error, { title: t('dms_media.toasts.visibility_failed') }))
 		await confirm({
