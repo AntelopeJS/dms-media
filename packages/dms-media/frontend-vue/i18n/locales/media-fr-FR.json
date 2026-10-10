@@ -506,7 +506,8 @@
 					"value": "Valeur",
 					"binding": "Dossier lié",
 					"rights": "Droits"
-				}
+				},
+				"notes_title": "À savoir"
 			},
 			"demo": {
 				"cover": "Image de couverture",
@@ -573,7 +574,8 @@
 			"usage_title": "L'utilisation n'est pas encore suivie",
 			"visibility_locked": "Changer la visibilité demande la permission d'accès aux médias et le droit de gérer le dossier.",
 			"visibility_saved": "Visibilité mise à jour",
-			"modified_value": "{date}"
+			"modified_value": "{date}",
+			"delivery_sizes": "Tailles de diffusion"
 		},
 		"files": {
 			"description": "Parcourez, importez et rangez chaque image, vidéo et document. Cliquez pour sélectionner, double-cliquez pour ouvrir, glissez sur un dossier pour déplacer.",

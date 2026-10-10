@@ -506,7 +506,8 @@
 					"value": "Value",
 					"binding": "Linked folder",
 					"rights": "Rights"
-				}
+				},
+				"notes_title": "Good to know"
 			},
 			"demo": {
 				"cover": "Cover image",
@@ -573,7 +574,8 @@
 			"usage_title": "Usage isn't tracked yet",
 			"visibility_locked": "Changing visibility needs the media access permission and manage rights on the folder.",
 			"visibility_saved": "Visibility updated",
-			"modified_value": "{date}"
+			"modified_value": "{date}",
+			"delivery_sizes": "Delivery sizes"
 		},
 		"files": {
 			"description": "Browse, upload and organise every image, video and document. Click to select, double-click to open, drag onto a folder to move.",

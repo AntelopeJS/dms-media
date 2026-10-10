@@ -213,7 +213,7 @@ describe("[integration] media library — listings, search, bulk and overview", 
     expect(links.status).to.equal(HTTP_OK);
     expect(
       links.data.items.map((item: { id: string }) => item.id),
-    ).to.deep.equal(["stable", "thumb", "preview"]);
+    ).to.deep.equal(["stable", "thumb", "preview", "presets"]);
     const [stable] = links.data.items;
     expect(stable.value).to.equal(`/media/${assetId}/oak-a.png`);
     expect(stable.copyValue).to.match(
@@ -224,7 +224,6 @@ describe("[integration] media library — listings, search, bulk and overview", 
     );
     expect(notice.status).to.equal(HTTP_OK);
     expect(notice.data.description).to.match(/delivery_(public|private)$/);
-    expect(notice.data.actions[0].to).to.equal("/media/presets");
   });
 
   it("moves, changes visibility and deletes in bulk, reporting refusals", async () => {

@@ -9,13 +9,24 @@ import { MEDIA_ROUTES } from "../../library/links";
 import { type MediaPresetConfig } from "../../presets";
 import { composedText } from "../../library/composed-text";
 import { isDescribableImage } from "../../library/type-groups";
+import { GetPermissionId } from "@antelopejs/interface-dms/page";
+import { OWNER_WILDCARD_PERMISSION } from "../../constants";
+import { MediaPresetsPage } from "../../pages/manage";
 import { requireReadableAsset } from "./assets";
+import type { MediaRequestContext } from "./context";
 import { buildDeliveryPath, resolveEffectiveVisibility } from "./dto";
 import { MediaApiController } from "./controller";
 
 const FILE_TEXTS = "$dms_media.file";
 const STABLE_LINK_COUNT = 1;
 const STABLE_LINK_ID = "stable";
+const PRESETS_LINK: KeyValueListItem = {
+  id: "presets",
+  label: `${FILE_TEXTS}.delivery_sizes`,
+  value: `${FILE_TEXTS}.see_presets`,
+  type: "link",
+  to: MEDIA_ROUTES.presets,
+};
 const SIZE_UNSET = "–";
 
 async function uploaderName(asset: MediaAsset): Promise<string | undefined> {
@@ -53,10 +64,14 @@ function deliveryRow(
   };
 }
 
-/** The links a file is delivered on, each with a button copying its full URL. */
+/**
+ * The links a file is delivered on, each with a button copying its full URL,
+ * then the way to every delivery size.
+ */
 export function buildDeliveryLinks(
   asset: MediaAsset,
   origin: string,
+  canOpenPresets: boolean,
 ): KeyValueListItem[] {
   const presetRows = deliverablePresets(asset).map((preset) => ({
     ...deliveryRow(
@@ -75,6 +90,7 @@ export function buildDeliveryLinks(
       origin,
     ),
     ...presetRows,
+    ...(canOpenPresets ? [PRESETS_LINK] : []),
   ];
 }
 
@@ -91,15 +107,18 @@ export function buildDeliveryNotice(
     description: isPublic
       ? `${FILE_TEXTS}.delivery_public`
       : `${FILE_TEXTS}.delivery_private`,
-    actions: [
-      {
-        label: `${FILE_TEXTS}.see_presets`,
-        to: MEDIA_ROUTES.presets,
-        icon: "i-ph-frame-corners",
-        variant: "link",
-      },
-    ],
   };
+}
+
+function canOpenPage(
+  context: MediaRequestContext,
+  page: typeof MediaPresetsPage,
+): boolean {
+  const permissionId = GetPermissionId(page);
+  return (
+    context.permissions.has(OWNER_WILDCARD_PERMISSION) ||
+    (permissionId !== undefined && context.permissions.has(permissionId))
+  );
 }
 
 /** The facts the file page lists under its properties. */
@@ -152,7 +171,13 @@ export class MediaFileController extends MediaApiController {
   async delivery(@Parameter("assetId", "param") assetId: string) {
     const context = await this.resolveContext();
     const asset = await requireReadableAsset(context, assetId);
-    return { items: buildDeliveryLinks(asset, this.requestOrigin()) };
+    return {
+      items: buildDeliveryLinks(
+        asset,
+        this.requestOrigin(),
+        canOpenPage(context, MediaPresetsPage),
+      ),
+    };
   }
 
   @Get("/assets/:assetId/delivery/notice")
