@@ -11,6 +11,14 @@ import { MediaAssetModel, MediaFolderModel } from "../../db";
 import { type MediaEventInput, recordMediaEvent } from "../../library/events";
 import { type MediaRequestContext, resolveMediaContext } from "./context";
 
+const DEFAULT_PROTOCOL = "http";
+const HEADER_LIST_SEPARATOR = ",";
+
+function firstHeader(value: string | string[] | undefined): string | undefined {
+  const raw = Array.isArray(value) ? value[0] : value;
+  return raw?.split(HEADER_LIST_SEPARATOR)[0]?.trim() || undefined;
+}
+
 /**
  * Base of every `/api/media` controller: the tenant-scoped models and the
  * authenticated member a request resolves its folder access from.
@@ -33,6 +41,15 @@ export class MediaApiController extends Controller("/api/media") {
 
   @AuthTenantMember()
   declare user: User;
+
+  /** The origin the caller reached the API on, behind a proxy included. */
+  protected requestOrigin(): string {
+    const headers = this.ctx.rawRequest.headers;
+    const forwardedProto = firstHeader(headers["x-forwarded-proto"]);
+    const host = firstHeader(headers["x-forwarded-host"]) ?? headers.host;
+    if (!host) return "";
+    return `${forwardedProto ?? DEFAULT_PROTOCOL}://${host}`;
+  }
 
   protected resolveContext(): Promise<MediaRequestContext> {
     return resolveMediaContext(this);

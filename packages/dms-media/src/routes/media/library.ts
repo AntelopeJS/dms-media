@@ -235,14 +235,6 @@ export class MediaLibraryController extends MediaApiController {
         .filter((entry) => entry !== undefined)
         .map((entry) => ({ id: entry._id, name: entry.name })),
       uploadedBy: uploader ? uploader.name || uploader.email : null,
-      presets: isDescribableImage(asset.mimetype)
-        ? [...getMediaConfig().presets.values()].map((preset) => ({
-            id: preset.id,
-            width: preset.width ?? null,
-            height: preset.height ?? null,
-            url: `/media/${asset._id}/${preset.id}/${encodeURIComponent(asset.name)}`,
-          }))
-        : [],
     };
   }
 

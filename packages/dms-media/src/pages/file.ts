@@ -1,3 +1,4 @@
+import { Banner } from "@antelopejs/interface-dms/base/banner";
 import { ActivityFeed } from "@antelopejs/interface-dms/base/activity-feed";
 import { Card } from "@antelopejs/interface-dms/base/card";
 import { CustomComponent } from "@antelopejs/interface-dms/base/custom";
@@ -10,6 +11,7 @@ import { Tab } from "@antelopejs/interface-dms/base/tab";
 import { PageController, RegisterPage } from "@antelopejs/interface-dms/page";
 import { libraryCategory } from "./category";
 import { blockMeta } from "./texts";
+import { MEDIA_LIBRARY_TOPIC } from "../constants";
 
 const ASSET_QUERY_PARAM = "asset";
 const FILE_TEXTS = "$dms_media.file";
@@ -19,6 +21,7 @@ const MIN_COLUMN_WIDTH = "320px";
 const VIEWER_SPAN = 2;
 const INFORMATION_ROWS = 4;
 const DETAILS_SPACING = "1.25rem";
+const DELIVERY_ROWS = 4;
 
 const TAB_SLOTS = ["details", "delivery", "history", "usage"] as const;
 
@@ -29,6 +32,7 @@ const panel = Tab({
   })),
   variant: "link",
   badgesUrl: `${ASSET_API}/tab-counts`,
+  realtimeTopic: MEDIA_LIBRARY_TOPIC,
 })
   .meta(blockMeta("file_tabs", "i-ph-tabs"))
   .child(
@@ -46,6 +50,7 @@ const panel = Tab({
         KeyValueList({
           title: `${FILE_TEXTS}.information`,
           fetchUrl: `${ASSET_API}/information`,
+          realtimeTopic: MEDIA_LIBRARY_TOPIC,
           card: false,
           dense: true,
           skeletonCount: INFORMATION_ROWS,
@@ -55,15 +60,32 @@ const panel = Tab({
   )
   .child(
     "delivery",
-    CustomComponent("DmsMediaFileDelivery").meta(
-      blockMeta("file_delivery", "i-ph-link"),
-    ),
+    VStack({ spacing: DETAILS_SPACING, alignment: "stretch" })
+      .meta(blockMeta("file_delivery", "i-ph-link"))
+      .child(
+        "notice",
+        Banner({
+          fetchUrl: `${ASSET_API}/delivery/notice`,
+          realtimeTopic: MEDIA_LIBRARY_TOPIC,
+        }).meta(blockMeta("file_delivery_notice", "i-ph-info")),
+      )
+      .child(
+        "links",
+        KeyValueList({
+          fetchUrl: `${ASSET_API}/delivery`,
+          realtimeTopic: MEDIA_LIBRARY_TOPIC,
+          card: false,
+          dense: true,
+          skeletonCount: DELIVERY_ROWS,
+        }).meta(blockMeta("file_delivery_links", "i-ph-link")),
+      ),
     { slot: "delivery" },
   )
   .child(
     "history",
     ActivityFeed({
       fetchUrl: `${ASSET_API}/history`,
+      realtimeTopic: MEDIA_LIBRARY_TOPIC,
       card: false,
       groupByDay: true,
       empty: { title: `${FILE_TEXTS}.no_history` },
