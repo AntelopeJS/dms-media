@@ -7,8 +7,13 @@ import type { NavCardItem } from "@antelopejs/interface-dms/base/nav-card-grid";
 import type { StatGroupItem } from "@antelopejs/interface-dms/base/stat-group";
 import type { MediaAsset, MediaFolder } from "../db";
 import type { FolderStats } from "./folder-stats";
-import { composedBytes, composedText, countParam } from "./composed-text";
-import type { MediaTranslator } from "./i18n";
+import type { BlockText } from "@antelopejs/interface-dms/base/types";
+import {
+  composedBytes,
+  composedText,
+  countParam,
+  numberParam,
+} from "./composed-text";
 import { folderLink, MEDIA_ROUTES, viewLink } from "./links";
 import { sumSizeByTypeGroup, countByTypeGroup } from "./listing";
 import {
@@ -42,7 +47,6 @@ export interface OverviewInput {
   assets: MediaAsset[];
   folders: MediaFolder[];
   stats: Map<string, FolderStats>;
-  translator: MediaTranslator;
   visibilityOf: (asset: MediaAsset) => FolderVisibility;
   quotaBytes?: number;
   now: Date;
@@ -136,13 +140,13 @@ export function buildKpiItems(input: OverviewInput): StatGroupItem[] {
 export interface StorageMeterResponse {
   value: number;
   max: number;
-  valueLabel: string;
-  hint: string;
+  valueLabel: BlockText;
+  hint: BlockText;
   segments: MeterSegment[];
 }
 
 export function buildStorageMeter(input: OverviewInput): StorageMeterResponse {
-  const { translator, assets } = input;
+  const { assets } = input;
   const sizes = sumSizeByTypeGroup(assets);
   const counts = countByTypeGroup(assets);
   const size = totalSize(assets);
@@ -150,20 +154,19 @@ export function buildStorageMeter(input: OverviewInput): StorageMeterResponse {
     (group) => ({
       value: sizes[group],
       tone: TYPE_TONES[group],
-      label: translator.t(`${TEXTS}.storage.segment`, {
-        type: translator.t(`$dms_media.types.${group}`),
-        files: translator.formatNumber(counts[group]),
-        size: translator.formatBytes(sizes[group]),
+      label: composedText(`${TEXTS}.storage.segment`, {
+        type: composedText(`$dms_media.types.${group}`),
+        files: numberParam(counts[group]),
+        size: composedBytes(sizes[group]),
       }),
     }),
   );
   return {
     value: size,
     max: Math.max(input.quotaBytes ?? size, 1),
-    valueLabel: translator.formatBytes(size),
-    hint: translator.t(`${TEXTS}.storage.hint`, {
-      count: assets.length,
-      files: translator.formatNumber(assets.length),
+    valueLabel: composedBytes(size),
+    hint: composedText(`${TEXTS}.storage.hint`, {
+      files: countParam(assets.length),
     }),
     segments,
   };
@@ -267,7 +270,6 @@ export function buildAttentionItems(input: AttentionInput): KeyValueListItem[] {
 }
 
 export function buildFolderCards(input: OverviewInput): NavCardItem[] {
-  const { translator } = input;
   return input.folders
     .filter((folder) => !folder.parentId)
     .map((folder) => {
@@ -278,14 +280,13 @@ export function buildFolderCards(input: OverviewInput): NavCardItem[] {
         icon: folder.binding ? "i-ph-link-simple" : "i-ph-folder-simple",
         iconTone: folder.visibility === "public" ? "success" : "primary",
         to: folderLink(folder._id),
-        description: translator.t(`${TEXTS}.folders.detail`, {
-          count: stats?.fileCount ?? 0,
-          files: translator.formatNumber(stats?.fileCount ?? 0),
-          size: translator.formatBytes(stats?.size ?? 0),
+        description: composedText(`${TEXTS}.folders.detail`, {
+          files: countParam(stats?.fileCount ?? 0),
+          size: composedBytes(stats?.size ?? 0),
         }),
         tag:
           folder.visibility === "public"
-            ? translator.t("$dms_media.visibility.public")
+            ? "$dms_media.visibility.public"
             : undefined,
       };
     });

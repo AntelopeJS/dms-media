@@ -97,8 +97,7 @@
 			"asset_rename": "{actor} renamed {previous} to {name}",
 			"asset_revert": "{actor} reverted {name} to its original",
 			"asset_transform": "{actor} edited {name}",
-			"asset_upload": "{actor} uploaded {name}",
-			"asset_upload_many": "{actor} uploaded {count} files",
+			"asset_upload": "{actor} uploaded {name} | {actor} uploaded {count} files",
 			"asset_visibility": "{actor} made {name} {visibility}",
 			"folder_acl": "{actor} changed who can open {name}",
 			"folder_create": "{actor} created the folder {name}",
@@ -106,8 +105,7 @@
 			"folder_move": "{actor} moved the folder {name}",
 			"folder_rename": "{actor} renamed the folder {previous} to {name}",
 			"folder_visibility": "{actor} made the folder {name} {visibility}",
-			"upload_batch": "{actor} finished an upload to {name}",
-			"upload_batch_many": "{actor} finished an upload to {name}"
+			"upload_batch": "{actor} finished an upload to {name}"
 		},
 		"alt": {
 			"failed": "Not saved, try again",
@@ -685,7 +683,7 @@
 			},
 			"open_library": "Open library",
 			"storage": {
-				"hint": "Used by {files} files, originals of edited images included",
+				"hint": "Used by {files} file, originals of edited images included | Used by {files} files, originals of edited images included",
 				"segment": "{type} · {files} · {size}",
 				"title": "Storage by type"
 			},

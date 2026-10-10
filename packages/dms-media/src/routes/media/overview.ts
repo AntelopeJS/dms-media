@@ -6,7 +6,6 @@ import { type MediaAsset, type MediaEvent, MediaEventModel } from "../../db";
 import { buildActivityItems } from "../../library/activity";
 import { readEventDetails } from "../../library/events";
 import { computeFolderStats } from "../../library/folder-stats";
-import { createMediaTranslator } from "../../library/i18n";
 import { loadAssetsInFolders } from "../../library/listing";
 import {
   buildAttentionItems,
@@ -82,7 +81,6 @@ export class MediaOverviewController extends MediaApiController {
       assets,
       folders,
       stats: computeFolderStats(context.folders, assets),
-      translator: createMediaTranslator(this.requestLanguage()),
       visibilityOf: (asset: MediaAsset) =>
         resolveEffectiveVisibility(
           asset,

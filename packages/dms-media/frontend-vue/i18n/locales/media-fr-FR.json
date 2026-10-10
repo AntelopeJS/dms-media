@@ -97,8 +97,7 @@
 			"asset_rename": "{actor} a renommé {previous} en {name}",
 			"asset_revert": "{actor} a rétabli l'original de {name}",
 			"asset_transform": "{actor} a retouché {name}",
-			"asset_upload": "{actor} a importé {name}",
-			"asset_upload_many": "{actor} a importé {count} fichiers",
+			"asset_upload": "{actor} a importé {name} | {actor} a importé {count} fichiers",
 			"asset_visibility": "{actor} a rendu {name} {visibility}",
 			"folder_acl": "{actor} a changé qui peut ouvrir {name}",
 			"folder_create": "{actor} a créé le dossier {name}",
@@ -106,8 +105,7 @@
 			"folder_move": "{actor} a déplacé le dossier {name}",
 			"folder_rename": "{actor} a renommé le dossier {previous} en {name}",
 			"folder_visibility": "{actor} a rendu le dossier {name} {visibility}",
-			"upload_batch": "{actor} a terminé un import dans {name}",
-			"upload_batch_many": "{actor} a terminé un import dans {name}"
+			"upload_batch": "{actor} a terminé un import dans {name}"
 		},
 		"alt": {
 			"failed": "Non enregistré, réessayez",
@@ -685,7 +683,7 @@
 			},
 			"open_library": "Ouvrir la bibliothèque",
 			"storage": {
-				"hint": "Utilisé par {files} fichiers, originaux des images retouchées compris",
+				"hint": "Utilisé par {files} fichier, originaux des images retouchées compris | Utilisé par {files} fichiers, originaux des images retouchées compris",
 				"segment": "{type} · {files} · {size}",
 				"title": "Stockage par type"
 			},

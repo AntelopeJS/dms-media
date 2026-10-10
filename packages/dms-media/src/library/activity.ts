@@ -1,6 +1,8 @@
 import type { ActivityFeedItem } from "@antelopejs/interface-dms/base/activity-feed";
+import type { ComposedTextParam } from "@antelopejs/interface-dms/base/types";
 import type { Tone } from "@antelopejs/interface-dms/base/types/tone";
 import type { MediaEvent, MediaFolder } from "../db";
+import { countParam } from "./composed-text";
 import { type MediaEventKind, readEventDetails } from "./events";
 import { fileLink, folderLink, MEDIA_ROUTES } from "./links";
 
@@ -61,12 +63,15 @@ function eventLink(event: MediaEvent): string | undefined {
   return MEDIA_ROUTES.files;
 }
 
-function toParams(event: MediaEvent, count: number): Record<string, string> {
+function toParams(
+  event: MediaEvent,
+  count: number,
+): Record<string, ComposedTextParam> {
   const details = readEventDetails(event);
-  const params: Record<string, string> = {
+  const params: Record<string, ComposedTextParam> = {
     actor: event.actorName,
     name: event.targetName,
-    count: String(count),
+    count: countParam(count),
   };
   for (const [key, value] of Object.entries(details))
     params[key] = String(value);
@@ -85,7 +90,7 @@ function presentEvent(
     id: event._id,
     icon: presentation.icon,
     tone: presentation.tone,
-    title: `${TEXTS}.${kind.replace(".", "_")}${count > 1 ? "_many" : ""}`,
+    title: `${TEXTS}.${kind.replace(".", "_")}`,
     params: toParams(event, count),
     meta: path ? [path] : [],
     date: event.createdAt.toISOString(),

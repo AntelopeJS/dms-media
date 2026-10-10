@@ -18,6 +18,12 @@ const ZIP_END_SIGNATURE = 0x06054b50;
 const ZIP_END_RECORD_SIZE = 22;
 const ZIP_ENTRY_COUNT_OFFSET = 10;
 const BATCH_ID = "batch-library-test";
+const BATCH_FILES = 3;
+
+interface CountParam {
+  type: string;
+  value: number;
+}
 
 interface AssetRow {
   id: string;
@@ -286,9 +292,9 @@ describe("[integration] media library — listings, search, bulk and overview", 
     });
     expect(response.status).to.equal(HTTP_OK);
     const batch = response.data.items.find(
-      (item: { title: string; params: Record<string, string> }) =>
-        item.title === "$dms_media.activity.asset_upload_many" &&
-        item.params.count === "3",
+      (item: { title: string; params: Record<string, CountParam> }) =>
+        item.title === "$dms_media.activity.asset_upload" &&
+        item.params.count?.value === BATCH_FILES,
     );
     expect(batch).to.not.equal(undefined);
     const history = await client.get(

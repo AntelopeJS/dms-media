@@ -24,6 +24,11 @@ export function countParam(value: number): ComposedTextParam {
   return { type: "count", value };
 }
 
+/** A number written for the locale, without picking a plural form. */
+export function numberParam(value: number): ComposedTextParam {
+  return { type: "number", value };
+}
+
 /** A byte size in its largest whole unit ("3.2 MB"), its number written for the locale. */
 export function composedBytes(bytes: number): ComposedText {
   let value = Math.max(bytes, 0);

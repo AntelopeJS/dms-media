@@ -4,7 +4,6 @@ import { buildActivityItems } from "../../../library/activity";
 import { buildUploadBatches } from "../../../library/batches";
 import { composedBytes, composedText } from "../../../library/composed-text";
 import { computeFolderStats } from "../../../library/folder-stats";
-import { createMediaTranslator, resolveLocale } from "../../../library/i18n";
 import { countByTypeGroup, pageAssets } from "../../../library/listing";
 import { searchAssets, searchFolders } from "../../../library/search";
 import {
@@ -136,31 +135,6 @@ describe("[unit] library — search", () => {
   });
 });
 
-describe("[unit] library — server translations", () => {
-  it("falls back to the base language, then to English", () => {
-    expect(resolveLocale("fr")).to.equal("fr-FR");
-    expect(resolveLocale("fr-BE")).to.equal("fr-FR");
-    expect(resolveLocale("de")).to.equal("en-GB");
-    expect(resolveLocale(undefined)).to.equal("en-GB");
-  });
-
-  it("interpolates parameters and picks the plural form", () => {
-    const english = createMediaTranslator("en");
-    expect(
-      english.t("$dms_media.overview.largest.detail", { count: 1, files: "1" }),
-    ).to.equal("1 file");
-    expect(
-      english.t("$dms_media.overview.largest.detail", { count: 3, files: "3" }),
-    ).to.equal("3 files");
-    expect(english.t("$dms_media.missing.key")).to.equal(
-      "dms_media.missing.key",
-    );
-    expect(english.formatBytes(1536)).to.equal("1.5 KB");
-    const french = createMediaTranslator("fr");
-    expect(french.t("$dms_media.types.video")).to.equal("Vidéos");
-  });
-});
-
 describe("[unit] library — activity and batches", () => {
   const folders = new Map([["root", folder("root")]]);
   const events = [
@@ -177,10 +151,10 @@ describe("[unit] library — activity and batches", () => {
     const items = buildActivityItems({ events, foldersById: folders }, 10);
     expect(items.map((item) => item.title)).to.deep.equal([
       "$dms_media.activity.asset_delete",
-      "$dms_media.activity.asset_upload_many",
+      "$dms_media.activity.asset_upload",
       "$dms_media.activity.upload_batch",
     ]);
-    expect(items[1]?.params?.count).to.equal("2");
+    expect(items[1]?.params?.count).to.deep.equal({ type: "count", value: 2 });
   });
 
   it("summarizes a batch with its failures", () => {
