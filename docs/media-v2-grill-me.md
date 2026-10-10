@@ -181,11 +181,11 @@ Enter and Space reach the overlay (M12). They are also listed in the DMS
 shortcuts registry so they show in the account's shortcuts page.
 
 **Q3.9b How is the overview localized when stock blocks take no parameters?**
-`StatGroup`, `KeyValueList`, `NavCardGrid` and `Meter` translate a `$` key but
-cannot interpolate a count. Their routes answer texts already written in the
-dashboard's language (the `x-content-language` header every block fetch
-carries, else the member's language), from the module's own locale files and
-with the same plural rules, so the overview keeps stock blocks.
+Since DMS 0.7.2 every overview block (`StatGroup`, `KeyValueList`,
+`NavCardGrid`, `Meter`, `ActivityFeed`) takes composed texts: the routes answer
+an i18n key with raw values (counts, byte sizes, dates) and the dashboard writes
+them in the reader's language with its plural rules. The server translates
+nothing.
 
 **Q3.10 Optimistic updates?**
 Rename, move, alt text, visibility, delete and new folder patch the local store
