@@ -4,13 +4,27 @@ import { TenantModel } from "@antelopejs/interface-dms/db";
 import cron, { type ScheduledTask } from "node-cron";
 import { cleanupAssetFiles, updateAssetMedia } from "../asset-lifecycle";
 import { getMediaConfig } from "../config";
-import { type MediaAsset, MediaAssetModel } from "../db";
+import { type MediaAsset, MediaAssetModel, MediaEventModel } from "../db";
 import { partitionDerivatives } from "../derivatives";
 import { parseDerivatives } from "../routes/media/storage-keys";
 
 export const SWEEP_DERIVATIVES_CRON_NAME = "dms-media-sweep-derivatives";
 
-const SWEEP_DERIVATIVES_SCHEDULE = "0 4 * * *";
+export const SWEEP_DERIVATIVES_SCHEDULE = "0 4 * * *";
+const EVENT_RETENTION_DAYS = 90;
+const MS_PER_DAY = 24 * 60 * 60 * 1000;
+
+/** Outcome of the last sweep this process ran. */
+export interface SweepReport {
+  finishedAt: Date;
+  removedFiles: number;
+}
+
+let lastSweep: SweepReport | undefined;
+
+export function getLastSweep(): SweepReport | undefined {
+  return lastSweep;
+}
 
 /** Rechecks one asset before detaching obsolete derivatives and replaying cleanup. */
 export async function sweepAssetDerivatives(
@@ -43,6 +57,8 @@ async function sweepTenantDerivatives(tenantId: string): Promise<number> {
   for await (const asset of assetModel.table) {
     removed += await sweepAssetDerivatives(assetModel, asset);
   }
+  const cutoff = new Date(Date.now() - EVENT_RETENTION_DAYS * MS_PER_DAY);
+  await GetModel(MediaEventModel, tenantId).deleteOlderThan(cutoff);
   return removed;
 }
 
@@ -54,6 +70,7 @@ export async function runSweepStaleDerivatives(): Promise<void> {
     tenantCount++;
     removed += await sweepTenantDerivatives(tenant._id);
   }
+  lastSweep = { finishedAt: new Date(), removedFiles: removed };
   Logging.Info(
     `Sweep media derivatives: completed ${removed} file cleanup(s) across ${tenantCount} tenant(s).`,
   );

@@ -26,13 +26,15 @@ ajs project modules add @antelopejs/dms-media
 - **Lazy image derivatives** — named presets (config) rendered by sharp on first request, cached in storage under a config-hashed cache key, served via `GET /media/:assetId/:presetId/:filename` and the authenticated `read-url` endpoint. Changing a preset invalidates naturally (new hash); a daily cron sweeps stale keys.
 - **Server-side image editing** — `transform` (normalized crop, 90° rotations) and `revert`; the pristine original is preserved on first edit and derivatives are invalidated.
 - **`AssetType` form field** — registers the `asset` data type whose widget (`DmsMediaAssetPicker`) opens the Finder as a picker. Declaring a `binding` auto-provisions a linked folder under the `Content` root (idempotency key = binding id) whose ACL derives from the declared permission mapping; linked folders cannot be renamed, moved, deleted or re-ACLed through the API.
-- **Media page** — root `Media` nav category with the `Library` page (full-page Finder), guarded by its default DMS page permission `settings.media.assets`.
+- **Media section** — a root `Media` group in the main sidebar (not a module: its pages are grantable through Roles) with Library (Overview, All files, Uploads, plus the File and Edit image pages), Manage (Access & visibility, Linked folders, Delivery presets) and Developers (Asset field & picker). Every page is a backend block tree; custom blocks carry translated `.meta()` names for the Roles editor.
+- **Explorer** — server-paged listings, smart views (recents, starred, missing alt text), server search over names, alt text and folders, bulk move/visibility/delete, zip download, drag and drop, keyboard shortcuts and a shared upload queue that survives navigation.
+- **Activity** — every write is recorded in `media_events` (kept 90 days) and feeds the overview, the file history and the upload batches.
 
 ## Static permissions
 
 | Permission | Effect |
 |---|---|
-| `settings.media.assets` | Default permission of the media page (registered by the DMS, not by this module): see the page; grants `read` at the root via the default root ACL |
+| `media.library.files` | Page permission of All files: see the library; grants `read` at the root via the default root ACL. It replaces `settings.media.assets` of 0.2: update roles and stored folder ACLs that named the old id |
 | `media.upload` | Grants `write` at the root via the default root ACL |
 | `media.folders.manage` | Grants `manage` at the root via the default root ACL; always kept in control of linked folders |
 | `media.permissions.manage` | Global gate for editing folder ACLs and flipping visibility |
@@ -47,7 +49,7 @@ Per-folder rights are the single authority for operations: upload requires `writ
 		"config": {
 			"storage": "media",
 			"rootAcl": [
-				{ "subject": { "kind": "permission", "id": "settings.media.assets" }, "rights": ["read"] }
+				{ "subject": { "kind": "permission", "id": "media.library.files" }, "rights": ["read"] }
 			],
 			"presets": [
 				{ "id": "thumb", "width": 300, "height": 300, "fit": "cover", "format": "webp", "quality": 80 }
@@ -57,7 +59,7 @@ Per-folder rights are the single authority for operations: upload requires `writ
 }
 ```
 
-All keys are optional: `storage` selects a named `interface-file-storage` backend (default storage otherwise), `rootAcl` replaces the default root ACL, `presets` replaces the default `thumb`/`preview` presets. Keep a `thumb` preset — the Finder uses it for grid thumbnails.
+All keys are optional: `storageQuotaBytes` sets the storage plan the overview measures against, `storage` selects a named `interface-file-storage` backend (default storage otherwise), `rootAcl` replaces the default root ACL, `presets` replaces the default `thumb`/`preview` presets. Keep a `thumb` preset — the Finder uses it for grid thumbnails.
 
 ## Declaring an AssetType field
 
@@ -95,7 +97,10 @@ A `binding` is registered through `RegisterAssetBinding` (also exported by the i
 
 ## HTTP surface
 
-- `GET /api/media/tree`, `GET /api/media/folders/:id/assets|acl`
+- `GET /api/media/tree`, `GET /api/media/folders/:id/assets|acl|access|impact`, `GET /api/media/views/:view`, `GET /api/media/search`, `POST /api/media/favorites`, `POST /api/media/folders/starter`
+- Overview: `GET /api/media/stats/kpis|storage|largest|attention|folders|recent`, `GET /api/media/activity`, `GET /api/media/assets/:id/history|details`
+- Bulk: `POST /api/media/assets/bulk/move|visibility|delete`, `POST /api/media/assets/zip`
+- Manage: `GET /api/media/access/subjects`, `GET|POST /api/media/upload/batches`, `GET /api/media/linked`, `GET /api/media/linked/:bindingId`, `GET /api/media/presets`, `GET /api/media/presets/cache`
 - `POST /api/media/folders`, `POST /api/media/folders/:id/rename|move|visibility`, `PUT /api/media/folders/:id/acl`, `DELETE /api/media/folders/:id`
 - `GET /api/media/assets`, `GET /api/media/assets/search`, `GET /api/media/assets/:id`, `GET /api/media/assets/:id/read-url?preset=`
 - `POST /api/media/assets/:id/update|move|visibility|transform|revert`, `DELETE /api/media/assets/:id`
@@ -120,7 +125,7 @@ The playground is a project of its own, outside the workspace: install it with `
 
 The playground connects to MongoDB at `mongodb://localhost:27017` by default. Set `MONGO_URL` to point it at another instance, e.g. `MONGO_URL=mongodb://127.0.0.1:27019 pnpm dev`.
 
-The frontend entry is `frontend-vue/dms.frontend.ts`. It registers the existing `DmsMedia` and nested `Finder` component names. Use relative imports for module-local files because the Inertia adapter copies the frontend separately from the backend. The adapter discovers locale files and `app/config/shortcuts-registry.ts`; no Nuxt installation is required.
+The frontend entry is `frontend-vue/dms.frontend.ts`. It declares `componentPrefix: "DmsMedia"` and registers the blocks of `app/components/*.vue` by file name (`Explorer` is served as `DmsMediaExplorer`); the parts in subfolders are imported by path. `dms.frontend.build.ts` auto-imports `app/composables` and `app/utils`. Use relative imports for module-local files because the Inertia adapter copies the frontend separately from the backend. The adapter discovers locale files and `app/config/shortcuts-registry.ts`; no Nuxt installation is required.
 
 The playground uses the `@antelopejs/dms-frontend` CLI. Run `pnpm --dir frontend-vue install` and `pnpm --dir frontend-vue test` for frontend tests. `pnpm test:frontend` typechecks the layer against the DMS layer (`ajs dms verify-source`), without a running backend; CI runs it.
 

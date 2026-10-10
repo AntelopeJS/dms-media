@@ -1,272 +1,230 @@
 <script setup lang="ts">
-import PickerModal from "./PickerModal.vue";
-import { getExtensionIcon, getExtensionLabel } from "../utils/finder/mime";
-import { formatFileSize } from "../utils/finder/filesize";
-import type { MediaAssetDto } from "../composables/finder/api/useMediaApi";
+import type { MediaAsset, MediaTree } from '../types/media'
+import PickerModal from './picker/PickerModal.vue'
+import AssetThumb from './shared/AssetThumb.vue'
 
-interface Props {
-	modelValue?: string | string[] | null;
-	multiple?: boolean;
-	max?: number;
-	mimetypes?: string[];
-	bindingId?: string;
-	disabled?: boolean;
+const props = defineProps<{
+	modelValue?: string | string[] | null
+	multiple?: boolean
+	max?: number
+	mimetypes?: string[]
+	bindingId?: string
+	disabled?: boolean
+}>()
+const emit = defineEmits<{ 'update:modelValue': [string | string[] | null] }>()
+const { t } = useI18n()
+const api = useMediaApi()
+const format = useMediaFormat()
+const uploads = useUploadQueue()
+const overlay = useOverlay()
+const pickerModal = overlay.create(PickerModal)
+const { emitFormChange } = useFormField()
+const assets = ref<MediaAsset[]>([])
+const tree = ref<MediaTree | null>(null)
+const draggedIndex = ref<number | null>(null)
+const isDropping = ref(false)
+const fileInput = useTemplateRef<HTMLInputElement>('fileInput')
+
+const ids = computed<string[]>(() => {
+	if (!props.modelValue) return []
+	return typeof props.modelValue === 'string' ? [props.modelValue] : props.modelValue
+})
+const boundFolder = computed(() => tree.value?.folders.find((folder) => props.bindingId && folder.binding === props.bindingId))
+const isFull = computed(() => (props.multiple ? props.max !== undefined && ids.value.length >= props.max : false))
+const remaining = computed(() => (props.max === undefined ? undefined : Math.max(props.max - ids.value.length, 0)))
+const kind = computed(() => {
+	const accept = props.mimetypes ?? []
+	if (accept.length && accept.every((pattern) => pattern.startsWith('image/'))) return 'image'
+	if (accept.length === 1 && accept[0] === 'application/pdf') return 'pdf'
+	return 'file'
+})
+const missingAlt = computed(() => assets.value.filter(needsAltText).length)
+
+async function loadAssets(list: string[]): Promise<void> {
+	const known = new Map(assets.value.map((asset) => [asset.id, asset]))
+	const loaded = await Promise.all(
+		list.map(async (id) => known.get(id) ?? (await api.asset(id).then((response) => response.asset).catch(() => null))),
+	)
+	assets.value = loaded.filter((asset): asset is MediaAsset => asset !== null)
 }
 
-const props = defineProps<Props>();
+watch(ids, (list) => void loadAssets(list), { immediate: true })
+onMounted(async () => {
+	tree.value = await api.tree().catch(() => null)
+})
 
-const emit = defineEmits<{
-	"update:modelValue": [string | string[] | null];
-}>();
-
-const { t } = useI18n();
-const toast = useToast();
-const api = useMediaApi();
-const { emitFormChange } = useFormField();
-
-const overlay = useOverlay();
-const pickerModal = overlay.create(PickerModal);
-
-const selectedAssets = ref<MediaAssetDto[]>([]);
-const previewUrls = ref<Record<string, string>>({});
-
-const selectedIds = computed<string[]>(() => {
-	if (!props.modelValue) return [];
-	return typeof props.modelValue === "string"
-		? [props.modelValue]
-		: props.modelValue;
-});
-
-const singleAsset = computed(() => selectedAssets.value[0]);
-
-const isImageOnly = computed(() => {
-	const mimetypes = props.mimetypes ?? [];
-	return (
-		mimetypes.length > 0 &&
-		mimetypes.every((pattern) => pattern.startsWith("image/"))
-	);
-});
-
-const emptyLabel = computed(() =>
-	t(
-		isImageOnly.value
-			? "dms_media.picker.field_empty_image"
-			: "dms_media.picker.field_empty_file",
-	),
-);
-
-function assetSubtitle(asset: MediaAssetDto): string {
-	const extension = getExtensionLabel(asset.mimetype).toUpperCase();
-	return `${extension} · ${formatFileSize(asset.size)}`;
-}
-
-async function loadSelectedAssets(ids: string[]): Promise<void> {
-	const assets: MediaAssetDto[] = [];
-	for (const id of ids) {
-		try {
-			const { asset } = await api.fetchAsset(id);
-			assets.push(asset);
-		} catch {
-			continue;
-		}
-	}
-	selectedAssets.value = assets;
-	await loadPreviews(assets);
-}
-
-async function loadPreviews(assets: MediaAssetDto[]): Promise<void> {
-	const imageIds = assets
-		.filter((asset) => asset.mimetype.startsWith("image/"))
-		.map((asset) => asset.id);
-	if (!imageIds.length) return;
-	try {
-		const { previews } = await api.fetchPreviews(imageIds);
-		previewUrls.value = { ...previewUrls.value, ...previews };
-	} catch {
-		return;
-	}
-}
-
-watch(selectedIds, (ids) => loadSelectedAssets(ids), { immediate: true });
-
-function applySelection(ids: string[]): void {
-	if (!props.multiple) {
-		emit("update:modelValue", ids[0] ?? null);
-	} else {
-		const limited = props.max !== undefined ? ids.slice(0, props.max) : ids;
-		if (limited.length < ids.length) {
-			toast.add({
-				title: t("dms_media.picker.max_reached", { count: props.max }),
-				color: "warning",
-				icon: "i-lucide-triangle-alert",
-			});
-		}
-		emit("update:modelValue", limited);
-	}
-	emitFormChange();
-}
-
-function removeAsset(id: string): void {
-	if (!props.multiple) {
-		emit("update:modelValue", null);
-	} else {
-		emit("update:modelValue", selectedIds.value.filter((v) => v !== id));
-	}
-	emitFormChange();
+function commit(next: string[]): void {
+	if (props.multiple) emit('update:modelValue', next)
+	else emit('update:modelValue', next[0] ?? null)
+	emitFormChange()
 }
 
 async function openPicker(): Promise<void> {
-	if (props.disabled) return;
-	const files = await pickerModal.open({
-		bindingId: props.bindingId,
-		mimetypes: props.mimetypes,
+	if (props.disabled) return
+	const picked = await pickerModal.open({
 		multiple: props.multiple,
-		initialSelectedIds: selectedIds.value,
-	});
-	if (!files?.length) return;
-	applySelection(files.map((file) => file.id));
+		max: props.max,
+		current: props.multiple ? ids.value.length : 0,
+		accept: props.mimetypes,
+		startFolderId: boundFolder.value?.id,
+	})
+	if (!picked || picked.length === 0) return
+	assets.value = props.multiple ? [...assets.value, ...picked] : picked
+	commit(props.multiple ? [...new Set([...ids.value, ...picked.map((asset) => asset.id)])] : [picked[0]!.id])
+}
+
+function remove(id: string): void {
+	assets.value = assets.value.filter((asset) => asset.id !== id)
+	commit(ids.value.filter((entry) => entry !== id))
+}
+
+function onDragStart(index: number): void {
+	draggedIndex.value = index
+}
+
+function onDropOn(index: number): void {
+	const from = draggedIndex.value
+	draggedIndex.value = null
+	if (from === null || from === index) return
+	const next = [...ids.value]
+	const [moved] = next.splice(from, 1)
+	next.splice(index, 0, moved!)
+	commit(next)
+}
+
+function uploadTarget(): { folderId: string; folderName: string } | null {
+	const folder = boundFolder.value
+	return folder?.rights.write ? { folderId: folder.id, folderName: folder.name } : null
+}
+
+function uploadFiles(files: File[]): void {
+	const target = uploadTarget()
+	if (!target || files.length === 0) return
+	const allowed = props.multiple ? files.slice(0, remaining.value ?? files.length) : files.slice(0, 1)
+	const batchId = uploads.enqueue(allowed, target)
+	const stop = uploads.onUploaded((asset) => {
+		if (!uploads.items.value.some((item) => item.batchId === batchId && item.asset?.id === asset.id)) return
+		assets.value = props.multiple ? [...assets.value, asset] : [asset]
+		commit(props.multiple ? [...ids.value, asset.id] : [asset.id])
+		if (!uploads.items.value.some((item) => item.batchId === batchId && (item.status === 'waiting' || item.status === 'uploading' || item.status === 'checking'))) stop()
+	})
+}
+
+function onDrop(event: DragEvent): void {
+	isDropping.value = false
+	const files = Array.from(event.dataTransfer?.files ?? [])
+	if (files.length === 0 || props.disabled) return
+	event.preventDefault()
+	uploadFiles(files)
+}
+
+function onFilesChosen(event: Event): void {
+	const input = event.target as HTMLInputElement
+	uploadFiles(Array.from(input.files ?? []))
+	input.value = ''
 }
 </script>
 
 <template>
-	<div v-if="!multiple">
-		<div
-			v-if="!singleAsset"
-			class="group flex cursor-pointer items-center gap-3 rounded-lg border border-dashed border-accented bg-elevated/30 p-3 transition-colors hover:border-primary hover:bg-primary/5"
-			:class="disabled ? 'pointer-events-none opacity-50' : ''"
-			role="button"
-			tabindex="0"
-			@click="openPicker"
-			@keydown.enter="openPicker"
-		>
-			<span
-				class="grid size-10 shrink-0 place-items-center rounded-lg bg-elevated text-muted transition-colors group-hover:bg-default group-hover:text-primary"
-			>
-				<UIcon
-					:name="isImageOnly ? 'i-lucide-image' : 'i-lucide-file'"
-					class="size-5"
-				/>
-			</span>
-			<span class="min-w-0 flex-1">
-				<span
-					class="block truncate text-sm font-medium text-toned transition-colors group-hover:text-primary"
+	<div class="flex flex-col gap-2" @dragover.prevent="isDropping = Boolean(uploadTarget())" @dragleave="isDropping = false" @drop="onDrop">
+		<template v-if="!multiple && assets[0]">
+			<div class="border-default flex items-center gap-3 rounded-md border p-2.5" :class="disabled && 'opacity-60'">
+				<AssetThumb :asset="assets[0]" size="md" />
+				<div class="min-w-0 flex-1">
+					<p class="text-highlighted truncate text-sm font-medium">{{ assets[0].name }}</p>
+					<p class="text-dimmed flex flex-wrap items-center gap-1.5 font-mono text-[11px]">
+						<span v-if="assets[0].width">{{ format.formatDimensions(assets[0].width, assets[0].height) }} ·</span>
+						<span>{{ format.formatBytes(assets[0].size) }} ·</span>
+						<span :class="assets[0].effectiveVisibility === 'public' ? 'text-success' : ''">{{ t(`dms_media.visibility.${assets[0].effectiveVisibility}`) }}</span>
+						<span v-if="needsAltText(assets[0])" class="text-warning">· {{ t('dms_media.markers.no_alt') }}</span>
+					</p>
+				</div>
+				<template v-if="!disabled">
+					<UButton v-if="isEditableAsset(assets[0])" icon="i-ph-crop" color="neutral" variant="outline" size="sm" :label="t('dms_media.field_widget.crop')" :to="editorLink(assets[0].id)" target="_blank" />
+					<UButton icon="i-ph-swap" color="neutral" variant="outline" size="sm" :label="t('dms_media.field_widget.replace')" @click="openPicker" />
+					<UButton icon="i-ph-x" color="neutral" variant="ghost" size="sm" square :aria-label="t('dms_media.field_widget.remove', { name: assets[0].name })" @click="remove(assets[0].id)" />
+				</template>
+			</div>
+		</template>
+		<template v-else-if="multiple && assets.length">
+			<div class="flex items-center justify-between">
+				<span />
+				<span v-if="max !== undefined" class="text-dimmed font-mono text-[11px]">{{ t('dms_media.field_widget.count', { count: assets.length, max }) }}</span>
+			</div>
+			<ul class="grid grid-cols-[repeat(auto-fill,minmax(120px,1fr))] gap-2">
+				<li
+					v-for="(asset, index) in assets"
+					:key="asset.id"
+					class="group relative overflow-hidden rounded-md"
+					:class="draggedIndex === index && 'opacity-50'"
+					:draggable="!disabled"
+					@dragstart="onDragStart(index)"
+					@dragover.prevent
+					@drop.stop="onDropOn(index)"
 				>
-					{{ emptyLabel }}
-				</span>
-				<span class="block truncate text-xs text-muted">
-					{{ t("dms_media.picker.field_empty_hint") }}
-				</span>
-			</span>
-			<UButton
-				icon="i-lucide-folder"
-				variant="outline"
-				color="neutral"
-				size="sm"
-				:label="t('dms_media.picker.field_browse')"
-				@click.stop="openPicker"
-			/>
-		</div>
-		<div
-			v-else
-			class="flex items-center gap-3 rounded-lg border border-default bg-default p-3"
-		>
-			<span
-				class="relative size-11 shrink-0 overflow-hidden rounded-lg bg-elevated shadow-sm"
-			>
-				<img
-					v-if="previewUrls[singleAsset.id]"
-					:src="previewUrls[singleAsset.id]"
-					:alt="singleAsset.alt ?? singleAsset.name"
-					class="size-full object-cover"
-				/>
-				<span v-else class="grid size-full place-items-center text-muted">
-					<UIcon :name="getExtensionIcon(singleAsset.mimetype)" class="size-5" />
-				</span>
-			</span>
-			<span class="min-w-0 flex-1">
-				<span class="block truncate text-sm font-medium text-highlighted">
-					{{ singleAsset.name }}
-				</span>
-				<span class="block truncate text-xs text-muted">
-					{{ assetSubtitle(singleAsset) }}
-				</span>
-			</span>
-			<span v-if="!disabled" class="flex shrink-0 gap-1.5">
-				<UTooltip :text="t('dms_media.picker.field_replace')">
+					<AssetThumb :asset="asset" size="fill" class="aspect-square" />
+					<span class="absolute start-1.5 top-1.5 rounded-sm bg-black/60 px-1.5 py-0.5 font-mono text-[10px] font-semibold text-white">
+						{{ index === 0 ? t('dms_media.field_widget.cover') : index + 1 }}
+					</span>
+					<span v-if="needsAltText(asset)" class="text-warning absolute end-1.5 bottom-1.5 rounded-sm bg-black/60 px-1 text-[10px]">Aa</span>
 					<UButton
-						icon="i-lucide-arrow-left-right"
-						variant="outline"
+						v-if="!disabled"
+						icon="i-ph-x"
 						color="neutral"
-						size="sm"
+						variant="solid"
+						size="xs"
 						square
+						class="absolute end-1.5 top-1.5 opacity-0 group-hover:opacity-100 focus-visible:opacity-100"
+						:aria-label="t('dms_media.field_widget.remove', { name: asset.name })"
+						@click="remove(asset.id)"
+					/>
+				</li>
+				<li v-if="!disabled && !isFull">
+					<button
+						type="button"
+						class="text-muted hover:text-highlighted flex aspect-square w-full flex-col items-center justify-center gap-1 rounded-md border border-dashed border-(--ui-border-accented) text-[12px]"
 						@click="openPicker"
-					/>
-				</UTooltip>
-				<UTooltip :text="t('dms_media.picker.field_remove')">
-					<UButton
-						icon="i-lucide-x"
-						variant="outline"
-						color="neutral"
-						size="sm"
-						square
-						@click="removeAsset(singleAsset.id)"
-					/>
-				</UTooltip>
-			</span>
-		</div>
-	</div>
-	<div v-else class="flex flex-col gap-2">
-		<div
-			v-for="asset in selectedAssets"
-			:key="asset.id"
-			class="flex items-center gap-2.5 rounded-lg border border-default bg-default px-2.5 py-2"
-		>
-			<span
-				class="relative size-9 shrink-0 overflow-hidden rounded-md bg-elevated shadow-sm"
-			>
-				<img
-					v-if="previewUrls[asset.id]"
-					:src="previewUrls[asset.id]"
-					:alt="asset.alt ?? asset.name"
-					class="size-full object-cover"
-				/>
-				<span v-else class="grid size-full place-items-center text-muted">
-					<UIcon :name="getExtensionIcon(asset.mimetype)" class="size-4.5" />
-				</span>
-			</span>
-			<span class="min-w-0 flex-1">
-				<span class="block truncate text-[13px] font-medium text-highlighted">
-					{{ asset.name }}
-				</span>
-				<span class="block truncate text-xs text-muted">
-					{{ assetSubtitle(asset) }}
-				</span>
-			</span>
-			<UTooltip v-if="!disabled" :text="t('dms_media.picker.field_remove')">
-				<UButton
-					icon="i-lucide-x"
-					variant="ghost"
-					color="neutral"
-					size="xs"
-					square
-					@click="removeAsset(asset.id)"
-				/>
-			</UTooltip>
-		</div>
+					>
+						<UIcon name="i-ph-plus" class="size-5" />
+						{{ t(`dms_media.field_widget.add_${kind}`) }}
+						<span v-if="remaining !== undefined" class="text-dimmed font-mono text-[11px]">{{ t('dms_media.field_widget.left', { count: remaining }) }}</span>
+					</button>
+				</li>
+			</ul>
+			<p class="text-dimmed text-[12px]">
+				{{ t('dms_media.field_widget.reorder_hint') }}
+				<span v-if="missingAlt" class="text-warning">{{ t('dms_media.field_widget.missing_alt', { count: missingAlt }, missingAlt) }}</span>
+			</p>
+		</template>
 		<button
-			class="flex h-11 w-full cursor-pointer items-center justify-center gap-2 rounded-lg border border-dashed border-accented bg-elevated/30 text-[13px] font-medium text-muted transition-colors hover:border-primary hover:bg-primary/5 hover:text-primary"
-			:class="disabled ? 'pointer-events-none opacity-50' : ''"
+			v-else
 			type="button"
+			:disabled="disabled"
+			class="flex items-center gap-3 rounded-md border border-dashed p-3 text-start transition-colors disabled:cursor-not-allowed disabled:opacity-60"
+			:class="isDropping ? 'border-(--ui-primary) bg-(--dms-accent-tint)' : 'border-(--ui-border-accented) hover:bg-(--dms-bg-muted)'"
 			@click="openPicker"
 		>
-			<UIcon name="i-lucide-plus" class="size-4" />
-			{{
-				t(
-					selectedAssets.length
-						? "dms_media.picker.field_manage"
-						: "dms_media.picker.field_add",
-				)
-			}}
+			<DmsIconWell :icon="kind === 'pdf' ? 'i-ph-file-pdf' : kind === 'image' ? 'i-ph-image' : 'i-ph-file'" tone="primary" />
+			<span class="min-w-0 flex-1">
+				<span class="text-highlighted block text-sm font-medium">{{ t(`dms_media.field_widget.choose_${kind}`) }}</span>
+				<span class="text-muted block text-[12px]">
+					{{ boundFolder?.rights.write ? t('dms_media.field_widget.choose_hint_upload', { name: boundFolder.name }) : t('dms_media.field_widget.choose_hint') }}
+				</span>
+			</span>
+			<span class="text-highlighted border-default flex items-center gap-1.5 rounded-md border px-2.5 py-1 text-[13px] font-medium">
+				<UIcon name="i-ph-folder-open" class="size-4" />{{ t('dms_media.field_widget.browse') }}
+			</span>
 		</button>
+		<UButton
+			v-if="!disabled && uploadTarget() && !isFull && (multiple || !assets.length)"
+			icon="i-ph-upload-simple"
+			color="neutral"
+			variant="link"
+			size="xs"
+			class="self-start"
+			:label="t('dms_media.field_widget.upload_to', { name: boundFolder?.name })"
+			@click="fileInput?.click()"
+		/>
+		<input ref="fileInput" type="file" :multiple="multiple" :accept="mimetypes?.join(',')" class="hidden" @change="onFilesChosen" />
 	</div>
 </template>

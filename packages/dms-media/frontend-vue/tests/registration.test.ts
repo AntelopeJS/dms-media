@@ -1,7 +1,7 @@
 import { expect, it, vi } from 'vitest'
 import frontendModule from '../dms.frontend'
 
-it('preserves Finder directory and index names without colliding with media components', async () => {
+it('registers every block under the DmsMedia prefix by its file name', async () => {
 	const registerComponent = vi.fn()
 	await frontendModule.setup({
 		options: { public: {} },
@@ -14,23 +14,12 @@ it('preserves Finder directory and index names without colliding with media comp
 		registerMiddleware: vi.fn(),
 		provide: vi.fn(),
 		use: vi.fn(),
-	})
+	} as never)
 	const names = registerComponent.mock.calls.map(([name]) => name)
+	expect(frontendModule.componentPrefix).toBe('DmsMedia')
 	expect(names).toEqual(
-		expect.arrayContaining([
-			'DmsMediaLibrary',
-			'DmsMediaAssetPicker',
-			'DmsMediaPickerExplorer',
-			'Finder',
-			'FinderRoot',
-			'FinderLayoutNavigation',
-			'FinderLayoutView',
-			'FinderLayoutViewGrid',
-			'FinderLayoutViewCardGrid',
-			'FinderComponentsSearchFile',
-		]),
+		expect.arrayContaining(['Explorer', 'AssetPicker', 'FileHeader', 'FilePreview', 'FileProperties', 'ImageEditor', 'AccessTree', 'AccessFolder', 'AccessRulesCard', 'AccessVisibility', 'UploadQueue', 'LinkedDetail']),
 	)
-	expect(names).not.toContain('FinderIndex')
-	expect(names).not.toContain('DmsMediaGrid')
+	expect(names).not.toContain('ExplorerShell')
 	expect(new Set(names).size).toBe(names.length)
 })

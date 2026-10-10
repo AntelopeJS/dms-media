@@ -56,7 +56,7 @@ describe("[integration] media API — owner lifecycle", () => {
     const response = await client.get("/api/media/tree");
     expect(response.status).to.equal(HTTP_OK);
     expect(response.data.folders).to.deep.equal([]);
-    expect(response.data.root).to.deep.equal({ write: true, manage: true });
+    expect(response.data.root).to.include({ write: true, manage: true });
   });
 
   it("creates a root folder and a subfolder", async () => {

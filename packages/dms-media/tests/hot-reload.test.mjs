@@ -51,13 +51,14 @@ const MEDIA_MODULE = "dms-media";
 const CONSUMER_MODULE = "consumer";
 const LEGACY_CONSUMER_MODULE = "legacy-consumer";
 const UPLOAD_PERMISSION = "media.upload";
-const ORIGINAL_UPLOAD_TITLE = "Upload media";
-const EDITED_UPLOAD_TITLE = "Upload media (reloaded)";
+const ORIGINAL_UPLOAD_TITLE = "$dms_media.permissions.upload.title";
+const EDITED_UPLOAD_TITLE = "$dms_media.permissions.upload.title_reloaded";
 const CONSUMER_BINDING = "reload-probe.cover";
 const CONSUMER_FOLDER = "Reload probe covers";
 const LEGACY_BINDING = "reload-probe.legacy";
 const OWNER = {
-  name: "Reload Owner",
+  firstName: "Reload",
+  lastName: "Owner",
   email: "reload-owner@test.local",
   password: "TestPassw0rd!",
 };
@@ -65,7 +66,7 @@ const OWNER = {
 const CONSUMER_INTERFACES = {
   "@antelopejs/interface-api": ">=0.0.13 <1.0.0",
   "@antelopejs/interface-core": ">=0.1.1 <1.0.0",
-  "@antelopejs/interface-dms": ">=0.2.8 <1.0.0",
+  "@antelopejs/interface-dms": ">=0.4.0 <1.0.0",
 };
 const COUNTER_ID_PATTERN = /^\d+$/;
 const MEDIA_ID_PATTERN = /^(media|settings\.media)(\.|$)/;
@@ -131,11 +132,11 @@ function projectConfig(mongoUrl, storagePath) {
         config: {},
       },
       dms: {
-        ...packageSource("@antelopejs/dms", ">=0.5.0 <1.0.0"),
+        ...packageSource("@antelopejs/dms", ">=0.7.4 <0.8.0"),
         config: { auth: { jwtSecret: JWT_SECRET } },
       },
       mongodb: {
-        ...packageSource("@antelopejs/mongodb", "1.3.1"),
+        ...packageSource("@antelopejs/mongodb", "1.4.2"),
         config: { url: mongoUrl, database: "dms-media-reload-test" },
       },
       "auth-jwt": {
@@ -143,14 +144,14 @@ function projectConfig(mongoUrl, storagePath) {
         config: { secret: JWT_SECRET },
       },
       api: {
-        ...packageSource("@antelopejs/api", "1.3.1"),
+        ...packageSource("@antelopejs/api", "1.3.3"),
         config: {
           servers: [{ protocol: "http", host: "127.0.0.1", port: API_PORT }],
           publicBaseUrl: BASE_URL,
         },
       },
       "file-storage-local": {
-        ...packageSource("@antelopejs/file-storage-local", "0.1.5"),
+        ...packageSource("@antelopejs/file-storage-local", "0.1.6"),
         config: {
           storagePath,
           baseUrl: BASE_URL,

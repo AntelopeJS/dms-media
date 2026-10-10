@@ -38,7 +38,14 @@ export class AssetType extends DataType {
   constructor(public readonly options: AssetTypeOptions = {}) {
     super([], undefined, options);
     if (options.binding) {
-      RegisterAssetBinding(options.binding);
+      RegisterAssetBinding({
+        ...options.binding,
+        field: {
+          multiple: options.multiple,
+          max: options.max,
+          mimetypes: options.mimetypes,
+        },
+      });
     }
   }
 
