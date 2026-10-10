@@ -135,19 +135,11 @@ export interface PathSegment {
 	name: string
 }
 
-export interface PresetLink {
-	id: string
-	width: number | null
-	height: number | null
-	url: string
-}
-
 export interface AssetDetails {
 	asset: MediaAsset
 	folder: MediaFolder
 	path: PathSegment[]
 	uploadedBy: string | null
-	presets: PresetLink[]
 }
 
 export interface PresignResponse {
@@ -250,6 +242,7 @@ export interface LinkedFolderDetail {
 	write: string[]
 	manage: string[]
 	fromPage: boolean
+	definition: string
 }
 
 export interface DeliveryPreset {

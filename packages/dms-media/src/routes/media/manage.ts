@@ -8,6 +8,11 @@ import { getLastSweep, SWEEP_DERIVATIVES_SCHEDULE } from "../../crons";
 import { MediaEventModel, type MediaFolder } from "../../db";
 import { folderPath } from "../../library/activity";
 import { buildUploadBatches } from "../../library/batches";
+import {
+  type AssetTypeSnippetInput,
+  assetTypeSnippet,
+  presetsConfigSnippet,
+} from "../../library/snippets";
 import { composedText, countParam } from "../../library/composed-text";
 import { loadAssetsInFolders } from "../../library/listing";
 import { presetCacheKey } from "../../presets";
@@ -151,18 +156,31 @@ export class MediaManageController extends MediaApiController {
     );
     const folder = config ? bindingFolder(context, config.id) : undefined;
     assert(config && folder, HTTP_NOT_FOUND, "Linked folder not found");
-    return {
+    const declaration: AssetTypeSnippetInput = {
       id: config.id,
-      folderId: folder._id,
       folderName: folder.name,
+      field: config.field ?? {},
+      fromPage: Boolean(config.permissionsFromPage),
+      read: permissionIdsWith(config, "read"),
+      write: permissionIdsWith(config, "write"),
+    };
+    return {
+      ...declaration,
+      folderId: folder._id,
       path: folderPath(folder._id, context.foldersById),
       createdAt: folder.createdAt,
       visibility: folder.visibility,
-      field: config.field ?? {},
-      read: permissionIdsWith(config, "read"),
-      write: permissionIdsWith(config, "write"),
       manage: permissionIdsWith(config, "manage"),
-      fromPage: Boolean(config.permissionsFromPage),
+      definition: assetTypeSnippet(declaration),
+    };
+  }
+
+  @Get("/presets/config")
+  async presetsConfig() {
+    await this.resolveContext();
+    return {
+      code: presetsConfigSnippet([...getMediaConfig().presets.values()]),
+      language: "typescript",
     };
   }
 

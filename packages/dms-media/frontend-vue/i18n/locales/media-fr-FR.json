@@ -303,6 +303,26 @@
 			"access_visibility": {
 				"name": "Visibilité du dossier",
 				"description": "Si les fichiers du dossier sont publics ou privés"
+			},
+			"file_delivery_notice": {
+				"name": "Mode de diffusion",
+				"description": "Comment le fichier est servi, selon sa visibilité"
+			},
+			"file_delivery_links": {
+				"name": "Liste des liens de diffusion",
+				"description": "Le lien stable et un lien par format, chacun avec un bouton copier"
+			},
+			"field_dependency": {
+				"name": "Dépendance du champ",
+				"description": "La commande qui ajoute l’interface du champ fichier à un module"
+			},
+			"field_notes": {
+				"name": "Notes du champ",
+				"description": "Ce que le champ enregistre, le dossier qu’il crée et qui peut s’en servir"
+			},
+			"preset_config_code": {
+				"name": "Code de configuration des formats",
+				"description": "Le bloc presets à coller dans antelope.config.ts"
 			}
 		},
 		"bulk": {
@@ -312,9 +332,6 @@
 			"selected": "{count} fichier sélectionné | {count} fichiers sélectionnés",
 			"zip": "Télécharger le .zip",
 			"zip_limit": "Un zip contient au plus {count} fichiers"
-		},
-		"code": {
-			"label": "Code"
 		},
 		"columns": {
 			"alt": "Texte alt.",
@@ -484,7 +501,12 @@
 					"rights": "Les droits du dossier suivent la page : qui voit la page peut voir, qui peut la modifier peut importer.",
 					"value": "La valeur est un identifiant de fichier, ou un tableau d'identifiants avec multiple."
 				},
-				"title": "Déclarer le champ"
+				"title": "Déclarer le champ",
+				"notes_labels": {
+					"value": "Valeur",
+					"binding": "Dossier lié",
+					"rights": "Droits"
+				}
 			},
 			"demo": {
 				"cover": "Image de couverture",

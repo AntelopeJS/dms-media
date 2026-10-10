@@ -303,6 +303,26 @@
 			"access_visibility": {
 				"name": "Folder visibility",
 				"description": "Whether the folder's files are public or private"
+			},
+			"file_delivery_notice": {
+				"name": "Delivery notice",
+				"description": "How the file is served, by its visibility"
+			},
+			"file_delivery_links": {
+				"name": "Delivery link list",
+				"description": "The stable link and one link per preset, each with a copy button"
+			},
+			"field_dependency": {
+				"name": "Field dependency",
+				"description": "The command adding the asset field interface to a module"
+			},
+			"field_notes": {
+				"name": "Field notes",
+				"description": "What the field stores, provisions and who can use it"
+			},
+			"preset_config_code": {
+				"name": "Preset configuration code",
+				"description": "The presets block to paste in antelope.config.ts"
 			}
 		},
 		"bulk": {
@@ -312,9 +332,6 @@
 			"selected": "{count} file selected | {count} files selected",
 			"zip": "Download .zip",
 			"zip_limit": "A zip holds at most {count} files"
-		},
-		"code": {
-			"label": "Code"
 		},
 		"columns": {
 			"alt": "Alt text",
@@ -484,7 +501,12 @@
 					"rights": "The folder's rights follow the page: who can see the page can view, who can edit it can upload.",
 					"value": "The value is one asset id, or an array of ids with multiple."
 				},
-				"title": "Declare the field"
+				"title": "Declare the field",
+				"notes_labels": {
+					"value": "Value",
+					"binding": "Linked folder",
+					"rights": "Rights"
+				}
 			},
 			"demo": {
 				"cover": "Cover image",

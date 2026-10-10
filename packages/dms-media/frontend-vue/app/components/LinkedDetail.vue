@@ -1,6 +1,5 @@
 <script setup lang="ts">
 import type { LinkedFolderDetail } from '../types/media'
-import CodeBlock from './shared/CodeBlock.vue'
 
 interface LinkedRow {
 	_id: string
@@ -20,20 +19,6 @@ onMounted(async () => {
 	} catch {
 		failed.value = true
 	}
-})
-
-const snippet = computed(() => {
-	const current = detail.value
-	if (!current) return ''
-	const lines = ['new AssetType({']
-	if (current.field.multiple) lines.push('  multiple: true,')
-	if (current.field.max !== undefined) lines.push(`  max: ${current.field.max},`)
-	if (current.field.mimetypes?.length) lines.push(`  mimetypes: [${current.field.mimetypes.map((type) => `"${type}"`).join(', ')}],`)
-	lines.push('  binding: {', `    id: "${current.id}",`, `    folderName: "${current.folderName}",`)
-	if (current.fromPage) lines.push('    permissionsFromPage: YourPage,')
-	else lines.push('    permissionMapping: {', `      read: [${current.read.map((id) => `"${id}"`).join(', ')}],`, `      write: [${current.write.map((id) => `"${id}"`).join(', ')}],`, '    },')
-	lines.push('  },', '});')
-	return lines.join('\n')
 })
 </script>
 
@@ -61,7 +46,7 @@ const snippet = computed(() => {
 				</div>
 			</div>
 			<div class="flex flex-col gap-2">
-				<CodeBlock :code="snippet" :label="t('dms_media.linked.detail.definition')" />
+				<DmsCodeSnippet :code="detail.definition" language="typescript" :title="t('dms_media.linked.detail.definition')" />
 				<p class="text-dimmed text-[12px]">{{ t('dms_media.linked.detail.identity') }}</p>
 			</div>
 		</template>

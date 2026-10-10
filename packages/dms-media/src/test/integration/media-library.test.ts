@@ -181,7 +181,7 @@ describe("[integration] media library — listings, search, bulk and overview", 
     expect(elsewhere.data.total).to.equal(0);
   });
 
-  it("describes an asset with its path, uploader and preset links", async () => {
+  it("describes an asset with its path and uploader", async () => {
     const response = await client.get(
       `/api/media/assets/${ids["oak-a.png"]}/details`,
     );
@@ -190,9 +190,6 @@ describe("[integration] media library — listings, search, bulk and overview", 
       response.data.path.map((entry: { name: string }) => entry.name),
     ).to.deep.equal(["Library spec", "Oak shots"]);
     expect(response.data.uploadedBy).to.equal("Test Owner");
-    expect(
-      response.data.presets.map((preset: { id: string }) => preset.id),
-    ).to.deep.equal(["thumb", "preview"]);
   });
 
   it("serves the file page information list and tab counts", async () => {
@@ -208,6 +205,26 @@ describe("[integration] media library — listings, search, bulk and overview", 
     expect(information.data.items[3].value).to.equal(assetId);
     const counts = await client.get(`/api/media/assets/${assetId}/tab-counts`);
     expect(counts.data).to.deep.equal({ delivery: 3 });
+  });
+
+  it("serves the delivery links with full URLs to copy, and how they are served", async () => {
+    const assetId = ids["oak-a.png"];
+    const links = await client.get(`/api/media/assets/${assetId}/delivery`);
+    expect(links.status).to.equal(HTTP_OK);
+    expect(
+      links.data.items.map((item: { id: string }) => item.id),
+    ).to.deep.equal(["stable", "thumb", "preview"]);
+    const [stable] = links.data.items;
+    expect(stable.value).to.equal(`/media/${assetId}/oak-a.png`);
+    expect(stable.copyValue).to.match(
+      new RegExp(`^https?://[^/]+/media/${assetId}/oak-a\\.png$`),
+    );
+    const notice = await client.get(
+      `/api/media/assets/${assetId}/delivery/notice`,
+    );
+    expect(notice.status).to.equal(HTTP_OK);
+    expect(notice.data.description).to.match(/delivery_(public|private)$/);
+    expect(notice.data.actions[0].to).to.equal("/media/presets");
   });
 
   it("moves, changes visibility and deletes in bulk, reporting refusals", async () => {

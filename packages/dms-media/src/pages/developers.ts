@@ -1,5 +1,6 @@
-import { CustomComponent } from "@antelopejs/interface-dms/base/custom";
+import { CodeBlock } from "@antelopejs/interface-dms/base/code-block";
 import { Form } from "@antelopejs/interface-dms/base/form";
+import { KeyValueList } from "@antelopejs/interface-dms/base/key-value-list";
 import { Section } from "@antelopejs/interface-dms/base/section";
 import { PageController, RegisterPage } from "@antelopejs/interface-dms/page";
 import { AssetType } from "@antelopejs/interface-dms-media";
@@ -8,6 +9,20 @@ import { blockMeta } from "./texts";
 
 const TEXTS = "$dms_media.field";
 const GALLERY_MAX = 8;
+const FIELD_NOTES = ["value", "binding", "rights"] as const;
+const DEPENDENCY_SNIPPET = "pnpm add @antelopejs/interface-dms-media";
+const DECLARATION_SNIPPET = `import { AssetType } from "@antelopejs/interface-dms-media";
+
+new AssetType({
+  multiple: true,
+  max: ${GALLERY_MAX},
+  mimetypes: ["image/*"],
+  binding: {
+    id: "products.gallery",
+    folderName: "Product gallery",
+    permissionsFromPage: ProductsPage,
+  },
+});`;
 
 const demoForm = Form({
   title: `${TEXTS}.demo.title`,
@@ -55,9 +70,31 @@ export class MediaFieldPage extends PageController("field", {
   })
     .meta(blockMeta("field_code", "i-ph-code"))
     .child(
+      "dependency",
+      CodeBlock({
+        title: "shell",
+        language: "shell",
+        code: DEPENDENCY_SNIPPET,
+      }).meta(blockMeta("field_dependency", "i-ph-terminal")),
+    )
+    .child(
       "snippet",
-      CustomComponent("DmsMediaFieldSnippet").meta(
-        blockMeta("field_snippet", "i-ph-code"),
-      ),
+      CodeBlock({
+        title: "src/pages/products.ts",
+        language: "typescript",
+        code: DECLARATION_SNIPPET,
+      }).meta(blockMeta("field_snippet", "i-ph-code")),
+    )
+    .child(
+      "notes",
+      KeyValueList({
+        card: false,
+        dense: true,
+        items: FIELD_NOTES.map((note) => ({
+          id: note,
+          label: `${TEXTS}.code.notes_labels.${note}`,
+          value: `${TEXTS}.code.notes.${note}`,
+        })),
+      }).meta(blockMeta("field_notes", "i-ph-info")),
     );
 }

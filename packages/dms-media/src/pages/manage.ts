@@ -1,4 +1,6 @@
 import { Banner } from "@antelopejs/interface-dms/base/banner";
+import { Card } from "@antelopejs/interface-dms/base/card";
+import { CodeBlock } from "@antelopejs/interface-dms/base/code-block";
 import { CustomComponent } from "@antelopejs/interface-dms/base/custom";
 import { DefaultDataTypes } from "@antelopejs/interface-dms/base/data-types/default-types";
 import { Grid, GridRow } from "@antelopejs/interface-dms/base/grid";
@@ -10,6 +12,7 @@ import { DefaultDisplays } from "@antelopejs/interface-dms/base/table-view/colum
 import { PageController, RegisterPage } from "@antelopejs/interface-dms/page";
 import { manageCategory } from "./category";
 import { blockMeta } from "./texts";
+import { MEDIA_LIBRARY_TOPIC } from "../constants";
 
 const ACCESS_TEXTS = "$dms_media.access";
 const LINKED_TEXTS = "$dms_media.linked";
@@ -34,6 +37,7 @@ const accessFolder = VStack({ spacing: GAP, alignment: "stretch" })
       layout: "cards",
       columns: ACCESS_RIGHTS_COUNT,
       fetchUrl: "/api/media/folders/{{query.folder}}/access/stats",
+      realtimeTopic: MEDIA_LIBRARY_TOPIC,
       skeletonCount: ACCESS_RIGHTS_COUNT,
       label: `${ACCESS_TEXTS}.rights_label`,
     }).meta(blockMeta("access_rights", "i-ph-users-three")),
@@ -85,6 +89,7 @@ const stringColumn = (name: string, order: number) => ({
 const linkedFolders = TableView.fromSource({
   caption: `${LINKED_TEXTS}.table`,
   fetchUrl: "/api/media/linked",
+  realtimeTopic: MEDIA_LIBRARY_TOPIC,
   layout: "compact",
   emptyStates: {
     firstRun: {
@@ -184,9 +189,19 @@ export class MediaPresetsPage extends PageController("presets", {
         )
         .child(
           "config",
-          CustomComponent("DmsMediaPresetConfig").meta(
-            blockMeta("preset_config", "i-ph-code"),
-          ),
+          Card({
+            title: `${PRESETS_TEXTS}.config.title`,
+            footer: `${PRESETS_TEXTS}.config.hint`,
+          })
+            .meta(blockMeta("preset_config", "i-ph-code"))
+            .child(
+              "code",
+              CodeBlock({
+                title: "antelope.config.ts",
+                language: "typescript",
+                fetchUrl: "/api/media/presets/config",
+              }).meta(blockMeta("preset_config_code", "i-ph-code")),
+            ),
         ),
     );
 }
