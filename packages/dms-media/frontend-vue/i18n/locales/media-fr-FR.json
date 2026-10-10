@@ -108,15 +108,12 @@
 			"upload_batch": "{actor} a terminé un import dans {name}"
 		},
 		"alt": {
-			"failed": "Non enregistré, réessayez",
 			"hint": "Utilisé partout où l'image apparaît",
 			"label": "Texte alternatif",
 			"missing": "Manquant",
 			"missing_long": "Pas encore de texte alternatif",
 			"placeholder": "Décrivez l'image pour les lecteurs d'écran et les moteurs de recherche",
 			"read_only": "Vous ne pouvez pas modifier ce dossier",
-			"saved": "Enregistré",
-			"saving": "Enregistrement…",
 			"set": "Renseigné"
 		},
 		"blocks": {

@@ -52,7 +52,7 @@ function toggle(folderId: string): void {
 <template>
 	<DmsCard :title="t('dms_media.access.folders')" class="flex min-h-0 flex-col">
 		<template #actions>
-			<UInput v-model="filter" size="xs" icon="i-ph-magnifying-glass" :placeholder="t('dms_media.dialogs.find_folder')" class="w-40" />
+			<DmsSearchInput v-model="filter" size="xs" :placeholder="t('dms_media.dialogs.find_folder')" class="w-40" />
 		</template>
 		<ul class="-mx-2 flex max-h-[560px] flex-col overflow-y-auto" role="tree">
 			<li

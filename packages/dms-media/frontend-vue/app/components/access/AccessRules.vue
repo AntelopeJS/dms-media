@@ -109,7 +109,7 @@ function subjectLabel(entry: LabelledAclEntry): string {
 				<UButton icon="i-ph-plus" color="neutral" variant="outline" size="sm" :label="t('dms_media.access.add')" />
 				<template #content-top>
 					<div class="p-1">
-						<UInput v-model="subjectFilter" size="sm" icon="i-ph-magnifying-glass" :placeholder="t('dms_media.access.find_subject')" class="w-full" @keydown.stop />
+						<DmsSearchInput v-model="subjectFilter" size="sm" :placeholder="t('dms_media.access.find_subject')" class="w-full" @keydown.stop />
 					</div>
 				</template>
 			</UDropdownMenu>

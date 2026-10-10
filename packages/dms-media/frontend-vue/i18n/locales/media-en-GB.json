@@ -108,15 +108,12 @@
 			"upload_batch": "{actor} finished an upload to {name}"
 		},
 		"alt": {
-			"failed": "Not saved, try again",
 			"hint": "Used wherever this image is shown",
 			"label": "Alt text",
 			"missing": "Missing",
 			"missing_long": "No alt text yet",
 			"placeholder": "Describe the image for screen readers and search engines",
 			"read_only": "You can't edit this folder",
-			"saved": "Saved",
-			"saving": "Saving…",
 			"set": "Set"
 		},
 		"blocks": {

@@ -24,7 +24,7 @@ const options = computed(() =>
 		size="sm"
 		@dismiss="emit('close', null)"
 	>
-		<URadioGroup v-model="choice" :items="options" variant="card" />
+		<DmsChoiceCards :model-value="choice" :items="options" @update:model-value="choice = $event as AssetVisibility" />
 		<template #footer>
 			<UButton color="neutral" variant="outline" :label="t('dms_media.actions.cancel')" @click="emit('close', null)" />
 			<UButton :label="t('dms_media.dialogs.visibility.confirm', { count }, count)" @click="emit('close', choice)" />

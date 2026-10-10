@@ -14,6 +14,7 @@ const emit = defineEmits<{ close: [string | null] }>()
 const { t } = useI18n()
 const name = ref(props.initial ?? '')
 const MAX_NAME_LENGTH = 255
+const INPUT_ID = 'dms-media-name-input'
 const FORBIDDEN = /[\\/]/
 
 const error = computed(() => {
@@ -39,14 +40,20 @@ function submit(): void {
 		size="sm"
 		@dismiss="emit('close', null)"
 	>
-		<form id="dms-media-name-form" @submit.prevent="submit">
-			<UFormField :label="label" :error="name ? error : undefined">
-				<UInput v-model="name" autofocus class="w-full" :ui="{ trailing: 'pe-1' }">
-					<template v-if="suffix" #trailing>
-						<span class="text-muted font-mono text-xs">{{ suffix }}</span>
+		<form id="dms-media-name-form" class="flex flex-col gap-4" @submit.prevent="submit">
+			<DmsFieldRow :label="label" :label-for="INPUT_ID" layout="stack" :inset="false" spacing="list" required>
+				<UFormField :error="name ? error : undefined">
+					<UInput :id="INPUT_ID" v-model="name" autofocus class="w-full" :ui="{ trailing: 'pe-1' }">
+						<template v-if="suffix" #trailing>
+							<span class="text-muted font-mono text-xs">{{ suffix }}</span>
+						</template>
+					</UInput>
+					<template #error="{ error: message }">
+						<DmsFormErrorText :error="message" />
 					</template>
-				</UInput>
-			</UFormField>
+				</UFormField>
+			</DmsFieldRow>
+			<DmsFormRequiredLegend />
 		</form>
 		<template #footer>
 			<UButton color="neutral" variant="outline" :label="t('dms_media.actions.cancel')" @click="emit('close', null)" />

@@ -13,6 +13,7 @@ const file = useCurrentFile()
 const asset = computed(() => file.asset.value)
 const details = computed(() => file.details.value)
 const nameDraft = ref('')
+const NAME_INPUT_ID = 'dms-media-file-name'
 const extension = computed(() => (asset.value ? extensionOf(asset.value) : ''))
 const hasExtension = computed(() => Boolean(asset.value?.name.toLowerCase().endsWith(`.${extension.value}`)))
 
@@ -61,15 +62,17 @@ function changeVisibility(visibility: AssetVisibility): void {
 
 <template>
 	<div v-if="asset && details" class="flex flex-col gap-5">
-		<UFormField :label="t('dms_media.columns.name')" :help="t('dms_media.dialogs.rename.file_description')">
-			<UInput v-model="nameDraft" class="w-full" :disabled="!file.canWrite.value" @blur="saveName" @keydown.enter.prevent="saveName">
-				<template v-if="hasExtension" #trailing>
-					<span class="text-muted font-mono text-xs">.{{ extension }}</span>
-				</template>
-			</UInput>
-		</UFormField>
+		<DmsFieldRow :label="t('dms_media.columns.name')" :label-for="NAME_INPUT_ID" layout="stack" :inset="false" spacing="list">
+			<UFormField :help="t('dms_media.dialogs.rename.file_description')">
+				<UInput :id="NAME_INPUT_ID" v-model="nameDraft" class="w-full" :disabled="!file.canWrite.value" @blur="saveName" @keydown.enter.prevent="saveName">
+					<template v-if="hasExtension" #trailing>
+						<span class="text-muted font-mono text-xs">.{{ extension }}</span>
+					</template>
+				</UInput>
+			</UFormField>
+		</DmsFieldRow>
 		<AltTextField v-if="isImageAsset(asset)" :asset="asset" :can-edit="file.canWrite.value" :save="file.setAlt" />
-		<UFormField :label="t('dms_media.file.folder')">
+		<DmsFieldRow :label="t('dms_media.file.folder')" layout="stack" :inset="false" spacing="list">
 			<div class="flex gap-2">
 				<div class="border-default flex min-w-0 flex-1 items-center gap-2 rounded-md border px-3 py-1.5 text-sm">
 					<UIcon name="i-ph-folder-simple" class="text-muted size-4" />
@@ -78,10 +81,10 @@ function changeVisibility(visibility: AssetVisibility): void {
 				</div>
 				<UButton v-if="file.canWrite.value" color="neutral" variant="outline" :label="t('dms_media.file.move')" @click="move" />
 			</div>
-		</UFormField>
-		<UFormField :label="t('dms_media.columns.visibility')">
+		</DmsFieldRow>
+		<DmsFieldRow :label="t('dms_media.columns.visibility')" layout="stack" :inset="false" spacing="list">
 			<FileVisibility :asset="asset" :folder="details.folder" :can-change="file.canChangeVisibility.value" @change="changeVisibility" />
-		</UFormField>
+		</DmsFieldRow>
 		<div v-if="file.canWrite.value" class="border-default flex items-center justify-between gap-2 border-t pt-3">
 			<UButton icon="i-ph-trash" color="error" variant="ghost" size="sm" :label="t('dms_media.file.delete')" @click="remove" />
 			<span class="text-dimmed ms-auto text-[12px]">{{ t('dms_media.file.autosave') }}</span>

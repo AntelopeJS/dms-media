@@ -78,12 +78,7 @@ watch(
 
 <template>
 	<div class="flex flex-col gap-2">
-		<UInput
-			v-model="filter"
-			icon="i-ph-magnifying-glass"
-			size="sm"
-			:placeholder="t('dms_media.dialogs.find_folder')"
-		/>
+		<DmsSearchInput v-model="filter" size="sm" :placeholder="t('dms_media.dialogs.find_folder')" />
 		<div
 			class="border-default max-h-80 overflow-y-auto rounded-md border p-1"
 			role="tree"
