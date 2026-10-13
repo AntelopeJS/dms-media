@@ -150,7 +150,6 @@ async function navigate(target: LibraryLocation, filters: Partial<ListingFilters
 
 onMounted(async () => {
 	await library.tree.refresh()
-	if (library.tree.tree.value) uploads.maxUploadBytes.value = library.tree.tree.value.maxUploadBytes
 	await navigate(props.initialLocation ?? startLocation(), props.initialFilters)
 })
 

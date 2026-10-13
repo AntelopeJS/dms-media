@@ -22,6 +22,7 @@ export interface UploadToastOptions {
 }
 
 const FAILED_STATUSES = new Set<UploadItem['status']>(['failed', 'rejected'])
+const NAMES_SEPARATOR = ', '
 const announcers = new Map<string, Announcer>()
 let isListening = false
 
@@ -116,5 +117,21 @@ export function useUploadToasts() {
 		})
 	}
 
-	return { announce }
+	/** Names the files a field refused for their type, and says what it takes. */
+	function announceRefusedTypes(refused: readonly File[], accept: readonly string[]): void {
+		if (refused.length === 0) return
+		const types = fieldTypesLabel(accept, t)
+		toast.add({
+			title: t(
+				'dms_media.field_widget.upload.type_refused',
+				{ names: refused.map((file) => file.name).join(NAMES_SEPARATOR) },
+				refused.length,
+			),
+			description: types ? t('dms_media.field_widget.upload.accepts', { types }) : undefined,
+			color: 'warning',
+			icon: 'i-ph-file-x',
+		})
+	}
+
+	return { announce, announceRefusedTypes }
 }

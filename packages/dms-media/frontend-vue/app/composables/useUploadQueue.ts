@@ -56,6 +56,11 @@ export interface UploadItem {
 	asset?: MediaAsset
 }
 
+export interface FileSplit {
+	kept: File[]
+	refused: File[]
+}
+
 export interface UploadDestination {
 	folderId: string
 	folderName: string
@@ -118,8 +123,6 @@ const SERVER_REASONS = new Set<UploadFailure>(['type_not_allowed', 'field_type',
 
 const items = ref<UploadItem[]>([])
 const isPaused = ref(false)
-const maxUploadBytes = ref(500 * 1024 * 1024)
-const allowedMimetypes = ref<readonly string[] | null>(null)
 const files = new Map<string, File>()
 const requests = new Map<string, XMLHttpRequest>()
 const listeners = new Set<UploadListener>()
@@ -201,11 +204,6 @@ function putFile(id: string, url: string, headers: Record<string, string>, file:
 	}).finally(() => requests.delete(id))
 }
 
-function httpStatusOf(error: unknown): number | undefined {
-	const response = error as { statusCode?: number; status?: number } | undefined
-	return response?.statusCode ?? response?.status
-}
-
 function refusalOf(error: unknown): ServerRefusal {
 	const data = (error as { data?: unknown } | undefined)?.data
 	if (typeof data === 'string') return { message: data }
@@ -221,7 +219,7 @@ function describeFailure(error: unknown): FailureOutcome {
 			message: error.message,
 			details: error.details,
 		}
-	const status = httpStatusOf(error)
+	const status = apiErrorStatus(error)
 	const refusal = refusalOf(error)
 	if (!status) return { status: 'failed', failure: 'connection' }
 	if (status < HTTP_CLIENT_ERROR_MIN || status >= HTTP_SERVER_ERROR_MIN)
@@ -363,17 +361,27 @@ function guardUnload(): void {
 
 function isTypeRefused(file: File): boolean {
 	if (isActiveDocument(file)) return true
-	return Boolean(allowedMimetypes.value && !matchesUploadType(uploadMimetype(file), allowedMimetypes.value))
+	const allowed = uploadLimits.value.allowedMimetypes
+	return Boolean(allowed && !matchesUploadType(uploadMimetype(file), allowed))
+}
+
+function refusesFieldType(file: File, accepts: readonly string[] | null | undefined): boolean {
+	return Boolean(accepts?.length) && !matchesUploadType(uploadMimetype(file), accepts ?? [])
+}
+
+/** Splits the files a field taking `accepts` (any file when empty) refuses from those it takes. */
+function splitByFieldType(selected: readonly File[], accepts?: readonly string[] | null): FileSplit {
+	const refused = selected.filter((file) => refusesFieldType(file, accepts))
+	return { kept: selected.filter((file) => !refused.includes(file)), refused }
 }
 
 /** Refusals known before sending: the server would answer the same. */
 function initialRefusal(file: File, destination: UploadDestination): Pick<UploadItem, 'status' | 'failure' | 'details'> {
 	if (file.size === 0) return { status: 'rejected', failure: 'empty' }
-	if (file.size > maxUploadBytes.value) return { status: 'rejected', failure: 'too_large' }
+	if (file.size > uploadLimits.value.maxUploadBytes) return { status: 'rejected', failure: 'too_large' }
 	if (isTypeRefused(file)) return { status: 'rejected', failure: 'type_not_allowed' }
-	const accepts = destination.accepts
-	if (accepts?.length && !matchesUploadType(uploadMimetype(file), accepts))
-		return { status: 'rejected', failure: 'field_type', details: { accepted: accepts } }
+	if (refusesFieldType(file, destination.accepts))
+		return { status: 'rejected', failure: 'field_type', details: { accepted: destination.accepts ?? [] } }
 	return { status: 'waiting' }
 }
 
@@ -526,9 +534,9 @@ export function useUploadQueue() {
 		items: readonly(items),
 		isPaused: readonly(isPaused),
 		activeCount,
-		maxUploadBytes,
-		allowedMimetypes,
+		maxUploadBytes: computed(() => uploadLimits.value.maxUploadBytes),
 		enqueue,
+		splitByFieldType,
 		retry,
 		retryFailed,
 		cancel,

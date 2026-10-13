@@ -2,8 +2,6 @@ import { defaultDocument, defaultWindow, useEventListener } from '@vueuse/core'
 import type { Ref } from 'vue'
 import type { MediaAsset } from '../types/media'
 
-const HTTP_NOT_FOUND = 404
-
 /**
  * One value of an asset field: the file it names once loaded, `loading`
  * until then, or `missing` when the server answers that it does not know it
@@ -15,19 +13,6 @@ export interface AssetFieldEntry {
 	asset: MediaAsset | null
 	loading: boolean
 	missing: boolean
-}
-
-interface HttpFailure {
-	statusCode?: number
-	status?: number
-	response?: { status?: number }
-}
-
-function isNotFound(error: unknown): boolean {
-	const failure = (error ?? {}) as HttpFailure
-	const status =
-		failure.statusCode ?? failure.status ?? failure.response?.status
-	return status === HTTP_NOT_FOUND
 }
 
 /**
@@ -48,7 +33,7 @@ export function useAssetFieldEntries(ids: Ref<string[]>) {
 			assets.set(id, asset)
 			missing.delete(id)
 		} catch (error) {
-			if (!isNotFound(error)) return
+			if (!isNotFoundError(error)) return
 			assets.delete(id)
 			missing.add(id)
 		}

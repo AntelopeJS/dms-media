@@ -76,7 +76,7 @@ export function useLibraryTree(options: LibraryTreeOptions = {}) {
 	async function refresh(): Promise<void> {
 		isLoading.value = true
 		try {
-			tree.value = await api.tree(options.scopeFolderId)
+			tree.value = await fetchTree(api, options.scopeFolderId)
 			error.value = null
 		} catch (cause) {
 			error.value = cause

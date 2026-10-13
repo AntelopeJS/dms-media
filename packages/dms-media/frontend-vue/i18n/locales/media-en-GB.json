@@ -936,7 +936,6 @@
 			"upload_failed_mixed": "Various reasons",
 			"folder_missing": "This folder no longer exists, or you can't open it",
 			"folder_missing_description": "It was deleted or moved, or its access changed.",
-			"upload_not_accepted": "{count} file isn't a type this field takes | {count} files aren't a type this field takes",
 			"already_deleted": "This file was already deleted | {count} files were already deleted",
 			"folder_visibility": {
 				"private": "{name} is now private",

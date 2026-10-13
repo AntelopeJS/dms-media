@@ -22,29 +22,12 @@ export function useExplorerUploads(library: MediaLibrary, options: ExplorerUploa
 	const uploads = useUploadQueue()
 	const uploadToasts = useUploadToasts()
 	const { update } = useMediaPrefs()
-	const { t } = library
 	const ownBatches = new Set<string>()
 	const isPick = library.mode === 'pick'
 
-	/** Names a single refused file; several are counted. Either way, says what the field takes. */
-	function announceRefused(refused: File[]): void {
-		const [only] = refused
-		if (!only) return
-		const title = refused.length === 1
-			? t('dms_media.field_widget.upload.type_refused', { names: only.name }, 1)
-			: t('dms_media.toasts.upload_not_accepted', { count: refused.length }, refused.length)
-		const types = fieldTypesLabel(options.accept ?? [], t)
-		library.toast.add({
-			title,
-			description: types ? t('dms_media.field_widget.upload.accepts', { types }) : undefined,
-			color: 'warning',
-			icon: 'i-ph-prohibit',
-		})
-	}
-
 	function enqueue(files: File[], folder: UploadTarget): void {
-		const accepted = isPick ? files.filter((file) => acceptsMimetype(file.type, options.accept)) : files
-		announceRefused(files.filter((file) => !accepted.includes(file)))
+		const { kept: accepted, refused } = uploads.splitByFieldType(files, options.accept)
+		uploadToasts.announceRefusedTypes(refused, options.accept ?? [])
 		if (accepted.length === 0) return
 		update({ lastFolderId: folder.id })
 		const batchId = uploads.enqueue(accepted, { folderId: folder.id, folderName: folder.name })

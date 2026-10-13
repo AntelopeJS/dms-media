@@ -1,9 +1,8 @@
 import type { MediaAsset } from '../types/media'
-import type { UploadDestination, UploadItem } from './useUploadQueue'
+import type { FileSplit, UploadDestination, UploadItem } from './useUploadQueue'
 
 const HIDDEN_STATUSES = new Set<UploadItem['status']>(['done', 'cancelled'])
 const FAILED_STATUSES = new Set<UploadItem['status']>(['failed', 'rejected'])
-const UNKNOWN_MIMETYPE = 'application/octet-stream'
 const NAMES_SEPARATOR = ', '
 
 export interface AssetFieldUploadOptions {
@@ -17,11 +16,6 @@ export interface AssetFieldUploadOptions {
 	onUploaded: (asset: MediaAsset) => void
 }
 
-interface FileSplit {
-	kept: File[]
-	refused: File[]
-}
-
 function namesOf(files: File[]): string {
 	return files.map((file) => file.name).join(NAMES_SEPARATOR)
 }
@@ -33,6 +27,7 @@ function namesOf(files: File[]): string {
  */
 export function useAssetFieldUploads(options: AssetFieldUploadOptions) {
 	const uploads = useUploadQueue()
+	const uploadToasts = useUploadToasts()
 	const toast = useToast()
 	const { t } = useI18n()
 	const batchIds = ref<string[]>([])
@@ -48,34 +43,6 @@ export function useAssetFieldUploads(options: AssetFieldUploadOptions) {
 	const isUploading = computed(() =>
 		items.value.some((item) => !FAILED_STATUSES.has(item.status)),
 	)
-
-	function isAccepted(file: File): boolean {
-		const accept = options.accept() ?? []
-		if (accept.length === 0) return true
-		return accept.some((pattern) =>
-			matchesMimePattern(file.type || UNKNOWN_MIMETYPE, pattern),
-		)
-	}
-
-	function splitByType(files: File[]): FileSplit {
-		const kept = files.filter(isAccepted)
-		const refused = files.filter((file) => !kept.includes(file))
-		if (refused.length) {
-			toast.add({
-				title: t(
-					'dms_media.field_widget.upload.type_refused',
-					{ names: namesOf(refused) },
-					refused.length,
-				),
-				description: t('dms_media.field_widget.upload.accepts', {
-					types: fieldTypesLabel(options.accept() ?? [], t),
-				}),
-				color: 'warning',
-				icon: 'i-ph-file-x',
-			})
-		}
-		return { kept, refused }
-	}
 
 	function splitByRoom(files: File[]): FileSplit {
 		const room = options.room()
@@ -111,7 +78,10 @@ export function useAssetFieldUploads(options: AssetFieldUploadOptions) {
 			})
 			return
 		}
-		const { kept } = splitByRoom(splitByType(files).kept)
+		const accept = options.accept() ?? []
+		const byType = uploads.splitByFieldType(files, accept)
+		uploadToasts.announceRefusedTypes(byType.refused, accept)
+		const { kept } = splitByRoom(byType.kept)
 		if (kept.length === 0) return
 		const batchId = await uploads.enqueue(kept, destination)
 		if (batchId) batchIds.value = [...batchIds.value, batchId]

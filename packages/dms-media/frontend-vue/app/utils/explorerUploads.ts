@@ -1,5 +1,4 @@
 import type { UploadItem, UploadStatus } from '../composables/useUploadQueue'
-import { matchesMimePattern } from './acceptedTypes'
 
 const SETTLED_STATUSES = new Set<UploadStatus>(['done', 'failed', 'rejected', 'cancelled'])
 
@@ -10,12 +9,6 @@ export interface UploadProgress {
 
 function isSettledUpload(item: UploadItem): boolean {
 	return SETTLED_STATUSES.has(item.status)
-}
-
-/** Whether a picker that takes `accept` (`image/*`, `application/pdf`) takes this mimetype. */
-export function acceptsMimetype(mimetype: string, accept: string[] = []): boolean {
-	if (accept.length === 0) return true
-	return accept.some((pattern) => matchesMimePattern(mimetype, pattern))
 }
 
 /**

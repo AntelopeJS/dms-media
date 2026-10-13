@@ -19,9 +19,7 @@ async function load(): Promise<void> {
 }
 
 onMounted(() => void load())
-useRealtimeTopic(MEDIA_LIBRARY_TOPIC, (event) => {
-	if ('type' in event) void load()
-})
+onLibraryChange(load)
 
 const foldersById = computed(() => new Map((tree.value?.folders ?? []).map((folder) => [folder.id, folder])))
 </script>

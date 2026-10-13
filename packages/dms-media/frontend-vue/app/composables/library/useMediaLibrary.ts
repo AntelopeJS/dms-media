@@ -2,16 +2,11 @@ import type { InjectionKey } from 'vue'
 import type {
 	AssetVisibility,
 	BulkOutcome,
+	BulkRefusal,
 	FolderVisibility,
 	MediaAsset,
 	MediaFolder,
 } from '../../types/media'
-import {
-	isGoneError,
-	isGoneRefusal,
-	nameFieldError,
-	translateApiMessage,
-} from './libraryErrors'
 import { type LibraryLocation, sameLocation } from './useLibraryListing'
 
 const LIBRARY_KEY: InjectionKey<MediaLibrary> = Symbol('dms-media-library')
@@ -74,7 +69,7 @@ function createMediaLibrary(options: MediaLibraryOptions) {
 	function rejectionOf(asset: MediaAsset): string | undefined {
 		if (alreadyPicked.has(asset.id)) return t('dms_media.picker.already_added')
 		if (!acceptedTypes.value) return undefined
-		if (accept.some((pattern) => matchesMimePattern(asset.mimetype, pattern))) return undefined
+		if (matchesUploadType(asset.mimetype, accept)) return undefined
 		return t('dms_media.picker.not_accepted', { types: acceptedTypes.value })
 	}
 
@@ -184,6 +179,30 @@ const ZIP_URL_TTL_MS = 10_000
 const ZIP_FALLBACK_NAME = 'media'
 const UNSAFE_FILENAME_CHARS = /[<>:"/\\|?*\u0000-\u001f]+/g
 const NAME_COLLATOR = new Intl.Collator(undefined, { numeric: true, sensitivity: 'base' })
+const NAME_FIELD = 'name'
+const NAME_ERROR_CODES = Object.fromEntries(
+	['name_required', 'name_too_long', 'name_forbidden', 'name_taken', 'folder_name_taken'].map((code) => [
+		`$dms_media.errors.${code}`,
+		NAME_FIELD,
+	]),
+)
+
+type Translate = LibraryCore['t']
+
+/** A refusal about the typed name, shown under the name field instead of a toast. */
+function nameFieldError(t: Translate, error: unknown): string | undefined {
+	const [refusal] = resolveFieldErrors(error, { fields: [NAME_FIELD], codes: NAME_ERROR_CODES }).fields
+	return refusal && resolveApiMessage(t, refusal.message, refusal.params)
+}
+
+function isGoneRefusal(refusal: BulkRefusal): boolean {
+	return refusal.status === HTTP_NOT_FOUND
+}
+
+function refusedMessage(t: Translate, outcome: BulkOutcome): string | undefined {
+	const message = outcome.refused[0]?.message
+	return message ? resolveApiMessage(t, message) : undefined
+}
 
 function reportOutcome(library: LibraryCore, outcome: BulkOutcome, report: OutcomeReport): void {
 	const { t } = library
@@ -193,7 +212,7 @@ function reportOutcome(library: LibraryCore, outcome: BulkOutcome, report: Outco
 		title: isComplete
 			? t(report.doneKey, { count, ...report.params }, count)
 			: t('dms_media.toasts.partial', { done: count, refused: outcome.refused.length }),
-		description: isComplete ? undefined : translateApiMessage(t, outcome.refused[0]?.message),
+		description: refusedMessage(t, outcome),
 		color: isComplete ? 'success' : 'warning',
 		icon: isComplete ? 'i-ph-check-circle' : 'i-ph-warning',
 		actions: count > 0 ? report.actions : undefined,
@@ -259,7 +278,7 @@ function createDetailActions(library: LibraryCore) {
 	function failWrite(error: unknown, asset: MediaAsset, titleKey: string): NameOutcome {
 		const fieldError = nameFieldError(t, error)
 		if (fieldError) return { isDone: false, fieldError }
-		if (isGoneError(error)) forgetGone([asset.id])
+		if (isNotFoundError(error)) forgetGone([asset.id])
 		else library.notifyFailure(error, titleKey)
 		return { isDone: false }
 	}

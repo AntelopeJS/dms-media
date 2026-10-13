@@ -99,14 +99,6 @@ function uploadTarget(): { folderId: string; folderName: string } | null {
 		: null
 }
 
-watch(
-	() => tree.value?.maxUploadBytes,
-	(bytes) => {
-		if (bytes) useUploadQueue().maxUploadBytes.value = bytes
-	},
-	{ immediate: true },
-)
-
 function commit(next: string[]): void {
 	emit('update:modelValue', props.multiple ? next : (next[0] ?? null))
 	field.emitFormChange()

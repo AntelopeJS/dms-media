@@ -64,16 +64,6 @@ watch(sentBytes, (bytes) => {
 	lastSample = { time: now, bytes }
 })
 
-watch(
-	tree,
-	(loaded) => {
-		if (!loaded) return
-		uploads.maxUploadBytes.value = loaded.maxUploadBytes
-		uploads.allowedMimetypes.value = loaded.allowedMimetypes
-	},
-	{ immediate: true },
-)
-
 function timeLeftLabel(seconds: number): string {
 	return seconds < SECONDS_PER_MINUTE
 		? t('dms_media.queue.seconds_left', { count: seconds })

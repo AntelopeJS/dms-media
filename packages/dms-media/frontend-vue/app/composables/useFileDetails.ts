@@ -1,23 +1,10 @@
-import type { AssetDetails, AssetPage, AssetVisibility, MediaAsset, MediaTree } from '../types/media'
+import type { AssetDetails, AssetPage, AssetVisibility, MediaAsset } from '../types/media'
 import type { FileListingOrder } from '../utils/mediaFiles'
 
 const SIBLINGS_PAGE_SIZE = 500
 const SIBLINGS_HALF_WINDOW = SIBLINGS_PAGE_SIZE / 2
 const SIBLINGS_EDGE_MARGIN = 20
 const DEFAULT_SIBLINGS_SORT = 'name'
-const HTTP_NOT_FOUND = 404
-const MISSING_ASSET_MESSAGE = 'No file named in the page URL'
-
-interface FailedRequest {
-	statusCode?: number
-	status?: number
-	response?: { status?: number }
-}
-
-function statusOf(cause: unknown): number | undefined {
-	const failure = (cause ?? {}) as FailedRequest
-	return failure.statusCode ?? failure.status ?? failure.response?.status
-}
 
 /**
  * One file of the library, its neighbours in the folder (in the order and
@@ -33,7 +20,7 @@ export function useFileDetails(assetId: Ref<string | undefined>, order: Ref<File
 	const siblings = ref<MediaAsset[]>([])
 	const siblingsOffset = ref(0)
 	const siblingsTotal = ref(0)
-	const tree = ref<MediaTree | null>(null)
+	const { tree, reload: refreshTree } = useSharedTree()
 	const isLoading = ref(false)
 	const error = ref<unknown>(null)
 	const isDeleted = ref(false)
@@ -89,7 +76,7 @@ export function useFileDetails(assetId: Ref<string | undefined>, order: Ref<File
 
 	function markUnavailable(cause: unknown): void {
 		const wasShown = details.value?.asset.id === assetId.value
-		if (wasShown && statusOf(cause) === HTTP_NOT_FOUND) {
+		if (wasShown && isNotFoundError(cause)) {
 			isDeleted.value = true
 			siblings.value = siblings.value.filter((entry) => entry.id !== assetId.value)
 		}
@@ -199,10 +186,6 @@ export function useFileDetails(assetId: Ref<string | undefined>, order: Ref<File
 		}
 	}
 
-	async function refreshTree(): Promise<void> {
-		tree.value = await api.tree().catch(() => tree.value)
-	}
-
 	function refresh(): void {
 		if (assetId.value) void load(assetId.value, true)
 	}
@@ -210,17 +193,12 @@ export function useFileDetails(assetId: Ref<string | undefined>, order: Ref<File
 	watch(
 		assetId,
 		(id) => {
-			if (id) return void load(id)
-			details.value = null
-			error.value = new Error(MISSING_ASSET_MESSAGE)
+			if (id) void load(id)
 		},
 		{ immediate: true },
 	)
 	watch(() => JSON.stringify(order.value), refresh)
-	onMounted(() => void refreshTree())
-	useRealtimeTopic(MEDIA_LIBRARY_TOPIC, (event) => {
-		if ('type' in event) refresh()
-	})
+	onLibraryChange(refresh)
 
 	return {
 		details,

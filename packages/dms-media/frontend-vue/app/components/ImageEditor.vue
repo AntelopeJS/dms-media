@@ -74,7 +74,6 @@ const EDITING_PRESET = 'preview'
 const EDITING_MAX_SIDE = 2048
 const SAME_SHAPE_TOLERANCE = 0.02
 const NUDGE_RATIO = 0.01
-const MISSING_STATUSES = new Set([403, 404])
 const VECTOR_MIMETYPE = 'image/svg+xml'
 const KEY_STEPS: Record<string, KeyStep> = {
 	ArrowLeft: { x: -1, y: 0 },
@@ -189,11 +188,6 @@ const presetPreviews = computed<PresetPreview[]>(() => {
 	})
 })
 
-function errorStatus(error: unknown): number {
-	const cause = error as { statusCode?: number; status?: number; response?: { status?: number } }
-	return cause.statusCode ?? cause.status ?? cause.response?.status ?? 0
-}
-
 function naturalSize(url: string): Promise<PixelSize> {
 	return new Promise((resolve, reject) => {
 		const image = new Image()
@@ -234,15 +228,12 @@ async function load(): Promise<void> {
 	source.value = null
 	details.value = null
 	resetEdits()
-	if (!assetId.value) {
-		loadState.value = 'missing'
-		return
-	}
+	if (!assetId.value) return
 	loadState.value = 'loading'
 	try {
 		details.value = await api.details(assetId.value)
 	} catch (error) {
-		loadState.value = MISSING_STATUSES.has(errorStatus(error)) ? 'missing' : 'error'
+		loadState.value = isOutOfReachError(error) ? 'missing' : 'error'
 		return
 	}
 	loadState.value = 'ready'

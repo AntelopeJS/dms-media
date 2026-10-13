@@ -11,6 +11,7 @@ import { Tab } from "@antelopejs/interface-dms/base/tab";
 import { PageController, RegisterPage } from "@antelopejs/interface-dms/page";
 import { libraryCategory, MEDIA_MODULE_ID } from "./module";
 import { blockMeta } from "./texts";
+import { MEDIA_ROUTES } from "../library/links";
 import { MEDIA_LIBRARY_TOPIC } from "../constants";
 
 const FILE_TEXTS = "$dms_media.file";
@@ -21,6 +22,12 @@ const VIEWER_SPAN = 2;
 const INFORMATION_ROWS = 4;
 const DETAILS_SPACING = "1.25rem";
 const DELIVERY_ROWS = 4;
+
+/** A file page opened without its `?asset=` goes to the library instead. */
+const ASSET_QUERY_VALIDATION = {
+  requiredQueryParams: ["asset"],
+  redirectTo: MEDIA_ROUTES.files,
+};
 
 const TAB_SLOTS = ["details", "delivery", "history", "usage"] as const;
 
@@ -114,6 +121,7 @@ export class MediaFilePage extends PageController(
     hidden: true,
     order: 3,
     noComponentPermissions: true,
+    validation: ASSET_QUERY_VALIDATION,
   },
   DefaultLayout({ hideHeader: true }),
 ) {
@@ -155,6 +163,7 @@ export class MediaEditorPage extends PageController(
     hidden: true,
     order: 4,
     noComponentPermissions: true,
+    validation: ASSET_QUERY_VALIDATION,
   },
   DefaultLayout({ hideHeader: true }),
 ) {

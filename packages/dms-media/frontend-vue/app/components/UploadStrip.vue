@@ -33,16 +33,6 @@ watch(foldersById, (byId, previous) => {
 	update({ lastFolderId: null })
 })
 
-watch(
-	tree,
-	(loaded) => {
-		if (!loaded) return
-		uploads.maxUploadBytes.value = loaded.maxUploadBytes
-		uploads.allowedMimetypes.value = loaded.allowedMimetypes
-	},
-	{ immediate: true },
-)
-
 onMounted(() => {
 	window.addEventListener('dragenter', onDragEnter)
 	window.addEventListener('dragleave', onDragLeave)

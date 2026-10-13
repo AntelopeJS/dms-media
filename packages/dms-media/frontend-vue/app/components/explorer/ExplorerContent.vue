@@ -14,11 +14,6 @@ const { prefs } = useMediaPrefs()
 const { t } = useI18n()
 const SKELETON_TILES = 8
 
-interface HttpFailure {
-	statusCode?: number
-	status?: number
-}
-const MISSING_STATUSES = new Set([403, 404])
 const NO_NARROWING: Partial<ListingFilters> = { type: undefined, visibility: 'any', modified: 'any', orientation: 'any' }
 
 const location = computed(() => library.listing.location.value)
@@ -46,10 +41,7 @@ const filteredPlace = computed(() => {
 	return current.kind === 'view' ? t(`dms_media.smart_views.${current.view}`) : (folder.value?.name ?? '')
 })
 const isEmpty = computed(() => hasNoFiles.value && !isNarrowed.value && folders.value.length === 0)
-const isMissing = computed(() => {
-	const cause = error.value as HttpFailure | null
-	return MISSING_STATUSES.has(cause?.statusCode ?? cause?.status ?? 0)
-})
+const isMissing = computed(() => isOutOfReachError(error.value))
 const acceptedTypes = computed(() => fieldTypesLabel(layout.accept, t))
 const limits = computed(() => {
 	const size = format.formatBytes(uploads.maxUploadBytes.value)

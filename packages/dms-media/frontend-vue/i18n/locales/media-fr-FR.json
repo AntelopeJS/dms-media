@@ -936,7 +936,6 @@
 			"upload_failed_mixed": "Raisons variées",
 			"folder_missing": "Ce dossier n'existe plus, ou vous n'y avez pas accès",
 			"folder_missing_description": "Il a été supprimé ou déplacé, ou son accès a changé.",
-			"upload_not_accepted": "{count} fichier n'est pas d'un type accepté par ce champ | {count} fichiers ne sont pas d'un type accepté par ce champ",
 			"already_deleted": "Ce fichier avait déjà été supprimé | {count} fichiers avaient déjà été supprimés",
 			"folder_visibility": {
 				"private": "{name} est maintenant privé",

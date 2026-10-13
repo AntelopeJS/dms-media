@@ -13,16 +13,10 @@ const PATTERN_FAMILIES: [RegExp, string][] = [
 ]
 const SUBTYPE_SEPARATOR = /[.+-]/
 
-export function matchesMimePattern(mimetype: string, pattern: string): boolean {
-	if (ANY_TYPE_PATTERNS.has(pattern)) return true
-	if (pattern.endsWith('/*')) return mimetype.startsWith(pattern.slice(0, -1))
-	return mimetype === pattern
-}
-
 /** Whether a folder that takes `offered` (any file when empty) takes every type in `wanted`. */
 export function coversMimePatterns(offered: readonly string[] | null | undefined, wanted: readonly string[]): boolean {
 	if (!offered?.length || wanted.length === 0) return true
-	return wanted.every((pattern) => offered.some((available) => matchesMimePattern(pattern, available)))
+	return wanted.every((pattern) => matchesUploadType(pattern, offered))
 }
 
 function patternLabel(pattern: string, t: (key: string) => string): string {
