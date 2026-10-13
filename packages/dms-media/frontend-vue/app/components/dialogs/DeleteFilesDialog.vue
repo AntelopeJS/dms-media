@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import type { DeleteFilesChoice, MediaAsset } from '../../types/media'
 import AssetThumb from '../shared/AssetThumb.vue'
+import VisibilityBadge from '../shared/VisibilityBadge.vue'
 import MediaDialog from '../shared/MediaDialog.vue'
 
 const props = defineProps<{ assets: MediaAsset[]; canMakePrivate: boolean }>()
@@ -32,14 +33,7 @@ const size = computed(() => props.assets.reduce((total, asset) => total + asset.
 				>
 					<AssetThumb :asset="asset" size="xs" />
 					<span class="text-highlighted min-w-0 flex-1 truncate">{{ asset.name }}</span>
-					<UBadge
-						v-if="asset.effectiveVisibility === 'public'"
-						:label="t('dms_media.visibility.public')"
-						color="success"
-						variant="subtle"
-						size="sm"
-						icon="i-ph-globe"
-					/>
+					<VisibilityBadge v-if="asset.effectiveVisibility === 'public'" visibility="public" size="sm" />
 					<span class="text-muted font-mono text-xs">{{ format.formatBytes(asset.size) }}</span>
 				</li>
 				<li v-if="assets.length > SHOWN" class="text-muted px-3 py-2 text-sm">

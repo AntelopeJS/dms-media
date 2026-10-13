@@ -1,6 +1,15 @@
+import { createSharedComposable, useLocalStorage } from '@vueuse/core'
+import type { AssetSortKey, SortDirection } from '../types/media'
+
 export type ExplorerView = 'grid' | 'list' | 'columns'
 
-export type ListColumn = 'type' | 'size' | 'dimensions' | 'alt' | 'visibility' | 'added' | 'modified'
+export type ListColumn =
+	'type' | 'size' | 'dimensions' | 'alt' | 'visibility' | 'added' | 'modified'
+
+export interface ListingSort {
+	sort: AssetSortKey
+	direction: SortDirection
+}
 
 export interface MediaPrefs {
 	view: ExplorerView
@@ -9,9 +18,14 @@ export interface MediaPrefs {
 	lastFolderId: string | null
 	sidebarOpen: boolean
 	listColumns: ListColumn[]
+	/** The order folders open in, as the reader last chose it. */
+	sort: ListingSort
+	/** The last folders files were moved to, most recent first. */
+	recentDestinations: string[]
 }
 
 const STORAGE_KEY = 'dms-media-prefs'
+const MAX_RECENT_DESTINATIONS = 3
 const DEFAULT_PREFS: MediaPrefs = {
 	view: 'grid',
 	showDetails: true,
@@ -19,39 +33,33 @@ const DEFAULT_PREFS: MediaPrefs = {
 	lastFolderId: null,
 	sidebarOpen: true,
 	listColumns: ['type', 'size', 'alt', 'visibility', 'modified'],
+	sort: { sort: 'name', direction: 'asc' },
+	recentDestinations: [],
 }
 
-const prefs = ref<MediaPrefs>({ ...DEFAULT_PREFS })
-let isLoaded = false
+/** Read once mounted, so the server render and the first client render agree. */
+const useStoredPrefs = createSharedComposable(() =>
+	useLocalStorage<MediaPrefs>(STORAGE_KEY, DEFAULT_PREFS, {
+		mergeDefaults: true,
+		initOnMounted: true,
+	}),
+)
 
-function load(): void {
-	if (isLoaded || typeof window === 'undefined') return
-	isLoaded = true
-	try {
-		const stored = window.localStorage.getItem(STORAGE_KEY)
-		if (stored) prefs.value = { ...DEFAULT_PREFS, ...JSON.parse(stored) }
-	} catch {
-		prefs.value = { ...DEFAULT_PREFS }
-	}
-}
-
-function save(): void {
-	if (typeof window === 'undefined') return
-	try {
-		window.localStorage.setItem(STORAGE_KEY, JSON.stringify(prefs.value))
-	} catch {
-		return
-	}
-}
-
-/** Explorer preferences kept per browser: view, details panel, tile size, list columns, last folder. */
+/** Explorer preferences kept per browser: view, details panel, tile size, list columns, sort, last and recent folders. */
 export function useMediaPrefs() {
-	onMounted(load)
+	const prefs = useStoredPrefs()
 
 	function update(patch: Partial<MediaPrefs>): void {
 		prefs.value = { ...prefs.value, ...patch }
-		save()
 	}
 
-	return { prefs: readonly(prefs), update }
+	function rememberDestination(folderId: string): void {
+		const recent = [
+			folderId,
+			...prefs.value.recentDestinations.filter((id) => id !== folderId),
+		]
+		update({ recentDestinations: recent.slice(0, MAX_RECENT_DESTINATIONS) })
+	}
+
+	return { prefs: readonly(prefs), update, rememberDestination }
 }

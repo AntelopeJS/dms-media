@@ -200,11 +200,11 @@ function toggleAll(): void {
 							</template>
 							<template v-else-if="column.id === 'visibility'">
 								<span v-if="asset.visibility === 'inherit'" class="text-dimmed inline-flex items-center gap-1">
-									<UIcon name="i-ph-arrow-elbow-left-up" class="size-3.5" />
+									<UIcon :name="VISIBILITY_ICONS.inherit" class="size-3.5" />
 									{{ t('dms_media.visibility.folder_short') }}
 								</span>
 								<span v-else class="inline-flex items-center gap-1" :class="asset.visibility === 'public' ? 'text-success' : 'text-muted'">
-									<UIcon :name="asset.visibility === 'public' ? 'i-ph-globe' : 'i-ph-lock-simple'" class="size-3.5" />
+									<UIcon :name="VISIBILITY_ICONS[asset.visibility]" class="size-3.5" />
 									{{ t(`dms_media.visibility.${asset.visibility}`) }}
 								</span>
 							</template>

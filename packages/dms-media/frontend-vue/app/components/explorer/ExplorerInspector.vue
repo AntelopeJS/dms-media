@@ -114,7 +114,7 @@ function saveAlt(alt: string): Promise<boolean> {
 						variant="link"
 						size="xs"
 						class="p-0"
-						:icon="asset.effectiveVisibility === 'public' ? 'i-ph-globe' : 'i-ph-lock-simple'"
+						:icon="VISIBILITY_ICONS[asset.effectiveVisibility]"
 						:label="t(`dms_media.visibility.${asset.effectiveVisibility}`)"
 						@click="commands.changeVisibility([asset])"
 					/>
@@ -162,7 +162,7 @@ function saveAlt(alt: string): Promise<boolean> {
 						variant="link"
 						size="xs"
 						class="p-0"
-						:icon="folder.visibility === 'public' ? 'i-ph-globe' : 'i-ph-lock-simple'"
+						:icon="VISIBILITY_ICONS[folder.visibility]"
 						:label="t(`dms_media.visibility.${folder.visibility}`)"
 						@click="commands.changeFolderVisibility?.(folder)"
 					/>

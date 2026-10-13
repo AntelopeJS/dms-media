@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import VisibilityBadge from './shared/VisibilityBadge.vue'
+
 const { t } = useI18n()
 const file = useCurrentFile()
 const assetLink = useAssetLink()
@@ -45,12 +47,7 @@ definePageShortcuts(() => ({
 				<USkeleton v-if="!asset && !isUnavailable" class="h-7 w-72" />
 				<div v-else-if="asset" class="flex flex-wrap items-center gap-2">
 					<h1 class="text-highlighted truncate text-2xl font-semibold tracking-tight">{{ asset.name }}</h1>
-					<UBadge
-						:label="t(`dms_media.visibility.${asset.effectiveVisibility}`)"
-						:icon="asset.effectiveVisibility === 'public' ? 'i-ph-globe' : 'i-ph-lock-simple'"
-						:color="asset.effectiveVisibility === 'public' ? 'success' : 'neutral'"
-						variant="subtle"
-					/>
+					<VisibilityBadge :visibility="asset.effectiveVisibility" />
 					<UBadge v-if="asset.hasOriginal" :label="t('dms_media.file.edited')" icon="i-ph-crop" color="neutral" variant="subtle" />
 				</div>
 				<p v-if="details" class="text-muted mt-1 text-sm">

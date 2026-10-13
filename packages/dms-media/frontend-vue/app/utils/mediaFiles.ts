@@ -1,5 +1,6 @@
 import type {
 	AssetTypeGroup,
+	AssetVisibility,
 	ListingParams,
 	MediaAsset,
 	MediaFolder,
@@ -16,6 +17,16 @@ export const MEDIA_ROUTES = {
 	uploads: `${MEDIA_MODULE_URL}/uploads`,
 	presets: `${MEDIA_MODULE_URL}/presets`,
 } as const
+
+/** Icons of the visibility vocabulary: public is a globe, private a lock, "same as folder" an elbow arrow. */
+export const VISIBILITY_ICONS: Record<AssetVisibility, string> = {
+	public: 'i-ph-globe',
+	private: 'i-ph-lock-simple',
+	inherit: 'i-ph-arrow-elbow-left-up',
+}
+
+/** File and folder names compared as people read them: `photo 2` before `photo 10`, case ignored. */
+export const NAME_COLLATOR = new Intl.Collator(undefined, { numeric: true, sensitivity: 'base' })
 
 /** Realtime topic the backend publishes on after each write to the library. */
 export const MEDIA_LIBRARY_TOPIC = 'media.library'

@@ -9,7 +9,6 @@ import VisibilityDialog from '../../components/dialogs/VisibilityDialog.vue'
 import type { MediaAsset, MediaFolder } from '../../types/media'
 import { createExplorerMenus } from './explorerMenus'
 import type { MediaLibrary, NameOutcome } from './useMediaLibrary'
-import { useRecentDestinations } from './useRecentDestinations'
 
 export interface ExplorerHandlers {
 	/** Opens the OS file dialog; the shell owns the hidden input. */
@@ -29,8 +28,7 @@ export function useExplorerCommands(library: MediaLibrary, handlers: ExplorerHan
 	const { t } = library
 	const format = useMediaFormat()
 	const assetLink = useAssetLink()
-	const recentDestinations = useRecentDestinations()
-	const { prefs, update: updatePrefs } = useMediaPrefs()
+	const { prefs, update: updatePrefs, rememberDestination } = useMediaPrefs()
 	const nameDialog = overlay.create(NameDialog)
 	const moveDialog = overlay.create(MoveDialog)
 	const deleteDialog = overlay.create(DeleteFilesDialog)
@@ -140,11 +138,11 @@ export function useExplorerCommands(library: MediaLibrary, handlers: ExplorerHan
 			currentFolderId: sharedFolderId,
 			revealId: sharedFolderId ?? library.currentFolder.value?.id ?? null,
 			right: 'write',
-			recentIds: [...recentDestinations.ids.value],
+			recentIds: [...prefs.value.recentDestinations],
 			createFolder: createFolderForMove,
 		})
 		if (!target) return
-		recentDestinations.remember(target)
+		rememberDestination(target)
 		await library.actions.moveAssets(assets, target)
 	}
 

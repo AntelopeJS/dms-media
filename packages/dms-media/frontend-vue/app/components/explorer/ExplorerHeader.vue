@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import type { DropdownMenuItem } from '@nuxt/ui'
 import type { MediaFolder } from '../../types/media'
+import VisibilityBadge from '../shared/VisibilityBadge.vue'
 
 const { library, commands } = useExplorerContext()
 const { t } = useI18n()
@@ -142,15 +143,12 @@ const facetLabel = computed(() =>
 					</UTooltip>
 					<template v-if="folder">
 						<UTooltip :text="t('dms_media.actions.visibility')" :disabled="!canChangeVisibility">
-							<UBadge
+							<VisibilityBadge
+								:visibility="folder.visibility"
 								:as="canChangeVisibility ? 'button' : 'span'"
 								:type="canChangeVisibility ? 'button' : undefined"
-								:label="t(`dms_media.visibility.${folder.visibility}`)"
-								:icon="folder.visibility === 'public' ? 'i-ph-globe' : 'i-ph-lock-simple'"
 								:trailing-icon="canChangeVisibility ? 'i-ph-caret-down' : undefined"
-								:color="folder.visibility === 'public' ? 'success' : 'neutral'"
 								:class="canChangeVisibility ? 'cursor-pointer hover:opacity-80' : undefined"
-								variant="subtle"
 								size="sm"
 								@click="changeVisibility"
 							/>

@@ -30,7 +30,7 @@ const byParent = computed(() => {
 		map.set(key, [...(map.get(key) ?? []), folder])
 	}
 	for (const [key, list] of map)
-		map.set(key, [...list].sort((left, right) => left.name.localeCompare(right.name)))
+		map.set(key, [...list].sort((left, right) => NAME_COLLATOR.compare(left.name, right.name)))
 	return map
 })
 

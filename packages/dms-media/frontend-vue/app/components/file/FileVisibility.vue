@@ -8,15 +8,15 @@ const { t } = useI18n()
 const options = computed(() => [
 	{
 		value: 'inherit' as const,
-		icon: 'i-ph-arrow-elbow-left-up',
+		icon: VISIBILITY_ICONS.inherit,
 		label: t('dms_media.visibility_choice.inherit.label'),
 		description: t('dms_media.file.inherit_detail', {
 			name: props.folder.name,
 			visibility: t(`dms_media.visibility.${props.folder.visibility}`).toLowerCase(),
 		}),
 	},
-	{ value: 'public' as const, icon: 'i-ph-globe', label: t('dms_media.visibility_choice.public.label'), description: t('dms_media.visibility_choice.public.description') },
-	{ value: 'private' as const, icon: 'i-ph-lock-simple', label: t('dms_media.visibility_choice.private.label'), description: t('dms_media.visibility_choice.private.description') },
+	{ value: 'public' as const, icon: VISIBILITY_ICONS.public, label: t('dms_media.visibility_choice.public.label'), description: t('dms_media.visibility_choice.public.description') },
+	{ value: 'private' as const, icon: VISIBILITY_ICONS.private, label: t('dms_media.visibility_choice.private.label'), description: t('dms_media.visibility_choice.private.description') },
 ])
 </script>
 

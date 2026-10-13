@@ -178,9 +178,8 @@ const UNDO_TOAST_MS = 10_000
 const ZIP_URL_TTL_MS = 10_000
 const ZIP_FALLBACK_NAME = 'media'
 const UNSAFE_FILENAME_CHARS = /[<>:"/\\|?*\u0000-\u001f]+/g
-const NAME_COLLATOR = new Intl.Collator(undefined, { numeric: true, sensitivity: 'base' })
 const NAME_FIELD = 'name'
-const NAME_ERROR_CODES = Object.fromEntries(
+const NAME_ERROR_CODES: Record<string, typeof NAME_FIELD> = Object.fromEntries(
 	['name_required', 'name_too_long', 'name_forbidden', 'name_taken', 'folder_name_taken'].map((code) => [
 		`$dms_media.errors.${code}`,
 		NAME_FIELD,
@@ -581,7 +580,7 @@ function createFolderActions(library: LibraryCore) {
 			library.toast.add({
 				title: t(`dms_media.toasts.folder_visibility.${visibility}`, { name: folder.name }),
 				color: 'success',
-				icon: visibility === 'public' ? 'i-ph-globe' : 'i-ph-lock-simple',
+				icon: VISIBILITY_ICONS[visibility],
 			})
 		} catch (error) {
 			tree.patchFolder(folder.id, { visibility: folder.visibility })

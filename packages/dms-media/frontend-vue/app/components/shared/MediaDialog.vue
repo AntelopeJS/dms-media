@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import { useMutationObserver } from '@vueuse/core'
+
 const props = withDefaults(
 	defineProps<{
 		title: string
@@ -21,8 +23,6 @@ const widthClass = computed(
 )
 
 const FOCUSABLE = 'input, textarea, select, button, [tabindex]'
-const FOCUS_RETRY_MS = 50
-const FOCUS_RETRIES = 10
 
 function onOpenChange(open: boolean): void {
 	emit('update:open', open)
@@ -38,20 +38,25 @@ function findInitialFocus(content: HTMLElement): HTMLElement | undefined {
 	return undefined
 }
 
-function focusWhenReady(content: HTMLElement, attempt = 0): void {
+let stopWatchingBody: (() => void) | undefined
+
+function focusTarget(content: HTMLElement): boolean {
 	const target = findInitialFocus(content)
-	if (target) return target.focus()
-	if (attempt < FOCUS_RETRIES) {
-		setTimeout(() => focusWhenReady(content, attempt + 1), FOCUS_RETRY_MS)
-		return
-	}
-	content.querySelector<HTMLElement>(FOCUSABLE)?.focus()
+	target?.focus()
+	return Boolean(target)
 }
 
+/** The body's DMS components mount after the dialog opens: its target takes the focus as soon as it is in the page. */
 function focusInitial(event: Event): void {
 	event.preventDefault()
-	focusWhenReady(event.target as HTMLElement)
+	const content = event.target as HTMLElement
+	if (focusTarget(content)) return
+	content.querySelector<HTMLElement>(FOCUSABLE)?.focus()
+	const { stop } = useMutationObserver(content, () => focusTarget(content) && stop(), { childList: true, subtree: true })
+	stopWatchingBody = stop
 }
+
+onBeforeUnmount(() => stopWatchingBody?.())
 </script>
 
 <template>

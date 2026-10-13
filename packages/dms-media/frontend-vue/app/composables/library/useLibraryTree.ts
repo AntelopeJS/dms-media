@@ -1,9 +1,7 @@
 import type { MediaFolder, MediaTree } from '../../types/media'
 
-const COLLATOR = new Intl.Collator(undefined, { numeric: true, sensitivity: 'base' })
-
 function sortFolders(folders: MediaFolder[]): MediaFolder[] {
-	return [...folders].sort((left, right) => COLLATOR.compare(left.name, right.name))
+	return [...folders].sort((left, right) => NAME_COLLATOR.compare(left.name, right.name))
 }
 
 export interface LibraryTreeOptions {

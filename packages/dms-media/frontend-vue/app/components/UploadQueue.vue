@@ -2,7 +2,7 @@
 import type { UploadItem, UploadStatus } from '../composables/useUploadQueue'
 import type { MediaFolder } from '../types/media'
 import DestinationDialog from './dialogs/DestinationDialog.vue'
-import UploadQueueRow from './UploadQueueRow.vue'
+import UploadQueueRow from './uploads/UploadQueueRow.vue'
 
 const uploads = useUploadQueue()
 const format = useMediaFormat()

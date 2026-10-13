@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import type { UploadFailure, UploadItem, UploadStatus } from '../composables/useUploadQueue'
+import type { UploadFailure, UploadItem, UploadStatus } from '../../composables/useUploadQueue'
 
 const props = defineProps<{ item: UploadItem }>()
 const uploads = useUploadQueue()

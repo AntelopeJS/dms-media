@@ -12,6 +12,7 @@ import type {
 	TypeFacets,
 	VisibilityFilter,
 } from '../../types/media'
+import type { ListingSort } from '../useMediaPrefs'
 import type { LibraryTree } from './useLibraryTree'
 
 export type LibraryLocation =
@@ -19,11 +20,6 @@ export type LibraryLocation =
 	| { kind: 'folder'; folderId: string }
 	| { kind: 'view'; view: SmartView }
 	| { kind: 'search'; query: string; scopeId?: string }
-
-export interface ListingSort {
-	sort: AssetSortKey
-	direction: SortDirection
-}
 
 export interface ListingFilters extends ListingSort {
 	type?: AssetTypeGroup
@@ -44,8 +40,6 @@ type AssetComparator = (left: MediaAsset, right: MediaAsset) => number
 const PAGE_SIZE = 120
 /** Largest page the API serves, used to reload or complete a long listing. */
 const MAX_PAGE_SIZE = 500
-const SORT_STORAGE_KEY = 'dms-media-sort'
-const DEFAULT_SORT: ListingSort = { sort: 'name', direction: 'asc' }
 const NARROWING_FILTERS: Omit<ListingFilters, keyof ListingSort> = {
 	type: undefined,
 	visibility: 'any',
@@ -57,7 +51,6 @@ const VIEW_SORTS: Partial<Record<SmartView, ListingSort>> = {
 	recent: { sort: 'date', direction: 'desc' },
 	largest: { sort: 'size', direction: 'desc' },
 }
-const NAME_COLLATOR = new Intl.Collator(undefined, { numeric: true, sensitivity: 'base' })
 const COMPARATORS: Record<AssetSortKey, AssetComparator> = {
 	name: (left, right) => NAME_COLLATOR.compare(left.name, right.name),
 	date: (left, right) => Date.parse(left.createdAt) - Date.parse(right.createdAt),
@@ -69,23 +62,6 @@ const EMPTY_PAGE: AssetPage = { assets: [], total: 0, facets: {} }
 
 export function sameLocation(left: LibraryLocation, right: LibraryLocation): boolean {
 	return JSON.stringify(left) === JSON.stringify(right)
-}
-
-function readStoredSort(): ListingSort {
-	try {
-		const stored = window.localStorage.getItem(SORT_STORAGE_KEY)
-		return stored ? { ...DEFAULT_SORT, ...JSON.parse(stored) } : DEFAULT_SORT
-	} catch {
-		return DEFAULT_SORT
-	}
-}
-
-function storeSort(sort: ListingSort): void {
-	try {
-		window.localStorage.setItem(SORT_STORAGE_KEY, JSON.stringify(sort))
-	} catch {
-		return
-	}
 }
 
 /** Where `asset` belongs among `assets` already in the listing's order. */
@@ -101,7 +77,8 @@ export function useLibraryListing(options: LibraryListingOptions = {}) {
 	const api = useMediaApi()
 	const previews = useMediaPreviews()
 	const location = ref<LibraryLocation>({ kind: 'root' })
-	const preferredSort = ref<ListingSort>(readStoredSort())
+	const { prefs, update: updatePrefs } = useMediaPrefs()
+	const preferredSort = computed(() => prefs.value.sort)
 	const filters = ref<ListingFilters>({ ...preferredSort.value, ...NARROWING_FILTERS })
 	const assets = ref<MediaAsset[]>([])
 	const extraFolders = ref<MediaFolder[]>([])
@@ -212,8 +189,7 @@ export function useLibraryListing(options: LibraryListingOptions = {}) {
 		const current = location.value
 		if (current.kind === 'view' && VIEW_SORTS[current.view]) return
 		if (!changes.sort && !changes.direction) return
-		preferredSort.value = { sort: filters.value.sort, direction: filters.value.direction }
-		storeSort(preferredSort.value)
+		updatePrefs({ sort: { sort: filters.value.sort, direction: filters.value.direction } })
 	}
 
 	function setFilters(changes: Partial<ListingFilters>): Promise<void> {
