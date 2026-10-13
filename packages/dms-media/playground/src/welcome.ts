@@ -8,8 +8,8 @@ import { DefaultDataTypes } from "@antelopejs/interface-dms/base/data-types/defa
 
 @RegisterPage()
 export class PlaygroundWelcomePage extends PageController("welcome", {
-  displayName: "Welcome",
-  description: "Standalone welcome page outside any module",
+  displayName: "$app.welcome.page_title",
+  description: "$app.welcome.page_description",
   icon: "i-ph-hand-waving",
   category: pagesCategory,
   order: 0,

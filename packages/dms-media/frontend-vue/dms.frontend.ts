@@ -17,6 +17,11 @@ function componentName(path: string): string {
 const frontendModule: DmsFrontendModule = {
 	componentPrefix: 'DmsMedia',
 	setup(sdk) {
+		sdk.registerPlugin(async () => {
+			const { registerAssetDataType } =
+				await import('./app/utils/assetDataType')
+			registerAssetDataType()
+		})
 		for (const [path, loader] of Object.entries(blocks).sort()) {
 			sdk.registerComponent(
 				componentName(path),

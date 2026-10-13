@@ -2,6 +2,7 @@ import path from "node:path";
 import { AddFrontendModule } from "@antelopejs/interface-dms/page";
 
 import "./media-demo";
+import "./media-demo-values";
 import "./welcome";
 
 export async function construct(): Promise<void> {

@@ -1,15 +1,21 @@
 {
   "app": {
     "media_demo": {
-      "attachment_description": "N'importe quel asset de la bibliothèque, sans filtre de type.",
+      "attachment_description": "N'importe quel fichier de la bibliothèque : choisissez-le, ou importez-le depuis le sélecteur dans un dossier où vous pouvez ajouter des fichiers.",
       "attachment_label": "Pièce jointe",
-      "cover_description": "Image unique avec dossier lié (Demo covers) provisionné depuis le binding du champ.",
+      "cover_description": "Une image. Choisissez-la dans le dossier Demo covers ou importez-en une.",
       "cover_label": "Image de couverture",
-      "form_description": "Toutes les variantes du champ AssetType, adossées à la bibliothèque de médias.",
+      "documents_description": "Jusqu'à 3 fichiers PDF, Word ou texte. Choisissez-les dans le dossier Demo documents ou importez-les.",
+      "documents_label": "Documents",
+      "form_description": "Remplissez chaque champ avec des fichiers de la bibliothèque de médias, puis enregistrez : les valeurs reviennent au rechargement de la page.",
       "form_title": "Démo médias",
-      "gallery_description": "Jusqu'à 4 images choisies partout où vos droits le permettent.",
+      "gallery_description": "Jusqu'à 4 images, prises dans les dossiers que vous pouvez ouvrir. La première sert de couverture ; changez l'ordre avec les flèches ou en glissant.",
       "gallery_label": "Galerie",
-      "success": "Enregistré !"
+      "page_description": "Des champs qui choisissent et importent des fichiers de la bibliothèque de médias",
+      "page_title": "Démo médias",
+      "spec_sheet_description": "Un seul PDF : seuls les fichiers PDF peuvent être choisis.",
+      "spec_sheet_label": "Fiche technique",
+      "success": "La démo médias est enregistrée."
     },
     "welcome": {
       "email_label": "Adresse e-mail",
@@ -20,6 +26,8 @@
       "message_placeholder": "Comment pouvons-nous vous aider ?",
       "name_label": "Nom complet",
       "name_placeholder": "Jeanne Dupont",
+      "page_description": "Une page d'exemple, hors de tout module",
+      "page_title": "Bienvenue",
       "submit": "Envoyer le message",
       "success": "Votre message a été envoyé."
     }

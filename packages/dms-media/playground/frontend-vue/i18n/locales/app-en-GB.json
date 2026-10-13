@@ -1,15 +1,21 @@
 {
   "app": {
     "media_demo": {
-      "attachment_description": "Any asset from the library, no mimetype filter.",
+      "attachment_description": "Any file from the library: pick it, or upload it from the picker into a folder you can add to.",
       "attachment_label": "Attachment",
-      "cover_description": "Single image with a linked folder (Demo covers) provisioned from the field binding.",
+      "cover_description": "One image. Pick it from the Demo covers folder, or upload one.",
       "cover_label": "Cover image",
-      "form_description": "Every flavour of the AssetType field, backed by the media library.",
+      "documents_description": "Up to 3 PDF, Word or text files. Pick them from the Demo documents folder, or upload them.",
+      "documents_label": "Documents",
+      "form_description": "Fill each field with files from the media library, then save: the values come back when the page is reloaded.",
       "form_title": "Media demo",
-      "gallery_description": "Up to 4 images picked anywhere your folder rights allow.",
+      "gallery_description": "Up to 4 images, from any folder you can open. The first one is the cover; change the order with the arrows or by dragging.",
       "gallery_label": "Gallery",
-      "success": "Saved!"
+      "page_description": "Fields that pick and upload files from the media library",
+      "page_title": "Media demo",
+      "spec_sheet_description": "One PDF: only PDF files can be picked.",
+      "spec_sheet_label": "Spec sheet",
+      "success": "The media demo is saved."
     },
     "welcome": {
       "email_label": "Email address",
@@ -20,6 +26,8 @@
       "message_placeholder": "How can we help you?",
       "name_label": "Full name",
       "name_placeholder": "Jane Doe",
+      "page_description": "A sample page outside any module",
+      "page_title": "Welcome",
       "submit": "Send message",
       "success": "Your message has been sent."
     }
