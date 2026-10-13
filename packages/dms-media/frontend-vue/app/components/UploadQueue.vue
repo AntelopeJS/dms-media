@@ -1,55 +1,59 @@
 <script setup lang="ts">
 import type { UploadItem, UploadStatus } from '../composables/useUploadQueue'
-import type { MediaTree } from '../types/media'
+import type { MediaFolder } from '../types/media'
 import DestinationDialog from './dialogs/DestinationDialog.vue'
+import UploadQueueRow from './UploadQueueRow.vue'
 
 const uploads = useUploadQueue()
-const api = useMediaApi()
 const format = useMediaFormat()
 const overlay = useOverlay()
 const destinationDialog = overlay.create(DestinationDialog)
 const { prefs, update } = useMediaPrefs()
+const { tree, reload } = useSharedTree()
+const toasts = useUploadToasts()
 const route = useDmsRoute()
 const router = useDmsRouter()
 const { t } = useI18n()
-const tree = ref<MediaTree | null>(null)
 const canUpload = computed(() => Boolean(tree.value?.folders.some((folder) => folder.rights.write)))
 const fileInput = useTemplateRef<HTMLInputElement>('fileInput')
-const destination = ref<{ id: string; name: string } | null>(null)
+const destination = ref<MediaFolder | null>(null)
 const isBannerDismissed = ref(false)
-const localPreviews = new Map<string, string>()
+const isDragging = ref(false)
 const SECONDS_PER_MINUTE = 60
 const speed = ref(0)
 let lastSample = { time: 0, bytes: 0 }
+let dragDepth = 0
 
-const STATUS_TONES: Record<UploadStatus, string> = {
-	waiting: 'text-dimmed',
-	uploading: 'text-primary',
-	checking: 'text-primary',
-	done: 'text-success',
-	failed: 'text-error',
-	rejected: 'text-error',
-	cancelled: 'text-dimmed',
-}
-
+const FAILED: UploadStatus[] = ['failed', 'rejected']
 const items = computed(() => uploads.items.value)
 const counts = computed(() => ({
 	done: items.value.filter((item) => item.status === 'done').length,
 	active: items.value.filter((item) => item.status === 'uploading' || item.status === 'checking').length,
 	waiting: items.value.filter((item) => item.status === 'waiting').length,
-	failed: items.value.filter((item) => item.status === 'failed' || item.status === 'rejected').length,
+	failed: items.value.filter((item) => FAILED.includes(item.status)).length,
 }))
 const counted = computed(() => items.value.filter((item) => item.status !== 'cancelled'))
-const totalBytes = computed(() => counted.value.reduce((total, item) => total + item.size, 0))
-const sentBytes = computed(() =>
-	counted.value.reduce((total, item) => total + (item.status === 'done' ? item.size : item.loaded), 0),
-)
+const sized = computed(() => counted.value.filter((item) => item.status !== 'rejected'))
+const totalBytes = computed(() => sized.value.reduce((total, item) => total + item.size, 0))
+const sentBytes = computed(() => sized.value.reduce((total, item) => total + sentOf(item), 0))
+const hasCancellable = computed(() => items.value.some((item) => item.status === 'waiting' || item.status === 'uploading'))
 const progress = computed(() => (totalBytes.value ? Math.round((sentBytes.value / totalBytes.value) * 100) : 0))
+const progressColor = computed(() => (counts.value.failed && !uploads.activeCount.value ? 'error' : 'primary'))
 const destinations = computed(() => [...new Set(items.value.map((item) => item.folderName))])
 const secondsLeft = computed(() =>
 	speed.value > 0 && uploads.activeCount.value ? Math.ceil((totalBytes.value - sentBytes.value) / speed.value) : null,
 )
+const acceptAttribute = computed(() => fileAcceptAttribute(destination.value?.accepts ?? tree.value?.allowedMimetypes))
 const failedRetryable = computed(() => items.value.filter((item) => item.status === 'failed').length)
+const liveSummary = computed(() =>
+	t('dms_media.queue.live_summary', { done: counts.value.done, total: counted.value.length, failed: counts.value.failed }),
+)
+
+function sentOf(item: UploadItem): number {
+	if (item.status === 'done') return item.size
+	if (FAILED.includes(item.status)) return 0
+	return item.loaded
+}
 
 watch(sentBytes, (bytes) => {
 	const now = Date.now()
@@ -60,29 +64,15 @@ watch(sentBytes, (bytes) => {
 	lastSample = { time: now, bytes }
 })
 
-function previewOf(item: UploadItem): string | undefined {
-	return item.mimetype.startsWith('image/') ? localPreviews.get(item.id) : undefined
-}
-
-function describe(item: UploadItem): string {
-	if (item.status === 'rejected') return t('dms_media.queue.reasons.too_large', { size: format.formatBytes(uploads.maxUploadBytes.value) })
-	if (item.status === 'failed') return t(`dms_media.queue.reasons.${item.failure ?? 'server'}`)
-	if (item.status === 'done' && item.asset?.width) return `${format.formatDimensions(item.asset.width, item.asset.height)} · ${t('dms_media.queue.added', { name: item.folderName })}`
-	if (item.status === 'done') return t('dms_media.queue.added', { name: item.folderName })
-	if (item.status === 'checking') return t('dms_media.queue.checking_detail')
-	if (item.status === 'uploading') return t('dms_media.queue.uploading_detail', { name: item.folderName })
-	return t('dms_media.queue.waiting_detail', { name: item.folderName })
-}
-
-function sizeLabel(item: UploadItem): string {
-	if (item.status === 'uploading') return `${format.formatBytes(item.loaded)} / ${format.formatBytes(item.size)}`
-	return format.formatBytes(item.size)
-}
-
-function barValue(item: UploadItem): number {
-	if (item.status === 'done' || item.status === 'checking') return 100
-	return item.size ? Math.round((item.loaded / item.size) * 100) : 0
-}
+watch(
+	tree,
+	(loaded) => {
+		if (!loaded) return
+		uploads.maxUploadBytes.value = loaded.maxUploadBytes
+		uploads.allowedMimetypes.value = loaded.allowedMimetypes
+	},
+	{ immediate: true },
+)
 
 function timeLeftLabel(seconds: number): string {
 	return seconds < SECONDS_PER_MINUTE
@@ -90,55 +80,106 @@ function timeLeftLabel(seconds: number): string {
 		: t('dms_media.queue.minutes_left', { count: Math.ceil(seconds / SECONDS_PER_MINUTE) })
 }
 
+async function chooseFolder(count?: number): Promise<MediaFolder | undefined> {
+	await reload()
+	const chosen = await destinationDialog.open({
+		folders: tree.value?.folders ?? [],
+		initialId: prefs.value.lastFolderId,
+		count,
+	})
+	if (chosen && !tree.value?.folders.some((folder) => folder.id === chosen)) await reload()
+	const folder = tree.value?.folders.find((entry) => entry.id === chosen)
+	if (folder) update({ lastFolderId: folder.id })
+	return folder
+}
+
+function send(files: File[], folder: MediaFolder): void {
+	isBannerDismissed.value = false
+	const batchId = uploads.enqueue(files, { folderId: folder.id, folderName: folder.name, accepts: folder.accepts })
+	toasts.announce(batchId, files.length, folder.name)
+}
+
 async function pickFiles(): Promise<void> {
-	tree.value ??= await api.tree().catch(() => null)
-	if (!tree.value) return
-	uploads.maxUploadBytes.value = tree.value.maxUploadBytes
-	const chosen = await destinationDialog.open({ folders: tree.value.folders, initialId: prefs.value.lastFolderId })
-	const folder = tree.value.folders.find((entry) => entry.id === chosen)
+	const folder = await chooseFolder()
 	if (!folder) return
-	update({ lastFolderId: folder.id })
-	destination.value = { id: folder.id, name: folder.name }
+	destination.value = folder
+	await nextTick()
 	fileInput.value?.click()
 }
 
 function onFilesChosen(event: Event): void {
 	const input = event.target as HTMLInputElement
 	const files = Array.from(input.files ?? [])
-	if (destination.value && files.length) {
-		isBannerDismissed.value = false
-		const before = new Set(items.value.map((item) => item.id))
-		uploads.enqueue(files, { folderId: destination.value.id, folderName: destination.value.name })
-		const added = items.value.filter((item) => !before.has(item.id))
-		added.forEach((item, index) => {
-			const file = files[index]
-			if (file?.type.startsWith('image/')) localPreviews.set(item.id, URL.createObjectURL(file))
-		})
-	}
+	if (destination.value && files.length) send(files, destination.value)
 	input.value = ''
 }
 
+function hasFiles(event: DragEvent): boolean {
+	return Array.from(event.dataTransfer?.types ?? []).includes('Files')
+}
+
+function onDragEnter(event: DragEvent): void {
+	if (!hasFiles(event) || !canUpload.value) return
+	dragDepth += 1
+	isDragging.value = true
+}
+
+function onDragLeave(event: DragEvent): void {
+	if (!hasFiles(event)) return
+	dragDepth = Math.max(dragDepth - 1, 0)
+	if (dragDepth === 0) isDragging.value = false
+}
+
+function onDragOver(event: DragEvent): void {
+	if (hasFiles(event) && canUpload.value) event.preventDefault()
+}
+
+async function onDrop(event: DragEvent): Promise<void> {
+	dragDepth = 0
+	isDragging.value = false
+	const files = Array.from(event.dataTransfer?.files ?? [])
+	if (!files.length || !canUpload.value) return
+	event.preventDefault()
+	const folder = await chooseFolder(files.length)
+	if (folder) send(files, folder)
+}
+
+const DRAG_EVENTS = { dragenter: onDragEnter, dragleave: onDragLeave, dragover: onDragOver, drop: onDrop } as const
+
 onMounted(() => {
-	void api.tree().then((loaded) => (tree.value ??= loaded)).catch(() => undefined)
+	Object.entries(DRAG_EVENTS).forEach(([name, handler]) => window.addEventListener(name, handler as EventListener))
 	if (route.query.pick) {
 		void router.replace({ path: route.path, query: {} })
 		void pickFiles()
 	}
 })
-onBeforeUnmount(() => localPreviews.forEach((url) => URL.revokeObjectURL(url)))
+onBeforeUnmount(() => {
+	Object.entries(DRAG_EVENTS).forEach(([name, handler]) => window.removeEventListener(name, handler as EventListener))
+})
 </script>
 
 <template>
-	<div class="flex flex-col gap-4">
+	<div class="relative flex flex-col gap-4">
+		<div
+			v-if="isDragging"
+			class="pointer-events-none absolute inset-0 z-10 flex items-center justify-center rounded-[var(--dms-radius-card)] border-2 border-dashed border-(--ui-primary) bg-(--dms-accent-tint)"
+		>
+			<p class="text-highlighted flex items-center gap-2 text-sm font-semibold">
+				<UIcon name="i-ph-cloud-arrow-up" class="size-5" />
+				{{ t('dms_media.queue.drop_here') }}
+			</p>
+		</div>
+		<p class="sr-only" role="status" aria-live="polite">{{ items.length ? liveSummary : '' }}</p>
 		<DmsBanner
 			v-if="counts.failed && !isBannerDismissed"
 			tone="error"
 			icon="i-ph-cloud-slash"
 			:title="t('dms_media.queue.failed_title', { count: counts.failed }, counts.failed)"
-			:description="t('dms_media.queue.failed_description', { count: counts.done }, counts.done)"
+			:description="counts.done ? t('dms_media.queue.failed_description', { count: counts.done }, counts.done) : undefined"
 		>
 			<template #actions>
 				<UButton color="neutral" variant="outline" size="sm" :label="t('dms_media.queue.dismiss')" @click="isBannerDismissed = true" />
+				<UButton color="neutral" variant="outline" size="sm" icon="i-ph-x" :label="t('dms_media.queue.remove_failed')" @click="uploads.clearFailed()" />
 				<UButton
 					v-if="failedRetryable"
 					color="error"
@@ -151,7 +192,7 @@ onBeforeUnmount(() => localPreviews.forEach((url) => URL.revokeObjectURL(url)))
 		</DmsBanner>
 		<DmsCard v-if="items.length" :title="t('dms_media.queue.current')">
 			<template #actions>
-				<UBadge v-for="name in destinations" :key="name" icon="i-ph-folder-simple" color="neutral" variant="outline" :label="name" />
+				<UBadge v-for="name in destinations" :key="name" icon="i-ph-folder-simple" color="neutral" variant="outline" :label="name" class="max-sm:hidden" />
 				<UButton
 					v-if="uploads.activeCount.value"
 					:icon="uploads.isPaused.value ? 'i-ph-play' : 'i-ph-pause'"
@@ -162,7 +203,7 @@ onBeforeUnmount(() => localPreviews.forEach((url) => URL.revokeObjectURL(url)))
 					@click="uploads.setPaused(!uploads.isPaused.value)"
 				/>
 				<UButton
-					v-if="uploads.activeCount.value"
+					v-if="hasCancellable"
 					icon="i-ph-x"
 					color="neutral"
 					variant="ghost"
@@ -171,7 +212,7 @@ onBeforeUnmount(() => localPreviews.forEach((url) => URL.revokeObjectURL(url)))
 					@click="uploads.cancelRemaining()"
 				/>
 				<UButton
-					v-else
+					v-if="!uploads.activeCount.value"
 					icon="i-ph-broom"
 					color="neutral"
 					variant="ghost"
@@ -192,85 +233,16 @@ onBeforeUnmount(() => localPreviews.forEach((url) => URL.revokeObjectURL(url)))
 							<template v-if="uploads.isPaused.value"> · {{ t('dms_media.queue.paused') }}</template>
 						</p>
 					</div>
-					<UProgress :model-value="progress" size="sm" class="min-w-40 flex-1" />
+					<UProgress :model-value="progress" :color="progressColor" size="sm" class="min-w-40 flex-1" :get-value-label="(value?: number | null) => `${t('dms_media.queue.overall_progress')}: ${value ?? 0}%`" />
 					<div class="flex flex-wrap gap-3 font-mono text-[11px]">
-						<span class="text-success">● {{ t('dms_media.queue.states.done') }} {{ counts.done }}</span>
-						<span class="text-primary">● {{ t('dms_media.queue.states.uploading') }} {{ counts.active }}</span>
-						<span class="text-dimmed">○ {{ t('dms_media.queue.states.waiting') }} {{ counts.waiting }}</span>
-						<span class="text-error">● {{ t('dms_media.queue.states.failed') }} {{ counts.failed }}</span>
+						<span class="text-success"><UIcon name="i-ph-check-circle" class="me-0.5 size-3 align-[-2px]" />{{ t('dms_media.queue.states_added') }} {{ counts.done }}</span>
+						<span class="text-primary"><UIcon name="i-ph-arrow-circle-up" class="me-0.5 size-3 align-[-2px]" />{{ t('dms_media.queue.states.uploading') }} {{ counts.active }}</span>
+						<span class="text-dimmed"><UIcon name="i-ph-clock" class="me-0.5 size-3 align-[-2px]" />{{ t('dms_media.queue.states.waiting') }} {{ counts.waiting }}</span>
+						<span class="text-error"><UIcon name="i-ph-warning-circle" class="me-0.5 size-3 align-[-2px]" />{{ t('dms_media.queue.states.failed') }} {{ counts.failed }}</span>
 					</div>
 				</div>
 				<ul class="border-default divide-default -mx-4 divide-y border-t">
-					<li
-						v-for="item in items"
-						:key="item.id"
-						class="flex items-center gap-3 px-4 py-2.5"
-						:class="(item.status === 'failed' || item.status === 'rejected') && 'bg-(--dms-error-tint)'"
-					>
-						<div class="flex size-10 shrink-0 items-center justify-center overflow-hidden rounded-md bg-(--dms-bg-muted)">
-							<img v-if="previewOf(item)" :src="previewOf(item)" alt="" class="size-full object-cover" />
-							<UIcon v-else :name="item.mimetype.startsWith('video/') ? 'i-ph-film-strip' : item.mimetype === 'application/pdf' ? 'i-ph-file-pdf' : 'i-ph-file'" class="text-dimmed size-5" />
-						</div>
-						<div class="min-w-0 flex-1">
-							<p class="text-highlighted truncate text-[13px] font-medium">{{ item.name }}</p>
-							<p class="truncate text-[12px]" :class="item.status === 'failed' || item.status === 'rejected' ? 'text-error' : 'text-dimmed font-mono'">
-								{{ describe(item) }}
-							</p>
-						</div>
-						<div class="flex w-36 flex-col gap-1 max-sm:hidden">
-							<UProgress
-								:model-value="barValue(item)"
-								size="xs"
-								:color="item.status === 'done' ? 'success' : item.status === 'failed' || item.status === 'rejected' ? 'error' : 'primary'"
-							/>
-							<span class="text-dimmed font-mono text-[11px]">{{ sizeLabel(item) }}</span>
-						</div>
-						<span class="w-24 text-[12px] font-medium" :class="STATUS_TONES[item.status]">
-							<UIcon v-if="item.status === 'checking'" name="i-ph-circle-notch" class="me-1 size-3 animate-spin" />
-							{{ t(`dms_media.queue.status.${item.status}`) }}
-						</span>
-						<div class="flex w-20 justify-end">
-							<UButton
-								v-if="item.status === 'done' && item.asset"
-								icon="i-ph-arrow-square-out"
-								color="neutral"
-								variant="ghost"
-								size="xs"
-								square
-								:to="fileLink(item.asset.id)"
-								:aria-label="t('dms_media.actions.open_details')"
-							/>
-							<UButton
-								v-else-if="item.status === 'failed'"
-								icon="i-ph-arrow-clockwise"
-								color="neutral"
-								variant="outline"
-								size="xs"
-								:label="t('dms_media.actions.retry')"
-								@click="uploads.retry(item.id)"
-							/>
-							<UButton
-								v-else-if="item.status === 'rejected' || item.status === 'cancelled'"
-								icon="i-ph-x"
-								color="neutral"
-								variant="ghost"
-								size="xs"
-								square
-								:aria-label="t('dms_media.queue.dismiss')"
-								@click="uploads.dismiss(item.id)"
-							/>
-							<UButton
-								v-else
-								icon="i-ph-x"
-								color="neutral"
-								variant="ghost"
-								size="xs"
-								square
-								:aria-label="t('dms_media.queue.cancel')"
-								@click="uploads.cancel(item.id)"
-							/>
-						</div>
-					</li>
+					<UploadQueueRow v-for="item in items" :key="item.id" :item="item" />
 				</ul>
 			</div>
 		</DmsCard>
@@ -278,9 +250,8 @@ onBeforeUnmount(() => localPreviews.forEach((url) => URL.revokeObjectURL(url)))
 			v-else
 			icon="i-ph-cloud-arrow-up"
 			:title="t('dms_media.queue.empty_title')"
-			:description="t('dms_media.queue.empty_description')"
-			:actions="canUpload ? [{ label: t('dms_media.actions.upload_files'), icon: 'i-ph-upload-simple', onClick: pickFiles }] : []"
+			:description="canUpload ? t('dms_media.queue.empty_description_drop') : t('dms_media.queue.empty_description')"
 		/>
-		<input ref="fileInput" type="file" multiple class="hidden" @change="onFilesChosen" />
+		<input ref="fileInput" type="file" multiple class="hidden" :accept="acceptAttribute || undefined" @change="onFilesChosen" />
 	</div>
 </template>
