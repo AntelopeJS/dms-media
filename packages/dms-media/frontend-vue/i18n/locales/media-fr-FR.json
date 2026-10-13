@@ -1,60 +1,12 @@
 {
 	"dms_media": {
 		"access": {
-			"add": "Ajouter un rôle ou une permission",
-			"applies_to": "S'applique au {count} fichier directement dans {name} | S'applique aux {count} fichiers directement dans {name}",
 			"can_manage": "Peuvent gérer",
 			"can_read": "Peuvent voir",
 			"can_write": "Peuvent importer",
-			"chain": "D'où viennent les règles",
-			"description": "Qui peut voir chaque dossier, y importer et le gérer, et quels fichiers sont publics. Un dossier hérite de son parent tant que vous ne lui donnez pas ses propres règles.",
-			"find_subject": "Chercher un rôle ou une permission",
-			"folders": "Dossiers",
-			"grant": "{right} pour {who}",
-			"implied": "Gérer inclut importer, importer inclut voir",
-			"inherit": "Hériter du parent",
-			"inherit_confirm": "Hériter des règles",
-			"inherit_description": "Ses propres règles sont supprimées et celles du parent s'appliquent à nouveau.",
-			"inherit_title": "Faire hériter {name} des règles de son parent ?",
-			"inherited_from": "Hérité de {name}",
-			"legend_shell": "Traversée seule pour certains",
-			"linked_read_only": "Les règles viennent du champ",
-			"linked_read_only_description": "Qui peut voir et importer suit la page qui possède le champ. Changez-le dans la définition du champ.",
-			"load_failed": "Impossible de charger l'accès du dossier",
-			"no_overrides": "Les fichiers suivent le dossier, sauf si vous les changez un par un.",
-			"no_rules": "Personne n'a accès par ces règles.",
-			"nobody": "Personne",
-			"overrides": "{count} fichier ici fait exception : {names} | {count} fichiers ici font exception : {names}",
-			"own_rules": "Lui donner ses propres règles",
-			"permission_id": "permission · {id}",
-			"permissions": "Permissions",
-			"pick_folder": "Choisissez un dossier",
-			"pick_folder_description": "Choisissez un dossier à gauche pour voir qui peut l'ouvrir.",
-			"public_confirm": "Rendre public",
-			"public_description": "Quiconque a un lien peut ouvrir ses fichiers, servis par le CDN. Ses sous-dossiers gardent leur propre réglage.",
-			"public_restricted": "Ce dossier a ses propres règles d'accès",
-			"public_title": "Rendre {name} public ?",
-			"read_only": "Vous voyez les règles sans pouvoir les changer",
-			"read_only_description": "Changer l'accès demande la permission d'accès aux médias et le droit de gérer le dossier.",
-			"remove": "Retirer {who}",
-			"role_members": "rôle · {count} membres",
-			"roles": "Rôles",
-			"rules_here": "règles définies ici",
-			"save": "Enregistrer les règles",
-			"save_failed": "Impossible d'enregistrer les règles",
-			"saved": "Règles d'accès enregistrées",
-			"title": "Accès et visibilité",
-			"unsaved": "Modifications non enregistrées",
-			"visibility_private": "Seules les personnes qui voient le dossier. Les liens sont signés et expirent après 5 min.",
-			"visibility_public": "Quiconque a un lien, mis en cache par le CDN. Les liens ne changent jamais.",
-			"visibility_saved": "Visibilité de {name} mise à jour",
-			"visibility_title": "Visibilité des fichiers de ce dossier",
-			"who": "Qui",
-			"rules": "Règles",
-			"rights_label": "Qui peut ouvrir ce dossier"
+			"nobody": "Personne"
 		},
 		"actions": {
-			"access": "Accès et visibilité",
 			"back": "Précédent",
 			"cancel": "Annuler",
 			"clear_selection": "Effacer la sélection",
@@ -88,24 +40,39 @@
 			"upload_files": "Importer des fichiers",
 			"upload_here": "Importer ici",
 			"visibility": "Visibilité",
-			"why_locked": "Pourquoi est-ce verrouillé ?"
+			"why_locked": "Pourquoi est-ce verrouillé ?",
+			"folder_more": "Autres actions pour {name}",
+			"delete_count": "Supprimer {count} fichier | Supprimer {count} fichiers",
+			"download_folder": "Télécharger en .zip",
+			"download_zip_count": "Télécharger {count} fichier en .zip | Télécharger {count} fichiers en .zip",
+			"move_count": "Déplacer {count} fichier vers… | Déplacer {count} fichiers vers…",
+			"star_count": "Ajouter {count} fichier aux favoris | Ajouter {count} fichiers aux favoris",
+			"unstar_count": "Retirer {count} fichier des favoris | Retirer {count} fichiers des favoris",
+			"visibility_count": "Visibilité de {count} fichier… | Visibilité de {count} fichiers…",
+			"visibility_ellipsis": "Visibilité…"
 		},
 		"activity": {
-			"asset_alt": "{actor} a décrit {name}",
-			"asset_delete": "{actor} a supprimé {name}",
-			"asset_move": "{actor} a déplacé {name} vers {destination}",
+			"asset_alt": "{actor} a décrit {name} | {actor} a décrit {count} fichiers",
+			"asset_delete": "{actor} a supprimé {name} | {actor} a supprimé {count} fichiers",
+			"asset_move": "{actor} a déplacé {name} vers {destination} | {actor} a déplacé {count} fichiers vers {destination}",
 			"asset_rename": "{actor} a renommé {previous} en {name}",
-			"asset_revert": "{actor} a rétabli l'original de {name}",
-			"asset_transform": "{actor} a retouché {name}",
+			"asset_revert": "{actor} a rétabli l'original de {name} | {actor} a rétabli l'original de {count} images",
+			"asset_transform": "{actor} a retouché {name} | {actor} a retouché {count} images",
 			"asset_upload": "{actor} a importé {name} | {actor} a importé {count} fichiers",
-			"asset_visibility": "{actor} a rendu {name} {visibility}",
 			"folder_acl": "{actor} a changé qui peut ouvrir {name}",
 			"folder_create": "{actor} a créé le dossier {name}",
 			"folder_delete": "{actor} a supprimé le dossier {name}",
 			"folder_move": "{actor} a déplacé le dossier {name}",
 			"folder_rename": "{actor} a renommé le dossier {previous} en {name}",
-			"folder_visibility": "{actor} a rendu le dossier {name} {visibility}",
-			"upload_batch": "{actor} a terminé un import dans {name}"
+			"asset_visibility_public": "{actor} a rendu {name} public | {actor} a rendu {count} fichiers publics",
+			"asset_visibility_private": "{actor} a rendu {name} privé | {actor} a rendu {count} fichiers privés",
+			"asset_visibility_inherit": "{actor} a aligné {name} sur son dossier | {actor} a aligné {count} fichiers sur leur dossier",
+			"folder_visibility_public": "{actor} a rendu le dossier {name} public",
+			"folder_visibility_private": "{actor} a rendu le dossier {name} privé",
+			"folder_visibility_inherit": "{actor} a aligné le dossier {name} sur son parent",
+			"upload_batch_partial": "Import de {actor} dans {name} : {failed} sur {total} en échec",
+			"upload_batch_failed": "L'import de {actor} dans {name} a échoué",
+			"deleted_marker": "Supprimé depuis"
 		},
 		"alt": {
 			"hint": "Utilisé partout où l'image apparaît",
@@ -117,10 +84,6 @@
 			"set": "Renseigné"
 		},
 		"blocks": {
-			"access_editor": {
-				"description": "Règles et visibilité des dossiers",
-				"name": "Éditeur d'accès"
-			},
 			"activity": {
 				"description": "Qui a importé, retouché ou supprimé quoi",
 				"name": "Activité"
@@ -128,10 +91,6 @@
 			"attention": {
 				"description": "Textes alternatifs manquants, imports échoués, gros fichiers",
 				"name": "À traiter"
-			},
-			"browse": {
-				"description": "Rangée de mise en page des dossiers et de l'activité",
-				"name": "Dossiers et activité"
 			},
 			"content": {
 				"description": "Mise en page de la vue d'ensemble",
@@ -141,25 +100,9 @@
 				"description": "Parcourir, importer, déplacer, renommer et supprimer fichiers et dossiers",
 				"name": "Explorateur de fichiers"
 			},
-			"field_code": {
-				"description": "Comment déclarer un champ fichier",
-				"name": "Déclaration du champ"
-			},
-			"field_demo": {
-				"description": "Un formulaire réel avec des champs fichier",
-				"name": "Démo du champ"
-			},
-			"field_snippet": {
-				"description": "Code à copier",
-				"name": "Extrait de code"
-			},
 			"first_run": {
 				"description": "Dossiers de départ pour une bibliothèque vide",
 				"name": "Premiers pas"
-			},
-			"folders": {
-				"description": "Dossiers de premier niveau avec leur taille",
-				"name": "Dossiers"
 			},
 			"health": {
 				"description": "Stockage et points à traiter",
@@ -173,32 +116,16 @@
 				"description": "Fichiers, stockage, fichiers publics et textes alternatifs manquants",
 				"name": "Chiffres de la bibliothèque"
 			},
-			"largest_folders": {
-				"description": "Les dossiers qui prennent le plus de place",
-				"name": "Dossiers les plus lourds"
-			},
-			"linked_detail": {
-				"description": "Le champ et les droits derrière un dossier lié",
-				"name": "Détail d'un dossier lié"
-			},
-			"linked_explainer": {
-				"description": "Pourquoi les dossiers liés sont verrouillés",
-				"name": "Explication des dossiers liés"
-			},
-			"linked_folders": {
-				"description": "Dossiers créés par les champs fichier",
-				"name": "Dossiers liés"
-			},
 			"preset_cache": {
 				"description": "Nettoyage planifié et durée des liens",
 				"name": "Cache"
 			},
 			"preset_cards": {
-				"description": "Chaque taille avec son URL et sa clé de cache",
-				"name": "Tailles de diffusion"
+				"description": "Chaque taille d'image avec son lien",
+				"name": "Tailles d'image"
 			},
 			"preset_config": {
-				"description": "Les formats en configuration de projet",
+				"description": "Les tailles d'image en configuration de projet",
 				"name": "Configuration"
 			},
 			"preset_details": {
@@ -218,7 +145,7 @@
 				"name": "Stockage"
 			},
 			"storage_types": {
-				"description": "Octets utilisés par type de fichier",
+				"description": "Espace utilisé par type de fichier",
 				"name": "Stockage par type"
 			},
 			"upload_history": {
@@ -235,7 +162,7 @@
 			},
 			"file_header": {
 				"name": "En-tête du fichier",
-				"description": "Nom, visibilité, chemin, fichier précédent et suivant, copie, téléchargement et édition"
+				"description": "Nom, visibilité, chemin, fichier précédent et suivant, copie du lien, téléchargement et retouche"
 			},
 			"file_content": {
 				"name": "Contenu du fichier",
@@ -263,7 +190,7 @@
 			},
 			"file_delivery": {
 				"name": "Liens de diffusion",
-				"description": "Le lien stable et les liens des formats du fichier"
+				"description": "Le lien stable et les liens des tailles d'image du fichier"
 			},
 			"file_history": {
 				"name": "Historique du fichier",
@@ -277,49 +204,25 @@
 				"name": "Détails du fichier",
 				"description": "Les propriétés modifiables au-dessus des informations du fichier"
 			},
-			"access_tree": {
-				"name": "Arborescence",
-				"description": "Les dossiers dont vous pouvez vérifier l'accès"
-			},
-			"access_folder": {
-				"name": "Dossier sélectionné",
-				"description": "Le résumé, les membres, les règles et la visibilité du dossier sélectionné"
-			},
-			"access_summary": {
-				"name": "Résumé du dossier",
-				"description": "D'où viennent les règles du dossier et si vous pouvez les modifier"
-			},
-			"access_rights": {
-				"name": "Membres par droit",
-				"description": "Combien de membres peuvent lire, importer et gérer le dossier"
-			},
-			"access_rules": {
-				"name": "Règles d'accès",
-				"description": "Les rôles et permissions que le dossier accorde, modifiables avec des règles propres"
-			},
-			"access_visibility": {
-				"name": "Visibilité du dossier",
-				"description": "Si les fichiers du dossier sont publics ou privés"
-			},
 			"file_delivery_notice": {
 				"name": "Mode de diffusion",
 				"description": "Comment le fichier est servi, selon sa visibilité"
 			},
 			"file_delivery_links": {
 				"name": "Liste des liens de diffusion",
-				"description": "Le lien stable et un lien par format, chacun avec un bouton copier"
-			},
-			"field_dependency": {
-				"name": "Dépendance du champ",
-				"description": "La commande qui ajoute l’interface du champ fichier à un module"
-			},
-			"field_notes": {
-				"name": "Notes du champ",
-				"description": "Ce que le champ enregistre, le dossier qu’il crée et qui peut s’en servir"
+				"description": "Le lien stable et un lien par taille d'image, chacun avec un bouton de copie"
 			},
 			"preset_config_code": {
-				"name": "Code de configuration des formats",
+				"name": "Code de configuration des tailles d'image",
 				"description": "Le bloc presets à coller dans antelope.config.ts"
+			},
+			"activity_log": {
+				"name": "Journal d'activité",
+				"description": "Tout ce qui s'est passé récemment dans la bibliothèque"
+			},
+			"activity_filters": {
+				"name": "Filtres de l'activité",
+				"description": "Restreint le journal d'activité à un type d'action"
 			}
 		},
 		"bulk": {
@@ -328,8 +231,10 @@
 			"select_all": "Tout sélectionner ({count})",
 			"selected": "{count} fichier sélectionné | {count} fichiers sélectionnés",
 			"zip": "Télécharger le .zip",
-			"zip_limit": "Un zip contient au plus {count} fichiers"
+			"zip_limit": "Un zip contient au plus {count} fichiers",
+			"selected_of": "{count} sur {total} sélectionné | {count} sur {total} sélectionné | {count} sur {total} sélectionnés"
 		},
+		"catalog_category": "Contenu",
 		"columns": {
 			"alt": "Texte alt.",
 			"dimensions": "Dimensions",
@@ -338,20 +243,22 @@
 			"original": "Original",
 			"size": "Taille",
 			"type": "Type",
-			"visibility": "Visibilité"
+			"visibility": "Visibilité",
+			"added": "Ajouté le",
+			"choose": "Colonnes"
 		},
-		"description": "Images, vidéos et documents de l'espace de travail, avec qui peut les voir et comment ils sont diffusés.",
+		"description": "Images, vidéos et documents de l'espace de travail, rangés en dossiers et diffusés à la bonne taille.",
 		"dialogs": {
 			"already_here": "Déjà dans ce dossier",
 			"delete_files": {
 				"confirm": "Supprimer le fichier | Supprimer {count} fichiers",
-				"description": "{size} seront libérés. Les fichiers supprimés ne peuvent pas être récupérés.",
-				"make_private": "Rendre privé à la place",
-				"more": "et {count} de plus",
+				"description": "Cela libérera {size}. Les fichiers supprimés ne pourront pas être récupérés.",
+				"more": "et {count} autre | et {count} autres",
 				"public_description": "Les pages ou e-mails qui l'intègrent afficheront une image cassée. | Les pages ou e-mails qui les intègrent afficheront une image cassée.",
 				"public_title": "{count} fichier est public | {count} fichiers sont publics",
 				"title": "Supprimer {count} fichier ? | Supprimer {count} fichiers ?",
-				"usage_note": "L'utilisation des fichiers n'est pas encore suivie : vérifiez les pages qui peuvent les intégrer."
+				"usage_note": "L'utilisation des fichiers n'est pas encore suivie : vérifiez les pages qui peuvent les intégrer.",
+				"make_private_only": "Ne rien supprimer, rendre le fichier public privé | Ne rien supprimer, rendre les {count} fichiers publics privés"
 			},
 			"delete_folder": {
 				"confirm": "Supprimer le dossier",
@@ -365,23 +272,27 @@
 			"destination": {
 				"confirm": "Choisir les fichiers",
 				"confirm_count": "Importer {count} fichier | Importer {count} fichiers",
-				"description": "Les fichiers vivent dans des dossiers : choisissez le leur. Votre choix est retenu pour la prochaine fois.",
-				"title": "Où ranger les fichiers ?"
+				"description": "Choisissez le dossier de destination. Votre choix sera retenu pour la prochaine fois.",
+				"title": "Où ranger les fichiers ?",
+				"use_folder": "Utiliser ce dossier",
+				"new_folder_inside": "Nouveau dossier dans {name}",
+				"space_left": "{size} libres sur {total}",
+				"accepts": "{name} alimente un champ qui n'accepte que {types} : les autres fichiers seront refusés."
 			},
 			"find_folder": "Chercher un dossier",
 			"locked": {
 				"allowed": "Vous pouvez importer, renommer et retoucher les fichiers qu'il contient. Pour renommer le dossier, le déplacer ou changer qui peut importer, modifiez la définition du champ dans le code.",
 				"description": "Un champ fichier a créé ce dossier et décide qui peut l'utiliser.",
 				"managed_by": "Géré par",
-				"see_linked": "Dossiers liés",
 				"title": "{name} est lié à un champ"
 			},
 			"move": {
 				"files_title": "Déplacer {count} fichier vers… | Déplacer {count} fichiers vers…",
-				"folder_title": "Déplacer {name} vers…"
+				"folder_title": "Déplacer {name} vers…",
+				"new_folder_in": "Créé dans {name}",
+				"recent": "Récents"
 			},
-			"move_inside_itself": "Un dossier ne peut pas aller dans lui-même",
-			"name_forbidden": "Un nom ne peut pas contenir / ou \\",
+			"move_inside_itself": "Un dossier ne peut pas être déplacé dans lui-même",
 			"name_required": "Saisissez un nom",
 			"name_too_long": "Ce nom est trop long",
 			"new_folder": {
@@ -396,16 +307,35 @@
 			"no_upload_here": "Vous ne pouvez pas importer ici",
 			"rename": {
 				"confirm": "Renommer",
-				"file_description": "Renommer garde tous les liens fonctionnels.",
+				"file_description": "Les liens restent valides après un renommage.",
 				"folder_title": "Renommer le dossier",
 				"label": "Nom",
 				"title": "Renommer le fichier"
 			},
 			"visibility": {
 				"confirm": "Appliquer à {count} fichier | Appliquer à {count} fichiers",
-				"description": "Les fichiers publics sont servis par le CDN à quiconque a le lien. Les privés exigent un membre connecté avec accès au dossier.",
-				"title": "Visibilité de {count} fichier | Visibilité de {count} fichiers"
-			}
+				"description": "Les fichiers publics s'ouvrent pour toute personne qui a le lien. Les fichiers privés demandent un membre connecté qui a accès au dossier.",
+				"title": "Visibilité de {count} fichier | Visibilité de {count} fichiers",
+				"public_description": "Leurs liens s'ouvrent pour tout le monde, sans connexion. Vous pourrez les rendre privés à tout moment.",
+				"public_title": "{count} fichier s'ouvrira pour toute personne qui a son lien | {count} fichiers s'ouvriront pour toute personne qui a leur lien"
+			},
+			"duplicates": {
+				"title": "{count} fichier existe déjà ici | {count} fichiers existent déjà ici",
+				"description": "{name} contient déjà des fichiers portant ces noms. « Garder les deux » ajoute les nouveaux avec un numéro, comme photo (2).jpg. « Annuler » les laisse de côté ; les autres fichiers sont importés.",
+				"more": "et {count} autre | et {count} autres",
+				"keep_both": "Garder les deux"
+			},
+			"extension_kept": "Le fichier garde son extension {extension} : le renommer ne change pas son format.",
+			"folder_tree": "Dossiers",
+			"folder_visibility": {
+				"confirm": "Appliquer",
+				"description": "S'applique aux fichiers de {name} réglés sur « Comme le dossier ». Les fichiers qui ont leur propre réglage, et les sous-dossiers, gardent le leur.",
+				"public_title": "Les fichiers de {name} qui suivent le dossier deviennent publics",
+				"title": "Visibilité de {name}"
+			},
+			"name_forbidden_chars": "Un nom ne peut pas contenir / \\ < > : \" {'|'} ? ou *",
+			"name_taken": "Ce nom est déjà utilisé ici",
+			"no_subfolder_in_linked": "Un dossier lié ne peut pas contenir de sous-dossiers"
 		},
 		"drop": {
 			"limit": "Jusqu'à {size} par fichier",
@@ -413,28 +343,26 @@
 			"title": "Déposez {count} fichier pour l'importer dans {name} | Déposez {count} fichiers pour les importer dans {name}"
 		},
 		"editor": {
-			"applied_first": "appliquée d'abord",
-			"aspect_ratio": "Format",
+			"applied_first": "appliquée en premier",
+			"aspect_ratio": "Proportions",
 			"aspects": {
-				"free": "Libre",
-				"original": "original"
+				"free": "Libre"
 			},
 			"crop_free": "Recadrer",
 			"crop_to": "Recadrer en {ratio}",
-			"description": "Rien n'est écrit avant d'enregistrer. L'original importé reste disponible pour revenir en arrière.",
+			"description": "Rien n'est modifié tant que vous n'enregistrez pas. L'original importé reste disponible pour revenir en arrière.",
 			"discard": "Abandonner",
 			"heading": "Retoucher {name}",
-			"load_failed": "L'image n'a pas chargé",
+			"load_failed": "L'image ne s'est pas chargée",
 			"load_failed_description": "Le fichier a peut-être été déplacé ou le lien a expiré. Réessayez.",
 			"no_changes": "Aucune modification : déplacez le cadre ou pivotez l'image.",
 			"not_editable": "Ce fichier ne peut pas être retouché",
-			"not_editable_description": "Seules les images JPEG, PNG, WebP, AVIF, TIFF et GIF peuvent être recadrées et pivotées.",
 			"original": "Original",
 			"original_first": "L'import est conservé comme original au premier enregistrement : vous pourrez revenir en arrière.",
 			"original_kept": "L'original importé est conservé : vous pouvez le rétablir à tout moment.",
 			"pending": "Modifications en attente",
 			"reset": "Réinitialiser",
-			"revert_description": "Chaque recadrage et rotation est annulé et l'original importé est rétabli.",
+			"revert_description": "Les recadrages et les rotations sont annulés, et l'original importé est rétabli.",
 			"revert_failed": "Impossible de rétablir",
 			"revert_title": "Rétablir l'original ?",
 			"revert_to_original": "Rétablir l'original",
@@ -445,25 +373,48 @@
 			"save": "Enregistrer la modification | Enregistrer {count} modifications",
 			"save_failed": "L'image n'a pas été enregistrée : vos modifications sont toujours là",
 			"saved": "Image mise à jour",
-			"saved_description": "Chaque taille est régénérée à la prochaine demande.",
-			"sizes": "Rendu des tailles",
+			"saved_description": "Chaque taille d'image est mise à jour à la prochaine demande.",
+			"sizes": "Aperçu des tailles",
 			"title": "Retoucher l'image",
 			"zoom_in": "Zoom avant",
 			"zoom_out": "Zoom arrière",
-			"save_none": "Enregistrer"
+			"save_none": "Enregistrer",
+			"aspect_hints": {
+				"original": "original",
+				"thumbnail": "vignette",
+				"portrait": "publication portrait",
+				"story": "story",
+				"social": "aperçu de lien"
+			},
+			"back_to_file": "Retour au fichier",
+			"copy_saved": "Enregistré sous {name}",
+			"crop_area": "Zone de recadrage",
+			"crop_area_keys": "Les flèches déplacent le cadre, Maj + flèches le redimensionnent.",
+			"crop_fields": {
+				"x": "X",
+				"y": "Y",
+				"width": "L",
+				"height": "H"
+			},
+			"not_editable_formats": "Seules les images JPEG, PNG, WebP et AVIF peuvent être recadrées et pivotées.",
+			"not_editable_vector": "Un fichier SVG est un dessin vectoriel : modifiez-le dans un logiciel de dessin, puis importez la nouvelle version.",
+			"save_copy": "Enregistrer une copie",
+			"save_overwrites": "« Enregistrer » modifie cette image partout où elle est utilisée. « Enregistrer une copie » la laisse intacte et ajoute la version retouchée dans le même dossier."
 		},
 		"empty": {
+			"filters_description": "Modifiez ou effacez les filtres pour voir les fichiers de {name}.",
+			"filters_title": "Aucun fichier ne correspond à ces filtres",
 			"error_description": "Vérifiez votre connexion et réessayez.",
-			"error_title": "La bibliothèque n'a pas chargé",
-			"folder_description": "Déposez des fichiers ici ou importez-les depuis votre ordinateur. Ils héritent de la visibilité du dossier.",
+			"error_title": "La bibliothèque ne s'est pas chargée",
+			"folder_description": "Déposez des fichiers ici, ou importez-les depuis votre ordinateur.",
 			"folder_read_only": "Rien n'a encore été ajouté ici.",
 			"folder_title": "{name} est vide",
 			"limits": "Images, vidéos et documents · jusqu'à {size} par fichier",
-			"root_description": "Les fichiers vivent dans des dossiers, et les dossiers décident qui peut les voir. Créez un dossier pour commencer.",
+			"root_description": "Les fichiers sont rangés dans des dossiers. Créez un dossier pour commencer.",
 			"root_title": "Lancez votre médiathèque",
 			"search_description": "La recherche porte sur les noms de fichiers, les textes alternatifs et les noms de dossiers que vous pouvez ouvrir. Essayez moins de mots ou retirez les filtres.",
+			"search_description_in": "La recherche porte sur les noms de fichiers, les textes alternatifs et les noms de dossiers de {scope} et de ses sous-dossiers. Essayez moins de mots ou retirez les filtres.",
 			"search_title": "Rien ne correspond à « {query} »",
-			"see_access": "Voir qui a accès",
 			"shell_description": "Son accès est limité à certains rôles. Demandez à un propriétaire si vous avez besoin d'un fichier ici.",
 			"shell_title": "Vous voyez {name}, pas ses fichiers",
 			"view_missing_alt_description": "Les images sans texte alternatif apparaissent ici jusqu'à ce qu'on les décrive.",
@@ -471,7 +422,13 @@
 			"view_recent_description": "Les fichiers importés par vous et votre équipe apparaissent ici en premier.",
 			"view_recent_title": "Aucun fichier récent",
 			"view_starred_description": "Ajoutez un fichier ou un dossier aux favoris depuis son menu pour le retrouver ici.",
-			"view_starred_title": "Aucun favori"
+			"view_starred_title": "Aucun favori",
+			"go_to_start": "Aller à la bibliothèque",
+			"limits_accept": "{types} · jusqu'à {size} par fichier",
+			"view_largest_description": "Les fichiers s'affichent ici du plus lourd au plus léger, pour repérer ce qui prend de la place.",
+			"view_largest_title": "Aucun fichier pour l'instant",
+			"view_public_title": "Aucun fichier public",
+			"view_public_description": "Les fichiers que toute personne qui a le lien peut ouvrir s'affichent ici, y compris ceux qui héritent d'un dossier public."
 		},
 		"explorer": {
 			"details": "Détails",
@@ -486,38 +443,15 @@
 			"no_folders": "Aucun dossier pour l'instant",
 			"sidebar": "Navigation de la bibliothèque",
 			"storage": "Stockage",
-			"storage_files": "{count} fichiers",
+			"storage_files": "{count} fichier | {count} fichier | {count} fichiers",
 			"storage_quota": "de l'offre de {quota}",
-			"toggle_details": "Panneau de détails"
-		},
-		"field": {
-			"code": {
-				"description": "Le champ et le dossier lié qu'il crée, dans votre module.",
-				"notes": {
-					"binding": "Une liaison crée un dossier lié sous Content, où vont les imports du champ.",
-					"rights": "Les droits du dossier suivent la page : qui voit la page peut voir, qui peut la modifier peut importer.",
-					"value": "La valeur est un identifiant de fichier, ou un tableau d'identifiants avec multiple."
-				},
-				"title": "Déclarer le champ",
-				"notes_labels": {
-					"value": "Valeur",
-					"binding": "Dossier lié",
-					"rights": "Droits"
-				},
-				"notes_title": "À savoir"
-			},
-			"demo": {
-				"cover": "Image de couverture",
-				"cover_description": "Une image.",
-				"description": "Un formulaire réel avec les trois formes du champ. Rien n'est enregistré.",
-				"gallery": "Galerie",
-				"gallery_description": "Jusqu'à 8 images, dans l'ordre. La première est la couverture.",
-				"spec_sheet": "Fiche technique",
-				"spec_sheet_description": "Un PDF.",
-				"title": "Essayer le champ"
-			},
-			"description": "Comment les autres pages rattachent des fichiers de la bibliothèque. Le champ affiche ce qui est rattaché et ouvre la bibliothèque comme sélecteur.",
-			"title": "Champ fichier et sélecteur"
+			"toggle_details": "Panneau de détails",
+			"count_with_subfolders": "{count} fichier, sous-dossiers compris | {count} fichier, sous-dossiers compris | {count} fichiers, sous-dossiers compris",
+			"starred_folders": "Dossiers favoris",
+			"loading_counts": "Chargement des chiffres",
+			"size_here": "{size} ici",
+			"with_subfolders": "{count} fichier · {size} avec les sous-dossiers | {count} fichier · {size} avec les sous-dossiers | {count} fichiers · {size} avec les sous-dossiers",
+			"with_subfolders_hint": "L'arborescence et les cartes de dossier comptent aussi les fichiers des sous-dossiers"
 		},
 		"field_widget": {
 			"add_file": "Ajouter des fichiers",
@@ -526,25 +460,84 @@
 			"browse": "Parcourir",
 			"choose_file": "Choisir un fichier",
 			"choose_hint": "Depuis la bibliothèque",
-			"choose_hint_upload": "Depuis la bibliothèque, ou déposez un fichier ici pour l'importer dans {name}",
 			"choose_image": "Choisir une image",
 			"choose_pdf": "Choisir un PDF",
 			"count": "{count} sur {max}",
 			"cover": "Couverture",
-			"crop": "Recadrer",
-			"left": "{count} restant(s)",
+			"left": "plus de place | {count} place restante | {count} places restantes",
 			"missing_alt": "{count} image n'a pas de texte alternatif. | {count} images n'ont pas de texte alternatif.",
 			"remove": "Retirer {name}",
-			"reorder_hint": "Glissez pour réordonner. La première image est la couverture.",
 			"replace": "Remplacer",
-			"upload_to": "Importer dans {name}"
+			"upload_to": "Importer dans {name}",
+			"choose_many_image": "Choisir des images",
+			"choose_many_pdf": "Choisir des PDF",
+			"choose_many_file": "Choisir des fichiers",
+			"choose_up_to_image": "Choisir une image | Choisir jusqu'à {count} images",
+			"choose_up_to_pdf": "Choisir un PDF | Choisir jusqu'à {count} PDF",
+			"choose_up_to_file": "Choisir un fichier | Choisir jusqu'à {count} fichiers",
+			"choose_hint_drop": "Depuis la bibliothèque, ou déposez un fichier ici pour l'importer dans {name} | Depuis la bibliothèque, ou déposez des fichiers ici pour les importer dans {name}",
+			"replace_named": "Remplacer {name}",
+			"replaced": "{name} remplace le fichier précédent",
+			"undo": "Annuler",
+			"moved": "{name} déplacé en position {index} sur {total}",
+			"position": "{index} sur {total}",
+			"reorder_hint_cover": "La première image sert de couverture. Pour changer l'ordre, glissez les images, utilisez leur menu ⋯ ou appuyez sur Alt et une flèche.",
+			"reorder_keys": "Appuyez sur Alt et une flèche pour déplacer ce fichier.",
+			"missing": {
+				"title": "Fichier indisponible",
+				"hint": "Supprimé ou hors de vos dossiers : retirez-le ou choisissez-en un autre."
+			},
+			"loading": "Chargement…",
+			"full": "Champ plein",
+			"types": {
+				"word": "Word",
+				"text": "texte",
+				"csv": "CSV"
+			},
+			"menu": {
+				"label": "Actions pour {name}",
+				"preview": "Aperçu",
+				"preview_named": "Aperçu de {name}",
+				"make_cover": "Mettre en couverture",
+				"move_first": "Placer en premier",
+				"move_before": "Déplacer avant",
+				"move_after": "Déplacer après",
+				"remove": "Retirer"
+			},
+			"alt": {
+				"set": "Texte alternatif",
+				"missing": "Pas de texte alternatif",
+				"add": "Ajouter un texte alternatif à {name}",
+				"edit": "Modifier le texte alternatif de {name}",
+				"save_failed": "Impossible d'enregistrer le texte alternatif"
+			},
+			"drop": {
+				"upload": "Déposez pour l'importer dans {name} | Déposez pour les importer dans {name}",
+				"replace": "Déposez pour remplacer {name}",
+				"no_folder": "Ce champ n'a pas de dossier d'import : utilisez Parcourir pour choisir ou importer un fichier",
+				"full": "Le champ est plein : retirez d'abord un fichier"
+			},
+			"upload": {
+				"type_refused": "{names} n'est pas accepté | {names} ne sont pas acceptés",
+				"accepts": "Ce champ accepte : {types}",
+				"over_max": "{names} n'a pas été ajouté | {names} n'ont pas été ajoutés",
+				"room": "Le champ est plein. | Le champ a encore de la place pour un fichier. | Le champ a encore de la place pour {count} fichiers.",
+				"failed": "Impossible d'importer {name}",
+				"waiting": "En attente…",
+				"checking": "Vérification…",
+				"progress": "{percent} % de {size}",
+				"retry": "Réessayer",
+				"dismiss": "Retirer {name} de la liste",
+				"cancel": "Annuler l'import de {name}"
+			},
+			"more": "+{count} autre | +{count} autres"
 		},
 		"file": {
 			"asset_id": "Identifiant",
 			"autosave": "Les modifications s'enregistrent automatiquement",
 			"delete": "Supprimer le fichier",
-			"delivery_private": "Ce fichier est privé : le lien stable redirige les membres connectés ayant accès au dossier vers un lien valable 5 minutes.",
-			"delivery_public": "Ce fichier est public : ses liens sont servis par le CDN et ne changent jamais. Utilisez une taille dans les gabarits plutôt que l'original.",
+			"delivery_private_notice": "Ce fichier est privé : ses liens ne fonctionnent que pour les membres connectés au tableau de bord, jamais dans une page publique ou un e-mail. Pour le partager, rendez-le public dans Détails › Visibilité.",
+			"delivery_public": "Ce fichier est public : toute personne qui a le lien peut l'ouvrir. Son lien stable ne change jamais et sert toujours la version actuelle. Utilisez une taille d'image dans les gabarits plutôt que l'original.",
 			"description": "Un fichier de la bibliothèque, son texte alternatif, sa visibilité et ses liens de diffusion.",
 			"edited": "Retouché",
 			"folder": "Dossier",
@@ -557,7 +550,7 @@
 			"not_found": "Ce fichier n'est pas disponible",
 			"not_found_description": "Il a été supprimé, ou vous ne pouvez pas ouvrir son dossier.",
 			"preserved": "Conservé",
-			"see_presets": "Voir toutes les tailles de diffusion",
+			"see_presets": "Voir toutes les tailles d'image",
 			"stable_link": "Lien stable",
 			"tabs": {
 				"delivery": "Diffusion",
@@ -569,19 +562,41 @@
 			"uploaded": "Importé",
 			"usage_description": "Les pages et e-mails qui intègrent ce fichier ne sont pas encore suivis. Vérifiez-les avant de supprimer ou de rendre le fichier privé.",
 			"usage_title": "L'utilisation n'est pas encore suivie",
-			"visibility_locked": "Changer la visibilité demande la permission d'accès aux médias et le droit de gérer le dossier.",
+			"visibility_locked": "Changer la visibilité demande le droit de gérer le dossier.",
 			"visibility_saved": "Visibilité mise à jour",
-			"modified_value": "{date}",
-			"delivery_sizes": "Tailles de diffusion"
+			"delivery_sizes": "Tailles d'image",
+			"deleted": "Ce fichier a été supprimé",
+			"deleted_description": "Quelqu'un l'a supprimé pendant que vous le consultiez.",
+			"open_folder": "Ouvrir son dossier",
+			"extension_kept": "Renommer ne change pas le format : le fichier reste au format {extension}.",
+			"preset_names": {
+				"thumb": "Vignette",
+				"preview": "Aperçu"
+			},
+			"preset_width": "{width} px de large",
+			"preset_height": "{height} px de haut",
+			"preset_original_size": "Taille d'origine",
+			"type_value": "{group} · {extension}",
+			"type_names": {
+				"image": "Image",
+				"video": "Vidéo",
+				"audio": "Audio",
+				"pdf": "Document PDF",
+				"document": "Document",
+				"spreadsheet": "Feuille de calcul",
+				"vector": "Image vectorielle",
+				"archive": "Archive",
+				"other": "Fichier"
+			}
 		},
 		"files": {
-			"description": "Parcourez, importez et rangez chaque image, vidéo et document. Cliquez pour sélectionner, double-cliquez pour ouvrir, glissez sur un dossier pour déplacer.",
-			"title": "Tous les fichiers"
+			"description": "Parcourez, importez et rangez vos images, vidéos et documents. Sélectionnez des fichiers pour agir dessus, ouvrez-en un pour voir ses détails, déplacez-les dans n'importe quel dossier.",
+			"title": "Bibliothèque"
 		},
 		"first_run": {
 			"create": "Créer ces {count} dossiers",
 			"created": "Dossiers créés",
-			"description": "Les fichiers vivent dans des dossiers, et les dossiers décident qui peut les voir. Partez d'une structure suggérée, ou créez la vôtre.",
+			"description": "Les fichiers sont rangés dans des dossiers. Partez d'une structure suggérée, ou créez la vôtre.",
 			"folders": {
 				"brand": {
 					"description": "Logos, charte",
@@ -600,12 +615,14 @@
 					"name": "Marketing"
 				}
 			},
-			"hint": "Vous pourrez les renommer ou les supprimer",
+			"hint": "Vous pourrez les renommer ou les supprimer plus tard",
 			"title": "Lancez votre médiathèque"
 		},
 		"inspector": {
 			"hint": "Sélectionnez un fichier pour voir ses détails, son texte alternatif et sa visibilité.",
-			"your_rights": "Vos droits"
+			"your_rights": "Vos droits",
+			"added_by": "Ajouté par",
+			"files_with_subfolders": "Fichiers, avec les sous-dossiers"
 		},
 		"library": {
 			"root": "Bibliothèque"
@@ -615,189 +632,159 @@
 			"position": "{index} sur {total}",
 			"previous": "Fichier précédent"
 		},
-		"linked": {
-			"banner": {
-				"description": "Importez, renommez et retouchez les fichiers de ces dossiers comme d'habitude. Pour renommer un dossier ou changer qui peut importer, modifiez la définition du champ.",
-				"title": "Géré par le code"
-			},
-			"columns": {
-				"accepts": "Accepte",
-				"field": "Champ",
-				"files": "Fichiers",
-				"folder": "Dossier",
-				"uploaders": "Qui peut importer",
-				"visibility": "Visibilité"
-			},
-			"description": "Dossiers créés automatiquement par les champs fichier d'autres pages. Leur accès suit la page qui possède le champ : ils ne peuvent pas être renommés, déplacés ou supprimés ici.",
-			"detail": {
-				"always": "toujours",
-				"binding": "Liaison",
-				"can_do": "Ce que vous pouvez faire ici",
-				"can_do_description": "Importer, renommer et retoucher les fichiers, changer leur texte alternatif et leur visibilité. Le dossier lui-même est verrouillé : modifiez la définition du champ pour le renommer ou changer qui peut importer.",
-				"created": "Créé",
-				"definition": "Définition du champ",
-				"identity": "L'identifiant de liaison est l'identité du dossier : renommer folderName dans le code renomme le dossier au prochain démarrage.",
-				"open": "Ouvrir le dossier"
-			},
-			"detail_failed": "Impossible de charger ce dossier lié",
-			"empty": "Aucun dossier lié pour l'instant",
-			"empty_description": "Un dossier apparaît ici quand un module déclare un champ fichier avec une liaison.",
-			"table": "Dossiers liés",
-			"title": "Dossiers liés"
-		},
 		"markers": {
 			"linked": "Lié à un champ",
-			"linked_to": "Lié à {binding}",
 			"locked": "Verrouillé",
-			"no_alt": "Sans alt",
-			"own_rules": "Règles propres",
+			"no_alt": "Sans texte alt.",
+			"own_rules": "Accès spécifique",
 			"public": "Public",
 			"read_only": "Lecture seule",
-			"traverse_only": "Vous voyez ce dossier, pas ses fichiers"
+			"traverse_only": "Vous voyez ce dossier, pas ses fichiers",
+			"binding_id": "Identifiant technique : {binding}",
+			"content_root": "Dossiers des champs de contenu",
+			"limited_access": "Accès limité",
+			"linked_page": "Lié à la page {page}"
 		},
 		"nav": {
-			"developers": "Développeurs",
 			"library": "Bibliothèque",
-			"manage": "Gérer"
+			"settings": "Réglages"
 		},
 		"overview": {
 			"activity": {
-				"empty": "Rien ne s'est encore passé",
-				"title": "Activité"
+				"empty": "Aucune activité pour l'instant",
+				"title": "Activité",
+				"view_all": "Tout voir"
 			},
 			"attention": {
 				"empty": "Rien à traiter",
-				"empty_description": "Chaque image est décrite et chaque import est passé.",
-				"failed_uploads": "Imports échoués aujourd'hui",
-				"failed_uploads_detail": "Relancez-les depuis la page Imports",
-				"large_files": "Fichiers de plus de 20 Mo",
-				"large_files_detail": "{size} au total · lents à charger sur une boutique",
-				"missing_alt": "Images sans texte alternatif",
-				"missing_alt_detail": "Aucune n'est encore publique | 1 est publique sur la boutique | {files} sont publiques sur la boutique",
-				"own_rules": "{name} a ses propres règles d'accès",
-				"own_rules_detail": "Seuls les rôles qu'il nomme peuvent l'ouvrir",
-				"own_rules_value": "Vérifier",
-				"title": "À traiter"
+				"empty_description": "Chaque image est décrite et chaque import a réussi.",
+				"large_files_detail": "{size} au total · lents à charger sur une page web",
+				"missing_alt_detail": "Aucune n'est publique | dont 1 publique | dont {files} publiques",
+				"title": "À traiter",
+				"failed_uploads_action": "Voir l'import échoué aujourd'hui | Voir les {files} imports échoués aujourd'hui",
+				"failed_uploads_hint": "Importez ces fichiers à nouveau : la liste indique lesquels ont échoué et pourquoi",
+				"missing_alt_action": "Décrire l'image sans texte alternatif | Décrire les {files} images sans texte alternatif",
+				"large_files_action": "Vérifier le fichier de plus de {threshold} | Vérifier les {files} fichiers de plus de {threshold}"
 			},
 			"description": "Les nouveautés, ce qui demande votre attention et la place utilisée par la bibliothèque.",
-			"folders": {
-				"detail": "Aucun fichier | 1 fichier · {size} | {files} fichiers · {size}",
-				"empty": "Aucun dossier pour l'instant",
-				"title": "Dossiers"
-			},
 			"kpis": {
 				"files": "Fichiers",
-				"files_detail": "+{files} importés ces 30 derniers jours",
+				"files_detail": "Aucun import ces 30 derniers jours | +1 importé ces 30 derniers jours | +{files} importés ces 30 derniers jours",
 				"label": "La bibliothèque en un coup d'œil",
 				"missing_alt": "Texte alternatif manquant",
-				"missing_alt_detail": "Aucune image publique concernée | 1 est publique sur la boutique | {files} sont publiques sur la boutique",
 				"public": "Fichiers publics",
-				"public_detail": "{percent} % de la bibliothèque · servis par le CDN",
 				"storage": "Stockage",
-				"storage_detail": "utilisé par {files} fichiers",
-				"storage_quota_detail": "{percent} % de l'offre de {quota}"
-			},
-			"largest": {
-				"detail": "1 fichier | {files} fichiers",
-				"empty": "Aucun fichier pour l'instant",
-				"title": "Dossiers les plus lourds"
+				"storage_detail": "aucun fichier pour l'instant | utilisé par 1 fichier | utilisé par {files} fichiers",
+				"storage_quota_detail": "{percent} % de l'offre de {quota}",
+				"public_share": "{percent} % de la bibliothèque · ouverts à toute personne qui a le lien",
+				"missing_alt_none": "Toutes les images sont décrites",
+				"missing_alt_public": "Aucune n'est publique | 1 est publique | {files} sont publiques"
 			},
 			"open_library": "Ouvrir la bibliothèque",
 			"storage": {
-				"hint": "Utilisé par {files} fichier, originaux des images retouchées compris | Utilisé par {files} fichiers, originaux des images retouchées compris",
-				"segment": "{type} · {files} · {size}",
-				"title": "Stockage par type"
+				"hint": "Utilisé par {files} fichier, originaux des images retouchées compris | Utilisé par {files} fichier, originaux des images retouchées compris | Utilisé par {files} fichiers, originaux des images retouchées compris",
+				"title": "Stockage par type",
+				"type_segment": "{type} · 1 fichier · {size} | {type} · {files} fichiers · {size}",
+				"largest_files": "Voir les fichiers les plus lourds"
 			},
-			"title": "Vue d'ensemble",
-			"upload": "Importer des fichiers"
-		},
-		"permissions": {
-			"folders_manage": {
-				"description": "Créer, renommer, déplacer et supprimer des dossiers ; garde la main sur les dossiers liés",
-				"title": "Gérer les dossiers médias"
-			},
-			"permissions_manage": {
-				"description": "Modifier les règles d'accès des dossiers et rendre les fichiers publics ou privés",
-				"title": "Gérer l'accès aux médias"
-			},
-			"upload": {
-				"description": "Importer des fichiers dans les dossiers où cette permission peut écrire",
-				"title": "Importer des médias"
-			}
+			"title": "Vue d'ensemble"
 		},
 		"picker": {
 			"add_files": "Ajouter le fichier | Ajouter {count} fichiers",
 			"add_images": "Ajouter l'image | Ajouter {count} images",
-			"count": "{count} sélectionné | {count} sélectionnés",
-			"count_after": "{picked} nouveau(x) · {total} sur {max} après ajout",
-			"description": "Choisissez des fichiers de la bibliothèque, ou importez-en de nouveaux.",
+			"count": "{count} sélectionné | {count} sélectionné | {count} sélectionnés",
+			"count_after": "{picked} à ajouter · {total} sur {max} au total",
 			"full": "Le champ est plein : retirez un fichier pour en choisir un autre",
 			"full_hint": "Désélectionnez un fichier pour en choisir un autre",
 			"not_accepted": "Ce champ accepte {types}",
-			"title": "Choisir dans la bibliothèque"
+			"title": "Choisir dans la bibliothèque",
+			"choose_images": "Choisir l'image",
+			"choose_files": "Choisir le fichier",
+			"add_none": "Ajouter",
+			"discard_title": "Abandonner le fichier sélectionné ? | Abandonner les {count} fichiers sélectionnés ?",
+			"discard_description": "Il ne sera pas ajouté au champ. | Ils ne seront pas ajoutés au champ.",
+			"discard_confirm": "Abandonner",
+			"discard_cancel": "Continuer la sélection",
+			"description_upload": "Choisissez des fichiers dans la bibliothèque, ou importez-en de nouveaux avec Importer ou en les déposant ici.",
+			"description_pick": "Choisissez des fichiers dans la bibliothèque.",
+			"upload": "Importer",
+			"accepts": "Accepte : {types}",
+			"already_added": "Déjà dans ce champ"
 		},
 		"presets": {
-			"box": "Cadre",
+			"box": "Taille max.",
 			"cache": {
 				"minutes": "1 min | {count} min",
-				"private": "Fichiers privés : liens signés",
-				"private_detail": "Jamais mis en cache",
-				"public": "Fichiers publics : CDN",
-				"public_detail": "Les liens ne changent jamais",
-				"sweep": "Nettoyage nocturne à {time}",
-				"sweep_detail": "Dernier passage le {date} : anciennes tailles supprimées",
-				"sweep_pending": "Pas encore lancé",
-				"sweep_pending_detail": "Les anciennes tailles restent en cache jusqu'au prochain nettoyage ; les nouvelles demandes utilisent les réglages actuels",
-				"title": "Cache"
+				"title": "Cache",
+				"public_label": "Fichiers publics",
+				"public_hint": "Servis par un lien signé valable pendant cette durée. Toute personne qui a le lien stable du fichier peut l'ouvrir.",
+				"private_label": "Fichiers privés",
+				"private_hint": "Servis par un lien signé valable pendant cette durée, seulement aux membres connectés qui peuvent ouvrir le dossier.",
+				"sweep_label": "Nettoyage nocturne des anciennes tailles",
+				"sweep_removed": "Aucune ancienne taille supprimée | 1 ancienne taille supprimée | {count} anciennes tailles supprimées",
+				"sweep_never": "Pas lancé depuis le démarrage du serveur",
+				"sweep_next": "Prochain passage {next}",
+				"sweep_last": "Dernier passage {last} · prochain {next}",
+				"hours": "1 h | {count} h",
+				"edits_label": "Modifications d'un fichier",
+				"edits_value": "Visibles tout de suite",
+				"edits_hint": "Chaque lien est revérifié à chaque requête : une retouche, un remplacement ou un passage en privé se voit dès la suivante."
 			},
 			"config": {
-				"hint": "Modifier un format lui donne une nouvelle clé de cache : les URL existantes servent la nouvelle taille sans purge.",
+				"hint": "Modifiez une taille ici : ses liens existants servent la nouvelle version, sans cache à vider.",
 				"title": "Configuration"
 			},
-			"description": "Des tailles d'image nommées. Chacune est générée à la première demande, mise en cache dans le stockage et servie depuis une URL stable. Utilisez-les dans les gabarits plutôt que l'original en pleine taille.",
-			"fit": "Ajust.",
-			"format": "Format",
-			"key": "clé {key}",
-			"load_failed": "Impossible de charger les formats",
+			"description": "Des tailles d'image nommées. Chacune est créée la première fois qu'on en a besoin, puis conservée et servie depuis un lien stable. Utilisez-les dans les gabarits plutôt que l'original en pleine taille.",
+			"fit": "Ajustement",
+			"key": "Version {key}",
+			"load_failed": "Impossible de charger les tailles d'image",
 			"original": "original",
 			"quality": "Qualité",
-			"rendered": "{count} générés",
-			"required": "Requis",
+			"rendered": "Aucune générée | 1 générée | {count} générées",
+			"required": "Obligatoire",
 			"same": "Identique",
-			"title": "Formats de diffusion",
+			"title": "Tailles d'image",
 			"usage": {
 				"custom": "Une taille de votre projet.",
-				"preview": "Aperçu plein écran et pages de la boutique.",
+				"preview": "Aperçu plein écran et pages publiques.",
 				"thumb": "Grille de la bibliothèque, sélecteurs et aperçus de champ."
-			}
+			},
+			"file_type": "Type de fichier",
+			"technical": "Détails techniques",
+			"defaults_title": "Ce sont les tailles par défaut",
+			"defaults_hint": "Rien n'est encore configuré. Pour les modifier, copiez le bloc de configuration ci-dessous dans antelope.config.ts et adaptez-le.",
+			"example_alt": "{name} rendu à la taille {size}",
+			"example_link": "Exemple avec {name}",
+			"pattern_hint": "Modèle d'URL : remplacez l'identifiant et le nom du fichier",
+			"key_hint": "Elle change dès que les réglages de cette taille changent : une ancienne copie n'est jamais servie.",
+			"fits": {
+				"cover": "Recadrée pour remplir",
+				"cover_hint": "L'image remplit toute la taille ; ce qui dépasse est recadré.",
+				"contain": "Contenue, avec bandes",
+				"contain_hint": "L'image entière tient dans la taille, avec des bandes vides autour.",
+				"inside": "Contenue, sans recadrage",
+				"inside_hint": "L'image entière tient dans la taille, sans recadrage ni agrandissement."
+			},
+			"never_upscaled": "Jamais agrandie"
 		},
 		"queue": {
-			"added": "ajouté à {name}",
-			"cancel": "Annuler cet import",
+			"added": "ajouté dans {name}",
 			"cancel_remaining": "Annuler le reste",
-			"checking_detail": "lecture des dimensions",
 			"clear_finished": "Effacer les terminés",
 			"current": "Imports en cours",
-			"dismiss": "Ignorer",
+			"dismiss": "Masquer",
 			"empty_description": "Les fichiers que vous importez apparaissent ici avec leur progression. Ils continuent pendant que vous travaillez ailleurs.",
 			"empty_title": "Aucun import en cours",
-			"failed_description": "Les autres fichiers sont bien passés. | {count} autre fichier est bien passé. | Les {count} autres fichiers sont bien passés.",
+			"failed_description": "Les autres fichiers ont bien été importés. | {count} autre fichier a bien été importé. | Les {count} autres fichiers ont bien été importés.",
 			"failed_title": "{count} fichier n'a pas été importé | {count} fichiers n'ont pas été importés",
-			"minutes_left": "environ {count} min restantes",
-			"of_files": "sur {count} fichiers",
+			"minutes_left": "environ {count} min restante | environ {count} min restantes",
+			"of_files": "sur {count} fichier | sur {count} fichiers",
 			"pause": "Pause",
 			"paused": "en pause",
-			"reasons": {
-				"connection": "Connexion perdue · les autres fichiers ont continué",
-				"server": "Le serveur a refusé le fichier",
-				"storage": "Le stockage a refusé le fichier",
-				"too_large": "Au-delà de la limite de {size} · compressez-le ou demandez une limite plus haute"
-			},
 			"resume": "Reprendre",
 			"retry_count": "Relancer {count} fichier | Relancer {count} fichiers",
-			"seconds_left": "environ {count} s restantes",
+			"seconds_left": "environ {count} s restante | environ {count} s restantes",
 			"states": {
-				"done": "Importés",
 				"failed": "Échecs",
 				"uploading": "En cours",
 				"waiting": "En attente"
@@ -805,17 +792,48 @@
 			"status": {
 				"cancelled": "Annulé",
 				"checking": "Vérification",
-				"done": "Prêt",
 				"failed": "Échec",
 				"rejected": "Refusé",
-				"uploading": "Envoi",
+				"uploading": "Import en cours",
 				"waiting": "En attente"
 			},
-			"uploading_detail": "vers {name} · direct au stockage",
-			"waiting_detail": "prochain pour {name}"
+			"waiting_detail": "prochain à importer dans {name}",
+			"reason": {
+				"connection": "Connexion perdue · réessayez, les autres fichiers ont continué",
+				"storage": "Le stockage a refusé le fichier · réessayez",
+				"server": "Enregistrement impossible (erreur du serveur) · réessayez plus tard",
+				"too_large": "Au-delà de la limite de {size} · compressez-le ou demandez une limite plus haute",
+				"empty": "Fichier vide · il n'y a rien à importer",
+				"type_not_allowed": "Ce type de fichier n'est pas accepté dans la bibliothèque",
+				"field_type": "Ce dossier alimente un champ qui n'accepte que {types}",
+				"quota": "Espace de stockage plein · il reste {size}",
+				"invalid_image": "Image illisible · le fichier est peut-être abîmé ou mal nommé",
+				"folder_gone": "{name} n'existe plus · importez-le dans un autre dossier",
+				"no_access": "Vous ne pouvez plus importer dans {name}",
+				"invalid": "Le fichier a été refusé : {message}",
+				"duplicate": "Non ajouté · {name} contient déjà un fichier de ce nom",
+				"interrupted": "Interrompu · la page a été fermée pendant l'import",
+				"storage_limit": "Fichier trop volumineux pour le stockage · demandez à un administrateur de relever la limite",
+				"storage_blocked": "Le stockage refuse l'adresse de ce site ({address}). Demandez à un administrateur de l'autoriser dans les réglages CORS de l'API.",
+				"storage_unreachable": "L'adresse du stockage ({address}) est injoignable depuis ce navigateur. Demandez à un administrateur de vérifier l'adresse publique de l'API."
+			},
+			"cancelled_detail": "Annulé · non ajouté dans {name}",
+			"checking_file": "vérification du fichier",
+			"uploading_to": "vers {name}",
+			"status_added": "Ajouté",
+			"states_added": "Ajoutés",
+			"remove_failed": "Retirer les échecs",
+			"remove_named": "Retirer {name} de la liste",
+			"cancel_named": "Annuler {name}",
+			"retry_named": "Réessayer {name}",
+			"open_named": "Ouvrir {name}",
+			"progress_of": "Progression de {name}",
+			"overall_progress": "Progression des imports",
+			"live_summary": "Ajoutés : {done} sur {total}, en échec : {failed}",
+			"drop_here": "Déposez pour choisir leur dossier et les importer",
+			"empty_description_drop": "Déposez des fichiers sur cette page ou choisissez-les. L'import continue pendant que vous travaillez ailleurs."
 		},
 		"recent": {
-			"empty": "Aucun fichier pour l'instant",
 			"title": "Ajouts récents",
 			"view_all": "Tout voir"
 		},
@@ -833,7 +851,7 @@
 			"matched_alt": "Texte alt.",
 			"modified_30d": "30 derniers jours",
 			"modified_7d": "7 derniers jours",
-			"modified_any": "Modifié à tout moment",
+			"modified_any": "Toutes les dates",
 			"modified_year": "Cette année",
 			"placeholder": "Rechercher dans la bibliothèque",
 			"results_for": "Résultats pour « {query} »",
@@ -841,7 +859,8 @@
 			"visibility_any": "Toute visibilité",
 			"visibility_private": "Privé",
 			"visibility_public": "Public",
-			"where": "Nom, texte alternatif et dossier"
+			"where": "Nom, texte alternatif et dossier",
+			"scope_missing": "un dossier introuvable"
 		},
 		"shortcuts": {
 			"clear": "Effacer la sélection",
@@ -869,12 +888,17 @@
 			"upload": "Importer des fichiers",
 			"view_columns": "Colonnes",
 			"view_grid": "Grille",
-			"view_list": "Liste"
+			"view_list": "Liste",
+			"extend": "Étendre la sélection",
+			"parent": "Ouvrir le dossier parent",
+			"toggle": "Cocher ou décocher un fichier"
 		},
 		"smart_views": {
 			"missing-alt": "Texte alternatif manquant",
 			"recent": "Récents",
-			"starred": "Favoris"
+			"starred": "Favoris",
+			"largest": "Les plus lourds",
+			"public": "Publics"
 		},
 		"sort": {
 			"asc": "Croissant",
@@ -886,12 +910,15 @@
 		},
 		"status": {
 			"failed": "{count} import a échoué | {count} imports ont échoué",
-			"items": "{count} élément | {count} éléments",
-			"selected": "{count} sélectionné | {count} sélectionnés",
+			"items": "{count} élément | {count} élément | {count} éléments",
+			"selected": "{count} sélectionné | {count} sélectionné | {count} sélectionnés",
 			"tile_size": "Taille des vignettes",
-			"uploading": "Import de {done} sur {total}"
+			"uploads_finished": "Imports terminés : {done} sur {total} ajoutés",
+			"uploading": "Import de {done} sur {total}",
+			"loaded_of": "{loaded} sur {count} fichier affiché | {loaded} sur {count} fichiers affichés",
+			"results": "Aucun résultat pour « {query} » | {count} résultat pour « {query} » | {count} résultats pour « {query} »"
 		},
-		"title": "Médias",
+		"title": "Médiathèque",
 		"toasts": {
 			"alt_failed": "Le texte alternatif n'a pas été enregistré",
 			"delete_failed": "Suppression impossible",
@@ -905,14 +932,30 @@
 			"link_copied": "Lien copié",
 			"move_failed": "Déplacement impossible",
 			"moved": "{count} fichier déplacé | {count} fichiers déplacés",
-			"partial": "{done} faits, {refused} refusés",
+			"partial": "Terminé pour {done}, refusé pour {refused}",
 			"rename_failed": "Renommage impossible",
 			"star_failed": "Impossible de mettre à jour le favori",
-			"undo_move": "{count} fichier déplacé | {count} fichiers déplacés",
 			"uploading": "Import de {count} fichier dans {name} | Import de {count} fichiers dans {name}",
 			"visibility_done": "Visibilité mise à jour pour {count} fichier | Visibilité mise à jour pour {count} fichiers",
 			"visibility_failed": "Impossible de changer la visibilité",
-			"zip_failed": "Impossible de préparer le zip"
+			"zip_failed": "Impossible de préparer le zip",
+			"upload_added": "{count} fichier ajouté dans {name} | {count} fichiers ajoutés dans {name}",
+			"upload_failed": "{count} fichier n'a pas été importé dans {name} | {count} fichiers n'ont pas été importés dans {name}",
+			"upload_failed_one": "{name} n'a pas été importé",
+			"upload_failed_mixed": "Raisons variées",
+			"folder_missing": "Ce dossier n'existe plus, ou vous n'y avez pas accès",
+			"folder_missing_description": "Il a été supprimé ou déplacé, ou son accès a changé.",
+			"upload_not_accepted": "{count} fichier n'est pas d'un type accepté par ce champ | {count} fichiers ne sont pas d'un type accepté par ce champ",
+			"already_deleted": "Ce fichier avait déjà été supprimé | {count} fichiers avaient déjà été supprimés",
+			"folder_visibility": {
+				"private": "{name} est maintenant privé",
+				"public": "{name} est maintenant public"
+			},
+			"made_private_instead": "Rien n'a été supprimé : {count} fichier rendu privé | Rien n'a été supprimé : {count} fichiers rendus privés",
+			"move_undone": "Déplacement annulé",
+			"moved_to": "{count} fichier déplacé vers {name} | {count} fichiers déplacés vers {name}",
+			"undo_failed": "Impossible d'annuler le déplacement",
+			"unstarred": "{name} retiré des favoris"
 		},
 		"type_single": {
 			"archive": "Archive",
@@ -921,7 +964,7 @@
 			"image": "Image",
 			"other": "Fichier",
 			"pdf": "PDF",
-			"spreadsheet": "Tableur",
+			"spreadsheet": "Feuille de calcul",
 			"vector": "Vectoriel",
 			"video": "Vidéo"
 		},
@@ -933,16 +976,17 @@
 			"image": "Images",
 			"other": "Autres",
 			"pdf": "PDF",
-			"spreadsheet": "Tableurs",
+			"spreadsheet": "Feuilles de calcul",
 			"vector": "Vectoriels",
-			"video": "Vidéos"
+			"video": "Vidéos",
+			"accepted": "Acceptés : {types}"
 		},
 		"units": {
-			"b": "{value} B",
-			"kb": "{value} KB",
-			"mb": "{value} MB",
-			"gb": "{value} GB",
-			"tb": "{value} TB"
+			"b": "{value} o",
+			"kb": "{value} Ko",
+			"mb": "{value} Mo",
+			"gb": "{value} Go",
+			"tb": "{value} To"
 		},
 		"upload_strip": {
 			"choose": "Choisir des fichiers",
@@ -951,10 +995,15 @@
 			"drop_now": "Relâchez pour importer dans {name}",
 			"pick_folder": "Choisir un dossier",
 			"see_progress": "Voir la progression",
-			"title": "Déposez des fichiers n'importe où sur la page"
+			"title": "Déposez des fichiers n'importe où sur la page",
+			"folder_gone": "{name} n'existe plus : choisissez un autre dossier.",
+			"in_progress": "{count} fichier en cours d'import · ajoutés : {done} | {count} fichiers en cours d'import · ajoutés : {done}",
+			"see_details": "Voir le détail",
+			"title_tap": "Ajoutez des fichiers à la bibliothèque",
+			"description_tap": "Ils vont dans le dossier indiqué ici : changez-le d'abord si besoin."
 		},
 		"uploads": {
-			"description": "Les fichiers partent directement vers le stockage, sont vérifiés, puis apparaissent dans leur dossier. Continuez à travailler : les imports se poursuivent en arrière-plan et un échec n'arrête jamais les autres.",
+			"description": "Les fichiers importés sont vérifiés, puis apparaissent dans leur dossier. Continuez à travailler : les imports se poursuivent en arrière-plan et un échec n'arrête jamais les autres.",
 			"history": {
 				"complete": "Tout importé",
 				"empty": "Aucun import pour l'instant",
@@ -968,11 +1017,15 @@
 				"size": "Taille",
 				"title": "Lots récents",
 				"by_line": "par {name}",
-				"failed_detail": "1 sur {total} en échec | {failed} sur {total} en échec"
+				"failed_detail": "1 sur {total} en échec | {failed} sur {total} en échec",
+				"tab_failed": "En échec aujourd'hui",
+				"attention": "À traiter",
+				"open_folder": "Ouvrir le dossier",
+				"failed_names": "1 sur {total} en échec : {names} | {failed} sur {total} en échec : {names}"
 			},
 			"title": "Imports",
 			"upload": "Importer des fichiers",
-			"no_writable_folder": "Vous ne pouvez importer dans aucun dossier : demandez l'accès en import à un administrateur."
+			"no_writable_folder": "Vous ne pouvez importer dans aucun dossier : demandez l'accès en import à un propriétaire."
 		},
 		"views": {
 			"columns": "Colonnes",
@@ -989,16 +1042,68 @@
 		"visibility_choice": {
 			"inherit": {
 				"description": "Suit le dossier : change quand le dossier change",
-				"label": "Comme le dossier"
+				"label": "Comme le dossier",
+				"label_with": "Comme le dossier ({visibility})"
 			},
 			"private": {
 				"description": "Membres connectés avec accès au dossier · liens valables 5 min",
 				"label": "Privé"
 			},
 			"public": {
-				"description": "Quiconque a le lien · mis en cache par le CDN jusqu'à 1 h",
+				"description": "Toute personne qui a le lien peut l'ouvrir. Les modifications sont visibles tout de suite.",
 				"label": "Public"
 			}
+		},
+		"readout": {
+			"failed_today": "Des imports ont échoué aujourd'hui",
+			"missing_alt": "Des images n'ont pas de texte alternatif",
+			"healthy": "Tout est en ordre"
+		},
+		"activity_page": {
+			"title": "Activité",
+			"description": "Tout ce qui s'est passé récemment dans la bibliothèque : imports, retouches, déplacements et suppressions.",
+			"filters": {
+				"all": "Tout",
+				"uploads": "Imports",
+				"edits": "Modifications",
+				"moves": "Déplacements",
+				"deletions": "Suppressions",
+				"visibility": "Visibilité",
+				"folders": "Dossiers"
+			}
+		},
+		"filters": {
+			"clear": "Effacer les filtres",
+			"active": "Filtres · {count}",
+			"label": "Filtres",
+			"modified": "Modifié",
+			"orientation": "Orientation",
+			"orientation_any": "Toute orientation",
+			"orientation_landscape": "Paysage",
+			"orientation_portrait": "Portrait",
+			"orientation_square": "Carré",
+			"visibility": "Visibilité"
+		},
+		"errors": {
+			"alt_too_long": "Le texte alternatif est limité à 255 caractères",
+			"asset_not_found": "Ce fichier n'existe plus : quelqu'un l'a peut-être supprimé",
+			"bound_parent": "Un dossier lié ne peut pas contenir de sous-dossiers",
+			"folder_name_taken": "Un dossier porte déjà ce nom ici",
+			"invalid_request": "La demande n'a pas pu être comprise. Rechargez la page et réessayez.",
+			"name_forbidden": "Un nom ne peut pas contenir / \\ < > : \" {'|'} ? ou *",
+			"name_required": "Saisissez un nom",
+			"name_taken": "Un fichier porte déjà ce nom dans ce dossier",
+			"name_too_long": "Ce nom est trop long (255 caractères au maximum)"
+		},
+		"asset_link": {
+			"copy_failed": "Impossible de copier le lien : sélectionnez-le ci-dessous pour le copier vous-même",
+			"make_public": "Rendre public…",
+			"make_public_confirm": "Rendre public",
+			"make_public_description": "Toute personne qui a le lien pourra l'ouvrir sans se connecter, et des pages ou des e-mails pourront l'intégrer. Vous pourrez le rendre privé plus tard.",
+			"make_public_title": "Rendre {name} public ?",
+			"private_warning": "{name} est privé : le lien ne s'ouvre que pour les membres connectés qui ont accès à son dossier.",
+			"open_in_new_tab": "Ouvrir dans un nouvel onglet",
+			"open_failed": "Impossible d'ouvrir le fichier"
 		}
 	}
 }
