@@ -19,27 +19,66 @@ ajs project modules add @antelopejs/dms-media
 
 ## Features
 
-- **Folder tree with per-folder ACL** — every folder can carry its own ACL (`AclEntry[]`), otherwise it inherits from its parent (root falls back to the configurable `rootAcl`). Entries grant `read`/`write`/`manage` rights to either a **permission id** (anyone holding e.g. `articles.page.table.edit`) or a **role id**. Rights imply weaker ones (`manage ⇒ write ⇒ read`). Ancestors of a readable folder are returned as **traverse-only shells** (name visible, content never listed).
+- **Folder tree with per-folder ACL** — every folder can carry its own ACL (`AclEntry[]`), otherwise it inherits from its parent (root falls back to the configurable `rootAcl`, which grants nothing by default). Entries grant `read`/`write`/`manage` rights to either a **permission id** (anyone holding e.g. `articles.page.table.edit`) or a **role id**. Rights imply weaker ones (`manage ⇒ write ⇒ read`). Ancestors of a readable folder are returned as **traverse-only shells** (name visible, content never listed).
 - **Single data path** — listing, search, picker and delivery all resolve the same `readable`/`writable`/`manageable` sets per request; nothing bypasses the ACL.
-- **Direct-to-storage uploads** — `presign` (staged) → client `PUT` → `confirm` (promote + DB row + sharp dimension probe). Bytes never transit through Node.
-- **Stable delivery URLs** — `GET /media/:assetId/:filename` 302-redirects to a signed storage URL: long-lived and CDN-cacheable for public assets, short-lived `no-store` after auth + folder read check for private ones. Visibility (asset override → folder → private) is a flag flip; URLs never change.
-- **Lazy image derivatives** — named presets (config) rendered by sharp on first request, cached in storage under a config-hashed cache key, served via `GET /media/:assetId/:presetId/:filename` and the authenticated `read-url` endpoint. Changing a preset invalidates naturally (new hash); a daily cron sweeps stale keys.
-- **Server-side image editing** — `transform` (normalized crop, 90° rotations) and `revert`; the pristine original is preserved on first edit and derivatives are invalidated.
+- **Direct-to-storage uploads** — `presign` (type and quota checks, staged) → client `PUT` → `confirm` (type check again, sharp decode of declared images, promote + DB row). Bytes never transit through Node. The stored mimetype is the one sharp reads, and the dimensions follow the EXIF orientation. `abort` deletes a staged file, and an hourly cron deletes the ones never confirmed.
+- **Stable delivery URLs** — `GET /media/:assetId/:filename` 302-redirects to a signed storage URL. The redirect itself is never cached (`Cache-Control: no-cache` for public assets, with `Access-Control-Allow-Origin: *`; `no-store` for private ones, after auth + folder read check), so an edit or a visibility change shows on the next request; the signed URL it points to is reused for half its lifetime. A link with a stale file name redirects to the canonical one. Active content is the exception: SVG (inline) and HTML, XHTML and XML files (as `attachment`) are served by the API itself with `Content-Security-Policy: sandbox`, `X-Content-Type-Options: nosniff`, ETag/304 and Range support. A browser that opens a private file without a token is redirected to the file's page in the dashboard (`/modules/media/file?asset=`), which signs in and comes back; when the dashboard URL is unknown it gets a 401 HTML page. Visibility (asset override → folder → private) is a flag flip; URLs never change.
+- **Lazy image derivatives** — named presets (config) rendered by sharp on first request, cached in storage under a config-hashed cache key, served via `GET /media/:assetId/:presetId/:filename` and the authenticated `read-url` endpoint. Changing a preset invalidates naturally (new hash); a daily cron sweeps stale keys. An image sharp cannot read answers 422, a size that fails to render for another reason 503.
+- **Server-side image editing** — `transform` (normalized crop, 90° rotations) overwrites the image everywhere it is used, `transform/copy` saves the edit as a new file next to the untouched source ("Save as copy"), and `revert` restores the original. The pristine original is preserved on first edit (its size counts in the storage), successive edits are rendered from it, and derivatives are invalidated.
 - **`AssetType` form field** — registers the `asset` data type whose widget (`DmsMediaAssetPicker`) opens the Finder as a picker. Declaring a `binding` auto-provisions a linked folder under the `Content` root (idempotency key = binding id) whose ACL derives from the declared permission mapping; linked folders cannot be renamed, moved, deleted or re-ACLed through the API.
-- **Media section** — a root `Media` group in the main sidebar (not a module: its pages are grantable through Roles) with Library (Overview, All files, Uploads, plus the File and Edit image pages), Manage (Access & visibility, Linked folders, Delivery presets) and Developers (Asset field & picker). Every page is a backend block tree; custom blocks carry translated `.meta()` names for the Roles editor.
-- **Explorer** — server-paged listings, smart views (recents, starred, missing alt text), server search over names, alt text and folders, bulk move/visibility/delete, zip download, drag and drop, keyboard shortcuts and a shared upload queue that survives navigation.
-- **Activity** — every write is recorded in `media_events` (kept 90 days) and feeds the overview, the file history and the upload batches.
+- **Media module** — registered with `RegisterModule` like every DMS module, so it is listed under Modules and its pages live under `/modules/media` (they are the owner's administration of the library, see [Access model](#access-model)): Library (Overview `/modules/media/overview`, Library `/modules/media/files`, Uploads `/modules/media/uploads`, plus the hidden File `/modules/media/file?asset=`, Edit image `/modules/media/editor?asset=` and Activity `/modules/media/activity` pages) and Settings (Image sizes `/modules/media/presets`). Every page is a backend block tree. Module pages are owner-only (see [Static permissions](#static-permissions)).
+- **Set aside for now** — the folder rules editor (Access & visibility) and the Linked folders page are not shipped. The ACL engine, the default rules, the bindings and their API routes stay: a restricted folder stays restricted, and `AssetType` bindings still provision their linked folders. File visibility (inspector, File page, bulk action, confirmation before making files public) is unchanged; a folder's own visibility, which only the rules editor set, is changed through `POST /api/media/folders/:id/visibility` until it returns.
+- **Explorer** — server-paged listings with facets (type, visibility, modification date, orientation), smart views (recents, starred, missing alt text, largest, public), server search over names, alt text and folders (accents, case and word order ignored), bulk move/visibility/delete, zip download of a selection or of a folder with its subfolders, drag and drop, keyboard shortcuts and a shared upload queue that survives navigation.
+- **Unique names** — renaming a file, or creating, renaming or moving a folder, onto a name its folder already holds (case and Unicode form aside) answers 409, and an upload that collides offers "Keep both" (the next free name, `photo (2).jpg`, from `POST /api/media/upload/names`) or "Cancel". A name typed in the library that Windows or macOS cannot save is refused, a subfolder cannot be created in or moved into a linked folder (403), and validation errors answer `$dms_media.errors.*` keys the dashboard translates.
+- **Activity** — every write is recorded in `media_events` (kept 90 days) and feeds the overview, the Activity page (filterable by kind of action), the file history and the upload batches.
 
 ## Static permissions
 
+The module registers no permission: nothing about media is offered in Settings › Roles, because the Media pages are owner-only and members reach media through the project's pages (see [Access model](#access-model)).
+
 | Permission | Effect |
 |---|---|
-| `media.library.files` | Page permission of All files: see the library; grants `read` at the root via the default root ACL. It replaces `settings.media.assets` of 0.2: update roles and stored folder ACLs that named the old id |
-| `media.upload` | Grants `write` at the root via the default root ACL |
-| `media.folders.manage` | Grants `manage` at the root via the default root ACL; always kept in control of linked folders |
-| `media.permissions.manage` | Global gate for editing folder ACLs and flipping visibility |
+| `modules.media.library.files` | Page permission of Library. It replaces `settings.media.assets` of 0.2. Like every module page permission it is owner-only: it is not listed in Roles and `HasPermission` refuses it to any non-owner. It grants no folder right |
+| `media.upload`, `media.folders.manage`, `media.permissions.manage` | Retired: 0.2 offered them in Roles. They are no longer registered and stay owner-only while the module runs, so a stored role that still holds one grants nothing, and an ACL entry naming one only matches owners. Remove them from roles at your pace, and see [Upgrading from 0.2](#upgrading-from-02) for the ACLs that name them |
 
-Per-folder rights are the single authority for operations: upload requires `write` on the target folder, folder structure changes require `manage`, ACL/visibility edits additionally require `media.permissions.manage`.
+Per-folder rights are the single authority for operations: upload requires `write` on the target folder, folder structure changes require `manage`. The owner holds every right on every folder. Editing a folder ACL and changing a file or folder visibility are owner-only.
+
+## Access model
+
+The module's pages are the **owner's administration** of the library: like the pages of every DMS module they are owner-only, on purpose, and cannot be given to a role.
+
+Members use media **through the component the module exports**: an `AssetType` field placed on the **project's** pages, which are grantable in Settings › Roles. The field opens the "floating" picker and uploader on a folder defined in advance: its `binding` provisions a linked folder, and `permissionsFromPage` derives that folder's rights from the project page that holds the field. A member whose role grants the page can see the linked folder and upload into it from the picker, without ever opening a Media page:
+
+```ts
+@RegisterPage()
+export class ArticlesPage extends PageController("articles", { displayName: "Articles", category: pagesCategory }) {
+	static form = Form({
+		fields: [
+			{
+				id: "cover",
+				label: "Cover",
+				type: new AssetType({
+					mimetypes: ["image/*"],
+					binding: { id: "articles.cover", folderName: "Article covers", permissionsFromPage: ArticlesPage },
+				}),
+			},
+		],
+	});
+}
+```
+
+The page permission must be an explicit grant of the role: a page every member opens by default (`memberAccess`, `publicAccess`) grants no folder right, because folder ACL subjects match the permissions a member holds. In a linked folder, the member can upload, describe, rename, move, delete and edit every file of the folder, whoever added it; making a file public or private stays with the owner. The rest of the library stays closed to members: the default root ACL grants nothing, and only a permission or role a project adds to `rootAcl`, or to a folder's own ACL through the API, opens it to the picker.
+
+### Upgrading from 0.2
+
+Nothing migrates stored data, so check these before upgrading a project:
+
+- The Media pages move under `/modules/media/...` and their permission ids to `modules.media.*` (`settings.media.assets` becomes `modules.media.library.files`). These ids are owner-only: a role cannot be given them.
+- `media.upload`, `media.folders.manage` and `media.permissions.manage` are retired. A role that holds them keeps them but they grant nothing, and an ACL entry naming one now only matches owners: replace it with a project page permission or a role.
+- The default `rootAcl` is empty, where 0.2 opened the whole library to the holders of the page and of those permissions. Members now reach only the linked folders of their pages: add entries to `rootAcl` to keep a wider access.
+- Linked folders no longer grant `manage`; their ACL is rewritten when the folder is provisioned again.
+- Uploads are checked against `allowedMimetypes` (a default allow-list), `storageQuotaBytes` is enforced, and refusals answer the 415/413/422 bodies described under [HTTP surface](#http-surface).
+- `/media/...` redirects are no longer cacheable, SVG, HTML and XML files are served by the API under a sandbox policy, and `GET /api/media/stats/folders|largest` are removed.
 
 ## Module configuration
 
@@ -48,9 +87,10 @@ Per-folder rights are the single authority for operations: upload requires `writ
 	"dms-media": {
 		"config": {
 			"storage": "media",
-			"rootAcl": [
-				{ "subject": { "kind": "permission", "id": "media.library.files" }, "rights": ["read"] }
-			],
+			"rootAcl": [{ "subject": { "kind": "permission", "id": "articles.page" }, "rights": ["read"] }],
+			"allowedMimetypes": ["image/*", "application/pdf"],
+			"storageQuotaBytes": 10000000000,
+			"publicBaseUrl": "${@api.API_PUBLIC_BASE_URL}",
 			"presets": [
 				{ "id": "thumb", "width": 300, "height": 300, "fit": "cover", "format": "webp", "quality": 80 }
 			]
@@ -59,7 +99,39 @@ Per-folder rights are the single authority for operations: upload requires `writ
 }
 ```
 
-All keys are optional: `storageQuotaBytes` sets the storage plan the overview measures against, `storage` selects a named `interface-file-storage` backend (default storage otherwise), `rootAcl` replaces the default root ACL, `presets` replaces the default `thumb`/`preview` presets. Keep a `thumb` preset — the Finder uses it for grid thumbnails.
+All keys are optional:
+
+- `storage` selects a named `interface-file-storage` backend (default storage otherwise).
+- `rootAcl` sets the rights every folder without its own ACL inherits. The default is empty: owners hold every right anyway, and members only reach the linked folders of their pages. An entry you add here opens the whole library to its subject.
+- `allowedMimetypes` lists the file types the library accepts (`image/*` matches a prefix). The default is `image/*`, `video/*`, `audio/*`, `application/pdf`, the Office types (`application/msword`, `application/vnd.ms-excel`, `application/vnd.ms-powerpoint`, `application/vnd.openxmlformats-officedocument.*`), OpenDocument (`application/vnd.oasis.opendocument.*`), `application/rtf`, `text/plain`, `text/markdown` and `text/csv`. HTML, XHTML and PHP (`text/html`, `application/xhtml+xml`, `application/x-httpd-php`, and `.htm`, `.html`, `.xhtml`, `.xht`, `.shtml`, `.mht`, `.mhtml` files) are always refused, whatever the list says.
+- `storageQuotaBytes` sets the storage plan: the overview measures usage against it, and `presign` refuses an upload that would go past it.
+- `publicBaseUrl` is the public URL of the API, the origin serving `/media/...`: "Copy link" in the library and the links of the file page's Delivery tab start with it. Point it at the api module's public base URL (`"${@api.API_PUBLIC_BASE_URL}"`, as `file-storage-local`'s `baseUrl`). Without it, links start with the origin the API request came on (`Host` / `X-Forwarded-Host`), which is wrong behind a proxy that reaches the API on an internal address. Links do not use the dashboard's origin: it only relays non-HTML requests to `/media`, so a link opened in a tab would end on its 404.
+- `presets` replaces the default `thumb`/`preview` presets. Keep a `thumb` preset — the Finder uses it for grid thumbnails.
+
+A refused upload answers a JSON body `{ "reason": …, "message": … }` the upload queue explains in the member's language: `type_not_allowed` (415, not an accepted type), `field_type` (415, the linked folder feeds a field that accepts fewer types, listed in `accepted`), `quota` (413, the storage plan is full, with `remaining` and `quota`) or `invalid_image` (422 on `confirm`, a declared image that does not decode).
+
+Two crons run with the module: `dms-media-purge-staging`, every hour, deletes the uploads staged more than 24 hours ago and never confirmed, and a daily sweep removes stale derivatives.
+
+## Deployment: allow the dashboard's origin
+
+Files do not go through the dashboard. The browser asks the API to `presign` the upload, then `PUT`s the file straight to the URL the storage returns: with `file-storage-local`, its `baseUrl`, the API's public URL (`${@api.API_PUBLIC_BASE_URL}/file-storage/...`). That is another origin than the dashboard's, so the api module must list every origin the dashboard is served on in `cors.allowedOrigins`:
+
+```json
+{
+	"api": {
+		"config": {
+			"cors": {
+				"allowedOrigins": ["https://dms.example.com", "http://dms.localhost:3014"]
+			}
+		}
+	},
+	"file-storage-local": {
+		"config": { "baseUrl": "${@api.API_PUBLIC_BASE_URL}" }
+	}
+}
+```
+
+Without it, the browser blocks the `PUT` (its console shows a CORS error on `/file-storage/...`) while listing and presigning still work. The upload queue, the AssetType field and the toasts then say the storage refused this site's address, naming the origin to add; retrying cannot help until it is allowed. When the storage address itself cannot be reached from the browser (an internal host name as `baseUrl`, for instance), they say so instead: point `baseUrl`, and the module's `publicBaseUrl`, at the public URL of the API.
 
 ## Declaring an AssetType field
 
@@ -97,15 +169,34 @@ A `binding` is registered through `RegisterAssetBinding` (also exported by the i
 
 ## HTTP surface
 
-- `GET /api/media/tree`, `GET /api/media/folders/:id/assets|acl|access|impact`, `GET /api/media/views/:view`, `GET /api/media/search`, `POST /api/media/favorites`, `POST /api/media/folders/starter`
-- Overview: `GET /api/media/stats/kpis|storage|largest|attention|folders|recent`, `GET /api/media/activity`, `GET /api/media/assets/:id/history|details`
-- Bulk: `POST /api/media/assets/bulk/move|visibility|delete`, `POST /api/media/assets/zip`
-- Manage: `GET /api/media/access/subjects`, `GET|POST /api/media/upload/batches`, `GET /api/media/linked`, `GET /api/media/linked/:bindingId`, `GET /api/media/presets`, `GET /api/media/presets/cache`
-- `POST /api/media/folders`, `POST /api/media/folders/:id/rename|move|visibility`, `PUT /api/media/folders/:id/acl`, `DELETE /api/media/folders/:id`
-- `GET /api/media/assets`, `GET /api/media/assets/search`, `GET /api/media/assets/:id`, `GET /api/media/assets/:id/read-url?preset=`
-- `POST /api/media/assets/:id/update|move|visibility|transform|revert`, `DELETE /api/media/assets/:id`
-- `POST /api/media/upload/presign`, `POST /api/media/upload/confirm`, `POST /api/media/previews`
+- Library: `GET /api/media/tree` (folders, plus `allowedMimetypes`), `GET /api/media/folders/:id/assets|impact`, `GET /api/media/views/:view` (`recent`, `starred`, `missing-alt`, `largest`, `public`), `GET /api/media/search` (an empty `q` finds nothing), `POST /api/media/favorites`, `POST /api/media/folders/starter`. Folder listings and views take the `type`, `visibility`, `modified` and `orientation` facets; views also take a `folderId` to stay inside one folder
+- Overview (owners only, 403 otherwise): `GET /api/media/stats/kpis|storage|attention|recent`, `GET /api/media/activity?type=`
+- File: `GET /api/media/assets/:id/details|history|information|delivery|delivery/notice|tab-counts`, `GET /api/media/links/origin` (the origin copied links start with: `publicBaseUrl`, otherwise the request's)
+- Bulk: `POST /api/media/assets/bulk/move|visibility|delete`, `POST /api/media/assets/zip`, `POST /api/media/folders/:id/zip` (the folder and its subfolders, `read` right)
+- Settings: `GET|POST /api/media/upload/batches`, `GET /api/media/presets`, `GET /api/media/presets/config`, `GET /api/media/presets/cache`
+- Without a page in this release: `GET /api/media/folders/:id/acl|access|access/stats`, `PUT /api/media/folders/:id/acl`, `GET /api/media/access/subjects`, `GET /api/media/linked`, `GET /api/media/linked/:bindingId`
+- `POST /api/media/folders`, `POST /api/media/folders/:id/rename|move|visibility`, `DELETE /api/media/folders/:id`
+- `GET /api/media/assets`, `GET /api/media/assets/search`, `GET /api/media/assets/:id`, `GET /api/media/assets/:id/read-url?preset=`, `POST /api/media/previews`
+- `POST /api/media/assets/:id/update|move|visibility|transform|transform/copy|revert`, `DELETE /api/media/assets/:id`
+- Upload: `POST /api/media/upload/presign`, `POST /api/media/upload/confirm`, `POST /api/media/upload/abort` (deletes the staged file), `POST /api/media/upload/names` (free names for "Keep both")
 - Public delivery: `GET /media/:assetId/:filename`, `GET /media/:assetId/:presetId/:filename`
+
+`GET /api/media/stats/folders` and `GET /api/media/stats/largest` are removed: the overview no longer shows folder cards or the largest files, which the `largest` view lists.
+
+Status codes worth handling:
+
+| Route | Status | Body |
+|---|---|---|
+| `upload/presign` | 415 | `{ reason: "type_not_allowed", message }`: not in `allowedMimetypes`, or HTML/XHTML |
+| `upload/presign` | 415 | `{ reason: "field_type", message, accepted }`: the linked folder feeds a field that accepts fewer types |
+| `upload/presign` | 413 | `{ reason: "quota", message, remaining, quota }`: the upload would go past `storageQuotaBytes` |
+| `upload/confirm` | 422 | `{ reason: "invalid_image", message }`: a declared image that does not decode; the staged file is deleted |
+| `assets/:id/update`, `folders`, `folders/:id/rename|move` | 409 | `$dms_media.errors.name_taken` or `folder_name_taken`: the name is taken in that folder, case aside |
+| `folders`, `folders/:id/move` | 403 | `$dms_media.errors.bound_parent`: the parent is a linked folder |
+| Folder, file and bulk writes | 400 | A `$dms_media.errors.*` key |
+| `/media/:assetId/:filename` | 302 | To the signed storage URL (`no-cache` public, `no-store` private), to the canonical file name, or, for a browser without a token on a private file, to the dashboard's File page |
+| `/media/:assetId/:filename` | 401 | Private file without a token: bare for scripts, an HTML page for a browser when the dashboard URL is unknown |
+| `/media/:assetId/:presetId/:filename` | 422 / 503 | The image cannot be read / the size cannot be rendered right now |
 
 ## Development
 
@@ -117,11 +208,13 @@ pnpm build          # builds the interface, then the module
 pnpm dev            # backend, via playground (ajs project run -w -p playground)
 pnpm frontend:dev   # Vue 3 Inertia frontend, from playground (ajs dms dev)
 pnpm test           # build + full mocha suite (unit + HTTP integration)
-pnpm test:unit      # resolver / bindings / derivatives unit tests only
+pnpm test:unit      # build + unit tests only (no HTTP)
 pnpm test:reload    # hot reload of a consumer and of the module, in a real project
 ```
 
 The playground is a project of its own, outside the workspace: install it with `pnpm --dir playground install --ignore-workspace` before `pnpm dev`. It links `@antelopejs/interface-dms-media` from `packages/interface-dms-media`, and `pnpm dev` builds the interface, the module and the playground in that order before starting the backend.
+
+The playground's Media demo page (`/media-demo`) holds every flavour of the `AssetType` picker: a single cover image with a linked folder, a gallery with a maximum, a PDF-only spec sheet, documents restricted to PDF, Word and text files in their own linked folder, and a free attachment.
 
 The playground connects to MongoDB at `mongodb://localhost:27017` by default. Set `MONGO_URL` to point it at another instance, e.g. `MONGO_URL=mongodb://127.0.0.1:27019 pnpm dev`.
 
@@ -131,7 +224,10 @@ The playground uses the `@antelopejs/dms-frontend` CLI. Run `pnpm --dir frontend
 
 ## Known limitations (v1)
 
-- Abandoned staged uploads are expired by the storage backend (e.g. S3 lifecycle rule on the `__staging__/` prefix), not by this module — `interface-file-storage` exposes no listing.
-- Multi-user ACL scenarios are covered by resolver unit tests; HTTP integration tests run as the owner because the DMS invite flow does not expose invite tokens over HTTP (see the DMS module's `TESTING.md` for the matching upstream limitation).
+- Abandoned staged uploads are purged from the `media_uploads` table the module fills at `presign` (`interface-file-storage` exposes no listing). A file presigned before that table existed has no row: the storage backend expires it (e.g. S3 lifecycle rule on the `__staging__/` prefix).
+- The DMS invite flow does not expose invite tokens over HTTP (see the DMS module's `TESTING.md`), so the multi-user HTTP integration tests seed their invites straight into the database (`src/test/helpers/members.ts`).
+- Folder rules and linked folders have no dashboard page yet: their routes and the ACL engine stay, the pages come back later.
 - Folder visibility applies to the folder's direct assets (no recursive visibility inheritance); assets inherit or override individually.
 - Cover cropping is centred (no focal point), and reference counting ("used in N records") is not supported yet.
+- The `AssetType` field has no crop button: editing an image changes it everywhere it is used, and a crop per usage comes later.
+- Replacing a file, a trash for deleted files and the server-side validation of `AssetType` values are not there yet; each comes in its own release.
