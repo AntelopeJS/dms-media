@@ -1,5 +1,4 @@
 import type { MediaAsset } from '../types/media'
-import MakePublicDialog from '../components/dialogs/MakePublicDialog.vue'
 
 type LinkedAsset = Pick<MediaAsset, 'name' | 'url' | 'effectiveVisibility'>
 
@@ -49,16 +48,24 @@ export function useAssetLink() {
 	const { $authFetch } = useAuthFetch()
 	const { t } = useI18n()
 	const toast = useToast()
-	const overlay = useOverlay()
-	const makePublicDialog = overlay.create(MakePublicDialog)
+	const { confirm } = useConfirm()
 
 	async function linkOf(asset: Pick<MediaAsset, 'url'>): Promise<string> {
 		return `${await resolveLinksOrigin(() => $authFetch<LinksOrigin>(LINKS_ORIGIN_API))}${asset.url}`
 	}
 
 	/** Asks before a file becomes reachable by anyone holding its link. */
-	async function confirmMakePublic(asset: Pick<MediaAsset, 'name'>): Promise<boolean> {
-		return Boolean(await makePublicDialog.open({ name: asset.name }))
+	function confirmMakePublic(asset: Pick<MediaAsset, 'name'>): Promise<boolean> {
+		return confirm({
+			title: t('dms_media.asset_link.make_public_title', { name: asset.name }),
+			description: t('dms_media.asset_link.make_public_description'),
+			color: 'warning',
+			icon: 'i-ph-globe',
+			confirmIcon: 'i-ph-globe',
+			confirmLabel: t('dms_media.asset_link.make_public_confirm'),
+			cancelLabel: t('dms_media.actions.cancel'),
+			initialFocus: 'confirm',
+		})
 	}
 
 	function warnPrivate(asset: LinkedAsset, options: CopyAssetLinkOptions): void {

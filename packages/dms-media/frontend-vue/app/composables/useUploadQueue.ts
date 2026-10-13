@@ -1,4 +1,3 @@
-import DuplicateNamesDialog from '../components/dialogs/DuplicateNamesDialog.vue'
 import type { MediaAsset } from '../types/media'
 import type { UploadBatchReport, UploadFailureReport } from './useUploadApi'
 
@@ -108,6 +107,7 @@ const HTTP_PAYLOAD_TOO_LARGE = 413
 /** Failures the same file would meet again: no retry is offered. */
 const FINAL_FAILURES = new Set<UploadFailure>(['storage_limit', 'storage_blocked', 'storage_unreachable'])
 const MAX_REPORTED_FAILURES = 50
+const VISIBLE_DUPLICATE_NAMES = 6
 const MAX_REASON_LENGTH = 500
 /** Headers a browser sets itself and refuses from a script. */
 const FORBIDDEN_REQUEST_HEADERS = new Set(['content-length', 'host', 'connection', 'accept-encoding'])
@@ -133,6 +133,7 @@ const heldBatches = reactive(new Set<string>())
 let sequence = 0
 let uploadApi: UploadApi | undefined
 let isUnloadGuarded = false
+let isKeepBothReady = false
 
 function nextId(): string {
 	sequence += 1
@@ -406,11 +407,30 @@ function createItem(file: File, destination: UploadDestination, batchId: string)
 	}
 }
 
-let duplicateDialog: ReturnType<ReturnType<typeof useOverlay>['create']> | undefined
+type KeepBothPrompt = (folderName: string, names: string[]) => Promise<boolean>
 
-function askKeepBoth(folderName: string, names: string[]): Promise<boolean> {
-	duplicateDialog ??= useOverlay().create(DuplicateNamesDialog)
-	return duplicateDialog.open({ folderName, names }).then((choice: unknown) => choice === true)
+let askKeepBoth: KeepBothPrompt = () => Promise.resolve(false)
+
+/** "Keep both" asked with the DMS confirm dialog, listing the names already taken. */
+function createKeepBothPrompt(): KeepBothPrompt {
+	const { confirm } = useConfirm()
+	const { t } = useI18n()
+	return (folderName, names) => {
+		const hidden = names.length - VISIBLE_DUPLICATE_NAMES
+		return confirm({
+			title: t('dms_media.dialogs.duplicates.title', { count: names.length }, names.length),
+			description: t('dms_media.dialogs.duplicates.description', { name: folderName }),
+			color: 'warning',
+			icon: 'i-ph-copy',
+			confirmIcon: 'i-ph-copy',
+			confirmLabel: t('dms_media.dialogs.duplicates.keep_both'),
+			cancelLabel: t('dms_media.actions.cancel'),
+			impact: [
+				...names.slice(0, VISIBLE_DUPLICATE_NAMES).map((name) => ({ icon: 'i-ph-file', label: name })),
+				...(hidden > 0 ? [{ icon: 'i-ph-dots-three', label: t('dms_media.dialogs.duplicates.more', { count: hidden }, hidden) }] : []),
+			],
+		})
+	}
 }
 
 function rejectBatch(waiting: UploadItem[], error: unknown): void {
@@ -529,6 +549,10 @@ const activeCount = computed(() => items.value.filter((item) => !isFinal(item) &
  */
 export function useUploadQueue() {
 	uploadApi ??= useUploadApi()
+	if (!isKeepBothReady) {
+		askKeepBoth = createKeepBothPrompt()
+		isKeepBothReady = true
+	}
 
 	return {
 		items: readonly(items),
