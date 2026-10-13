@@ -93,6 +93,21 @@ describe("[integration] media project field — a member uses media from a proje
     ).to.deep.equal([linkedFolderId]);
   });
 
+  it("answers the folder of a binding without the tree, and nothing for an unknown one", async () => {
+    const bound = await editor.client.get(
+      `/api/media/bindings/${BINDING_ID}/folder`,
+    );
+    expect(bound.status).to.equal(HTTP_OK);
+    expect(bound.data.folder.id).to.equal(linkedFolderId);
+    expect(bound.data.folder.rights.write).to.equal(true);
+    expect(bound.data.maxUploadBytes).to.be.a("number");
+    const unknown = await editor.client.get(
+      "/api/media/bindings/editorial.unknown/folder",
+    );
+    expect(unknown.status).to.equal(HTTP_OK);
+    expect(unknown.data.folder).to.equal(null);
+  });
+
   it("uploads into the linked folder and lists what it holds", async () => {
     const uploaded = await uploadTextAsset(
       editor.client,

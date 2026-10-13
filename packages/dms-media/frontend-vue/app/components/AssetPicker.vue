@@ -41,7 +41,7 @@ const pickerModal = overlay.create(PickerModal)
 const lightbox = overlay.create(MediaLightbox)
 const field = useFormField(props)
 const attrs = useAttrs()
-const { tree, reload: reloadTree } = useSharedTree()
+const { boundFolder, folders, foldersById, canWriteRoot, ensureLoaded } = useFieldFolders(props.bindingId)
 const root = useTemplateRef<HTMLElement>('root')
 const fileInput = useTemplateRef<HTMLInputElement>('fileInput')
 const dragDepth = ref(0)
@@ -54,15 +54,6 @@ const ids = computed<string[]>(() => {
 		: props.modelValue
 })
 const { entries, remember } = useAssetFieldEntries(ids)
-const foldersById = computed(
-	() =>
-		new Map((tree.value?.folders ?? []).map((folder) => [folder.id, folder])),
-)
-const boundFolder = computed(() =>
-	tree.value?.folders.find(
-		(folder) => props.bindingId && folder.binding === props.bindingId,
-	),
-)
 const room = computed(() => {
 	if (!props.multiple) return 1
 	return props.max === undefined
@@ -90,6 +81,14 @@ const uploads = useAssetFieldUploads({
 	destination: () => uploadTarget(),
 	room: () => room.value,
 	onUploaded: addUploaded,
+})
+
+const form = useEnclosingForm()
+/** Saving mid-upload would save the field without the files still on their way: the form waits, showing them. */
+form?.addValidator(() => {
+	if (!uploads.isUploading.value) return true
+	if (field.id.value) void form.focusField(field.id.value)
+	return false
 })
 
 function uploadTarget(): { folderId: string; folderName: string } | null {
@@ -147,8 +146,8 @@ function startFolderOf(): string | undefined {
 	const firstFolder = entries.value.find((entry) => entry.asset)?.asset
 		?.folderId
 	if (firstFolder && foldersById.value.has(firstFolder)) return firstFolder
-	if (tree.value?.root.write) return undefined
-	return firstOpenFolder(tree.value?.folders ?? [])?.id
+	if (canWriteRoot.value) return undefined
+	return firstOpenFolder(folders.value)?.id
 }
 
 function firstOpenFolder(folders: MediaFolder[]): MediaFolder | undefined {
@@ -161,7 +160,7 @@ function firstOpenFolder(folders: MediaFolder[]): MediaFolder | undefined {
 
 async function openPicker(): Promise<void> {
 	if (props.disabled) return
-	if (!tree.value) await reloadTree()
+	await ensureLoaded()
 	const trigger =
 		document.activeElement instanceof HTMLElement
 			? document.activeElement

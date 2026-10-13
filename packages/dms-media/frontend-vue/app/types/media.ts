@@ -78,6 +78,13 @@ export interface MediaViewCounts {
 	missingAlt: number
 }
 
+/** The folder a field binding created (null when the user cannot see it), with the library's upload limits. */
+export interface BoundFolderAnswer {
+	folder: MediaFolder | null
+	maxUploadBytes: number
+	allowedMimetypes: string[]
+}
+
 export interface MediaTree {
 	folders: MediaFolder[]
 	root: MediaRootInfo

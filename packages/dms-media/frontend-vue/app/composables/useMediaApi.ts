@@ -2,6 +2,7 @@ import type {
 	AssetDetails,
 	AssetPage,
 	AssetVisibility,
+	BoundFolderAnswer,
 	BulkOutcome,
 	FolderImpact,
 	FolderVisibility,
@@ -71,6 +72,8 @@ export function useMediaApi() {
 	return {
 		tree: (scopeFolderId?: string) =>
 			$authFetch<MediaTree>(`${API}/tree`, { query: scopeFolderId ? { folderId: scopeFolderId } : {} }),
+		boundFolder: (bindingId: string) =>
+			$authFetch<BoundFolderAnswer>(`${API}/bindings/${encodeURIComponent(bindingId)}/folder`),
 		folderAssets: (folderId: string, query: ListingParams = {}) =>
 			$authFetch<AssetPage>(`${API}/folders/${folderId}/assets`, { query }),
 		smartView: (view: SmartView, query: ListingParams = {}) =>

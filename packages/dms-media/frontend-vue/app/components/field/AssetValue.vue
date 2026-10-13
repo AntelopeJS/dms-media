@@ -15,11 +15,12 @@ const ids = computed<string[]>(() => {
 		? props.value.filter((entry): entry is string => typeof entry === 'string')
 		: []
 })
-const shown = computed(() => assets.value.slice(0, SHOWN_NAMES))
+const shownIds = computed(() => ids.value.slice(0, SHOWN_NAMES))
 const hidden = computed(() => Math.max(ids.value.length - SHOWN_NAMES, 0))
 
+/** Only the files the cell names are read: the others are counted. */
 watch(
-	ids,
+	shownIds,
 	async (list) => {
 		assets.value = await Promise.all(
 			list.map((id) =>
@@ -39,7 +40,7 @@ watch(
 		class="inline-flex max-w-full flex-wrap items-center gap-x-2 gap-y-1 align-middle"
 	>
 		<span
-			v-for="(asset, index) in shown"
+			v-for="(asset, index) in assets"
 			:key="ids[index]"
 			class="inline-flex min-w-0 items-center gap-1"
 		>

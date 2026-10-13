@@ -43,6 +43,7 @@ import {
 import {
   buildAssetDto,
   buildFolderDto,
+  isFolderVisible,
   listVisibleFolders,
   resolveEffectiveVisibility,
 } from "./dto";
@@ -180,6 +181,14 @@ function searchScope(
   return [folderId, ...descendants];
 }
 
+/** What the library takes at all: every client checks an upload against it before sending. */
+function uploadLimits() {
+  return {
+    maxUploadBytes: MAX_UPLOAD_SIZE_BYTES,
+    allowedMimetypes: [...getMediaConfig().allowedMimetypes],
+  };
+}
+
 export class MediaLibraryController extends MediaApiController {
   private owner(context: MediaRequestContext) {
     return { tenantId: context.tenantId, userId: context.user._id };
@@ -207,9 +216,22 @@ export class MediaLibraryController extends MediaApiController {
         treeViewScope(context, this.readQuery().folderId),
       ),
       isOwner: isMediaOwner(context),
-      maxUploadBytes: MAX_UPLOAD_SIZE_BYTES,
-      allowedMimetypes: [...getMediaConfig().allowedMimetypes],
+      ...uploadLimits(),
       quotaBytes: getMediaConfig().storageQuotaBytes ?? null,
+    };
+  }
+
+  /** The folder a field binding created, without the whole tree: what an asset field needs to upload and pick. */
+  @Get("/bindings/:bindingId/folder")
+  async boundFolder(@Parameter("bindingId", "param") bindingId: string) {
+    const context = await this.resolveContext();
+    const folder = context.folders.find((entry) => entry.binding === bindingId);
+    return {
+      folder:
+        folder && isFolderVisible(context, folder)
+          ? buildFolderDto(context, folder)
+          : null,
+      ...uploadLimits(),
     };
   }
 
