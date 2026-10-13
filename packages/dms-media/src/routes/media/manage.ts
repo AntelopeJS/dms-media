@@ -1,21 +1,25 @@
-import { GetModel } from "@antelopejs/interface-database-decorators";
 import { Get, JSONBody, Parameter, Post } from "@antelopejs/interface-api";
 import { assert, assertValidation } from "@antelopejs/interface-api-util";
 import type { AssetBindingConfig } from "@antelopejs/interface-dms-media";
 import { buildBindingAcl, getRegisteredBindings } from "../../bindings";
 import { getMediaConfig } from "../../config";
 import { getLastSweep, SWEEP_DERIVATIVES_SCHEDULE } from "../../crons";
-import { MediaEventModel, type MediaFolder } from "../../db";
+import type { MediaAsset, MediaFolder } from "../../db";
 import { folderPath } from "../../library/activity";
-import { buildUploadBatches } from "../../library/batches";
+import { buildUploadBatches, type UploadBatchRow } from "../../library/batches";
+import { loadUploadHistoryEvents } from "../../library/upload-history";
 import {
   type AssetTypeSnippetInput,
   assetTypeSnippet,
   presetsConfigSnippet,
 } from "../../library/snippets";
-import { composedText, countParam } from "../../library/composed-text";
 import { loadAssetsInFolders } from "../../library/listing";
-import { presetCacheKey } from "../../presets";
+import {
+  buildPresetCacheItems,
+  pickExampleImage,
+  usesDefaultPresets,
+} from "../../library/presets-page";
+import { type MediaPresetConfig, presetCacheKey } from "../../presets";
 import { batchSummarySchema } from "../../validation/library.schema";
 import {
   PRIVATE_READ_URL_TTL_SECONDS,
@@ -23,27 +27,76 @@ import {
 } from "./constants";
 import { MediaApiController } from "./controller";
 import { type MediaRequestContext, requireFolderRight } from "./context";
+import { resolveEffectiveVisibility } from "./dto";
 import { parseDerivatives } from "./storage-keys";
 
-const HTTP_NOT_FOUND = 404;
-const SECONDS_PER_MINUTE = 60;
-const PRESETS_TEXTS = "$dms_media.presets";
-const CRON_MINUTE_INDEX = 0;
-const CRON_HOUR_INDEX = 1;
-const TIME_PART_LENGTH = 2;
+type BatchSummary = ReturnType<typeof batchSummarySchema.parse>;
 
-/** `0 4 * * *` → `04:00`. */
-function describeCronTime(schedule: string): string {
-  const parts = schedule.split(" ");
-  const pad = (value: string | undefined) =>
-    (value ?? "0").padStart(TIME_PART_LENGTH, "0");
-  return `${pad(parts[CRON_HOUR_INDEX])}:${pad(parts[CRON_MINUTE_INDEX])}`;
-}
-const EVENTS_SCANNED = 1000;
+const HTTP_NOT_FOUND = 404;
+const FILTER_PREFIX = "filter_";
+const FILTER_VALUE_SEPARATOR = ":";
+const FILTER_LIST_SEPARATOR = ",";
 
 interface SourcePage {
   offset: number;
   limit: number;
+}
+
+/** The `filter_<column>=<mode>:<a,b>` queries of the history table, by column. */
+function readRowFilters(
+  query: Record<string, string>,
+): Map<string, Set<string>> {
+  const filters = new Map<string, Set<string>>();
+  for (const [key, raw] of Object.entries(query)) {
+    if (!key.startsWith(FILTER_PREFIX) || !raw) continue;
+    const value = raw.slice(raw.indexOf(FILTER_VALUE_SEPARATOR) + 1);
+    filters.set(
+      key.slice(FILTER_PREFIX.length),
+      new Set(value.split(FILTER_LIST_SEPARATOR).filter(Boolean)),
+    );
+  }
+  return filters;
+}
+
+function matchesFilters(
+  row: UploadBatchRow,
+  filters: Map<string, Set<string>>,
+): boolean {
+  const fields: Record<string, unknown> = { ...row };
+  return [...filters].every(([column, values]) =>
+    values.has(String(fields[column])),
+  );
+}
+
+function batchDetails(summary: BatchSummary): Record<string, string | number> {
+  const details: Record<string, string | number> = {
+    batchId: summary.batchId,
+    total: summary.total,
+    failed: summary.failed,
+  };
+  if (summary.failures?.length)
+    details.failures = JSON.stringify(summary.failures);
+  return details;
+}
+
+interface PresetRowInput {
+  preset: MediaPresetConfig;
+  origin: string;
+  renderedKeys: string[];
+  example?: MediaAsset;
+}
+
+function presetRow({ preset, origin, renderedKeys, example }: PresetRowInput) {
+  const cacheKey = presetCacheKey(preset);
+  return {
+    ...preset,
+    cacheKey,
+    rendered: renderedKeys.filter((key) => key === cacheKey).length,
+    urlPattern: `${origin}/media/{asset}/${preset.id}/{filename}`,
+    exampleUrl: example
+      ? `${origin}/media/${example._id}/${preset.id}/${encodeURIComponent(example.name)}`
+      : null,
+  };
 }
 
 function readSourcePage(query: Record<string, string>): SourcePage {
@@ -95,11 +148,7 @@ export class MediaManageController extends MediaApiController {
       folderId: folder._id,
       count: summary.uploaded,
       size: summary.size,
-      details: {
-        batchId: summary.batchId,
-        total: summary.total,
-        failed: summary.failed,
-      },
+      details: batchDetails(summary),
     });
     return { ok: true };
   }
@@ -107,16 +156,18 @@ export class MediaManageController extends MediaApiController {
   @Get("/upload/batches")
   async listBatches() {
     const context = await this.resolveContext();
-    const events = await GetModel(MediaEventModel, context.tenantId).listRecent(
-      EVENTS_SCANNED,
+    const now = new Date();
+    const events = await loadUploadHistoryEvents(
+      context.tenantId,
+      context.access.readable,
+      now,
     );
-    const visible = events.filter(
-      (event) => event.folderId && context.access.readable.has(event.folderId),
+    const query = this.readQuery();
+    const filters = readRowFilters(query);
+    const rows = buildUploadBatches(events, context.foldersById, now).filter(
+      (row) => matchesFilters(row, filters),
     );
-    return pageRows(
-      buildUploadBatches(visible, context.foldersById),
-      readSourcePage(this.readQuery()),
-    );
+    return pageRows(rows, readSourcePage(query));
   }
 
   @Get("/linked")
@@ -187,42 +238,14 @@ export class MediaManageController extends MediaApiController {
   @Get("/presets/cache")
   async presetCache() {
     await this.resolveContext();
-    const sweep = getLastSweep();
-    const minutes = (seconds: number) =>
-      composedText(`${PRESETS_TEXTS}.cache.minutes`, {
-        count: countParam(Math.round(seconds / SECONDS_PER_MINUTE)),
-      });
     return {
-      items: [
-        {
-          id: "sweep",
-          label: composedText(`${PRESETS_TEXTS}.cache.sweep`, {
-            time: describeCronTime(SWEEP_DERIVATIVES_SCHEDULE),
-          }),
-          value: sweep
-            ? sweep.removedFiles
-            : `${PRESETS_TEXTS}.cache.sweep_pending`,
-          detail: sweep
-            ? composedText(`${PRESETS_TEXTS}.cache.sweep_detail`, {
-                date: { type: "date", value: sweep.finishedAt.toISOString() },
-              })
-            : `${PRESETS_TEXTS}.cache.sweep_pending_detail`,
-        },
-        {
-          id: "public",
-          label: `${PRESETS_TEXTS}.cache.public`,
-          value: minutes(PUBLIC_READ_URL_TTL_SECONDS),
-          type: "mono",
-          detail: `${PRESETS_TEXTS}.cache.public_detail`,
-        },
-        {
-          id: "private",
-          label: `${PRESETS_TEXTS}.cache.private`,
-          value: minutes(PRIVATE_READ_URL_TTL_SECONDS),
-          type: "mono",
-          detail: `${PRESETS_TEXTS}.cache.private_detail`,
-        },
-      ],
+      items: buildPresetCacheItems({
+        publicLinkSeconds: PUBLIC_READ_URL_TTL_SECONDS,
+        privateLinkSeconds: PRIVATE_READ_URL_TTL_SECONDS,
+        sweepSchedule: SWEEP_DERIVATIVES_SCHEDULE,
+        lastSweep: getLastSweep(),
+        now: new Date(),
+      }),
     };
   }
 
@@ -235,17 +258,35 @@ export class MediaManageController extends MediaApiController {
     const renderedKeys = assets.flatMap((asset) =>
       Object.keys(parseDerivatives(asset)),
     );
+    const example = pickExampleImage(
+      assets,
+      (asset) =>
+        resolveEffectiveVisibility(
+          asset,
+          context.foldersById.get(asset.folderId),
+        ) === "public",
+    );
+    const presets = [...getMediaConfig().presets.values()];
+    const origin = this.publicOrigin();
     const sweep = getLastSweep();
     return {
-      presets: [...getMediaConfig().presets.values()].map((preset) => {
-        const cacheKey = presetCacheKey(preset);
-        return {
-          ...preset,
-          cacheKey,
-          rendered: renderedKeys.filter((key) => key === cacheKey).length,
-          urlPattern: `/media/{asset}/${preset.id}/{filename}`,
-        };
-      }),
+      isDefault: usesDefaultPresets(presets),
+      example: example
+        ? {
+            id: example._id,
+            name: example.name,
+            width: example.width ?? null,
+            height: example.height ?? null,
+          }
+        : null,
+      presets: presets.map((preset) =>
+        presetRow({
+          preset,
+          origin,
+          renderedKeys,
+          example,
+        }),
+      ),
       cache: {
         schedule: SWEEP_DERIVATIVES_SCHEDULE,
         lastSweepAt: sweep?.finishedAt ?? null,

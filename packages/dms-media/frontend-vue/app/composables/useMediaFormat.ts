@@ -1,11 +1,14 @@
-const BYTES_PER_UNIT = 1024
-const BYTE_UNITS = ['B', 'KB', 'MB', 'GB', 'TB']
+/** Decimal units, as the dashboard writes sizes: 1 kB is 1,000 bytes. */
+const BYTES_PER_UNIT = 1000
+const BYTE_UNITS = ['b', 'kb', 'mb', 'gb', 'tb']
 const SINGLE_DIGIT_BELOW = 10
 
 /** Locale-aware formats the media screens share: sizes, dimensions, dates. */
 export function useMediaFormat() {
 	const regional = useRegionalFormat()
+	const { t } = useI18n()
 
+	/** A byte size in its largest whole unit, with the unit of the reader's language ("3.2 MB", "3,2 Mo"). */
 	function formatBytes(bytes: number): string {
 		let value = Math.max(bytes, 0)
 		let unit = 0
@@ -15,7 +18,7 @@ export function useMediaFormat() {
 		}
 		const digits = unit > 0 && value < SINGLE_DIGIT_BELOW ? 1 : 0
 		const number = regional.formatNumber(value, { maximumFractionDigits: digits })
-		return `${number} ${BYTE_UNITS[unit]}`
+		return t(`dms_media.units.${BYTE_UNITS[unit]}`, { value: number })
 	}
 
 	function formatDimensions(width?: number, height?: number): string {

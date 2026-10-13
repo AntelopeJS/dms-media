@@ -1,32 +1,46 @@
 import { GetModel } from "@antelopejs/interface-database-decorators";
 import { Get, Parameter } from "@antelopejs/interface-api";
-import { parseFolderAcl } from "../../acl";
+import { assert } from "@antelopejs/interface-api-util";
+import { HasPermission } from "@antelopejs/interface-dms/permissions";
+import type { ActivityFeedItem } from "@antelopejs/interface-dms/base/activity-feed";
 import { getMediaConfig } from "../../config";
 import { type MediaAsset, type MediaEvent, MediaEventModel } from "../../db";
-import { buildActivityItems } from "../../library/activity";
-import { readEventDetails } from "../../library/events";
-import { computeFolderStats } from "../../library/folder-stats";
+import { buildActivityItems, isActivityFilter } from "../../library/activity";
+import { countFailedUploads } from "../../library/batches";
+import { fileLink } from "../../library/links";
 import { loadAssetsInFolders } from "../../library/listing";
 import {
   buildAttentionItems,
-  buildFolderCards,
   buildKpiItems,
-  buildLargestFolders,
   buildStorageMeter,
   type OverviewInput,
   recentAssets,
 } from "../../library/overview";
+import { libraryVersion } from "../../library/realtime";
+import { loadUploadHistoryEvents } from "../../library/upload-history";
+import { MEDIA_PAGE_PERMISSION } from "../../pages/files";
 import { requireReadableAsset } from "./assets";
 import { MediaApiController } from "./controller";
 import type { MediaRequestContext } from "./context";
 import { buildAssetDto, resolveEffectiveVisibility } from "./dto";
 
-const MS_PER_DAY = 24 * 60 * 60 * 1000;
+const HTTP_FORBIDDEN = 403;
 const EVENTS_SCANNED = 400;
+/** A narrowed feed reads further back, so a rare kind still fills it. */
+const FILTERED_EVENTS_SCANNED = 2000;
 const DEFAULT_FEED_LENGTH = 12;
 const MAX_FEED_LENGTH = 50;
 const RECENT_FILES = 6;
-const RESTRICTED_FOLDERS_SHOWN = 2;
+/** The overview blocks read the library together: one read serves them all. */
+const ASSETS_CACHE_TTL_MS = 5000;
+
+interface CachedAssets {
+  version: number;
+  readAt: number;
+  assets: Promise<MediaAsset[]>;
+}
+
+const assetsCache = new Map<string, CachedAssets>();
 
 function isEventVisible(
   context: MediaRequestContext,
@@ -41,24 +55,24 @@ function isEventVisible(
 
 async function loadVisibleEvents(
   context: MediaRequestContext,
+  scanned = EVENTS_SCANNED,
 ): Promise<MediaEvent[]> {
   const events = await GetModel(MediaEventModel, context.tenantId).listRecent(
-    EVENTS_SCANNED,
+    scanned,
   );
   return events.filter((event) => isEventVisible(context, event));
 }
 
-function countRecentFailures(events: MediaEvent[], now: Date): number {
-  const since = now.getTime() - MS_PER_DAY;
-  return events
-    .filter(
-      (event) =>
-        event.kind === "upload.batch" && event.createdAt.getTime() >= since,
-    )
-    .reduce(
-      (total, event) => total + Number(readEventDetails(event).failed ?? 0),
-      0,
-    );
+async function countTodayFailures(
+  context: MediaRequestContext,
+  now: Date,
+): Promise<number> {
+  const events = await loadUploadHistoryEvents(
+    context.tenantId,
+    context.access.readable,
+    now,
+  );
+  return countFailedUploads(events, now);
 }
 
 function clampFeedLength(raw: string | undefined): number {
@@ -67,20 +81,63 @@ function clampFeedLength(raw: string | undefined): number {
   return Math.min(Math.floor(parsed), MAX_FEED_LENGTH);
 }
 
+function pruneAssetsCache(now: number): void {
+  for (const [key, entry] of assetsCache) {
+    if (now - entry.readAt >= ASSETS_CACHE_TTL_MS) assetsCache.delete(key);
+  }
+}
+
+function readableAssets(context: MediaRequestContext): Promise<MediaAsset[]> {
+  const key = `${context.tenantId}:${context.user._id}`;
+  const now = Date.now();
+  pruneAssetsCache(now);
+  const cached = assetsCache.get(key);
+  if (
+    cached &&
+    cached.version === libraryVersion() &&
+    now - cached.readAt < ASSETS_CACHE_TTL_MS
+  )
+    return cached.assets;
+  const assets = loadAssetsInFolders(context.assetModel, [
+    ...context.access.readable,
+  ]);
+  assetsCache.set(key, { version: libraryVersion(), readAt: now, assets });
+  assets.catch(() => assetsCache.delete(key));
+  return assets;
+}
+
+/** A file's own history links nowhere it already is. */
+function unlinkCurrentFile(
+  items: ActivityFeedItem[],
+  assetId: string,
+): ActivityFeedItem[] {
+  const self = fileLink(assetId);
+  return items.map((item) =>
+    item.to === self ? { ...item, to: undefined } : item,
+  );
+}
+
+/**
+ * The overview's figures and feed. They describe the whole library, so they
+ * are the owner's: the overview page is module-only, and a member reaches
+ * media through the fields of the project's pages.
+ */
 export class MediaOverviewController extends MediaApiController {
+  private async ownerContext(): Promise<MediaRequestContext> {
+    const context = await this.resolveContext();
+    const isOwner = await HasPermission(
+      context.permissions,
+      MEDIA_PAGE_PERMISSION,
+    );
+    assert(isOwner, HTTP_FORBIDDEN, "The overview is reserved to owners");
+    return context;
+  }
+
   private async overviewInput(
     context: MediaRequestContext,
   ): Promise<OverviewInput> {
-    const assets = await loadAssetsInFolders(context.assetModel, [
-      ...context.access.readable,
-    ]);
-    const folders = context.folders.filter((folder) =>
-      context.access.readable.has(folder._id),
-    );
     return {
-      assets,
-      folders,
-      stats: computeFolderStats(context.folders, assets),
+      assets: await readableAssets(context),
       visibilityOf: (asset: MediaAsset) =>
         resolveEffectiveVisibility(
           asset,
@@ -93,59 +150,32 @@ export class MediaOverviewController extends MediaApiController {
 
   @Get("/stats/kpis")
   async kpis() {
-    const context = await this.resolveContext();
+    const context = await this.ownerContext();
     return { items: buildKpiItems(await this.overviewInput(context)) };
   }
 
   @Get("/stats/storage")
   async storage() {
-    const context = await this.resolveContext();
+    const context = await this.ownerContext();
     return buildStorageMeter(await this.overviewInput(context));
-  }
-
-  @Get("/stats/largest")
-  async largest() {
-    const context = await this.resolveContext();
-    return { items: buildLargestFolders(await this.overviewInput(context)) };
   }
 
   @Get("/stats/attention")
   async attention() {
-    const context = await this.resolveContext();
-    const [input, events] = await Promise.all([
-      this.overviewInput(context),
-      loadVisibleEvents(context),
-    ]);
-    const restrictedFolders = context.folders
-      .filter(
-        (folder) =>
-          parseFolderAcl(folder) !== undefined &&
-          !folder.binding &&
-          (context.access.readable.has(folder._id) ||
-            context.access.shells.has(folder._id)),
-      )
-      .slice(0, RESTRICTED_FOLDERS_SHOWN);
+    const context = await this.ownerContext();
+    const input = await this.overviewInput(context);
     return {
       items: buildAttentionItems({
         ...input,
-        failedUploads: countRecentFailures(events, input.now),
-        restrictedFolders,
+        failedUploads: await countTodayFailures(context, input.now),
       }),
     };
   }
 
-  @Get("/stats/folders")
-  async folderCards() {
-    const context = await this.resolveContext();
-    return { items: buildFolderCards(await this.overviewInput(context)) };
-  }
-
   @Get("/stats/recent")
   async recent() {
-    const context = await this.resolveContext();
-    const assets = await loadAssetsInFolders(context.assetModel, [
-      ...context.access.readable,
-    ]);
+    const context = await this.ownerContext();
+    const assets = await readableAssets(context);
     return {
       assets: recentAssets(assets, RECENT_FILES).map((asset) =>
         buildAssetDto(context, asset),
@@ -155,13 +185,17 @@ export class MediaOverviewController extends MediaApiController {
 
   @Get("/activity")
   async activity() {
-    const context = await this.resolveContext();
-    const events = await loadVisibleEvents(context);
-    const limit = clampFeedLength(this.readQuery().limit);
+    const context = await this.ownerContext();
+    const query = this.readQuery();
+    const filter = isActivityFilter(query.type) ? query.type : undefined;
+    const events = await loadVisibleEvents(
+      context,
+      filter ? FILTERED_EVENTS_SCANNED : EVENTS_SCANNED,
+    );
     return {
       items: buildActivityItems(
-        { events, foldersById: context.foldersById },
-        limit,
+        { events, foldersById: context.foldersById, filter },
+        clampFeedLength(query.limit),
       ),
     };
   }
@@ -174,11 +208,10 @@ export class MediaOverviewController extends MediaApiController {
       MediaEventModel,
       context.tenantId,
     ).listByAsset(assetId);
-    return {
-      items: buildActivityItems(
-        { events, foldersById: context.foldersById },
-        MAX_FEED_LENGTH,
-      ),
-    };
+    const items = buildActivityItems(
+      { events, foldersById: context.foldersById, foldsBulkActions: false },
+      MAX_FEED_LENGTH,
+    );
+    return { items: unlinkCurrentFile(items, assetId) };
   }
 }

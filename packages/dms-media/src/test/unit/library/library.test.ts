@@ -4,6 +4,12 @@ import { buildActivityItems } from "../../../library/activity";
 import { buildUploadBatches } from "../../../library/batches";
 import { composedBytes, composedText } from "../../../library/composed-text";
 import { computeFolderStats } from "../../../library/folder-stats";
+import {
+  fileLink,
+  folderLink,
+  MEDIA_ROUTES,
+  viewLink,
+} from "../../../library/links";
 import { countByTypeGroup, pageAssets } from "../../../library/listing";
 import { searchAssets, searchFolders } from "../../../library/search";
 import {
@@ -143,16 +149,29 @@ describe("[unit] library — activity and batches", () => {
     event("e1", { json_details: JSON.stringify({ batchId: "b1" }) }),
     event("e0", {
       kind: "upload.batch",
-      json_details: JSON.stringify({ batchId: "b1", failed: 1 }),
+      count: 2,
+      json_details: JSON.stringify({ batchId: "b1", total: 3, failed: 1 }),
     }),
   ];
 
-  it("folds the files of a batch into one entry", () => {
+  it("shows a batch with failures as its report, in place of its files", () => {
     const items = buildActivityItems({ events, foldersById: folders }, 10);
     expect(items.map((item) => item.title)).to.deep.equal([
       "$dms_media.activity.asset_delete",
+      "$dms_media.activity.upload_batch_partial",
+    ]);
+    expect(items[1]?.params?.failed).to.deep.equal({ type: "count", value: 1 });
+  });
+
+  it("folds the files of a complete batch into one entry", () => {
+    const complete = events.filter((entry) => entry.kind !== "upload.batch");
+    const items = buildActivityItems(
+      { events: complete, foldersById: folders },
+      10,
+    );
+    expect(items.map((item) => item.title)).to.deep.equal([
+      "$dms_media.activity.asset_delete",
       "$dms_media.activity.asset_upload",
-      "$dms_media.activity.upload_batch",
     ]);
     expect(items[1]?.params?.count).to.deep.equal({ type: "count", value: 2 });
   });
@@ -174,22 +193,34 @@ describe("[unit] library — activity and batches", () => {
 });
 
 describe("[unit] library — composed texts", () => {
-  it("writes a byte size in its largest unit, rounded like the explorer", () => {
+  it("writes a byte size in its largest decimal unit, rounded like the explorer", () => {
     expect(composedBytes(512)).to.deep.equal({
       key: "dms_media.units.b",
       params: { value: { type: "number", value: 512 } },
     });
-    expect(composedBytes(3.25 * 1024 * 1024).params?.value).to.deep.equal({
+    expect(composedBytes(3.25 * 1000 * 1000).params?.value).to.deep.equal({
       type: "number",
       value: 3.3,
     });
-    expect(composedBytes(42 * 1024).key).to.equal("dms_media.units.kb");
+    expect(composedBytes(42 * 1000).key).to.equal("dms_media.units.kb");
+    expect(composedBytes(1000).key).to.equal("dms_media.units.kb");
   });
 
   it("drops the leading $ of a key", () => {
     expect(composedText("$dms_media.title")).to.deep.equal({
       key: "dms_media.title",
     });
+  });
+});
+
+describe("[unit] library — links", () => {
+  it("points at the pages of the media module", () => {
+    expect(MEDIA_ROUTES.overview).to.equal("/modules/media/overview");
+    expect(folderLink("f 1")).to.equal("/modules/media/files?folder=f%201");
+    expect(fileLink("a1")).to.equal("/modules/media/file?asset=a1");
+    expect(viewLink("missing-alt")).to.equal(
+      "/modules/media/files?view=missing-alt",
+    );
   });
 });
 

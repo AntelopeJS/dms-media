@@ -1,20 +1,18 @@
 <script setup lang="ts">
-import type { MediaAsset, MediaTree } from '../types/media'
+import type { MediaAsset } from '../types/media'
 import AssetThumb from './shared/AssetThumb.vue'
 
 const api = useMediaApi()
 const format = useMediaFormat()
 const { t } = useI18n()
 const assets = ref<MediaAsset[]>([])
-const tree = ref<MediaTree | null>(null)
+const { tree } = useSharedTree()
 const isLoading = ref(true)
 const SKELETONS = 6
 
 async function load(): Promise<void> {
 	try {
-		const [recent, loadedTree] = await Promise.all([api.recent(), api.tree()])
-		assets.value = recent.assets
-		tree.value = loadedTree
+		assets.value = (await api.recent()).assets
 	} finally {
 		isLoading.value = false
 	}
@@ -29,7 +27,7 @@ const foldersById = computed(() => new Map((tree.value?.folders ?? []).map((fold
 </script>
 
 <template>
-	<DmsCard :title="t('dms_media.recent.title')">
+	<DmsCard v-if="isLoading || assets.length > 0" :title="t('dms_media.recent.title')">
 		<template #actions>
 			<UButton variant="link" size="xs" trailing-icon="i-ph-arrow-right" :label="t('dms_media.recent.view_all')" :to="`${MEDIA_ROUTES.files}?view=recent`" />
 		</template>
@@ -39,7 +37,6 @@ const foldersById = computed(() => new Map((tree.value?.folders ?? []).map((fold
 				<USkeleton class="h-3 w-3/4" />
 			</div>
 		</div>
-		<p v-else-if="assets.length === 0" class="text-muted py-4 text-center text-sm">{{ t('dms_media.recent.empty') }}</p>
 		<ul v-else class="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6">
 			<li v-for="asset in assets" :key="asset.id">
 				<ULink :to="fileLink(asset.id)" class="group flex flex-col gap-1.5">

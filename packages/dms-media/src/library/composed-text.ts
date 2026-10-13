@@ -4,7 +4,8 @@ import type {
 } from "@antelopejs/interface-dms/base/types";
 
 const KEY_PREFIX = "$";
-const BYTES_PER_UNIT = 1024;
+/** Decimal units, as the dashboard writes sizes: 1 kB is 1,000 bytes. */
+const BYTES_PER_UNIT = 1000;
 const BYTE_UNITS = ["b", "kb", "mb", "gb", "tb"];
 const SINGLE_FRACTION_DIGIT_BELOW = 10;
 const ONE_FRACTION_DIGIT_FACTOR = 10;

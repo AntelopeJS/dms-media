@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import type { FolderVisibility, MediaTree } from '../types/media'
+import type { FolderVisibility } from '../types/media'
 
 interface StarterFolder {
 	key: 'catalog' | 'marketing' | 'brand' | 'documents'
@@ -17,12 +17,8 @@ const STARTERS: StarterFolder[] = [
 const api = useMediaApi()
 const { t } = useI18n()
 const toast = useToast()
-const tree = ref<MediaTree | null>(null)
+const { tree } = useSharedTree()
 const isCreating = ref(false)
-
-onMounted(async () => {
-	tree.value = await api.tree().catch(() => null)
-})
 
 const isEmpty = computed(
 	() => tree.value !== null && tree.value.folders.every((folder) => folder.bound) && tree.value.root.fileCount === 0,
@@ -63,10 +59,7 @@ async function createStarters(): Promise<void> {
 				</div>
 			</div>
 		</div>
-		<div class="flex flex-wrap justify-center gap-2">
-			<UButton v-if="canCreate" icon="i-ph-folder-plus" :loading="isCreating" :label="t('dms_media.first_run.create', { count: STARTERS.length })" @click="createStarters" />
-			<UButton icon="i-ph-folder-open" color="neutral" variant="outline" :label="t('dms_media.overview.open_library')" :to="MEDIA_ROUTES.files" />
-		</div>
+		<UButton v-if="canCreate" icon="i-ph-folder-plus" :loading="isCreating" :label="t('dms_media.first_run.create', { count: STARTERS.length })" @click="createStarters" />
 		<p v-if="canCreate" class="text-dimmed font-mono text-[11px]">{{ t('dms_media.first_run.hint') }}</p>
 	</section>
 </template>

@@ -2,7 +2,7 @@ import { GetModel } from "@antelopejs/interface-database-decorators";
 import { Logging } from "@antelopejs/interface-core/logging";
 import type { User } from "@antelopejs/interface-dms/auth/db";
 import { type MediaEvent, MediaEventModel } from "../db";
-import { announceLibraryChange } from "./realtime";
+import { announceLibraryChange, UPLOAD_ANNOUNCE_WINDOW_MS } from "./realtime";
 
 export const MEDIA_EVENT_KINDS = [
   "asset.upload",
@@ -41,8 +41,13 @@ export interface MediaEventActor {
   user: User;
 }
 
-/** Each uploaded file is announced once, by the report of its batch. */
-const SILENT_KINDS: ReadonlySet<MediaEventKind> = new Set(["asset.upload"]);
+/** Uploads arrive in bursts: they are announced on a longer window than other writes. */
+const ANNOUNCE_DELAYS: Partial<Record<MediaEventKind, number>> = {
+  "asset.upload": UPLOAD_ANNOUNCE_WINDOW_MS,
+};
+
+export const UPLOAD_KIND: MediaEventKind = "asset.upload";
+export const BATCH_REPORT_KIND: MediaEventKind = "upload.batch";
 
 /** Records an activity entry; a failure is logged and never fails the write. */
 export async function recordMediaEvent(
@@ -64,7 +69,7 @@ export async function recordMediaEvent(
   } catch (error) {
     Logging.Error("Failed to record a media event", error);
   }
-  if (!SILENT_KINDS.has(input.kind)) announceLibraryChange();
+  announceLibraryChange(ANNOUNCE_DELAYS[input.kind]);
 }
 
 export function readEventDetails(event: MediaEvent): MediaEventDetails {
@@ -77,4 +82,42 @@ export function readEventDetails(event: MediaEvent): MediaEventDetails {
   } catch {
     return {};
   }
+}
+
+/** The upload batch an event belongs to, when it was part of one. */
+export function batchIdOf(event: MediaEvent): string | undefined {
+  const batchId = readEventDetails(event).batchId;
+  return batchId === undefined ? undefined : String(batchId);
+}
+
+/**
+ * The newest report of each batch, by batch id. A retried batch is reported
+ * again: its last report replaces the earlier ones. Expects newest first.
+ */
+export function latestBatchReports(
+  events: MediaEvent[],
+): Map<string, MediaEvent> {
+  const reports = new Map<string, MediaEvent>();
+  for (const event of events) {
+    if (event.kind !== BATCH_REPORT_KIND) continue;
+    const key = batchIdOf(event) ?? event._id;
+    if (!reports.has(key)) reports.set(key, event);
+  }
+  return reports;
+}
+
+/** Events recorded since a date, newest first, whatever else happened since. */
+export async function listEventsSince(
+  tenantId: string,
+  since: Date,
+): Promise<MediaEvent[]> {
+  const rows = await GetModel(MediaEventModel, tenantId)
+    .table.filter((row) => row.key("createdAt").ge(since))
+    .run();
+  return rows
+    .map((row) => MediaEventModel.fromDatabase(row))
+    .filter((row): row is MediaEvent => row !== undefined)
+    .sort(
+      (left, right) => right.createdAt.getTime() - left.createdAt.getTime(),
+    );
 }
