@@ -213,7 +213,7 @@ function refusalOf(error: unknown): ServerRefusal {
 }
 
 /** A 4xx is final (retrying sends the same file again); network and 5xx can be retried. */
-export function describeFailure(error: unknown): FailureOutcome {
+function describeFailure(error: unknown): FailureOutcome {
 	if (error instanceof UploadError)
 		return {
 			status: FINAL_FAILURES.has(error.failure) ? 'rejected' : 'failed',

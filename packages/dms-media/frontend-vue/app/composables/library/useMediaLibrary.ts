@@ -37,7 +37,7 @@ export interface NameOutcome {
 }
 
 /** The explorer state and every action on the library, shared by its parts. */
-export function createMediaLibrary(options: MediaLibraryOptions) {
+function createMediaLibrary(options: MediaLibraryOptions) {
 	const api = useMediaApi()
 	const { t } = useI18n()
 	const toast = useToast()
@@ -409,7 +409,7 @@ function createStarActions(library: LibraryCore) {
 }
 
 /** Writes to the library, applied locally first and rolled back on failure. */
-export function createLibraryActions(library: LibraryCore) {
+function createLibraryActions(library: LibraryCore) {
 	const { api, listing, tree, selection } = library
 	const details = createDetailActions(library)
 	const assetLink = useAssetLink()

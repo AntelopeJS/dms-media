@@ -165,17 +165,6 @@ export interface PresignResponse {
 	headers: Record<string, string>
 }
 
-export interface ActivityEntry {
-	id?: string
-	icon?: string
-	tone?: string
-	title: string
-	meta?: string[]
-	params?: Record<string, string>
-	date?: string
-	to?: string
-}
-
 export interface DeliveryPreset {
 	id: string
 	width?: number

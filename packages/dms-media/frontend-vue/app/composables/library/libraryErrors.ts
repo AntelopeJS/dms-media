@@ -26,7 +26,7 @@ function asFailure(error: unknown): ApiFailure {
 }
 
 /** The message the API answered with: an i18n key (`$dms_media.errors.…`) or plain text. */
-export function apiErrorMessage(error: unknown): string | undefined {
+function apiErrorMessage(error: unknown): string | undefined {
 	const data = asFailure(error).data
 	if (typeof data === 'string') return data
 	const message = (data as ApiErrorBody | undefined)?.message

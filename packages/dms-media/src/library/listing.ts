@@ -48,7 +48,7 @@ export async function loadAssetsInFolders(
     .filter((row): row is MediaAsset => row !== undefined);
 }
 
-export function sortAssets(
+function sortAssets(
   assets: MediaAsset[],
   sort: AssetSortKey,
   direction: SortDirection,
@@ -58,7 +58,7 @@ export function sortAssets(
   return [...assets].sort((left, right) => compare(left, right) * factor);
 }
 
-export function filterByTypeGroup(
+function filterByTypeGroup(
   assets: MediaAsset[],
   type: AssetTypeGroup | undefined,
 ): MediaAsset[] {
@@ -95,11 +95,4 @@ export function countByTypeGroup(assets: MediaAsset[]): TypeGroupCounts {
   const counts = emptyTypeGroupCounts();
   for (const asset of assets) counts[resolveTypeGroup(asset.mimetype)] += 1;
   return counts;
-}
-
-export function sumSizeByTypeGroup(assets: MediaAsset[]): TypeGroupCounts {
-  const sizes = emptyTypeGroupCounts();
-  for (const asset of assets)
-    sizes[resolveTypeGroup(asset.mimetype)] += asset.size;
-  return sizes;
 }

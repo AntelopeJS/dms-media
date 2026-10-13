@@ -26,7 +26,7 @@ function refresh(): void {
  * holds the given element, like the picker holding its explorer, does not
  * count for it.
  */
-export function useOverlayPresence(host?: MaybeRefOrGetter<Element | null | undefined>) {
+function useOverlayPresence(host?: MaybeRefOrGetter<Element | null | undefined>) {
 	onMounted(() => {
 		users += 1
 		if (!observer) {

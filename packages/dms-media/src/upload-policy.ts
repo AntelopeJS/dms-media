@@ -41,7 +41,7 @@ const MIMETYPES_BY_FORMAT: Record<string, string> = {
   tiff: "image/tiff",
 };
 
-export function normalizeMimetype(mimetype: string): string {
+function normalizeMimetype(mimetype: string): string {
   return (mimetype.split(PARAMETER_SEPARATOR)[0] ?? "").trim().toLowerCase();
 }
 

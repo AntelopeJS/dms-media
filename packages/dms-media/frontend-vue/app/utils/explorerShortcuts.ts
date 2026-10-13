@@ -72,7 +72,7 @@ export const EXPLORER_SHORTCUT_GROUPS: ExplorerShortcutGroup[] = [
 ]
 
 /** ⌘/ and ⌘⇧/ (AZERTY): "/" alone belongs to the navigation search. */
-export const SEARCH_SHORTCUT_KEYS = ['meta_/', 'meta_shift_/'] as const
+const SEARCH_SHORTCUT_KEYS = ['meta_/', 'meta_shift_/'] as const
 
 export function buildSearchShortcuts(focus: () => void): Record<string, () => void> {
 	return Object.fromEntries(SEARCH_SHORTCUT_KEYS.map((key) => [key, focus]))

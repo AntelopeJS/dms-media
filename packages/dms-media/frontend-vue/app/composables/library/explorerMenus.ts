@@ -35,7 +35,7 @@ function afterMenusClose(): Promise<void> {
 }
 
 /** Runs a command once the menu closed, so its dialog takes the focus. */
-export const afterMenu = (run: () => unknown) => async () => {
+const afterMenu = (run: () => unknown) => async () => {
 	await afterMenusClose()
 	await run()
 }

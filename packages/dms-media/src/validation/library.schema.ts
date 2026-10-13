@@ -10,17 +10,12 @@ const MAX_FAILURE_NAME_LENGTH = 255;
 const MAX_FAILURE_REASON_LENGTH = 500;
 const MAX_REPORTED_FAILURES = 50;
 
-export const ASSET_SORT_KEYS = ["name", "date", "size", "type"] as const;
-export const SORT_DIRECTIONS = ["asc", "desc"] as const;
-export const MODIFIED_WINDOWS = ["any", "7d", "30d", "year"] as const;
-export const VISIBILITY_FILTERS = ["any", "public", "private"] as const;
-export const ORIENTATION_FILTERS = [
-  "any",
-  "landscape",
-  "portrait",
-  "square",
-] as const;
-export const SMART_VIEWS = [
+const ASSET_SORT_KEYS = ["name", "date", "size", "type"] as const;
+const SORT_DIRECTIONS = ["asc", "desc"] as const;
+const MODIFIED_WINDOWS = ["any", "7d", "30d", "year"] as const;
+const VISIBILITY_FILTERS = ["any", "public", "private"] as const;
+const ORIENTATION_FILTERS = ["any", "landscape", "portrait", "square"] as const;
+const SMART_VIEWS = [
   "recent",
   "starred",
   "missing-alt",
@@ -31,7 +26,7 @@ export const SMART_VIEWS = [
 export type AssetSortKey = (typeof ASSET_SORT_KEYS)[number];
 export type SortDirection = (typeof SORT_DIRECTIONS)[number];
 export type ModifiedWindow = (typeof MODIFIED_WINDOWS)[number];
-export type VisibilityFilter = (typeof VISIBILITY_FILTERS)[number];
+type VisibilityFilter = (typeof VISIBILITY_FILTERS)[number];
 export type OrientationFilter = (typeof ORIENTATION_FILTERS)[number];
 export type SmartView = (typeof SMART_VIEWS)[number];
 

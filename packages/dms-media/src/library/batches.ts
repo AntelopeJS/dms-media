@@ -26,14 +26,14 @@ export interface UploadBatchRow {
   finishedAt: string;
 }
 
-export type UploadBatchResult = "complete" | "partial" | "failed";
+type UploadBatchResult = "complete" | "partial" | "failed";
 
-export type BatchAttention = "yes" | "no";
+type BatchAttention = "yes" | "no";
 
 /** How long a failed upload keeps asking for attention. */
 export const FAILURE_WINDOW_MS = 24 * 60 * 60 * 1000;
 
-export interface UploadFailure {
+interface UploadFailure {
   name: string;
   reason?: string;
 }
@@ -71,7 +71,7 @@ function newBatch(key: string, event: MediaEvent): BatchAccumulator {
 }
 
 /** The files a batch report names as failed, with their reasons. */
-export function readBatchFailures(event: MediaEvent): UploadFailure[] {
+function readBatchFailures(event: MediaEvent): UploadFailure[] {
   const raw = readEventDetails(event).failures;
   if (typeof raw !== "string") return [];
   try {
@@ -112,7 +112,7 @@ function applyReport(
   batches.set(key, batch);
 }
 
-export function resultOf(files: number, failed: number): UploadBatchResult {
+function resultOf(files: number, failed: number): UploadBatchResult {
   if (failed === 0) return "complete";
   return files === 0 ? "failed" : "partial";
 }

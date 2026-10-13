@@ -69,10 +69,6 @@ export function resolveTypeGroup(mimetype: string): AssetTypeGroup {
   );
 }
 
-export function isTypeGroup(value: string): value is AssetTypeGroup {
-  return (ASSET_TYPE_GROUPS as readonly string[]).includes(value);
-}
-
 /** Whether an asset is an image that alt text describes (vectors included). */
 export function isDescribableImage(mimetype: string): boolean {
   const group = resolveTypeGroup(mimetype);

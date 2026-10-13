@@ -1,5 +1,4 @@
 import type {
-	ActivityEntry,
 	AssetDetails,
 	AssetPage,
 	AssetVisibility,
@@ -82,10 +81,6 @@ export function useMediaApi() {
 			$authFetch<{ asset: MediaAsset }>(`${API}/assets/${assetId}`),
 		details: (assetId: string) =>
 			$authFetch<AssetDetails>(`${API}/assets/${assetId}/details`),
-		history: (assetId: string) =>
-			$authFetch<{ items: ActivityEntry[] }>(
-				`${API}/assets/${assetId}/history`,
-			),
 		previews: (ids: string[]) =>
 			post<{ previews: Record<string, string> }>('/previews', { ids }),
 		readUrl: (assetId: string, preset?: string) =>

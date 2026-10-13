@@ -8,7 +8,7 @@ export interface UploadProgress {
 	total: number
 }
 
-export function isSettledUpload(item: UploadItem): boolean {
+function isSettledUpload(item: UploadItem): boolean {
 	return SETTLED_STATUSES.has(item.status)
 }
 
