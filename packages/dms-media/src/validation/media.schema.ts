@@ -78,18 +78,6 @@ export function parseBody<Schema extends z.ZodTypeAny>(
   );
 }
 
-const aclRightSchema = z.enum(["read", "write", "manage"]);
-
-const aclSubjectSchema = z.object({
-  kind: z.enum(["permission", "role"]),
-  id: z.string().min(1),
-});
-
-export const aclEntrySchema = z.object({
-  subject: aclSubjectSchema,
-  rights: z.array(aclRightSchema).min(1),
-});
-
 export const createFolderSchema = z.object({
   name: nameSchema,
   parentId: z.string().min(1).optional(),
@@ -105,10 +93,6 @@ export const moveFolderSchema = z.object({
 
 export const folderVisibilitySchema = z.object({
   visibility: z.enum(["private", "public"]),
-});
-
-export const folderAclSchema = z.object({
-  entries: z.array(aclEntrySchema).nullable(),
 });
 
 export const MAX_UPLOAD_SIZE_BYTES = 500 * 1024 * 1024;

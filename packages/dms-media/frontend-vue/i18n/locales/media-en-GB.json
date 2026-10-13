@@ -1,11 +1,5 @@
 {
 	"dms_media": {
-		"access": {
-			"can_manage": "Can manage",
-			"can_read": "Can view",
-			"can_write": "Can upload",
-			"nobody": "Nobody"
-		},
 		"actions": {
 			"back": "Back",
 			"cancel": "Cancel",
@@ -32,7 +26,6 @@
 			"rename": "Rename",
 			"retry": "Try again",
 			"select_all": "Select all",
-			"select_file": "Select {name}",
 			"star": "Star",
 			"undo": "Undo",
 			"unstar": "Remove star",
@@ -59,7 +52,6 @@
 			"asset_revert": "{actor} reverted {name} to its original | {actor} reverted {count} images to their original",
 			"asset_transform": "{actor} edited {name} | {actor} edited {count} images",
 			"asset_upload": "{actor} uploaded {name} | {actor} uploaded {count} files",
-			"folder_acl": "{actor} changed who can open {name}",
 			"folder_create": "{actor} created the folder {name}",
 			"folder_delete": "{actor} deleted the folder {name}",
 			"folder_move": "{actor} moved the folder {name}",
@@ -924,7 +916,6 @@
 			"delete_failed": "Couldn't delete",
 			"deleted": "{count} file deleted | {count} files deleted",
 			"download_failed": "Couldn't download",
-			"drop_needs_folder": "Open a folder you can upload to first",
 			"folder_create_failed": "Couldn't create the folder",
 			"folder_created": "{name} created",
 			"folder_deleted": "{name} deleted",

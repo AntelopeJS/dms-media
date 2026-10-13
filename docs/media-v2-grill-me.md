@@ -73,8 +73,8 @@ As of 2026-10-13 (section 10, labels from Q10.7):
 | (hidden) | Edit image | `/modules/media/editor?asset=` | Staged crop and rotate with presets preview, Save and Save as copy |
 | (hidden) | Activity | `/modules/media/activity` | Every library event, filtered by kind of action, reached from the overview feed |
 | Settings | Image sizes | `/modules/media/presets` | Preset sizes, URLs, render counts, cache and configuration |
-| *(set aside)* | Access & visibility | — | Was `/media/access`: folder rules editor. Backend kept, page to come back later |
-| *(set aside)* | Linked folders | — | Was `/media/linked`. Bindings and their routes kept, page to come back later |
+| *(set aside)* | Access & visibility | — | Was `/media/access`: folder rules editor. Removed with its routes; the ACL engine stays for linked folders |
+| *(set aside)* | Linked folders | — | Was `/media/linked`. Removed with its routes; the bindings stay |
 | *(moved out)* | Asset field & picker | — | Was `/media/field`. The picker demo lives in the playground (`/media-demo`) |
 
 The mockup's Search screen is a mode of the explorer (`/modules/media/files?q=`), not
@@ -377,18 +377,14 @@ around this behaviour: it is the intended access model (Q10.5).
 **Q10.3 What happens to Access & visibility and Linked folders?**
 Both pages are set aside, with every link to them (explorer inspector, folder
 menu, empty shell state, locked folder dialog, overview "needs attention").
-The backend stays as it is: the ACL engine, the default rules, the three
-static permissions, the bindings that provision linked folders and every route
-(`/folders/:id/acl|access|access/stats|visibility`, `/access/subjects`,
-`/linked`, `/linked/:bindingId` with its `AssetType` declaration snippet). A
-restricted folder stays restricted, and the explorer still marks folders with
-their own rules. What only those pages used goes with them: their custom
-blocks (`AccessTree`, `AccessFolder`, `AccessRulesCard`, `AccessVisibility`,
-`LinkedDetail`, `useAccessEditor`), their API calls and types in the layer, and
-their texts. A folder's own visibility, which only the rules editor changed, is
-set through `POST /api/media/folders/:id/visibility` until the page returns. File visibility stays in the inspector, the File page and the
-bulk bar, with the confirmation before making files public. The pages come
-back later.
+The ACL engine, the default rules and the bindings that provision linked
+folders stay: a restricted folder stays restricted, and the explorer still
+marks folders with their own rules. Everything only those pages used is gone
+(2026-10-13): their routes (`/folders/:id/acl|access|access/stats`,
+`/access/subjects`, `/linked`, `/linked/:bindingId` with its declaration
+snippet), their custom blocks, their API calls and types in the layer, and
+their texts. A folder's own visibility is set from the explorer. File visibility stays in the inspector, the File page and the
+bulk bar, with the confirmation before making files public.
 
 **Q10.4 Where does the picker demo live?**
 In the playground. The Developers › Asset field & picker page left the module

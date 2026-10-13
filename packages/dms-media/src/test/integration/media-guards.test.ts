@@ -35,8 +35,6 @@ describe("[integration] media guards — every endpoint requires auth and rights
       anonymous.delete("/api/media/assets/any"),
       anonymous.post("/api/media/folders", { name: "Sneaky" }),
       anonymous.get("/api/media/folders/any/assets"),
-      anonymous.get("/api/media/folders/any/acl"),
-      anonymous.put("/api/media/folders/any/acl", { entries: [] }),
       anonymous.post("/api/media/folders/any/rename", { name: "X" }),
       anonymous.post("/api/media/folders/any/move", { parentId: null }),
       anonymous.post("/api/media/folders/any/visibility", {

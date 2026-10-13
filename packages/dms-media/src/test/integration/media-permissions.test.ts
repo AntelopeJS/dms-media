@@ -21,6 +21,7 @@ import {
   uploadPixelPng,
   uploadTextAsset,
 } from "../helpers/assets";
+import { readFolderAcl, writeFolderAcl } from "../helpers/folders";
 import { authorizedClient } from "../helpers/http";
 import { readPageAccess } from "../helpers/pages";
 import {
@@ -137,17 +138,6 @@ async function createFolder(
   return response.data.id;
 }
 
-async function setFolderAcl(
-  owner: AxiosInstance,
-  folderId: string,
-  entries: AclEntry[] | null,
-): Promise<void> {
-  const response = await owner.put(`/api/media/folders/${folderId}/acl`, {
-    entries,
-  });
-  expect(response.status, "set folder acl").to.equal(HTTP_OK);
-}
-
 function roleEntry(roleId: string, rights: AclEntry["rights"]): AclEntry {
   return { subject: { kind: "role", id: roleId }, rights };
 }
@@ -240,12 +230,10 @@ async function buildWorldFolders(
   const readOnlyCorner = await createFolder(owner, "ReadOnlyCorner");
   const depot = await createFolder(owner, "Depot");
   const curtain = await createFolder(owner, "Curtain");
-  await setFolderAcl(owner, restricted, [
-    roleEntry(secretTeamRoleId, ["write"]),
-  ]);
-  await setFolderAcl(owner, vault, []);
-  await setFolderAcl(owner, pocket, [roleEntry(secretTeamRoleId, ["read"])]);
-  await setFolderAcl(owner, readOnlyCorner, [
+  await writeFolderAcl(restricted, [roleEntry(secretTeamRoleId, ["write"])]);
+  await writeFolderAcl(vault, []);
+  await writeFolderAcl(pocket, [roleEntry(secretTeamRoleId, ["read"])]);
+  await writeFolderAcl(readOnlyCorner, [
     permissionEntry(LIBRARY_VIEW_PERMISSION, ["read"]),
   ]);
   const flip = await owner.post(`/api/media/folders/${publicZone}/visibility`, {
@@ -725,9 +713,7 @@ describe("[integration] media permissions — multi-actor ACL enforcement", () =
     it("refuses cascade deletion when a subfolder lacks the manage right", async () => {
       const estate = await createFolder(owner, "Estate");
       const cellar = await createFolder(owner, "EstateCellar", estate);
-      await setFolderAcl(owner, cellar, [
-        roleEntry(roles.secretTeam, ["manage"]),
-      ]);
+      await writeFolderAcl(cellar, [roleEntry(roles.secretTeam, ["manage"])]);
       const denied = await sessions.folderManager.client.delete(
         `/api/media/folders/${estate}`,
       );
@@ -759,16 +745,7 @@ describe("[integration] media permissions — multi-actor ACL enforcement", () =
       expect(cleanup.status).to.equal(HTTP_OK);
     });
 
-    it("keeps ACL and visibility edition owner-only, even for a folder manager", async () => {
-      const aclRead = await sessions.folderManager.client.get(
-        `/api/media/folders/${folders.depot}/acl`,
-      );
-      expect(aclRead.status).to.equal(HTTP_FORBIDDEN);
-      const aclWrite = await sessions.folderManager.client.put(
-        `/api/media/folders/${folders.depot}/acl`,
-        { entries: [] },
-      );
-      expect(aclWrite.status).to.equal(HTTP_FORBIDDEN);
+    it("keeps visibility changes owner-only, even for a folder manager", async () => {
       const folderFlip = await sessions.folderManager.client.post(
         `/api/media/folders/${folders.depot}/visibility`,
         { visibility: "public" },
@@ -781,35 +758,15 @@ describe("[integration] media permissions — multi-actor ACL enforcement", () =
       expect(assetFlip.status).to.equal(HTTP_FORBIDDEN);
     });
 
-    it("blocks ACL reads below the manage right", async () => {
-      const denied = await sessions.viewer.client.get(
-        `/api/media/folders/${folders.library}/acl`,
-      );
-      expect(denied.status).to.equal(HTTP_FORBIDDEN);
-    });
-
-    it("lets the owner edit ACLs with immediate effect", async () => {
+    it("applies a stored folder ACL on the next request", async () => {
       const before = await fetchTree(sessions.viewer.client);
       expect(findById(before, folders.curtain), "curtain visible").to.not.equal(
         undefined,
       );
-      const inherited = await owner.get(
-        `/api/media/folders/${folders.curtain}/acl`,
-      );
-      expect(inherited.status).to.equal(HTTP_OK);
-      expect(inherited.data.entries).to.equal(null);
-      const lock = await owner.put(
-        `/api/media/folders/${folders.curtain}/acl`,
-        {
-          entries: [roleEntry(roles.secretTeam, ["manage"])],
-        },
-      );
-      expect(lock.status).to.equal(HTTP_OK);
-      const acl = await owner.get(`/api/media/folders/${folders.curtain}/acl`);
-      expect(acl.status).to.equal(HTTP_OK);
-      expect(acl.data.entries).to.deep.include(
+      expect(await readFolderAcl(folders.curtain)).to.equal(undefined);
+      await writeFolderAcl(folders.curtain, [
         roleEntry(roles.secretTeam, ["manage"]),
-      );
+      ]);
       const hidden = await fetchTree(sessions.viewer.client);
       expect(findById(hidden, folders.curtain), "curtain hidden").to.equal(
         undefined,
@@ -817,24 +774,13 @@ describe("[integration] media permissions — multi-actor ACL enforcement", () =
     });
 
     it("never locks the owner out of a folder", async () => {
-      const exclusion = await owner.put(
-        `/api/media/folders/${folders.curtain}/acl`,
-        { entries: [] },
-      );
-      expect(exclusion.status).to.equal(HTTP_OK);
-      const stillThere = await owner.get(
-        `/api/media/folders/${folders.curtain}/acl`,
-      );
-      expect(stillThere.status).to.equal(HTTP_OK);
-      expect(stillThere.data.entries).to.deep.equal([]);
+      await writeFolderAcl(folders.curtain, []);
+      const tree = await fetchTree(owner);
+      expect(findById(tree, folders.curtain)?.rights.manage).to.equal(true);
     });
 
     it("restores inheritance when the ACL is cleared", async () => {
-      const clear = await owner.put(
-        `/api/media/folders/${folders.curtain}/acl`,
-        { entries: null },
-      );
-      expect(clear.status).to.equal(HTTP_OK);
+      await writeFolderAcl(folders.curtain, null);
       const tree = await fetchTree(sessions.viewer.client);
       expect(findById(tree, folders.curtain), "curtain back").to.not.equal(
         undefined,
@@ -865,10 +811,6 @@ describe("[integration] media permissions — multi-actor ACL enforcement", () =
     });
 
     it("keeps linked folders locked even for the owner", async () => {
-      const reAcl = await owner.put(`/api/media/folders/${folders.stock}/acl`, {
-        entries: [],
-      });
-      expect(reAcl.status).to.equal(HTTP_FORBIDDEN);
       const rename = await owner.post(
         `/api/media/folders/${folders.stock}/rename`,
         { name: "Hijacked stock" },
@@ -994,9 +936,7 @@ describe("[integration] media permissions — multi-actor ACL enforcement", () =
           write: [WAREHOUSE_EDIT_PERMISSION],
         },
       });
-      const acl = await owner.get(`/api/media/folders/${folders.stock}/acl`);
-      expect(acl.status).to.equal(HTTP_OK);
-      expect(acl.data.entries).to.deep.include(
+      expect(await readFolderAcl(folders.stock)).to.deep.include(
         permissionEntry(WAREHOUSE_VIEW_PERMISSION, ["read"]),
       );
       const tree = await fetchTree(sessions.clerk.client);

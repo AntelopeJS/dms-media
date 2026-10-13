@@ -14,8 +14,8 @@ import { expect } from "chai";
 import { RegisterAssetBinding } from "@antelopejs/interface-dms-media";
 import { DEFAULT_ROOT_ACL } from "../../acl/defaults";
 import { MEDIA_PAGE_PERMISSION } from "../../pages/files";
-import type { AclEntry } from "../../types";
 import { type UploadedAsset, uploadTextAsset } from "../helpers/assets";
+import { readFolderAcl } from "../helpers/folders";
 import { authorizedClient } from "../helpers/http";
 import {
   createRole,
@@ -222,11 +222,8 @@ describe("[integration] media member access — roles, root ACL and linked folde
     });
 
     it("stores no manage entry on the linked folder", async () => {
-      const acl = await world.owner.get(
-        `/api/media/folders/${world.linkedFolderId}/acl`,
-      );
-      expect(acl.status).to.equal(HTTP_OK);
-      const managed = (acl.data.entries as AclEntry[]).filter((entry) =>
+      const entries = (await readFolderAcl(world.linkedFolderId)) ?? [];
+      const managed = entries.filter((entry) =>
         entry.rights.includes("manage"),
       );
       expect(managed).to.deep.equal([]);

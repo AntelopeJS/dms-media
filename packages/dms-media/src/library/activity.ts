@@ -65,7 +65,6 @@ const EVENT_PRESENTATIONS: Record<MediaEventKind, EventPresentation> = {
   "folder.rename": { icon: "i-ph-pencil-simple", tone: "neutral" },
   "folder.move": { icon: "i-ph-arrows-out-cardinal", tone: "neutral" },
   "folder.visibility": { icon: "i-ph-globe", tone: "success" },
-  "folder.acl": { icon: "i-ph-shield-check", tone: "warning" },
 };
 
 const NEUTRAL_PRESENTATION: EventPresentation = {
@@ -93,7 +92,6 @@ export const ACTIVITY_FILTERS = {
     "folder.move",
     "folder.delete",
     "folder.visibility",
-    "folder.acl",
   ],
 } as const satisfies Record<string, readonly MediaEventKind[]>;
 

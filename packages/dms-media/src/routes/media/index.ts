@@ -1,4 +1,3 @@
-export * from "./access";
 export * from "./asset-actions";
 export * from "./assets";
 export * from "./bulk";

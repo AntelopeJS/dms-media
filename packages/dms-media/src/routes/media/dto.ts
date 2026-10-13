@@ -1,6 +1,6 @@
 import { parseFolderAcl } from "../../acl";
 import type { MediaAsset, MediaFolder } from "../../db";
-import type { AclEntry, AssetVisibility, FolderVisibility } from "../../types";
+import type { AssetVisibility, FolderVisibility } from "../../types";
 import {
   bindingAccepts,
   describeFolderLink,
@@ -155,8 +155,4 @@ export function buildAssetDto(
     createdAt: asset.createdAt,
     updatedAt: asset.updatedAt,
   };
-}
-
-export function readFolderAclEntries(folder: MediaFolder): AclEntry[] | null {
-  return parseFolderAcl(folder) ?? null;
 }

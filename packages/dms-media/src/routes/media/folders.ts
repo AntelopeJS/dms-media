@@ -1,21 +1,12 @@
 import { MediaApiController } from "./controller";
-import {
-  Delete,
-  Get,
-  JSONBody,
-  Parameter,
-  Post,
-  Put,
-} from "@antelopejs/interface-api";
+import { Delete, JSONBody, Parameter, Post } from "@antelopejs/interface-api";
 import { assert } from "@antelopejs/interface-api-util";
-import { serializeAcl } from "../../acl";
 import { deleteMediaAsset } from "../../asset-lifecycle";
 import { forgetFavorites } from "../../library/favorites";
 import { type MediaFolder } from "../../db";
 import {
   comparableName,
   createFolderSchema,
-  folderAclSchema,
   folderVisibilitySchema,
   MEDIA_ERRORS,
   moveFolderSchema,
@@ -29,7 +20,6 @@ import {
   type MediaRequestContext,
   requireFolderRight,
 } from "./context";
-import { readFolderAclEntries } from "./dto";
 
 const HTTP_BAD_REQUEST = 400;
 const HTTP_FORBIDDEN = 403;
@@ -142,14 +132,6 @@ function assertMoveTargetOutsideSubtree(
 }
 
 export class MediaFoldersController extends MediaApiController {
-  @Get("/folders/:folderId/acl")
-  async getAcl(@Parameter("folderId", "param") folderId: string) {
-    const context = await this.resolveContext();
-    const folder = requireFolderRight(context, folderId, "manage");
-    assertMediaOwner(context);
-    return { entries: readFolderAclEntries(folder) };
-  }
-
   @Post("/folders")
   async createFolder(@JSONBody() body: unknown) {
     const { name, parentId } = parseBody(body, createFolderSchema);
@@ -234,27 +216,6 @@ export class MediaFoldersController extends MediaApiController {
       targetName: folder.name,
       folderId,
       details: { visibility: `$dms_media.visibility.${visibility}` },
-    });
-    return { ok: true };
-  }
-
-  @Put("/folders/:folderId/acl")
-  async setAcl(
-    @Parameter("folderId", "param") folderId: string,
-    @JSONBody() body: unknown,
-  ) {
-    const { entries } = parseBody(body, folderAclSchema);
-    const context = await this.resolveContext();
-    const folder = requireFolderRight(context, folderId, "manage");
-    assertNotBound(folder);
-    assertMediaOwner(context);
-    await context.folderModel.update(folderId, {
-      json_acl: serializeAcl(entries ?? undefined) ?? "",
-    });
-    await this.record(context, {
-      kind: "folder.acl",
-      targetName: folder.name,
-      folderId,
     });
     return { ok: true };
   }

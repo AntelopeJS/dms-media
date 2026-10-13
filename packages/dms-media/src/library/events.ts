@@ -4,7 +4,7 @@ import type { User } from "@antelopejs/interface-dms/auth/db";
 import { type MediaEvent, MediaEventModel } from "../db";
 import { announceLibraryChange, UPLOAD_ANNOUNCE_WINDOW_MS } from "./realtime";
 
-export const MEDIA_EVENT_KINDS = [
+const MEDIA_EVENT_KINDS = [
   "asset.upload",
   "upload.batch",
   "asset.delete",
@@ -19,7 +19,6 @@ export const MEDIA_EVENT_KINDS = [
   "folder.rename",
   "folder.move",
   "folder.visibility",
-  "folder.acl",
 ] as const;
 
 export type MediaEventKind = (typeof MEDIA_EVENT_KINDS)[number];

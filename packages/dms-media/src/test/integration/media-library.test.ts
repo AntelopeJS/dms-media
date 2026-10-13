@@ -342,18 +342,6 @@ describe("[integration] media library — listings, search, bulk and overview", 
     expect(row.folder).to.equal("Library spec › Oak shots");
   });
 
-  it("summarizes who can see a folder and where its rules come from", async () => {
-    const response = await client.get(`/api/media/folders/${childId}/access`);
-    expect(response.status).to.equal(HTTP_OK);
-    expect(
-      response.data.chain.map((link: { name: string }) => link.name),
-    ).to.deep.equal(["$dms_media.library.root", "Library spec", "Oak shots"]);
-    expect(response.data.sourceId).to.equal(null);
-    expect(response.data.isOwn).to.equal(false);
-    expect(response.data.rights.manage.count).to.be.at.least(1);
-    expect(response.data.canEdit).to.equal(true);
-  });
-
   it("lists delivery presets with their cache keys", async () => {
     await client.post("/api/media/previews", { ids: [ids["oak-a.png"]] });
     const response = await client.get("/api/media/presets");
@@ -364,12 +352,6 @@ describe("[integration] media library — listings, search, bulk and overview", 
     expect(thumb.cacheKey).to.match(/^thumb\./);
     expect(thumb.rendered).to.be.at.least(1);
     expect(response.data.cache.schedule).to.equal("0 4 * * *");
-  });
-
-  it("lists linked folders as a source table", async () => {
-    const response = await client.get("/api/media/linked");
-    expect(response.status).to.equal(HTTP_OK);
-    expect(response.data).to.have.keys(["results", "total"]);
   });
 
   it("refuses starter folders that clash with a root folder", async () => {
