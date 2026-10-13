@@ -1,7 +1,7 @@
 import { type MediaAsset, MediaAssetModel } from "../db";
 import type {
   AssetSortKey,
-  ListingQuery,
+  PageQuery,
   SortDirection,
 } from "../validation/library.schema";
 import { type AssetTypeGroup, resolveTypeGroup } from "./type-groups";
@@ -66,10 +66,7 @@ export function filterByTypeGroup(
   return assets.filter((asset) => resolveTypeGroup(asset.mimetype) === type);
 }
 
-export function pageAssets(
-  assets: MediaAsset[],
-  query: ListingQuery,
-): AssetPage {
+export function pageAssets(assets: MediaAsset[], query: PageQuery): AssetPage {
   const filtered = filterByTypeGroup(assets, query.type);
   const sorted = sortAssets(filtered, query.sort, query.direction);
   return {

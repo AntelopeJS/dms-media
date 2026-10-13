@@ -5,21 +5,36 @@ export interface SelectionGesture {
 	toggle: boolean
 }
 
-/** Which files are selected, with ⇧ ranges and ⌘ toggles over the visible order. */
-export function useLibrarySelection(visible: Ref<MediaAsset[]>) {
+/**
+ * Which files are selected, with ⇧ ranges and ⌘ toggles over the visible order.
+ * A kept selection (the picker's) holds on to files that leave the view, so a
+ * choice can span folders and searches.
+ */
+export function useLibrarySelection(visible: Ref<MediaAsset[]>, isKept = false) {
 	const selectedIds = ref<Set<string>>(new Set())
 	const anchorId = ref<string | null>(null)
 	const focusedFolderId = ref<string | null>(null)
+	const keptAssets = shallowRef(new Map<string, MediaAsset>())
 
-	const selectedAssets = computed(() =>
-		visible.value.filter((asset) => selectedIds.value.has(asset.id)),
-	)
+	const selectedAssets = computed(() => (isKept ? keptSelection() : visibleSelection()))
 	const selectedSize = computed(() =>
 		selectedAssets.value.reduce((total, asset) => total + asset.size, 0),
 	)
 	const focusedAsset = computed(() =>
 		selectedAssets.value.length === 1 ? selectedAssets.value[0] : undefined,
 	)
+
+	function visibleSelection(): MediaAsset[] {
+		return visible.value.filter((asset) => selectedIds.value.has(asset.id))
+	}
+
+	function keptSelection(): MediaAsset[] {
+		const visibleById = new Map(visible.value.map((asset) => [asset.id, asset]))
+		return [...selectedIds.value].flatMap((id) => {
+			const asset = visibleById.get(id) ?? keptAssets.value.get(id)
+			return asset ? [asset] : []
+		})
+	}
 
 	function rangeIds(fromId: string, toId: string): string[] {
 		const ids = visible.value.map((asset) => asset.id)
@@ -65,6 +80,19 @@ export function useLibrarySelection(visible: Ref<MediaAsset[]>) {
 		const next = new Set(selectedIds.value)
 		ids.forEach((id) => next.delete(id))
 		selectedIds.value = next
+	}
+
+	watch(visible, (assets) => {
+		const present = new Set(assets.map((asset) => asset.id))
+		const gone = [...selectedIds.value].filter((id) => !present.has(id))
+		if (gone.length > 0 && !isKept) forget(gone)
+		if (anchorId.value && !present.has(anchorId.value)) anchorId.value = null
+	})
+
+	if (isKept) {
+		watch([selectedIds, visible], () => {
+			keptAssets.value = new Map(keptSelection().map((asset) => [asset.id, asset]))
+		}, { flush: 'sync' })
 	}
 
 	return {

@@ -58,13 +58,13 @@ const size = computed(() => props.assets.reduce((total, asset) => total + asset.
 			</p>
 		</div>
 		<template #footer>
-			<UButton color="neutral" variant="outline" :label="t('dms_media.actions.cancel')" @click="emit('close', null)" />
+			<UButton color="neutral" variant="outline" data-initial-focus :label="t('dms_media.actions.cancel')" @click="emit('close', null)" />
 			<UButton
 				v-if="publicAssets.length && canMakePrivate"
 				color="neutral"
 				variant="outline"
 				icon="i-ph-lock-simple"
-				:label="t('dms_media.dialogs.delete_files.make_private')"
+				:label="t('dms_media.dialogs.delete_files.make_private_only', { count: publicAssets.length }, publicAssets.length)"
 				@click="emit('close', 'private')"
 			/>
 			<UButton color="error" icon="i-ph-trash" :label="t('dms_media.dialogs.delete_files.confirm', { count: assets.length }, assets.length)" @click="emit('close', 'delete')" />

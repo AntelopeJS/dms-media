@@ -28,6 +28,12 @@ const isDirty = computed(() => draft.value.trim() !== (props.asset.alt ?? '').tr
 // Instant-save feedback as a DMS form row shows it: "Saved" only while the text is the saved one.
 const saveState = computed(() => (state.value === 'saved' && isDirty.value ? 'idle' : state.value))
 
+function revert(event: KeyboardEvent): void {
+	const field = event.target as HTMLElement
+	draft.value = props.asset.alt ?? ''
+	field.blur()
+}
+
 async function commit(): Promise<void> {
 	if (!props.canEdit || !isDirty.value) return
 	state.value = 'saving'
@@ -61,6 +67,7 @@ async function commit(): Promise<void> {
 				@blur="commit"
 				@keydown.meta.enter.prevent="commit"
 				@keydown.ctrl.enter.prevent="commit"
+				@keydown.escape.stop.prevent="revert"
 			/>
 			<template #help>
 				<span class="flex items-center justify-between gap-2 text-[12px]">

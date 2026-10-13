@@ -79,20 +79,77 @@ function endRecord(count: number, size: number, offset: number): Buffer {
   return record;
 }
 
-/** Gives every entry a distinct name: `photo.jpg`, `photo (2).jpg`, … */
-export function uniqueEntryName(name: string, taken: Set<string>): string {
-  let candidate = name;
+const NON_PORTABLE_CHARS = new Set([
+  "<",
+  ">",
+  ":",
+  '"',
+  "/",
+  "\\",
+  "|",
+  "?",
+  "*",
+]);
+const MIN_PRINTABLE_CHAR_CODE = 32;
+const TRAILING_DOTS_AND_SPACES = /[. ]+$/;
+const WINDOWS_RESERVED_NAMES = /^(con|prn|aux|nul|com[0-9]|lpt[0-9])(\..*)?$/i;
+const MAX_PORTABLE_LENGTH = 150;
+const REPLACEMENT_CHAR = "_";
+
+function splitExtension(name: string): [string, string] {
+  const dot = name.lastIndexOf(".");
+  return dot > 0 ? [name.slice(0, dot), name.slice(dot)] : [name, ""];
+}
+
+function shorten(name: string): string {
+  if (name.length <= MAX_PORTABLE_LENGTH) return name;
+  const [base, extension] = splitExtension(name);
+  const kept = extension.length < MAX_PORTABLE_LENGTH / 2 ? extension : "";
+  return base.slice(0, MAX_PORTABLE_LENGTH - kept.length).trimEnd() + kept;
+}
+
+/**
+ * A name every operating system can extract: characters Windows refuses
+ * become `_`, trailing dots and spaces go, reserved device names (`CON`,
+ * `NUL`, …) get a `_` prefix and long names are shortened, extension kept.
+ */
+function portableChar(char: string): string {
+  const isRefused =
+    NON_PORTABLE_CHARS.has(char) ||
+    char.charCodeAt(0) < MIN_PRINTABLE_CHAR_CODE;
+  return isRefused ? REPLACEMENT_CHAR : char;
+}
+
+export function portableName(name: string): string {
+  const cleaned = Array.from(name, portableChar)
+    .join("")
+    .replace(TRAILING_DOTS_AND_SPACES, "");
+  const safe = WINDOWS_RESERVED_NAMES.test(cleaned)
+    ? `${REPLACEMENT_CHAR}${cleaned}`
+    : cleaned;
+  return shorten(safe) || REPLACEMENT_CHAR;
+}
+
+/**
+ * Gives every entry a distinct, portable name: `photo.jpg`, `photo (2).jpg`,
+ * … inside `directory` (`Folder/Subfolder/`, empty at the top).
+ */
+export function uniqueEntryName(
+  name: string,
+  taken: Set<string>,
+  directory = "",
+): string {
+  const portable = portableName(name);
+  const [base, extension] = splitExtension(portable);
+  let candidate = portable;
   let index = 1;
-  while (taken.has(candidate.toLowerCase())) {
+  while (taken.has(`${directory}${candidate}`.toLowerCase())) {
     index += 1;
-    const dot = name.lastIndexOf(".");
-    candidate =
-      dot > 0
-        ? `${name.slice(0, dot)} (${index})${name.slice(dot)}`
-        : `${name} (${index})`;
+    candidate = `${base} (${index})${extension}`;
   }
-  taken.add(candidate.toLowerCase());
-  return candidate;
+  const entry = `${directory}${candidate}`;
+  taken.add(entry.toLowerCase());
+  return entry;
 }
 
 /** Writes an uncompressed zip archive entry by entry: files are already compressed media. */

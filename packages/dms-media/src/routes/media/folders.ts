@@ -7,16 +7,19 @@ import {
   Post,
   Put,
 } from "@antelopejs/interface-api";
-import { assert, assertValidation } from "@antelopejs/interface-api-util";
+import { assert } from "@antelopejs/interface-api-util";
 import { serializeAcl } from "../../acl";
 import { deleteMediaAsset } from "../../asset-lifecycle";
 import { forgetFavorites } from "../../library/favorites";
 import { type MediaFolder } from "../../db";
 import {
+  comparableName,
   createFolderSchema,
   folderAclSchema,
   folderVisibilitySchema,
+  MEDIA_ERRORS,
   moveFolderSchema,
+  parseBody,
   renameFolderSchema,
 } from "../../validation/media.schema";
 import {
@@ -38,13 +41,14 @@ function assertUniqueSiblingName(
   parentId: string | undefined,
   ignoredId?: string,
 ): void {
+  const wanted = comparableName(name);
   const clash = context.folders.some(
     (folder) =>
       folder._id !== ignoredId &&
       (folder.parentId ?? undefined) === parentId &&
-      folder.name === name,
+      comparableName(folder.name) === wanted,
   );
-  assert(!clash, HTTP_CONFLICT, "A sibling folder already has this name");
+  assert(!clash, HTTP_CONFLICT, MEDIA_ERRORS.folderNameTaken);
 }
 
 function assertCanPlaceUnder(
@@ -59,7 +63,9 @@ function assertCanPlaceUnder(
     );
     return undefined;
   }
-  return requireFolderRight(context, parentId, "manage");
+  const parent = requireFolderRight(context, parentId, "manage");
+  assert(!parent.binding, HTTP_FORBIDDEN, MEDIA_ERRORS.boundParent);
+  return parent;
 }
 
 function buildChildPath(parent: MediaFolder | undefined): string[] {
@@ -146,9 +152,7 @@ export class MediaFoldersController extends MediaApiController {
 
   @Post("/folders")
   async createFolder(@JSONBody() body: unknown) {
-    const { name, parentId } = assertValidation(body, (v) =>
-      createFolderSchema.parse(v),
-    );
+    const { name, parentId } = parseBody(body, createFolderSchema);
     const context = await this.resolveContext();
     const parent = assertCanPlaceUnder(context, parentId);
     assertUniqueSiblingName(context, name, parentId);
@@ -162,6 +166,7 @@ export class MediaFoldersController extends MediaApiController {
       kind: "folder.create",
       targetName: name,
       folderId: parentId,
+      details: { targetId: folderId },
     });
     return { id: folderId };
   }
@@ -171,7 +176,7 @@ export class MediaFoldersController extends MediaApiController {
     @Parameter("folderId", "param") folderId: string,
     @JSONBody() body: unknown,
   ) {
-    const { name } = assertValidation(body, (v) => renameFolderSchema.parse(v));
+    const { name } = parseBody(body, renameFolderSchema);
     const context = await this.resolveContext();
     const folder = requireFolderRight(context, folderId, "manage");
     assertNotBound(folder);
@@ -196,9 +201,7 @@ export class MediaFoldersController extends MediaApiController {
     @Parameter("folderId", "param") folderId: string,
     @JSONBody() body: unknown,
   ) {
-    const { parentId } = assertValidation(body, (v) =>
-      moveFolderSchema.parse(v),
-    );
+    const { parentId } = parseBody(body, moveFolderSchema);
     const context = await this.resolveContext();
     const folder = requireFolderRight(context, folderId, "manage");
     assertNotBound(folder);
@@ -221,9 +224,7 @@ export class MediaFoldersController extends MediaApiController {
     @Parameter("folderId", "param") folderId: string,
     @JSONBody() body: unknown,
   ) {
-    const { visibility } = assertValidation(body, (v) =>
-      folderVisibilitySchema.parse(v),
-    );
+    const { visibility } = parseBody(body, folderVisibilitySchema);
     const context = await this.resolveContext();
     const folder = requireFolderRight(context, folderId, "manage");
     await assertPermissionsManager(context);
@@ -242,7 +243,7 @@ export class MediaFoldersController extends MediaApiController {
     @Parameter("folderId", "param") folderId: string,
     @JSONBody() body: unknown,
   ) {
-    const { entries } = assertValidation(body, (v) => folderAclSchema.parse(v));
+    const { entries } = parseBody(body, folderAclSchema);
     const context = await this.resolveContext();
     const folder = requireFolderRight(context, folderId, "manage");
     assertNotBound(folder);

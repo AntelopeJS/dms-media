@@ -1,25 +1,82 @@
-import { z } from "zod";
+import { assertValidation } from "@antelopejs/interface-api-util";
+import { z, ZodError } from "zod";
 
 const MAX_NAME_LENGTH = 255;
 const MIN_PRINTABLE_CHAR_CODE = 32;
-const FORBIDDEN_NAME_CHARS = new Set(["/", "\\"]);
+const PATH_SEPARATORS = new Set(["/", "\\"]);
+const NON_PORTABLE_CHARS = new Set(["<", ">", ":", '"', "|", "?", "*"]);
+const ERRORS = "$dms_media.errors";
 
-function isSafeName(value: string): boolean {
+/** Error bodies the API answers with: i18n keys the dashboard translates. */
+export const MEDIA_ERRORS = {
+  invalidRequest: `${ERRORS}.invalid_request`,
+  assetNotFound: `${ERRORS}.asset_not_found`,
+  nameRequired: `${ERRORS}.name_required`,
+  nameTooLong: `${ERRORS}.name_too_long`,
+  nameForbidden: `${ERRORS}.name_forbidden`,
+  nameTaken: `${ERRORS}.name_taken`,
+  folderNameTaken: `${ERRORS}.folder_name_taken`,
+  boundParent: `${ERRORS}.bound_parent`,
+  altTooLong: `${ERRORS}.alt_too_long`,
+} as const;
+
+function isPrintable(char: string): boolean {
+  return char.charCodeAt(0) >= MIN_PRINTABLE_CHAR_CODE;
+}
+
+function isSafeFileName(value: string): boolean {
   return Array.from(value).every(
-    (char) =>
-      !FORBIDDEN_NAME_CHARS.has(char) &&
-      char.charCodeAt(0) >= MIN_PRINTABLE_CHAR_CODE,
+    (char) => !PATH_SEPARATORS.has(char) && isPrintable(char),
   );
 }
 
-const nameSchema = z
-  .string()
-  .trim()
-  .min(1)
-  .max(MAX_NAME_LENGTH)
-  .refine(isSafeName, {
-    message: "Name contains forbidden characters",
-  });
+function isPortableName(value: string): boolean {
+  return (
+    isSafeFileName(value) &&
+    Array.from(value).every((char) => !NON_PORTABLE_CHARS.has(char))
+  );
+}
+
+function boundedName(): z.ZodString {
+  return z
+    .string()
+    .trim()
+    .min(1, { message: MEDIA_ERRORS.nameRequired })
+    .max(MAX_NAME_LENGTH, { message: MEDIA_ERRORS.nameTooLong });
+}
+
+/** A name typed in the library: refuses what Windows or macOS can't save. */
+const nameSchema = boundedName().refine(isPortableName, {
+  message: MEDIA_ERRORS.nameForbidden,
+});
+
+/** The name of an uploaded file, kept as the computer sent it. */
+const fileNameSchema = boundedName().refine(isSafeFileName, {
+  message: MEDIA_ERRORS.nameForbidden,
+});
+
+/** Two names clash when this form of theirs is equal: case and Unicode form aside. */
+export function comparableName(name: string): string {
+  return name.trim().normalize("NFC").toLocaleLowerCase();
+}
+
+/** The first validation message when it is an i18n key, a generic one otherwise. */
+export function describeValidationError(error: unknown): string {
+  const message = error instanceof ZodError ? error.issues[0]?.message : "";
+  return message?.startsWith("$") ? message : MEDIA_ERRORS.invalidRequest;
+}
+
+/** Parses a request body, answering 400 with a translatable message. */
+export function parseBody<Schema extends z.ZodTypeAny>(
+  body: unknown,
+  schema: Schema,
+): z.output<Schema> {
+  return assertValidation(
+    body,
+    (value) => schema.parse(value) as z.output<Schema>,
+    describeValidationError,
+  );
+}
 
 const aclRightSchema = z.enum(["read", "write", "manage"]);
 
@@ -58,7 +115,7 @@ export const MAX_UPLOAD_SIZE_BYTES = 500 * 1024 * 1024;
 
 export const presignSchema = z.object({
   folderId: z.string().min(1),
-  filename: nameSchema,
+  filename: fileNameSchema,
   size: z.number().int().positive().max(MAX_UPLOAD_SIZE_BYTES),
   mimetype: z.string().min(1),
 });
@@ -66,13 +123,16 @@ export const presignSchema = z.object({
 export const confirmUploadSchema = z.object({
   folderId: z.string().min(1),
   resourceKey: z.string().min(1),
-  filename: nameSchema,
+  filename: fileNameSchema,
   batchId: z.string().min(1).max(MAX_NAME_LENGTH).optional(),
 });
 
 export const updateAssetSchema = z.object({
   name: nameSchema.optional(),
-  alt: z.string().max(MAX_NAME_LENGTH).optional(),
+  alt: z
+    .string()
+    .max(MAX_NAME_LENGTH, { message: MEDIA_ERRORS.altTooLong })
+    .optional(),
 });
 
 export const moveAssetSchema = z.object({

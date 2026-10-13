@@ -1,11 +1,14 @@
 export type ExplorerView = 'grid' | 'list' | 'columns'
 
+export type ListColumn = 'type' | 'size' | 'dimensions' | 'alt' | 'visibility' | 'added' | 'modified'
+
 export interface MediaPrefs {
 	view: ExplorerView
 	showDetails: boolean
 	tileSize: number
 	lastFolderId: string | null
 	sidebarOpen: boolean
+	listColumns: ListColumn[]
 }
 
 const STORAGE_KEY = 'dms-media-prefs'
@@ -15,6 +18,7 @@ const DEFAULT_PREFS: MediaPrefs = {
 	tileSize: 168,
 	lastFolderId: null,
 	sidebarOpen: true,
+	listColumns: ['type', 'size', 'alt', 'visibility', 'modified'],
 }
 
 const prefs = ref<MediaPrefs>({ ...DEFAULT_PREFS })
@@ -40,7 +44,7 @@ function save(): void {
 	}
 }
 
-/** Explorer preferences kept per browser: view, details panel, tile size, last folder. */
+/** Explorer preferences kept per browser: view, details panel, tile size, list columns, last folder. */
 export function useMediaPrefs() {
 	onMounted(load)
 

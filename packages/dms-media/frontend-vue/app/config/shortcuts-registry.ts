@@ -10,6 +10,8 @@ const KEY_LABELS: Record<string, string> = {
 	delete: '$keyboard.delete',
 	arrowleft: '←',
 	arrowright: '→',
+	arrowup: '↑',
+	arrowdown: '↓',
 }
 
 export default [

@@ -6,8 +6,19 @@ const { t } = useI18n()
 const selected = computed(() => library.selection.selectedAssets.value)
 const canWrite = computed(() => selected.value.every(commands.canWriteAsset))
 const canChangeVisibility = computed(() => selected.value.every(commands.canChangeVisibility))
-const visibleCount = computed(() => library.listing.assets.value.length)
+const listingTotal = computed(() => library.listing.total.value)
+const isLoadingAll = ref(false)
 const ZIP_LIMIT = 200
+
+async function selectEverything(): Promise<void> {
+	isLoadingAll.value = true
+	try {
+		await library.listing.loadAll()
+		library.selection.selectAll()
+	} finally {
+		isLoadingAll.value = false
+	}
+}
 </script>
 
 <template>
@@ -18,15 +29,19 @@ const ZIP_LIMIT = 200
 	>
 		<UCheckbox :model-value="true" :aria-label="t('dms_media.actions.clear_selection')" @update:model-value="library.selection.clear()" />
 		<span class="text-highlighted text-sm font-semibold">
-			{{ t('dms_media.bulk.selected', { count: selected.length }, selected.length) }}
+			<template v-if="selected.length < listingTotal">
+				{{ t('dms_media.bulk.selected_of', { count: selected.length, total: listingTotal }, selected.length) }}
+			</template>
+			<template v-else>{{ t('dms_media.bulk.selected', { count: selected.length }, selected.length) }}</template>
 		</span>
 		<span class="text-muted font-mono text-xs">{{ format.formatBytes(library.selection.selectedSize.value) }}</span>
 		<UButton
-			v-if="selected.length < visibleCount"
+			v-if="selected.length < listingTotal"
 			variant="link"
 			size="sm"
-			:label="t('dms_media.bulk.select_all', { count: visibleCount })"
-			@click="library.selection.selectAll()"
+			:loading="isLoadingAll"
+			:label="t('dms_media.bulk.select_all', { count: listingTotal })"
+			@click="selectEverything"
 		/>
 		<div class="ms-auto flex flex-wrap items-center gap-1.5">
 			<UButton v-if="canWrite" icon="i-ph-arrows-out-cardinal" color="neutral" variant="outline" size="sm" :label="t('dms_media.bulk.move')" @click="commands.moveAssets(selected)" />
@@ -38,6 +53,7 @@ const ZIP_LIMIT = 200
 					variant="outline"
 					size="sm"
 					:disabled="selected.length > ZIP_LIMIT"
+					:loading="library.actions.isZipping?.value"
 					:label="t('dms_media.bulk.zip')"
 					@click="library.actions.downloadZip(selected)"
 				/>

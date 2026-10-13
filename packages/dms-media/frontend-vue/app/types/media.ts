@@ -17,6 +17,13 @@ export type MediaRight = 'read' | 'write' | 'manage'
 
 export type MediaRights = Record<MediaRight, boolean>
 
+/** What a linked folder is linked to; `pageTitle` may be a DMS `$key`. */
+export interface FolderLink {
+	isContentRoot: boolean
+	pageTitle: string | null
+	pageUrl: string | null
+}
+
 export interface MediaFolder {
 	id: string
 	name: string
@@ -24,6 +31,9 @@ export interface MediaFolder {
 	shell: boolean
 	bound: boolean
 	binding: string | null
+	link: FolderLink | null
+	/** Mimetype patterns the linked field accepts; null when unlinked or unrestricted. */
+	accepts: string[] | null
 	visibility: FolderVisibility
 	hasOwnAcl: boolean
 	createdAt: string
@@ -74,6 +84,8 @@ export interface MediaTree {
 	views: MediaViewCounts
 	canManagePermissions: boolean
 	maxUploadBytes: number
+	/** Mimetype patterns the library accepts at all, from the module config. */
+	allowedMimetypes: string[]
 	quotaBytes: number | null
 }
 
@@ -90,11 +102,13 @@ export type AssetSortKey = 'name' | 'date' | 'size' | 'type'
 
 export type SortDirection = 'asc' | 'desc'
 
-export type SmartView = 'recent' | 'starred' | 'missing-alt'
+export type SmartView = 'recent' | 'starred' | 'missing-alt' | 'largest' | 'public'
 
 export type ModifiedWindow = 'any' | '7d' | '30d' | 'year'
 
 export type VisibilityFilter = 'any' | FolderVisibility
+
+export type OrientationFilter = 'any' | 'landscape' | 'portrait' | 'square'
 
 export interface ListingParams {
 	offset?: number
@@ -102,13 +116,15 @@ export interface ListingParams {
 	sort?: AssetSortKey
 	direction?: SortDirection
 	type?: AssetTypeGroup
+	visibility?: VisibilityFilter
+	modified?: ModifiedWindow
+	orientation?: OrientationFilter
+	/** Folder whose subtree bounds a smart view or a search. */
+	folderId?: string
 }
 
 export interface SearchParams extends ListingParams {
 	q: string
-	folderId?: string
-	visibility?: VisibilityFilter
-	modified?: ModifiedWindow
 }
 
 export interface BulkRefusal {
@@ -158,91 +174,6 @@ export interface ActivityEntry {
 	params?: Record<string, string>
 	date?: string
 	to?: string
-}
-
-export interface AclSubject {
-	kind: 'permission' | 'role'
-	id: string
-}
-
-export interface AclEntry {
-	subject: AclSubject
-	rights: MediaRight[]
-}
-
-export interface LabelledAclEntry extends AclEntry {
-	label?: string
-	memberCount?: number
-}
-
-export interface AccessMember {
-	userId: string
-	name: string
-}
-
-export interface RightHolders {
-	count: number
-	sample: AccessMember[]
-}
-
-export interface ChainLink {
-	id: string | null
-	name: string
-	hasOwnAcl: boolean
-}
-
-export interface VisibilityOverride {
-	id: string
-	name: string
-	visibility: AssetVisibility
-}
-
-export interface FolderAccessSummary {
-	folder: MediaFolder
-	chain: ChainLink[]
-	sourceId: string | null
-	isOwn: boolean
-	entries: LabelledAclEntry[]
-	rights: Record<MediaRight, RightHolders>
-	canEdit: boolean
-	directFiles: number
-	overrides: VisibilityOverride[]
-}
-
-export interface RoleOption {
-	id: string
-	name: string
-}
-
-export interface PermissionOption {
-	id: string
-	title: string
-}
-
-export interface AccessSubjects {
-	roles: RoleOption[]
-	permissions: PermissionOption[]
-}
-
-export interface LinkedFieldInfo {
-	multiple?: boolean
-	max?: number
-	mimetypes?: string[]
-}
-
-export interface LinkedFolderDetail {
-	id: string
-	folderId: string
-	folderName: string
-	path: string
-	createdAt: string
-	visibility: FolderVisibility
-	field: LinkedFieldInfo
-	read: string[]
-	write: string[]
-	manage: string[]
-	fromPage: boolean
-	definition: string
 }
 
 export interface DeliveryPreset {

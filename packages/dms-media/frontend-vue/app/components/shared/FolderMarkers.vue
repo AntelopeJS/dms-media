@@ -7,6 +7,9 @@ const { t } = useI18n()
 
 <template>
 	<span class="inline-flex shrink-0 items-center gap-1">
+		<UTooltip v-if="folder.starred" :text="t('dms_media.smart_views.starred')">
+			<UIcon name="i-ph-star-fill" class="text-warning size-3.5" :aria-label="t('dms_media.smart_views.starred')" />
+		</UTooltip>
 		<UTooltip v-if="folder.visibility === 'public'" :text="t('dms_media.markers.public')">
 			<UIcon name="i-ph-globe" class="text-success size-3.5" />
 		</UTooltip>

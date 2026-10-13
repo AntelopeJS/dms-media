@@ -1,6 +1,11 @@
 import { parseFolderAcl } from "../../acl";
 import type { MediaAsset, MediaFolder } from "../../db";
 import type { AclEntry, AssetVisibility, FolderVisibility } from "../../types";
+import {
+  bindingAccepts,
+  describeFolderLink,
+  type FolderLinkDto,
+} from "../../library/binding-labels";
 import type { FolderStats } from "../../library/folder-stats";
 import {
   type AssetTypeGroup,
@@ -21,6 +26,9 @@ export interface MediaFolderDto {
   shell: boolean;
   bound: boolean;
   binding: string | null;
+  link: FolderLinkDto | null;
+  /** Mimetype patterns the linked field accepts; null when unlinked or unrestricted. */
+  accepts: string[] | null;
   visibility: FolderVisibility;
   hasOwnAcl: boolean;
   createdAt: Date;
@@ -69,6 +77,8 @@ export function buildFolderDto(
     shell,
     bound: Boolean(folder.binding),
     binding: folder.binding ?? null,
+    link: describeFolderLink(folder.binding),
+    accepts: bindingAccepts(folder.binding),
     visibility: folder.visibility,
     hasOwnAcl: parseFolderAcl(folder) !== undefined,
     createdAt: folder.createdAt,

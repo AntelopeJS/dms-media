@@ -1,10 +1,9 @@
 import type { MediaAsset, MediaFolder } from "../db";
-import type { ModifiedWindow, SearchQuery } from "../validation/library.schema";
-import type { FolderVisibility } from "../types";
-
-const MS_PER_DAY = 24 * 60 * 60 * 1000;
-const WEEK_DAYS = 7;
-const MONTH_DAYS = 30;
+import type {
+  AssetFilterQuery,
+  SearchQuery,
+} from "../validation/library.schema";
+import { type AssetFilterContext, filterAssets } from "./asset-filters";
 
 export type SearchMatch = "name" | "alt";
 
@@ -13,45 +12,65 @@ export interface AssetSearchHit {
   matchedOn: SearchMatch;
 }
 
-type ModifiedSince = (now: Date) => Date | undefined;
+const COMBINING_MARKS = /\p{M}+/gu;
+const WORD_SEPARATORS = /[^\p{L}\p{N}]+/gu;
 
-const MODIFIED_SINCE: Record<ModifiedWindow, ModifiedSince> = {
-  any: () => undefined,
-  "7d": (now) => new Date(now.getTime() - WEEK_DAYS * MS_PER_DAY),
-  "30d": (now) => new Date(now.getTime() - MONTH_DAYS * MS_PER_DAY),
-  year: (now) => new Date(now.getFullYear(), 0, 1),
-};
+/** Lowercase, accent-free text with every punctuation run turned into one space. */
+export function normalizeSearchText(text: string): string {
+  return text
+    .normalize("NFD")
+    .replace(COMBINING_MARKS, "")
+    .toLowerCase()
+    .replace(WORD_SEPARATORS, " ")
+    .trim();
+}
 
+/** The words of a search term, each to be found somewhere in what is searched. */
+export function searchWords(term: string): string[] {
+  const normalized = normalizeSearchText(term);
+  return normalized ? normalized.split(" ") : [];
+}
+
+function containsEvery(haystack: string, words: string[]): boolean {
+  return words.every((word) => haystack.includes(word));
+}
+
+/**
+ * Where an asset matches: every word must appear in its name, its folder path
+ * or its alt text, and at least one in the name or the alt text, so a folder
+ * name narrows a search without listing the whole folder. Accents, case and
+ * punctuation are ignored.
+ */
 export function matchAsset(
   asset: MediaAsset,
-  term: string,
+  words: string[],
+  folderPath = "",
 ): SearchMatch | undefined {
-  if (term.length === 0) return "name";
-  if (asset.name.toLowerCase().includes(term)) return "name";
-  if (asset.alt?.toLowerCase().includes(term)) return "alt";
-  return undefined;
+  if (words.length === 0) return "name";
+  const name = normalizeSearchText(asset.name);
+  const path = normalizeSearchText(folderPath);
+  const alt = normalizeSearchText(asset.alt ?? "");
+  const own = `${name} ${alt}`;
+  if (!containsEvery(`${own} ${path}`, words)) return undefined;
+  if (!words.some((word) => own.includes(word))) return undefined;
+  return containsEvery(`${name} ${path}`, words) ? "name" : "alt";
 }
 
-export interface SearchFilterContext {
-  query: SearchQuery;
-  now: Date;
-  visibilityOf: (asset: MediaAsset) => FolderVisibility;
+export interface SearchFilterContext extends AssetFilterContext {
+  query: AssetFilterQuery & Partial<SearchQuery> & { q: string };
+  /** Names of the asset's folder and its ancestors, searched with its name. */
+  folderPathOf?: (asset: MediaAsset) => string;
 }
 
-/** Applies the term, visibility and modified filters; the type facet stays open. */
+/** Applies the facet filters then the term; the type facet stays open. */
 export function searchAssets(
   assets: MediaAsset[],
   filter: SearchFilterContext,
 ): AssetSearchHit[] {
-  const term = filter.query.q.toLowerCase();
-  const since = MODIFIED_SINCE[filter.query.modified](filter.now);
-  const visibility = filter.query.visibility;
+  const words = searchWords(filter.query.q);
   const hits: AssetSearchHit[] = [];
-  for (const asset of assets) {
-    if (since && asset.updatedAt < since) continue;
-    if (visibility !== "any" && filter.visibilityOf(asset) !== visibility)
-      continue;
-    const matchedOn = matchAsset(asset, term);
+  for (const asset of filterAssets(assets, filter)) {
+    const matchedOn = matchAsset(asset, words, filter.folderPathOf?.(asset));
     if (matchedOn) hits.push({ asset, matchedOn });
   }
   return hits;
@@ -61,9 +80,9 @@ export function searchFolders(
   folders: MediaFolder[],
   term: string,
 ): MediaFolder[] {
-  const normalized = term.toLowerCase();
-  if (normalized.length === 0) return [];
+  const words = searchWords(term);
+  if (words.length === 0) return [];
   return folders.filter((folder) =>
-    folder.name.toLowerCase().includes(normalized),
+    containsEvery(normalizeSearchText(folder.name), words),
   );
 }

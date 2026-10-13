@@ -5,20 +5,28 @@ import { GetModel } from "@antelopejs/interface-database-decorators";
 import { UserModel } from "@antelopejs/interface-dms/auth/db";
 import { getMediaConfig } from "../../config";
 import { MEDIA_PERMISSIONS_MANAGE_PERMISSION } from "../../constants";
-import type { MediaAsset } from "../../db";
-import { loadStarredTargets, setStarred } from "../../library/favorites";
+import type { MediaAsset, MediaFolder } from "../../db";
+import type { FolderVisibility } from "../../types";
+import { filterAssets } from "../../library/asset-filters";
+import {
+  loadStarredTargets,
+  setStarred,
+  type StarredTargets,
+} from "../../library/favorites";
 import { computeFolderStats } from "../../library/folder-stats";
 import {
   countByTypeGroup,
   loadAssetsInFolders,
   pageAssets,
 } from "../../library/listing";
-import { searchAssets, searchFolders } from "../../library/search";
+import { searchAssets, searchFolders, searchWords } from "../../library/search";
 import { isDescribableImage } from "../../library/type-groups";
 import {
   favoriteSchema,
+  type AssetFilterQuery,
   listingQuerySchema,
   type ListingQuery,
+  type PageQuery,
   searchQuerySchema,
   type SmartView,
   smartViewSchema,
@@ -43,11 +51,27 @@ import {
 const HTTP_FORBIDDEN = 403;
 const HTTP_CONFLICT = 409;
 const RECENT_VIEW_LIMIT = 200;
+/** What a search without any word answers: nothing, rather than the whole library. */
+const EMPTY_SEARCH = { assets: [], total: 0, facets: { all: 0 }, folders: [] };
+
+/** What a smart view needs besides the assets: the caller's stars and each file's visibility. */
+interface SmartViewInput {
+  starredAssetIds: Set<string>;
+  visibilityOf: (asset: MediaAsset) => FolderVisibility;
+}
 
 type SmartViewFilter = (
   assets: MediaAsset[],
-  starredAssetIds: Set<string>,
+  input: SmartViewInput,
 ) => MediaAsset[];
+
+type ViewSort = Pick<ListingQuery, "sort" | "direction">;
+
+/** The order a view opens in when the caller asks for none. */
+const SMART_VIEW_DEFAULT_SORTS: Partial<Record<SmartView, ViewSort>> = {
+  recent: { sort: "date", direction: "desc" },
+  largest: { sort: "size", direction: "desc" },
+};
 
 const SMART_VIEW_FILTERS: Record<SmartView, SmartViewFilter> = {
   recent: (assets) =>
@@ -56,12 +80,15 @@ const SMART_VIEW_FILTERS: Record<SmartView, SmartViewFilter> = {
         (left, right) => right.createdAt.getTime() - left.createdAt.getTime(),
       )
       .slice(0, RECENT_VIEW_LIMIT),
-  starred: (assets, starredAssetIds) =>
+  starred: (assets, { starredAssetIds }) =>
     assets.filter((asset) => starredAssetIds.has(asset._id)),
   "missing-alt": (assets) =>
     assets.filter(
       (asset) => isDescribableImage(asset.mimetype) && !asset.alt?.trim(),
     ),
+  largest: (assets) => assets,
+  public: (assets, { visibilityOf }) =>
+    assets.filter((asset) => visibilityOf(asset) === "public"),
 };
 
 function readableAssets(context: MediaRequestContext): Promise<MediaAsset[]> {
@@ -69,7 +96,77 @@ function readableAssets(context: MediaRequestContext): Promise<MediaAsset[]> {
 }
 
 function countMissingAlt(assets: MediaAsset[]): number {
-  return SMART_VIEW_FILTERS["missing-alt"](assets, new Set()).length;
+  return SMART_VIEW_FILTERS["missing-alt"](assets, {
+    starredAssetIds: new Set(),
+    visibilityOf: () => "private",
+  }).length;
+}
+
+function folderPathName(
+  context: MediaRequestContext,
+  folder: MediaFolder | undefined,
+): string {
+  if (!folder) return "";
+  return [...folder.path, folder._id]
+    .map((id) => context.foldersById.get(id)?.name ?? "")
+    .join(" ");
+}
+
+function visibilityOf(context: MediaRequestContext) {
+  return (asset: MediaAsset) =>
+    resolveEffectiveVisibility(asset, context.foldersById.get(asset.folderId));
+}
+
+function applyFilters(
+  context: MediaRequestContext,
+  assets: MediaAsset[],
+  query: AssetFilterQuery,
+): MediaAsset[] {
+  return filterAssets(assets, {
+    query,
+    now: new Date(),
+    visibilityOf: visibilityOf(context),
+  });
+}
+
+function buildFolderDtos(
+  context: MediaRequestContext,
+  folders: MediaFolder[],
+  assets: MediaAsset[],
+  starredIds: Set<string>,
+) {
+  const stats = computeFolderStats(context.folders, assets);
+  return folders.map((folder) =>
+    buildFolderDto(context, folder, {
+      stats: stats.get(folder._id),
+      starredIds,
+    }),
+  );
+}
+
+/** The folders a picker bound to `folderId` counts its smart views over, when the caller can read it. */
+function treeViewScope(
+  context: MediaRequestContext,
+  folderId: string | undefined,
+): Set<string> | undefined {
+  if (!folderId || !context.access.readable.has(folderId)) return undefined;
+  return new Set(searchScope(context, folderId));
+}
+
+function countViews(
+  assets: MediaAsset[],
+  starred: StarredTargets,
+  scope: Set<string> | undefined,
+) {
+  const inScope = (folderId: string) => !scope || scope.has(folderId);
+  const scoped = assets.filter((asset) => inScope(asset.folderId));
+  const starredFolders = [...starred.folderIds].filter(inScope).length;
+  return {
+    starred:
+      scoped.filter((asset) => starred.assetIds.has(asset._id)).length +
+      starredFolders,
+    missingAlt: countMissingAlt(scoped),
+  };
 }
 
 function searchScope(
@@ -106,14 +203,14 @@ export class MediaLibraryController extends MediaApiController {
         fileCount: assets.length,
         size: assets.reduce((total, asset) => total + asset.size, 0),
       },
-      views: {
-        starred:
-          assets.filter((asset) => starred.assetIds.has(asset._id)).length +
-          starred.folderIds.size,
-        missingAlt: countMissingAlt(assets),
-      },
+      views: countViews(
+        assets,
+        starred,
+        treeViewScope(context, this.readQuery().folderId),
+      ),
       canManagePermissions,
       maxUploadBytes: MAX_UPLOAD_SIZE_BYTES,
+      allowedMimetypes: [...getMediaConfig().allowedMimetypes],
       quotaBytes: getMediaConfig().storageQuotaBytes ?? null,
     };
   }
@@ -129,7 +226,12 @@ export class MediaLibraryController extends MediaApiController {
       loadAssetsInFolders(context.assetModel, [folderId]),
       loadStarredTargets(this.owner(context)),
     ]);
-    return this.answerPage(context, assets, query, starred.assetIds);
+    return this.answerPage(
+      context,
+      applyFilters(context, assets, query),
+      query,
+      starred.assetIds,
+    );
   }
 
   @Get("/views/:view")
@@ -139,36 +241,37 @@ export class MediaLibraryController extends MediaApiController {
       listingQuerySchema.parse(v),
     );
     const context = await this.resolveContext();
+    const scope = searchScope(context, query.folderId);
     const [assets, starred] = await Promise.all([
-      readableAssets(context),
+      loadAssetsInFolders(context.assetModel, scope),
       loadStarredTargets(this.owner(context)),
     ]);
-    const matching = SMART_VIEW_FILTERS[smartView](assets, starred.assetIds);
-    const viewQuery: ListingQuery =
-      smartView === "recent" && !this.ctx.url.searchParams.has("sort")
-        ? { ...query, sort: "date", direction: "desc" }
-        : query;
+    const matching = SMART_VIEW_FILTERS[smartView](
+      applyFilters(context, assets, query),
+      {
+        starredAssetIds: starred.assetIds,
+        visibilityOf: visibilityOf(context),
+      },
+    );
+    const defaultSort = this.ctx.url.searchParams.has("sort")
+      ? undefined
+      : SMART_VIEW_DEFAULT_SORTS[smartView];
     const page = this.answerPage(
       context,
       matching,
-      viewQuery,
+      { ...query, ...defaultSort },
       starred.assetIds,
     );
-    const folders =
-      smartView === "starred"
-        ? context.folders
-            .filter(
-              (folder) =>
-                starred.folderIds.has(folder._id) &&
-                context.access.readable.has(folder._id),
-            )
-            .map((folder) =>
-              buildFolderDto(context, folder, {
-                starredIds: starred.folderIds,
-              }),
-            )
-        : [];
-    return { ...page, folders };
+    const viewFolders = context.folders.filter(
+      (folder) =>
+        smartView === "starred" &&
+        starred.folderIds.has(folder._id) &&
+        scope.includes(folder._id),
+    );
+    return {
+      ...page,
+      folders: buildFolderDtos(context, viewFolders, assets, starred.folderIds),
+    };
   }
 
   @Get("/search")
@@ -176,6 +279,7 @@ export class MediaLibraryController extends MediaApiController {
     const query = assertValidation(this.readQuery(), (v) =>
       searchQuerySchema.parse(v),
     );
+    if (searchWords(query.q).length === 0) return EMPTY_SEARCH;
     const context = await this.resolveContext();
     const scope = searchScope(context, query.folderId);
     const [assets, starred] = await Promise.all([
@@ -185,11 +289,9 @@ export class MediaLibraryController extends MediaApiController {
     const hits = searchAssets(assets, {
       query,
       now: new Date(),
-      visibilityOf: (asset) =>
-        resolveEffectiveVisibility(
-          asset,
-          context.foldersById.get(asset.folderId),
-        ),
+      visibilityOf: visibilityOf(context),
+      folderPathOf: (asset) =>
+        folderPathName(context, context.foldersById.get(asset.folderId)),
     });
     const matchedOn = new Map(
       hits.map((hit) => [hit.asset._id, hit.matchedOn]),
@@ -209,8 +311,11 @@ export class MediaLibraryController extends MediaApiController {
         ...asset,
         matchedOn: matchedOn.get(asset.id) ?? "name",
       })),
-      folders: searchFolders(scopedFolders, query.q).map((folder) =>
-        buildFolderDto(context, folder, { starredIds: starred.folderIds }),
+      folders: buildFolderDtos(
+        context,
+        searchFolders(scopedFolders, query.q),
+        assets,
+        starred.folderIds,
       ),
     };
   }
@@ -315,7 +420,7 @@ export class MediaLibraryController extends MediaApiController {
   private answerPage(
     context: MediaRequestContext,
     assets: MediaAsset[],
-    query: ListingQuery,
+    query: PageQuery,
     starredIds: Set<string>,
   ) {
     const page = pageAssets(assets, query);

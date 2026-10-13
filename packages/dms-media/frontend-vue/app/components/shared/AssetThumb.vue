@@ -55,7 +55,7 @@ const iconClass = computed(() => (props.size === 'xs' || props.size === 'sm' ? '
 			@error="hasFailed = true"
 		/>
 		<div v-else class="text-dimmed flex flex-col items-center gap-1">
-			<UIcon :name="TYPE_GROUP_ICONS[asset.typeGroup]" :class="iconClass" />
+			<UIcon :name="assetIconOf(asset)" :class="iconClass" />
 			<span
 				v-if="size === 'lg' || size === 'fill'"
 				class="rounded-sm border border-(--ui-border) px-1 font-mono text-[10px] font-semibold"

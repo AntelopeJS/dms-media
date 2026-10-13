@@ -17,6 +17,9 @@ export type ExplorerShortcutId =
 	| 'help'
 	| 'previous'
 	| 'next'
+	| 'extend'
+	| 'toggle'
+	| 'parent'
 
 export interface ExplorerShortcut {
 	id: ExplorerShortcutId
@@ -38,6 +41,9 @@ export const EXPLORER_SHORTCUT_GROUPS: ExplorerShortcutGroup[] = [
 			{ id: 'preview', keys: ['space'] },
 			{ id: 'previous', keys: ['arrowleft'] },
 			{ id: 'next', keys: ['arrowright'] },
+			{ id: 'extend', keys: ['shift', 'arrowdown'] },
+			{ id: 'toggle', keys: ['meta', 'space'] },
+			{ id: 'parent', keys: ['meta', 'arrowup'] },
 			{ id: 'help', keys: ['?'] },
 		],
 	},

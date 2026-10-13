@@ -12,7 +12,7 @@ import {
   Parameter,
   Post,
 } from "@antelopejs/interface-api";
-import { assert, assertValidation } from "@antelopejs/interface-api-util";
+import { assert } from "@antelopejs/interface-api-util";
 import { CreateReadUrl } from "@antelopejs/interface-file-storage";
 import { getMediaConfig } from "../../config";
 import { type MediaAsset, MediaAssetModel } from "../../db";
@@ -20,7 +20,9 @@ import { ensureDerivative } from "../../derivatives";
 import type { MediaPresetConfig } from "../../presets";
 import {
   assetVisibilitySchema,
+  MEDIA_ERRORS,
   moveAssetSchema,
+  parseBody,
   previewIdsSchema,
   updateAssetSchema,
 } from "../../validation/media.schema";
@@ -75,7 +77,7 @@ export async function requireReadableAsset(
   assert(
     asset && !asset.isDeleting && context.access.readable.has(asset.folderId),
     HTTP_NOT_FOUND,
-    "Asset not found",
+    MEDIA_ERRORS.assetNotFound,
   );
   return asset;
 }
@@ -107,7 +109,7 @@ export class MediaAssetsController extends MediaApiController {
 
   @Post("/previews")
   async previews(@JSONBody() body: unknown) {
-    const { ids } = assertValidation(body, (v) => previewIdsSchema.parse(v));
+    const { ids } = parseBody(body, previewIdsSchema);
     const context = await this.resolveContext();
     const thumbPreset = getMediaConfig().presets.get(THUMB_PRESET_ID);
     if (!thumbPreset) return { previews: {} };
@@ -180,7 +182,7 @@ export class MediaAssetsController extends MediaApiController {
     @Parameter("assetId", "param") assetId: string,
     @JSONBody() body: unknown,
   ) {
-    const changes = assertValidation(body, (v) => updateAssetSchema.parse(v));
+    const changes = parseBody(body, updateAssetSchema);
     const context = await this.resolveContext();
     const asset = await requireReadableAsset(context, assetId);
     await updateAssetDetails(context, asset, changes);
@@ -192,9 +194,7 @@ export class MediaAssetsController extends MediaApiController {
     @Parameter("assetId", "param") assetId: string,
     @JSONBody() body: unknown,
   ) {
-    const { folderId } = assertValidation(body, (v) =>
-      moveAssetSchema.parse(v),
-    );
+    const { folderId } = parseBody(body, moveAssetSchema);
     const context = await this.resolveContext();
     const asset = await requireReadableAsset(context, assetId);
     await moveAsset(context, asset, folderId);
@@ -206,9 +206,7 @@ export class MediaAssetsController extends MediaApiController {
     @Parameter("assetId", "param") assetId: string,
     @JSONBody() body: unknown,
   ) {
-    const { visibility } = assertValidation(body, (v) =>
-      assetVisibilitySchema.parse(v),
-    );
+    const { visibility } = parseBody(body, assetVisibilitySchema);
     const context = await this.resolveContext();
     const asset = await requireReadableAsset(context, assetId);
     await setAssetVisibility(context, asset, visibility);

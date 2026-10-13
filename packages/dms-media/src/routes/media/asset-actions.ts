@@ -1,14 +1,18 @@
+import { assert } from "@antelopejs/interface-api-util";
 import { deleteMediaAsset } from "../../asset-lifecycle";
 import type { MediaAsset, MediaFolder } from "../../db";
 import { recordMediaEvent } from "../../library/events";
 import { forgetFavorites } from "../../library/favorites";
 import type { AssetVisibility } from "../../types";
+import { comparableName, MEDIA_ERRORS } from "../../validation/media.schema";
 import {
   assertPermissionsManager,
   type MediaRequestContext,
   requireFolderRight,
 } from "./context";
 import { resolveEffectiveVisibility } from "./dto";
+
+const HTTP_CONFLICT = 409;
 
 export interface AssetChanges {
   name?: string;
@@ -26,14 +30,32 @@ function changesEffectiveVisibility(
   );
 }
 
+/** Refuses a name another file of the folder already has, regardless of case. */
+async function assertFreeAssetName(
+  context: MediaRequestContext,
+  asset: MediaAsset,
+  name: string,
+): Promise<void> {
+  const wanted = comparableName(name);
+  const siblings = await context.assetModel.getBy("folderId", asset.folderId);
+  const clash = siblings.some(
+    (sibling) =>
+      sibling._id !== asset._id &&
+      !sibling.isDeleting &&
+      comparableName(sibling.name) === wanted,
+  );
+  assert(!clash, HTTP_CONFLICT, MEDIA_ERRORS.nameTaken);
+}
+
 export async function updateAssetDetails(
   context: MediaRequestContext,
   asset: MediaAsset,
   changes: AssetChanges,
 ): Promise<void> {
   requireFolderRight(context, asset.folderId, "write");
-  await context.assetModel.update(asset._id, changes);
   const isRename = changes.name !== undefined && changes.name !== asset.name;
+  if (isRename) await assertFreeAssetName(context, asset, changes.name ?? "");
+  await context.assetModel.update(asset._id, changes);
   const isAltChange = changes.alt !== undefined && changes.alt !== asset.alt;
   if (isRename) {
     await recordMediaEvent(context, {

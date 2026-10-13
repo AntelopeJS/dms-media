@@ -21,6 +21,26 @@ const assetFolder = computed(() =>
 const assetPath = computed(() => folderPathLabel(assetFolder.value, library.tree.foldersById.value))
 const canEdit = computed(() => (asset.value ? commands.canWriteAsset(asset.value) : false))
 const isBrowse = library.mode === 'browse'
+const PREVIEW_PRESET = 'preview'
+const previewUrl = ref<string>()
+const uploadedBy = ref<string | null>(null)
+
+/** The preview uncropped, at the file's own ratio, and who added it, for the file in view. */
+async function loadDetails(assetId: string | undefined): Promise<void> {
+	previewUrl.value = undefined
+	uploadedBy.value = null
+	const target = asset.value
+	if (!assetId || !target) return
+	const [read, details] = await Promise.all([
+		isImageAsset(target) ? library.api.readUrl(assetId, PREVIEW_PRESET).catch(() => undefined) : undefined,
+		library.api.details(assetId).catch(() => undefined),
+	])
+	if (asset.value?.id !== assetId) return
+	previewUrl.value = read?.url
+	uploadedBy.value = details?.uploadedBy ?? null
+}
+
+watch(() => asset.value?.id, (assetId) => void loadDetails(assetId), { immediate: true })
 
 function saveAlt(alt: string): Promise<boolean> {
 	return asset.value ? library.actions.setAlt(asset.value, alt) : Promise.resolve(false)
@@ -28,11 +48,14 @@ function saveAlt(alt: string): Promise<boolean> {
 </script>
 
 <template>
-	<aside class="flex min-h-0 flex-col overflow-y-auto" :aria-label="t('dms_media.explorer.details')">
+	<aside class="flex min-h-0 flex-col overflow-x-hidden overflow-y-auto" :aria-label="t('dms_media.explorer.details')">
 		<template v-if="asset">
 			<div class="border-default border-b p-3">
 				<div class="relative overflow-hidden rounded-md">
-					<AssetThumb :asset="asset" size="fill" fit="contain" class="aspect-[4/3]" />
+					<div class="flex h-56 items-center justify-center bg-(--dms-bg-muted)">
+						<img v-if="previewUrl" :src="previewUrl" :alt="asset.alt || ''" class="max-h-full max-w-full object-contain" />
+						<AssetThumb v-else :asset="asset" size="fill" fit="contain" />
+					</div>
 					<UButton
 						icon="i-ph-arrows-out-simple"
 						color="neutral"
@@ -45,7 +68,7 @@ function saveAlt(alt: string): Promise<boolean> {
 					/>
 				</div>
 				<p class="text-highlighted mt-3 text-sm font-semibold break-all">{{ asset.name }}</p>
-				<p class="text-dimmed truncate font-mono text-[11px]">{{ assetPath }}</p>
+				<p class="text-dimmed truncate text-xs" :title="assetPath">{{ assetPath }}</p>
 				<div class="mt-3 flex items-center gap-1.5">
 					<UButton
 						v-if="isBrowse"
@@ -74,7 +97,7 @@ function saveAlt(alt: string): Promise<boolean> {
 			<div v-if="isImageAsset(asset)" class="border-default border-b p-3">
 				<AltTextField :asset="asset" :can-edit="canEdit" :save="saveAlt" compact />
 			</div>
-			<dl class="grid grid-cols-[auto_1fr] gap-x-4 gap-y-2 p-3 text-[13px]">
+			<dl class="grid grid-cols-[auto_minmax(0,1fr)] gap-x-4 gap-y-2 p-3 text-[13px]">
 				<DmsEyebrow :label="t('dms_media.explorer.details')" tone="muted" class="col-span-2 mb-1" />
 				<dt class="text-muted">{{ t('dms_media.columns.type') }}</dt>
 				<dd class="text-highlighted text-end">{{ t(`dms_media.type_single.${asset.typeGroup}`) }} · {{ extensionOf(asset).toUpperCase() }}</dd>
@@ -97,8 +120,16 @@ function saveAlt(alt: string): Promise<boolean> {
 					/>
 					<span v-else class="text-highlighted">{{ t(`dms_media.visibility.${asset.effectiveVisibility}`) }}</span>
 				</dd>
+				<dt class="text-muted">{{ t('dms_media.columns.added') }}</dt>
+				<dd class="text-highlighted text-end" :title="format.formatDateTime(asset.createdAt) ?? undefined">
+					{{ format.formatDateTime(asset.createdAt) }}
+				</dd>
+				<template v-if="uploadedBy">
+					<dt class="text-muted">{{ t('dms_media.inspector.added_by') }}</dt>
+					<dd class="text-highlighted truncate text-end" :title="uploadedBy">{{ uploadedBy }}</dd>
+				</template>
 				<dt class="text-muted">{{ t('dms_media.columns.modified') }}</dt>
-				<dd class="text-highlighted text-end">{{ format.formatRelativeTime(asset.updatedAt) }}</dd>
+				<dd class="text-highlighted text-end" :title="format.formatDateTime(asset.updatedAt) ?? undefined">{{ format.formatRelativeTime(asset.updatedAt) }}</dd>
 				<template v-if="asset.hasOriginal">
 					<dt class="text-muted">{{ t('dms_media.columns.original') }}</dt>
 					<dd class="text-end"><UBadge :label="t('dms_media.file.preserved')" color="neutral" variant="subtle" size="sm" /></dd>
@@ -119,13 +150,24 @@ function saveAlt(alt: string): Promise<boolean> {
 				<p class="text-highlighted min-w-0 flex-1 truncate text-sm font-semibold">{{ folder.name }}</p>
 				<FolderMarkers :folder="folder" />
 			</div>
-			<dl class="grid grid-cols-[auto_1fr] gap-x-4 gap-y-2 text-[13px]">
-				<dt class="text-muted">{{ t('dms_media.explorer.files') }}</dt>
+			<dl class="grid grid-cols-[auto_minmax(0,1fr)] gap-x-4 gap-y-2 text-[13px]">
+				<dt class="text-muted">{{ t('dms_media.inspector.files_with_subfolders') }}</dt>
 				<dd class="text-highlighted text-end font-mono">{{ format.formatNumber(folder.fileCount) }}</dd>
 				<dt class="text-muted">{{ t('dms_media.columns.size') }}</dt>
 				<dd class="text-highlighted text-end font-mono">{{ format.formatBytes(folder.size) }}</dd>
 				<dt class="text-muted">{{ t('dms_media.columns.visibility') }}</dt>
-				<dd class="text-highlighted text-end">{{ t(`dms_media.visibility.${folder.visibility}`) }}</dd>
+				<dd class="text-end">
+					<UButton
+						v-if="isBrowse && commands.canChangeFolderVisibility?.(folder)"
+						variant="link"
+						size="xs"
+						class="p-0"
+						:icon="folder.visibility === 'public' ? 'i-ph-globe' : 'i-ph-lock-simple'"
+						:label="t(`dms_media.visibility.${folder.visibility}`)"
+						@click="commands.changeFolderVisibility?.(folder)"
+					/>
+					<span v-else class="text-highlighted">{{ t(`dms_media.visibility.${folder.visibility}`) }}</span>
+				</dd>
 				<dt class="text-muted">{{ t('dms_media.inspector.your_rights') }}</dt>
 				<dd class="text-highlighted text-end">{{ t(`dms_media.rights.${folder.rights.manage ? 'manage' : folder.rights.write ? 'write' : folder.rights.read ? 'read' : 'none'}`) }}</dd>
 			</dl>
@@ -137,15 +179,6 @@ function saveAlt(alt: string): Promise<boolean> {
 				size="sm"
 				:label="t('dms_media.actions.open')"
 				@click="library.openFolder(folder.id)"
-			/>
-			<UButton
-				v-if="isBrowse && commands.canManagePermissions.value && folder.rights.manage"
-				icon="i-ph-shield-check"
-				color="neutral"
-				variant="outline"
-				size="sm"
-				:label="t('dms_media.actions.access')"
-				:to="accessLink(folder.id)"
 			/>
 			<p class="text-dimmed text-[12px]">{{ t('dms_media.inspector.hint') }}</p>
 		</div>

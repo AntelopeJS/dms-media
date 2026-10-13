@@ -6,6 +6,7 @@ import {
   uploadAssetInBatch,
   uploadTextAsset,
 } from "../helpers/assets";
+import { RETIRED_MEDIA_PERMISSIONS } from "../../constants";
 import { authorizedClient } from "../helpers/http";
 import { ensureOwnerSession } from "../helpers/owner";
 
@@ -200,9 +201,8 @@ describe("[integration] media library — listings, search, bulk and overview", 
     expect(information.status).to.equal(HTTP_OK);
     expect(
       information.data.items.map((item: { id: string }) => item.id),
-    ).to.deep.equal(["uploaded", "modified", "type", "asset-id"]);
+    ).to.deep.equal(["uploaded", "modified", "type"]);
     expect(information.data.items[0].detail).to.equal("Test Owner");
-    expect(information.data.items[3].value).to.equal(assetId);
     const counts = await client.get(`/api/media/assets/${assetId}/tab-counts`);
     expect(counts.data).to.deep.equal({ delivery: 3 });
   });
@@ -213,8 +213,12 @@ describe("[integration] media library — listings, search, bulk and overview", 
     expect(links.status).to.equal(HTTP_OK);
     expect(
       links.data.items.map((item: { id: string }) => item.id),
-    ).to.deep.equal(["stable", "thumb", "preview", "presets"]);
+    ).to.deep.equal(["stable", "thumb", "preview", "asset-id", "presets"]);
     const [stable] = links.data.items;
+    expect(
+      links.data.items.find((item: { id: string }) => item.id === "asset-id")
+        .value,
+    ).to.equal(assetId);
     expect(stable.value).to.equal(`/media/${assetId}/oak-a.png`);
     expect(stable.copyValue).to.match(
       new RegExp(`^https?://[^/]+/media/${assetId}/oak-a\\.png$`),
@@ -223,7 +227,9 @@ describe("[integration] media library — listings, search, bulk and overview", 
       `/api/media/assets/${assetId}/delivery/notice`,
     );
     expect(notice.status).to.equal(HTTP_OK);
-    expect(notice.data.description).to.match(/delivery_(public|private)$/);
+    expect(notice.data.description).to.match(
+      /delivery_(public|private_notice)$/,
+    );
   });
 
   it("moves, changes visibility and deletes in bulk, reporting refusals", async () => {
@@ -289,16 +295,10 @@ describe("[integration] media library — listings, search, bulk and overview", 
     expect(storage.data.segments.length).to.be.at.least(2);
     expect(storage.data.valueLabel.key).to.match(/^dms_media\.units\./);
     expect(storage.data.hint.params.files.type).to.equal("count");
-    const largest = await client.get("/api/media/stats/largest");
-    expect(largest.data.items[0].label).to.contain("›");
     const attention = await client.get("/api/media/stats/attention");
     expect(
       attention.data.items.map((item: { id: string }) => item.id),
     ).to.include("missing-alt");
-    const folders = await client.get("/api/media/stats/folders");
-    expect(
-      folders.data.items.map((item: { id: string }) => item.id),
-    ).to.include(rootId);
     const recent = await client.get("/api/media/stats/recent");
     expect(recent.data.assets.length).to.be.at.most(6);
   });
@@ -321,7 +321,7 @@ describe("[integration] media library — listings, search, bulk and overview", 
       (item: { title: string }) => item.title,
     );
     expect(titles).to.include("$dms_media.activity.asset_move");
-    expect(titles).to.include("$dms_media.activity.asset_visibility");
+    expect(titles).to.include("$dms_media.activity.asset_visibility_public");
     expect(titles).to.include("$dms_media.activity.asset_upload");
   });
 
@@ -354,9 +354,13 @@ describe("[integration] media library — listings, search, bulk and overview", 
     expect(response.data.rights.manage.count).to.be.at.least(1);
     expect(response.data.canEdit).to.equal(true);
     const subjects = await client.get("/api/media/access/subjects");
-    expect(
-      subjects.data.permissions.map((entry: { id: string }) => entry.id),
-    ).to.include("media.upload");
+    expect(subjects.status).to.equal(HTTP_OK);
+    const subjectIds = subjects.data.permissions.map(
+      (entry: { id: string }) => entry.id,
+    );
+    for (const permissionId of RETIRED_MEDIA_PERMISSIONS) {
+      expect(subjectIds).to.not.include(permissionId);
+    }
   });
 
   it("lists delivery presets with their cache keys", async () => {

@@ -6,14 +6,43 @@ function sortFolders(folders: MediaFolder[]): MediaFolder[] {
 	return [...folders].sort((left, right) => COLLATOR.compare(left.name, right.name))
 }
 
+export interface LibraryTreeOptions {
+	/** Folder the tree is rooted at, such as a picker's linked folder; the whole library when unset or unknown. */
+	scopeFolderId?: string
+}
+
+function subtreeIds(folders: MediaFolder[], rootId: string): Set<string> {
+	const childIds = new Map<string, string[]>()
+	for (const folder of folders) {
+		if (folder.parentId) childIds.set(folder.parentId, [...(childIds.get(folder.parentId) ?? []), folder.id])
+	}
+	const ids = new Set([rootId])
+	const queue = [rootId]
+	while (queue.length > 0) {
+		for (const childId of childIds.get(queue.shift()!) ?? []) {
+			ids.add(childId)
+			queue.push(childId)
+		}
+	}
+	return ids
+}
+
 /** The folder tree the caller can see, with lookups by id and by parent. */
-export function useLibraryTree() {
+export function useLibraryTree(options: LibraryTreeOptions = {}) {
 	const api = useMediaApi()
 	const tree = ref<MediaTree | null>(null)
 	const isLoading = ref(false)
 	const error = ref<unknown>(null)
 
-	const folders = computed(() => tree.value?.folders ?? [])
+	const allFolders = computed(() => tree.value?.folders ?? [])
+	const scopeFolder = computed(() =>
+		options.scopeFolderId ? allFolders.value.find((folder) => folder.id === options.scopeFolderId) : undefined,
+	)
+	const folders = computed(() => {
+		if (!scopeFolder.value) return allFolders.value
+		const inScope = subtreeIds(allFolders.value, scopeFolder.value.id)
+		return allFolders.value.filter((folder) => inScope.has(folder.id))
+	})
 	const foldersById = computed(
 		() => new Map(folders.value.map((folder) => [folder.id, folder])),
 	)
@@ -47,7 +76,7 @@ export function useLibraryTree() {
 	async function refresh(): Promise<void> {
 		isLoading.value = true
 		try {
-			tree.value = await api.tree()
+			tree.value = await api.tree(options.scopeFolderId)
 			error.value = null
 		} catch (cause) {
 			error.value = cause
@@ -103,10 +132,13 @@ export function useLibraryTree() {
 		return Boolean(foldersById.value.get(folderId)?.rights.write)
 	}
 
+	onLibraryChange(refresh)
+
 	return {
 		tree,
 		isLoading,
 		error,
+		scopeFolder,
 		folders,
 		foldersById,
 		childrenOf,

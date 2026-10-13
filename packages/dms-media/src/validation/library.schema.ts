@@ -6,17 +6,33 @@ const MAX_PAGE_SIZE = 500;
 const MAX_SEARCH_TERM_LENGTH = 200;
 const MAX_BULK_ITEMS = 500;
 const MAX_BATCH_ID_LENGTH = 255;
+const MAX_FAILURE_NAME_LENGTH = 255;
+const MAX_FAILURE_REASON_LENGTH = 500;
+const MAX_REPORTED_FAILURES = 50;
 
 export const ASSET_SORT_KEYS = ["name", "date", "size", "type"] as const;
 export const SORT_DIRECTIONS = ["asc", "desc"] as const;
 export const MODIFIED_WINDOWS = ["any", "7d", "30d", "year"] as const;
 export const VISIBILITY_FILTERS = ["any", "public", "private"] as const;
-export const SMART_VIEWS = ["recent", "starred", "missing-alt"] as const;
+export const ORIENTATION_FILTERS = [
+  "any",
+  "landscape",
+  "portrait",
+  "square",
+] as const;
+export const SMART_VIEWS = [
+  "recent",
+  "starred",
+  "missing-alt",
+  "largest",
+  "public",
+] as const;
 
 export type AssetSortKey = (typeof ASSET_SORT_KEYS)[number];
 export type SortDirection = (typeof SORT_DIRECTIONS)[number];
 export type ModifiedWindow = (typeof MODIFIED_WINDOWS)[number];
 export type VisibilityFilter = (typeof VISIBILITY_FILTERS)[number];
+export type OrientationFilter = (typeof ORIENTATION_FILTERS)[number];
 export type SmartView = (typeof SMART_VIEWS)[number];
 
 const pageSchema = {
@@ -32,18 +48,42 @@ const pageSchema = {
   type: z.enum(ASSET_TYPE_GROUPS).optional(),
 };
 
-export const listingQuerySchema = z.object(pageSchema);
+const filterSchema = {
+  visibility: z.enum(VISIBILITY_FILTERS).default("any"),
+  modified: z.enum(MODIFIED_WINDOWS).default("any"),
+  orientation: z.enum(ORIENTATION_FILTERS).default("any"),
+};
+
+const scopeSchema = { folderId: z.string().min(1).optional() };
+
+export const listingQuerySchema = z.object({
+  ...pageSchema,
+  ...filterSchema,
+  ...scopeSchema,
+});
 
 export type ListingQuery = z.infer<typeof listingQuerySchema>;
+
+/** The paging, sort and type part of a listing query. */
+export type PageQuery = Pick<
+  ListingQuery,
+  "offset" | "limit" | "sort" | "direction" | "type"
+>;
+
+/** The facets narrowing a listing; orientation is optional for older callers. */
+export interface AssetFilterQuery {
+  visibility: VisibilityFilter;
+  modified: ModifiedWindow;
+  orientation?: OrientationFilter;
+}
 
 export const smartViewSchema = z.enum(SMART_VIEWS);
 
 export const searchQuerySchema = z.object({
   ...pageSchema,
+  ...filterSchema,
+  ...scopeSchema,
   q: z.string().trim().max(MAX_SEARCH_TERM_LENGTH).default(""),
-  folderId: z.string().min(1).optional(),
-  visibility: z.enum(VISIBILITY_FILTERS).default("any"),
-  modified: z.enum(MODIFIED_WINDOWS).default("any"),
 });
 
 export type SearchQuery = z.infer<typeof searchQuerySchema>;
@@ -75,6 +115,15 @@ export const batchSummarySchema = z.object({
   uploaded: z.number().int().min(0),
   failed: z.number().int().min(0),
   size: z.number().min(0),
+  failures: z
+    .array(
+      z.object({
+        name: z.string().max(MAX_FAILURE_NAME_LENGTH),
+        reason: z.string().max(MAX_FAILURE_REASON_LENGTH).optional(),
+      }),
+    )
+    .max(MAX_REPORTED_FAILURES)
+    .optional(),
 });
 
 export const starterFoldersSchema = z.object({

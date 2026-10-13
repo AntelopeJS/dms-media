@@ -3,8 +3,15 @@ import type { MediaAsset } from '../../types/media'
 import AssetTile from './AssetTile.vue'
 
 defineProps<{ assets: MediaAsset[] }>()
+const { library } = useExplorerContext()
+const navigation = useAssetNavigation()
 const { prefs } = useMediaPrefs()
 const { t } = useI18n()
+
+const columns = computed(() => {
+	const tile = `${prefs.value.tileSize}px`
+	return `repeat(auto-fill, min(${tile}, calc(50% - 4px)))`
+})
 </script>
 
 <template>
@@ -13,9 +20,10 @@ const { t } = useI18n()
 		<div
 			class="grid gap-2"
 			role="listbox"
-			aria-multiselectable="true"
+			:aria-multiselectable="library.remaining !== 1"
 			:aria-label="t('dms_media.explorer.files')"
-			:style="{ gridTemplateColumns: `repeat(auto-fill, minmax(min(${prefs.tileSize}px, calc(50% - 4px)), 1fr))` }"
+			:style="{ gridTemplateColumns: columns }"
+			@keydown="navigation.onKeydown"
 		>
 			<AssetTile v-for="asset in assets" :key="asset.id" :asset="asset" />
 		</div>

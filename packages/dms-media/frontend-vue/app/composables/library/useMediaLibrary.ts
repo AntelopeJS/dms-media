@@ -6,10 +6,15 @@ import type {
 	MediaAsset,
 	MediaFolder,
 } from '../../types/media'
+import {
+	isGoneError,
+	isGoneRefusal,
+	nameFieldError,
+	translateApiMessage,
+} from './libraryErrors'
 import { type LibraryLocation, sameLocation } from './useLibraryListing'
 
 const LIBRARY_KEY: InjectionKey<MediaLibrary> = Symbol('dms-media-library')
-const ZIP_FILENAME = 'media.zip'
 
 export interface MediaLibraryOptions {
 	/** Picker mode never navigates the dashboard and hides management actions. */
@@ -18,12 +23,17 @@ export interface MediaLibraryOptions {
 	accept?: string[]
 	/** Most files a picker may still add. */
 	remaining?: number
+	/** The folder a picker is kept inside, when its field is bound to one. */
+	scopeFolderId?: string
+	/** Files the picker's field already holds: shown, but not picked twice. */
+	alreadyPicked?: string[]
 }
 
-function matchesPattern(mimetype: string, pattern: string): boolean {
-	if (pattern === '*' || pattern === '*/*') return true
-	if (pattern.endsWith('/*')) return mimetype.startsWith(pattern.slice(0, -1))
-	return mimetype === pattern
+/** What a name dialog learns from a write: whether it is done, or the refusal to show under the field. */
+export interface NameOutcome {
+	isDone: boolean
+	id?: string
+	fieldError?: string
 }
 
 /** The explorer state and every action on the library, shared by its parts. */
@@ -33,13 +43,16 @@ export function createMediaLibrary(options: MediaLibraryOptions) {
 	const toast = useToast()
 	const previews = useMediaPreviews()
 	const uploads = useUploadQueue()
-	const tree = useLibraryTree()
-	const listing = useLibraryListing()
-	const selection = useLibrarySelection(listing.assets)
+	const tree = useLibraryTree({ scopeFolderId: options.scopeFolderId })
+	const listing = useLibraryListing({ scopeFolderId: options.scopeFolderId, tree })
+	const isPick = options.mode === 'pick'
+	const selection = useLibrarySelection(listing.assets, isPick)
 	const backStack = ref<LibraryLocation[]>([])
 	const forwardStack = ref<LibraryLocation[]>([])
 	const lastFolderId = ref<string | null>(null)
 	const beforeSearch = ref<LibraryLocation>({ kind: 'root' })
+	const accept = options.accept ?? []
+	const alreadyPicked = new Set(options.alreadyPicked ?? [])
 
 	const currentFolder = computed(() => {
 		const current = listing.location.value
@@ -55,12 +68,14 @@ export function createMediaLibrary(options: MediaLibraryOptions) {
 		return listing.extraFolders.value
 	})
 
+	const acceptedTypes = computed(() => fieldTypesLabel(accept, t))
+
 	/** Why a picker cannot take a file, or nothing when it can. */
 	function rejectionOf(asset: MediaAsset): string | undefined {
-		const accept = options.accept ?? []
-		if (accept.length === 0) return undefined
-		if (accept.some((pattern) => matchesPattern(asset.mimetype, pattern))) return undefined
-		return t('dms_media.picker.not_accepted', { types: accept.join(', ') })
+		if (alreadyPicked.has(asset.id)) return t('dms_media.picker.already_added')
+		if (!acceptedTypes.value) return undefined
+		if (accept.some((pattern) => matchesMimePattern(asset.mimetype, pattern))) return undefined
+		return t('dms_media.picker.not_accepted', { types: acceptedTypes.value })
 	}
 
 	function notifyFailure(error: unknown, titleKey: string): void {
@@ -72,7 +87,7 @@ export function createMediaLibrary(options: MediaLibraryOptions) {
 			backStack.value = [...backStack.value, listing.location.value]
 			forwardStack.value = []
 		}
-		selection.clear()
+		if (!isPick) selection.clear()
 		if (next.kind !== 'search') beforeSearch.value = next
 		if (next.kind === 'folder') lastFolderId.value = next.folderId
 		if (next.kind === 'root') lastFolderId.value = null
@@ -83,11 +98,18 @@ export function createMediaLibrary(options: MediaLibraryOptions) {
 		return open(folderId ? { kind: 'folder', folderId } : { kind: 'root' })
 	}
 
+	const isSearching = computed(() => listing.location.value.kind === 'search')
+
 	async function back(): Promise<void> {
+		const current = listing.location.value
+		if (current.kind === 'search') {
+			forwardStack.value = [current, ...forwardStack.value]
+			return open(beforeSearch.value, false)
+		}
 		const previous = backStack.value.at(-1)
 		if (!previous) return
 		backStack.value = backStack.value.slice(0, -1)
-		forwardStack.value = [listing.location.value, ...forwardStack.value]
+		forwardStack.value = [current, ...forwardStack.value]
 		await open(previous, false)
 	}
 
@@ -95,7 +117,7 @@ export function createMediaLibrary(options: MediaLibraryOptions) {
 		const next = forwardStack.value[0]
 		if (!next) return
 		forwardStack.value = forwardStack.value.slice(1)
-		backStack.value = [...backStack.value, listing.location.value]
+		if (!isSearching.value) backStack.value = [...backStack.value, listing.location.value]
 		await open(next, false)
 	}
 
@@ -112,6 +134,8 @@ export function createMediaLibrary(options: MediaLibraryOptions) {
 	return {
 		mode: options.mode,
 		remaining: options.remaining,
+		accept,
+		acceptedTypesLabel: acceptedTypes,
 		rejectionOf,
 		api,
 		t,
@@ -124,7 +148,7 @@ export function createMediaLibrary(options: MediaLibraryOptions) {
 		currentFolder,
 		visibleFolders,
 		lastFolderId,
-		canGoBack: computed(() => backStack.value.length > 0),
+		canGoBack: computed(() => isSearching.value || backStack.value.length > 0),
 		canGoForward: computed(() => forwardStack.value.length > 0),
 		notifyFailure,
 		open,
@@ -138,46 +162,124 @@ export function createMediaLibrary(options: MediaLibraryOptions) {
 
 type LibraryCore = ReturnType<typeof createMediaLibrary>
 
-function reportOutcome(library: LibraryCore, outcome: BulkOutcome, doneKey: string): void {
-	if (outcome.refused.length === 0) {
-		library.toast.add({
-			title: library.t(doneKey, { count: outcome.done.length }, outcome.done.length),
-			color: 'success',
-			icon: 'i-ph-check-circle',
-		})
-		return
-	}
+interface ToastAction {
+	label: string
+	onClick: () => void | Promise<void>
+}
+
+interface GoneSplit {
+	outcome: BulkOutcome
+	gone: string[]
+}
+
+interface OutcomeReport {
+	doneKey: string
+	params?: Record<string, unknown>
+	actions?: ToastAction[]
+	duration?: number
+}
+
+const UNDO_TOAST_MS = 10_000
+const ZIP_URL_TTL_MS = 10_000
+const ZIP_FALLBACK_NAME = 'media'
+const UNSAFE_FILENAME_CHARS = /[<>:"/\\|?*\u0000-\u001f]+/g
+const NAME_COLLATOR = new Intl.Collator(undefined, { numeric: true, sensitivity: 'base' })
+
+function reportOutcome(library: LibraryCore, outcome: BulkOutcome, report: OutcomeReport): void {
+	const { t } = library
+	const count = outcome.done.length
+	const isComplete = outcome.refused.length === 0
 	library.toast.add({
-		title: library.t('dms_media.toasts.partial', {
-			done: outcome.done.length,
-			refused: outcome.refused.length,
-		}),
-		description: outcome.refused[0]?.message,
-		color: 'warning',
-		icon: 'i-ph-warning',
+		title: isComplete
+			? t(report.doneKey, { count, ...report.params }, count)
+			: t('dms_media.toasts.partial', { done: count, refused: outcome.refused.length }),
+		description: isComplete ? undefined : translateApiMessage(t, outcome.refused[0]?.message),
+		color: isComplete ? 'success' : 'warning',
+		icon: isComplete ? 'i-ph-check-circle' : 'i-ph-warning',
+		actions: count > 0 ? report.actions : undefined,
+		duration: report.actions && count > 0 ? report.duration : undefined,
 	})
 }
 
-/** Writes to the library, applied locally first and rolled back on failure. */
-export function createLibraryActions(library: LibraryCore) {
-	const { api, listing, tree, selection, t } = library
+/** A refused bulk outcome where files deleted meanwhile count as gone, not refused. */
+function splitGone(outcome: BulkOutcome): GoneSplit {
+	const gone = outcome.refused.filter(isGoneRefusal).map((refusal) => refusal.id)
+	return {
+		outcome: { done: outcome.done, refused: outcome.refused.filter((refusal) => !isGoneRefusal(refusal)) },
+		gone,
+	}
+}
 
-	async function renameAsset(asset: MediaAsset, name: string): Promise<boolean> {
-		if (!name || name === asset.name) return false
-		listing.patchAsset(asset.id, { name })
+function zipFileName(label: string | undefined): string {
+	const base = (label ?? '').replace(UNSAFE_FILENAME_CHARS, ' ').trim() || ZIP_FALLBACK_NAME
+	const day = new Date().toISOString().slice(0, 10)
+	return `${base}-${day}.zip`
+}
+
+function saveBlob(blob: Blob, name: string): void {
+	const url = URL.createObjectURL(blob)
+	downloadFile(url, name)
+	setTimeout(() => URL.revokeObjectURL(url), ZIP_URL_TTL_MS)
+}
+
+/** Drops files someone else deleted meanwhile, and says so. */
+function createGoneHandler(library: LibraryCore) {
+	return function forgetGone(ids: string[]): void {
+		if (ids.length === 0) return
+		library.listing.removeAssets(ids)
+		library.selection.forget(ids)
+		ids.forEach((id) => library.previews.forget(id))
+		void library.tree.refresh()
+		library.toast.add({
+			title: library.t('dms_media.toasts.already_deleted', { count: ids.length }, ids.length),
+			color: 'warning',
+			icon: 'i-ph-warning',
+		})
+	}
+}
+
+/** Writes to a file's own details: name and alt text. */
+function createDetailActions(library: LibraryCore) {
+	const { api, listing, tree, t } = library
+	const forgetGone = createGoneHandler(library)
+
+	function touch(assetId: string, changes: Partial<MediaAsset>): void {
+		listing.patchAsset(assetId, { ...changes, updatedAt: new Date().toISOString() })
+	}
+
+	function sortByName(): void {
+		const { sort, direction } = listing.filters.value
+		if (sort !== 'name') return
+		const factor = direction === 'desc' ? -1 : 1
+		listing.assets.value = [...listing.assets.value].sort(
+			(left, right) => NAME_COLLATOR.compare(left.name, right.name) * factor,
+		)
+	}
+
+	function failWrite(error: unknown, asset: MediaAsset, titleKey: string): NameOutcome {
+		const fieldError = nameFieldError(t, error)
+		if (fieldError) return { isDone: false, fieldError }
+		if (isGoneError(error)) forgetGone([asset.id])
+		else library.notifyFailure(error, titleKey)
+		return { isDone: false }
+	}
+
+	/** Renames a file; a name already taken comes back as a field error. */
+	async function renameAsset(asset: MediaAsset, name: string): Promise<NameOutcome> {
+		if (!name || name === asset.name) return { isDone: true }
 		try {
 			await api.updateAsset(asset.id, { name })
-			return true
+			touch(asset.id, { name })
+			sortByName()
+			return { isDone: true }
 		} catch (error) {
-			listing.patchAsset(asset.id, { name: asset.name })
-			library.notifyFailure(error, 'dms_media.toasts.rename_failed')
-			return false
+			return failWrite(error, asset, 'dms_media.toasts.rename_failed')
 		}
 	}
 
 	async function setAlt(asset: MediaAsset, alt: string): Promise<boolean> {
 		if (alt === (asset.alt ?? '')) return true
-		listing.patchAsset(asset.id, { alt })
+		touch(asset.id, { alt })
 		try {
 			await api.updateAsset(asset.id, { alt })
 			const wasMissing = needsAltText(asset)
@@ -185,118 +287,201 @@ export function createLibraryActions(library: LibraryCore) {
 			if (wasMissing !== isMissing) tree.adjustView('missingAlt', isMissing ? 1 : -1)
 			return true
 		} catch (error) {
-			listing.patchAsset(asset.id, { alt: asset.alt })
-			library.notifyFailure(error, 'dms_media.toasts.alt_failed')
+			listing.patchAsset(asset.id, { alt: asset.alt, updatedAt: asset.updatedAt })
+			failWrite(error, asset, 'dms_media.toasts.alt_failed')
 			return false
 		}
 	}
 
-	async function setAssetsVisibility(
-		assets: MediaAsset[],
-		visibility: AssetVisibility,
-	): Promise<void> {
+	return { renameAsset, setAlt, forgetGone }
+}
+
+/** Moving files, with an undo that sends each one back to its own folder. */
+function createMoveActions(library: LibraryCore, forgetGone: (ids: string[]) => void) {
+	const { api, listing, tree, selection, t } = library
+
+	function applyMove(ids: string[], folderId: string): void {
+		if (listing.location.value.kind === 'folder') {
+			listing.removeAssets(ids)
+			selection.forget(ids)
+			return
+		}
+		ids.forEach((id) => listing.patchAsset(id, { folderId }))
+	}
+
+	function groupByOrigin(ids: string[], origins: Map<string, string>): Map<string, string[]> {
+		const groups = new Map<string, string[]>()
+		for (const id of ids) {
+			const origin = origins.get(id)
+			if (origin) groups.set(origin, [...(groups.get(origin) ?? []), id])
+		}
+		return groups
+	}
+
+	async function undoMove(ids: string[], origins: Map<string, string>): Promise<void> {
 		try {
-			const outcome = await api.setAssetsVisibility(
-				assets.map((asset) => asset.id),
-				visibility,
-			)
-			await listing.load()
-			reportOutcome(library, outcome, 'dms_media.toasts.visibility_done')
+			const groups = [...groupByOrigin(ids, origins)]
+			await Promise.all(groups.map(([folderId, group]) => api.moveAssets(group, folderId)))
+			await Promise.all([tree.refresh(), listing.load()])
+			library.toast.add({ title: t('dms_media.toasts.move_undone'), color: 'success', icon: 'i-ph-arrow-counter-clockwise' })
 		} catch (error) {
-			library.notifyFailure(error, 'dms_media.toasts.visibility_failed')
+			library.notifyFailure(error, 'dms_media.toasts.undo_failed')
 		}
 	}
 
 	async function moveAssets(assets: MediaAsset[], folderId: string): Promise<void> {
-		const ids = assets.map((asset) => asset.id)
-		const sourceId = assets[0]?.folderId
+		const origins = new Map(assets.map((asset) => [asset.id, asset.folderId]))
 		try {
-			const outcome = await api.moveAssets(ids, folderId)
-			listing.removeAssets(outcome.done)
-			selection.forget(outcome.done)
+			const result = splitGone(await api.moveAssets([...origins.keys()], folderId))
+			applyMove(result.outcome.done, folderId)
+			forgetGone(result.gone)
 			await tree.refresh()
-			reportOutcome(library, outcome, 'dms_media.toasts.moved')
-			if (sourceId && outcome.done.length > 0)
-				offerUndoMove(outcome.done, sourceId)
+			reportOutcome(library, result.outcome, {
+				doneKey: 'dms_media.toasts.moved_to',
+				params: { name: tree.foldersById.value.get(folderId)?.name ?? '' },
+				actions: [{ label: t('dms_media.actions.undo'), onClick: () => undoMove(result.outcome.done, origins) }],
+				duration: UNDO_TOAST_MS,
+			})
 		} catch (error) {
 			library.notifyFailure(error, 'dms_media.toasts.move_failed')
 		}
 	}
 
-	function offerUndoMove(ids: string[], sourceId: string): void {
+	return { moveAssets }
+}
+
+/** Stars, which also leave the Starred view when removed there. */
+function createStarActions(library: LibraryCore) {
+	const { api, listing, tree, t } = library
+
+	function patchStar(target: MediaAsset | MediaFolder, kind: 'asset' | 'folder', starred: boolean): void {
+		if (kind === 'asset') listing.patchAsset(target.id, { starred })
+		else tree.patchFolder(target.id, { starred })
+		tree.adjustView('starred', starred ? 1 : -1)
+	}
+
+	function isStarredView(): boolean {
+		const current = listing.location.value
+		return current.kind === 'view' && current.view === 'starred'
+	}
+
+	function leaveStarredView(target: MediaAsset | MediaFolder, kind: 'asset' | 'folder'): void {
+		if (kind === 'asset') listing.removeAssets([target.id])
+		else listing.extraFolders.value = listing.extraFolders.value.filter((folder) => folder.id !== target.id)
 		library.toast.add({
-			title: t('dms_media.toasts.undo_move', { count: ids.length }, ids.length),
+			title: t('dms_media.toasts.unstarred', { name: target.name }),
 			color: 'neutral',
-			actions: [
-				{
-					label: t('dms_media.actions.undo'),
-					onClick: async () => {
-						await api.moveAssets(ids, sourceId)
-						await Promise.all([tree.refresh(), listing.load()])
-					},
-				},
-			],
+			icon: 'i-ph-star',
+			actions: [{ label: t('dms_media.actions.undo'), onClick: () => restar(target, kind) }],
 		})
 	}
 
-	async function deleteAssets(assets: MediaAsset[]): Promise<void> {
-		const ids = assets.map((asset) => asset.id)
+	async function restar(target: MediaAsset | MediaFolder, kind: 'asset' | 'folder'): Promise<void> {
 		try {
-			const outcome = await api.deleteAssets(ids)
-			listing.removeAssets(outcome.done)
-			selection.forget(outcome.done)
-			outcome.done.forEach((id) => library.previews.forget(id))
+			await api.star(kind, target.id, true)
+			tree.adjustView('starred', 1)
+			await listing.load()
+		} catch (error) {
+			library.notifyFailure(error, 'dms_media.toasts.star_failed')
+		}
+	}
+
+	async function toggleStar(target: MediaAsset | MediaFolder, kind: 'asset' | 'folder'): Promise<void> {
+		const starred = !target.starred
+		patchStar(target, kind, starred)
+		try {
+			await api.star(kind, target.id, starred)
+			if (!starred && isStarredView()) leaveStarredView(target, kind)
+		} catch (error) {
+			patchStar(target, kind, !starred)
+			library.notifyFailure(error, 'dms_media.toasts.star_failed')
+		}
+	}
+
+	/** Stars every file, or removes their stars when they all have one. */
+	async function starAssets(assets: MediaAsset[]): Promise<void> {
+		const isEveryStarred = assets.every((asset) => asset.starred)
+		const targets = assets.filter((asset) => asset.starred === isEveryStarred)
+		await Promise.all(targets.map((asset) => toggleStar(asset, 'asset')))
+	}
+
+	return { toggleStar, starAssets }
+}
+
+/** Writes to the library, applied locally first and rolled back on failure. */
+export function createLibraryActions(library: LibraryCore) {
+	const { api, listing, tree, selection } = library
+	const details = createDetailActions(library)
+	const assetLink = useAssetLink()
+	const isZipping = ref(false)
+
+	async function setAssetsVisibility(
+		assets: MediaAsset[],
+		visibility: AssetVisibility,
+		doneKey = 'dms_media.toasts.visibility_done',
+	): Promise<void> {
+		try {
+			const result = splitGone(await api.setAssetsVisibility(assets.map((asset) => asset.id), visibility))
+			details.forgetGone(result.gone)
+			await listing.load()
+			reportOutcome(library, result.outcome, { doneKey })
+		} catch (error) {
+			library.notifyFailure(error, 'dms_media.toasts.visibility_failed')
+		}
+	}
+
+	async function deleteAssets(assets: MediaAsset[]): Promise<void> {
+		try {
+			const outcome = await api.deleteAssets(assets.map((asset) => asset.id))
+			const result = splitGone(outcome)
+			const removed = [...result.outcome.done, ...result.gone]
+			listing.removeAssets(removed)
+			selection.forget(removed)
+			removed.forEach((id) => library.previews.forget(id))
 			await tree.refresh()
-			reportOutcome(library, outcome, 'dms_media.toasts.deleted')
+			reportOutcome(library, { done: removed, refused: result.outcome.refused }, { doneKey: 'dms_media.toasts.deleted' })
 		} catch (error) {
 			library.notifyFailure(error, 'dms_media.toasts.delete_failed')
 		}
 	}
 
-	async function toggleStar(target: MediaAsset | MediaFolder, kind: 'asset' | 'folder') {
-		const starred = !target.starred
-		if (kind === 'asset') listing.patchAsset(target.id, { starred })
-		else tree.patchFolder(target.id, { starred })
-		tree.adjustView('starred', starred ? 1 : -1)
+	async function zipInto(load: () => Promise<Blob>, name: string): Promise<void> {
+		if (isZipping.value) return
+		isZipping.value = true
 		try {
-			await api.star(kind, target.id, starred)
-		} catch (error) {
-			if (kind === 'asset') listing.patchAsset(target.id, { starred: !starred })
-			else tree.patchFolder(target.id, { starred: !starred })
-			tree.adjustView('starred', starred ? -1 : 1)
-			library.notifyFailure(error, 'dms_media.toasts.star_failed')
-		}
-	}
-
-	async function downloadZip(assets: MediaAsset[]): Promise<void> {
-		try {
-			const blob = await api.zip(assets.map((asset) => asset.id))
-			const url = URL.createObjectURL(blob)
-			downloadFile(url, ZIP_FILENAME)
-			setTimeout(() => URL.revokeObjectURL(url), 10_000)
+			saveBlob(await load(), name)
 		} catch (error) {
 			library.notifyFailure(error, 'dms_media.toasts.zip_failed')
+		} finally {
+			isZipping.value = false
 		}
 	}
 
+	function downloadZip(assets: MediaAsset[]): Promise<void> {
+		const ids = assets.map((asset) => asset.id)
+		return zipInto(() => api.zip(ids), zipFileName(library.currentFolder.value?.name))
+	}
+
+	function downloadFolder(folder: MediaFolder): Promise<void> {
+		return zipInto(() => api.zipFolder(folder.id), zipFileName(folder.name))
+	}
+
+	/** Saves a file under its name; the storage's own link would only show it. */
 	async function downloadAsset(asset: MediaAsset): Promise<void> {
-		try {
-			const { url } = await api.readUrl(asset.id)
-			downloadFile(url, asset.name)
-		} catch (error) {
-			library.notifyFailure(error, 'dms_media.toasts.download_failed')
-		}
+		await assetLink.download(asset)
 	}
 
 	return {
-		renameAsset,
-		setAlt,
+		renameAsset: details.renameAsset,
+		setAlt: details.setAlt,
 		setAssetsVisibility,
-		moveAssets,
 		deleteAssets,
-		toggleStar,
 		downloadZip,
+		downloadFolder,
 		downloadAsset,
+		isZipping: readonly(isZipping),
+		...createMoveActions(library, details.forgetGone),
+		...createStarActions(library),
 		...createFolderActions(library),
 	}
 }
@@ -304,7 +489,14 @@ export function createLibraryActions(library: LibraryCore) {
 function createFolderActions(library: LibraryCore) {
 	const { api, tree, t } = library
 
-	async function createFolder(name: string, parentId?: string): Promise<string | null> {
+	function failName(error: unknown, titleKey: string): NameOutcome {
+		const fieldError = nameFieldError(t, error)
+		if (!fieldError) library.notifyFailure(error, titleKey)
+		return { isDone: false, fieldError }
+	}
+
+	/** Creates a folder; a name already taken comes back as a field error. */
+	async function createFolder(name: string, parentId?: string): Promise<NameOutcome> {
 		try {
 			const { id } = await api.createFolder(name, parentId)
 			await tree.refresh()
@@ -313,23 +505,20 @@ function createFolderActions(library: LibraryCore) {
 				color: 'success',
 				icon: 'i-ph-folder-plus',
 			})
-			return id
+			return { isDone: true, id }
 		} catch (error) {
-			library.notifyFailure(error, 'dms_media.toasts.folder_create_failed')
-			return null
+			return failName(error, 'dms_media.toasts.folder_create_failed')
 		}
 	}
 
-	async function renameFolder(folder: MediaFolder, name: string): Promise<boolean> {
-		if (!name || name === folder.name) return false
-		tree.patchFolder(folder.id, { name })
+	async function renameFolder(folder: MediaFolder, name: string): Promise<NameOutcome> {
+		if (!name || name === folder.name) return { isDone: true }
 		try {
 			await api.renameFolder(folder.id, name)
-			return true
+			tree.patchFolder(folder.id, { name })
+			return { isDone: true }
 		} catch (error) {
-			tree.patchFolder(folder.id, { name: folder.name })
-			library.notifyFailure(error, 'dms_media.toasts.rename_failed')
-			return false
+			return failName(error, 'dms_media.toasts.rename_failed')
 		}
 	}
 
@@ -370,6 +559,11 @@ function createFolderActions(library: LibraryCore) {
 		try {
 			await api.setFolderVisibility(folder.id, visibility)
 			await library.listing.load()
+			library.toast.add({
+				title: t(`dms_media.toasts.folder_visibility.${visibility}`, { name: folder.name }),
+				color: 'success',
+				icon: visibility === 'public' ? 'i-ph-globe' : 'i-ph-lock-simple',
+			})
 		} catch (error) {
 			tree.patchFolder(folder.id, { visibility: folder.visibility })
 			library.notifyFailure(error, 'dms_media.toasts.visibility_failed')
