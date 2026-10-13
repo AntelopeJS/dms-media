@@ -2,13 +2,19 @@ import type { AxiosInstance } from "axios";
 import { expect } from "chai";
 import { RegisterAssetBinding } from "@antelopejs/interface-dms-media";
 import {
-  MEDIA_FOLDERS_MANAGE_PERMISSION,
-  MEDIA_PERMISSIONS_MANAGE_PERMISSION,
-  MEDIA_UPLOAD_PERMISSION,
-} from "../../constants";
+  configureMediaModule,
+  type DmsMediaConfig,
+  getMediaConfig,
+} from "../../config";
+import { RETIRED_MEDIA_PERMISSIONS } from "../../constants";
 import { GetPermissionId } from "@antelopejs/interface-dms/page";
+import { UserModel } from "@antelopejs/interface-dms/auth/db";
+import { DEFAULT_TENANT_ID } from "@antelopejs/interface-dms/constants";
+import { GetModel } from "@antelopejs/interface-database-decorators";
 import { MEDIA_PAGE_PERMISSION } from "../../pages/files";
 import { MediaUploadsPage } from "../../pages/uploads";
+import { uploadAvailability } from "../../pages/upload-availability";
+import { MEDIA_ROUTES } from "../../library/links";
 import type { AclEntry } from "../../types";
 import {
   rawGet,
@@ -17,6 +23,7 @@ import {
   uploadTextAsset,
 } from "../helpers/assets";
 import { authorizedClient } from "../helpers/http";
+import { readPageAccess } from "../helpers/pages";
 import {
   createRole,
   type MemberSession,
@@ -31,6 +38,9 @@ const HTTP_FORBIDDEN = 403;
 const HTTP_NOT_FOUND = 404;
 const SETUP_TIMEOUT_MS = 120_000;
 
+const LIBRARY_VIEW_PERMISSION = "warehouse.library.view";
+const LIBRARY_UPLOAD_PERMISSION = "warehouse.library.upload";
+const LIBRARY_MANAGE_PERMISSION = "warehouse.library.manage";
 const WAREHOUSE_EDIT_PERMISSION = "warehouse.table.edit";
 const WAREHOUSE_VIEW_PERMISSION = "warehouse.page";
 const STOCK_BINDING_ID = "warehouse.stock";
@@ -59,20 +69,22 @@ interface TreeResponse {
 }
 
 interface WorldRoles {
+  pageHolder: string;
   viewer: string;
   uploader: string;
   folderManager: string;
-  permissionsManager: string;
+  legacyManager: string;
   clerk: string;
   secretTeam: string;
   latecomer: string;
 }
 
 interface WorldSessions {
+  pageHolder: MemberSession;
   viewer: MemberSession;
   uploader: MemberSession;
   folderManager: MemberSession;
-  permissionsManager: MemberSession;
+  legacyManager: MemberSession;
   clerk: MemberSession;
   secretMember: MemberSession;
   hybrid: MemberSession;
@@ -147,39 +159,67 @@ function permissionEntry(id: string, rights: AclEntry["rights"]): AclEntry {
   return { subject: { kind: "permission", id }, rights };
 }
 
+function snapshotMediaConfig(): DmsMediaConfig {
+  const config = getMediaConfig();
+  return {
+    rootAcl: config.rootAcl,
+    storage: config.storage,
+    presets: [...config.presets.values()],
+    storageQuotaBytes: config.storageQuotaBytes,
+  };
+}
+
+function grantLibraryAtRoot(config: DmsMediaConfig): void {
+  configureMediaModule({
+    ...config,
+    rootAcl: [
+      ...(config.rootAcl ?? []),
+      permissionEntry(LIBRARY_VIEW_PERMISSION, ["read"]),
+      permissionEntry(LIBRARY_UPLOAD_PERMISSION, ["write"]),
+      permissionEntry(LIBRARY_MANAGE_PERMISSION, ["manage"]),
+    ],
+  });
+}
+
 async function createWorldRoles(): Promise<WorldRoles> {
   const [
+    pageHolder,
     viewer,
     uploader,
     folderManager,
-    permissionsManager,
+    legacyManager,
     clerk,
     secretTeam,
     latecomer,
   ] = await Promise.all([
-    createRole("media-viewer", [MEDIA_PAGE_PERMISSION]),
-    createRole("media-uploader", [
+    createRole("media-page-holder", [
       MEDIA_PAGE_PERMISSION,
-      MEDIA_UPLOAD_PERMISSION,
+      ...RETIRED_MEDIA_PERMISSIONS,
+    ]),
+    createRole("media-viewer", [LIBRARY_VIEW_PERMISSION]),
+    createRole("media-uploader", [
+      LIBRARY_VIEW_PERMISSION,
+      LIBRARY_UPLOAD_PERMISSION,
     ]),
     createRole("media-folder-manager", [
-      MEDIA_PAGE_PERMISSION,
-      MEDIA_FOLDERS_MANAGE_PERMISSION,
+      LIBRARY_VIEW_PERMISSION,
+      LIBRARY_MANAGE_PERMISSION,
     ]),
-    createRole("media-permissions-manager", [
-      MEDIA_PAGE_PERMISSION,
-      MEDIA_FOLDERS_MANAGE_PERMISSION,
-      MEDIA_PERMISSIONS_MANAGE_PERMISSION,
+    createRole("media-legacy-manager", [
+      LIBRARY_VIEW_PERMISSION,
+      LIBRARY_MANAGE_PERMISSION,
+      ...RETIRED_MEDIA_PERMISSIONS,
     ]),
     createRole("warehouse-clerk", [WAREHOUSE_EDIT_PERMISSION]),
     createRole("secret-team", []),
     createRole("latecomer", []),
   ]);
   return {
+    pageHolder,
     viewer,
     uploader,
     folderManager,
-    permissionsManager,
+    legacyManager,
     clerk,
     secretTeam,
     latecomer,
@@ -188,12 +228,11 @@ async function createWorldRoles(): Promise<WorldRoles> {
 
 async function registerWorldMembers(roles: WorldRoles): Promise<WorldSessions> {
   return {
+    pageHolder: await registerMember("PageHolder", [roles.pageHolder]),
     viewer: await registerMember("Viewer", [roles.viewer]),
     uploader: await registerMember("Uploader", [roles.uploader]),
     folderManager: await registerMember("FolderManager", [roles.folderManager]),
-    permissionsManager: await registerMember("PermissionsManager", [
-      roles.permissionsManager,
-    ]),
+    legacyManager: await registerMember("LegacyManager", [roles.legacyManager]),
     clerk: await registerMember("Clerk", [roles.clerk]),
     secretMember: await registerMember("SecretMember", [roles.secretTeam]),
     hybrid: await registerMember("Hybrid", [roles.viewer, roles.secretTeam]),
@@ -221,7 +260,7 @@ async function buildWorldFolders(
   await setFolderAcl(owner, vault, []);
   await setFolderAcl(owner, pocket, [roleEntry(secretTeamRoleId, ["read"])]);
   await setFolderAcl(owner, readOnlyCorner, [
-    permissionEntry(MEDIA_PAGE_PERMISSION, ["read"]),
+    permissionEntry(LIBRARY_VIEW_PERMISSION, ["read"]),
   ]);
   const flip = await owner.post(`/api/media/folders/${publicZone}/visibility`, {
     visibility: "public",
@@ -266,9 +305,12 @@ describe("[integration] media permissions — multi-actor ACL enforcement", () =
   let folders: WorldFolders;
   let assets: WorldAssets;
   let stockAssetId: string;
+  let previousConfig: DmsMediaConfig;
 
   before(async function () {
     this.timeout(SETUP_TIMEOUT_MS);
+    previousConfig = snapshotMediaConfig();
+    grantLibraryAtRoot(previousConfig);
     RegisterAssetBinding({
       id: STOCK_BINDING_ID,
       folderName: STOCK_FOLDER_NAME,
@@ -295,6 +337,7 @@ describe("[integration] media permissions — multi-actor ACL enforcement", () =
     for (const folderId of roots) {
       await owner.delete(`/api/media/folders/${folderId}`);
     }
+    configureMediaModule(previousConfig);
   });
 
   describe("tree visibility", () => {
@@ -304,7 +347,13 @@ describe("[integration] media permissions — multi-actor ACL enforcement", () =
       expect(tree.root).to.include({ write: false, manage: false });
     });
 
-    it("shows only root-inherited folders to a media page permission holder", async () => {
+    it("grants nothing through the All files page permission nor the retired media permissions", async () => {
+      const tree = await fetchTree(sessions.pageHolder.client);
+      expect(tree.folders).to.deep.equal([]);
+      expect(tree.root).to.include({ write: false, manage: false });
+    });
+
+    it("shows only root-inherited folders to a holder of a root read grant", async () => {
       const tree = await fetchTree(sessions.viewer.client);
       const library = findById(tree, folders.library);
       expect(library, "library").to.not.equal(undefined);
@@ -366,7 +415,7 @@ describe("[integration] media permissions — multi-actor ACL enforcement", () =
     it("unions permission and role subjects across multiple roles", async () => {
       const tree = await fetchTree(sessions.hybrid.client);
       const library = findById(tree, folders.library);
-      expect(library, "library via the media page permission").to.not.equal(
+      expect(library, "library via the root read grant").to.not.equal(
         undefined,
       );
       expect((library as TreeFolderNode).rights.read).to.equal(true);
@@ -388,9 +437,9 @@ describe("[integration] media permissions — multi-actor ACL enforcement", () =
         (findById(managerTree, folders.library) as TreeFolderNode).rights,
       ).to.deep.equal({ read: true, write: true, manage: true });
       expect(
-        (findById(managerTree, folders.stock) as TreeFolderNode).rights.manage,
-        "binding keeps media managers in control",
-      ).to.equal(true);
+        findById(managerTree, folders.stock),
+        "linked folders stay with the owner and their consumers",
+      ).to.equal(undefined);
     });
   });
 
@@ -691,7 +740,7 @@ describe("[integration] media permissions — multi-actor ACL enforcement", () =
       const estate = await createFolder(owner, "Estate");
       const cellar = await createFolder(owner, "EstateCellar", estate);
       await setFolderAcl(owner, cellar, [
-        permissionEntry(MEDIA_PERMISSIONS_MANAGE_PERMISSION, ["manage"]),
+        roleEntry(roles.secretTeam, ["manage"]),
       ]);
       const denied = await sessions.folderManager.client.delete(
         `/api/media/folders/${estate}`,
@@ -724,22 +773,22 @@ describe("[integration] media permissions — multi-actor ACL enforcement", () =
       expect(cleanup.status).to.equal(HTTP_OK);
     });
 
-    it("keeps ACL and visibility edition behind media.permissions.manage", async () => {
-      const aclRead = await sessions.folderManager.client.get(
+    it("keeps ACL and visibility edition owner-only, even for a stored role holding media.permissions.manage", async () => {
+      const aclRead = await sessions.legacyManager.client.get(
         `/api/media/folders/${folders.depot}/acl`,
       );
       expect(aclRead.status).to.equal(HTTP_FORBIDDEN);
-      const aclWrite = await sessions.folderManager.client.put(
+      const aclWrite = await sessions.legacyManager.client.put(
         `/api/media/folders/${folders.depot}/acl`,
         { entries: [] },
       );
       expect(aclWrite.status).to.equal(HTTP_FORBIDDEN);
-      const folderFlip = await sessions.folderManager.client.post(
+      const folderFlip = await sessions.legacyManager.client.post(
         `/api/media/folders/${folders.depot}/visibility`,
         { visibility: "public" },
       );
       expect(folderFlip.status).to.equal(HTTP_FORBIDDEN);
-      const assetFlip = await sessions.folderManager.client.post(
+      const assetFlip = await sessions.legacyManager.client.post(
         `/api/media/assets/${assets.notes.id}/visibility`,
         { visibility: "public" },
       );
@@ -753,28 +802,24 @@ describe("[integration] media permissions — multi-actor ACL enforcement", () =
       expect(denied.status).to.equal(HTTP_FORBIDDEN);
     });
 
-    it("lets a permissions manager edit ACLs with immediate effect", async () => {
+    it("lets the owner edit ACLs with immediate effect", async () => {
       const before = await fetchTree(sessions.viewer.client);
       expect(findById(before, folders.curtain), "curtain visible").to.not.equal(
         undefined,
       );
-      const inherited = await sessions.permissionsManager.client.get(
+      const inherited = await owner.get(
         `/api/media/folders/${folders.curtain}/acl`,
       );
       expect(inherited.status).to.equal(HTTP_OK);
       expect(inherited.data.entries).to.equal(null);
-      const selfPreservingEntries = [
-        roleEntry(roles.secretTeam, ["manage"]),
-        permissionEntry(MEDIA_PERMISSIONS_MANAGE_PERMISSION, ["manage"]),
-      ];
-      const lock = await sessions.permissionsManager.client.put(
+      const lock = await owner.put(
         `/api/media/folders/${folders.curtain}/acl`,
-        { entries: selfPreservingEntries },
+        {
+          entries: [roleEntry(roles.secretTeam, ["manage"])],
+        },
       );
       expect(lock.status).to.equal(HTTP_OK);
-      const acl = await sessions.permissionsManager.client.get(
-        `/api/media/folders/${folders.curtain}/acl`,
-      );
+      const acl = await owner.get(`/api/media/folders/${folders.curtain}/acl`);
       expect(acl.status).to.equal(HTTP_OK);
       expect(acl.data.entries).to.deep.include(
         roleEntry(roles.secretTeam, ["manage"]),
@@ -785,16 +830,17 @@ describe("[integration] media permissions — multi-actor ACL enforcement", () =
       );
     });
 
-    it("lets an ACL override lock out its own author", async () => {
-      const selfExclusion = await sessions.permissionsManager.client.put(
+    it("never locks the owner out of a folder", async () => {
+      const exclusion = await owner.put(
         `/api/media/folders/${folders.curtain}/acl`,
-        { entries: [roleEntry(roles.secretTeam, ["manage"])] },
+        { entries: [] },
       );
-      expect(selfExclusion.status).to.equal(HTTP_OK);
-      const lockedOut = await sessions.permissionsManager.client.get(
+      expect(exclusion.status).to.equal(HTTP_OK);
+      const stillThere = await owner.get(
         `/api/media/folders/${folders.curtain}/acl`,
       );
-      expect(lockedOut.status).to.equal(HTTP_NOT_FOUND);
+      expect(stillThere.status).to.equal(HTTP_OK);
+      expect(stillThere.data.entries).to.deep.equal([]);
     });
 
     it("restores inheritance when the ACL is cleared", async () => {
@@ -809,36 +855,35 @@ describe("[integration] media permissions — multi-actor ACL enforcement", () =
       );
     });
 
-    it("lets a permissions manager flip folder and asset visibility", async () => {
-      const folderFlip = await sessions.permissionsManager.client.post(
+    it("lets the owner flip folder and asset visibility", async () => {
+      const folderFlip = await owner.post(
         `/api/media/folders/${folders.curtain}/visibility`,
         { visibility: "public" },
       );
       expect(folderFlip.status).to.equal(HTTP_OK);
-      const folderBack = await sessions.permissionsManager.client.post(
+      const folderBack = await owner.post(
         `/api/media/folders/${folders.curtain}/visibility`,
         { visibility: "private" },
       );
       expect(folderBack.status).to.equal(HTTP_OK);
-      const assetFlip = await sessions.permissionsManager.client.post(
+      const assetFlip = await owner.post(
         `/api/media/assets/${assets.notes.id}/visibility`,
         { visibility: "private" },
       );
       expect(assetFlip.status).to.equal(HTTP_OK);
-      const assetBack = await sessions.permissionsManager.client.post(
+      const assetBack = await owner.post(
         `/api/media/assets/${assets.notes.id}/visibility`,
         { visibility: "inherit" },
       );
       expect(assetBack.status).to.equal(HTTP_OK);
     });
 
-    it("keeps linked folders locked even for a permissions manager", async () => {
-      const reAcl = await sessions.permissionsManager.client.put(
-        `/api/media/folders/${folders.stock}/acl`,
-        { entries: [] },
-      );
+    it("keeps linked folders locked even for the owner", async () => {
+      const reAcl = await owner.put(`/api/media/folders/${folders.stock}/acl`, {
+        entries: [],
+      });
       expect(reAcl.status).to.equal(HTTP_FORBIDDEN);
-      const rename = await sessions.permissionsManager.client.post(
+      const rename = await owner.post(
         `/api/media/folders/${folders.stock}/rename`,
         { name: "Hijacked stock" },
       );
@@ -878,7 +923,7 @@ describe("[integration] media permissions — multi-actor ACL enforcement", () =
     it("grants access on the next request when the role gains a permission", async () => {
       const before = await fetchTree(sessions.latecomer.client);
       expect(before.folders).to.deep.equal([]);
-      await setRolePermissions(roles.latecomer, [MEDIA_PAGE_PERMISSION]);
+      await setRolePermissions(roles.latecomer, [LIBRARY_VIEW_PERMISSION]);
       const after = await fetchTree(sessions.latecomer.client);
       expect(
         findById(after, folders.library),
@@ -898,36 +943,58 @@ describe("[integration] media permissions — multi-actor ACL enforcement", () =
 
     async function uploadButton(client: AxiosInstance) {
       const layout = await client.get("/dms/pagelayout", {
-        params: { slug: "/media/uploads" },
+        params: { slug: MEDIA_ROUTES.uploads },
       });
       expect(layout.status).to.equal(HTTP_OK);
       return layout.data.layout.options.headerActions[0];
+    }
+
+    async function latecomerAvailability() {
+      const user = await GetModel(UserModel).get(sessions.latecomer.userId);
+      return uploadAvailability({ tenantId: DEFAULT_TENANT_ID, user });
     }
 
     after(async () => {
       await setRolePermissions(roles.latecomer, []);
     });
 
-    it("is disabled for a member who can upload to no folder", async () => {
+    it("serves the uploads page to the owner with the button enabled", async () => {
+      const button = await uploadButton(owner);
+      expect(button.disabled).to.not.equal(true);
+    });
+
+    it("keeps the uploads page from members: module pages are owner-only", async () => {
       await setRolePermissions(roles.latecomer, [
-        MEDIA_PAGE_PERMISSION,
+        LIBRARY_VIEW_PERMISSION,
         uploadsPagePermission,
+        LIBRARY_UPLOAD_PERMISSION,
       ]);
-      const button = await uploadButton(sessions.latecomer.client);
-      expect(button).to.include({
-        disabled: true,
-        disabledReason: "$dms_media.uploads.no_writable_folder",
+      const [memberAccess, ownerAccess] = await Promise.all([
+        readPageAccess(sessions.latecomer.client, MEDIA_ROUTES.uploads),
+        readPageAccess(owner, MEDIA_ROUTES.uploads),
+      ]);
+      expect(ownerAccess).to.include({
+        ownRouteStatus: HTTP_OK,
+        hasAccess: true,
+      });
+      expect(ownerAccess.servedBlocks).to.be.greaterThan(0);
+      expect(memberAccess).to.include({ hasAccess: false, servedBlocks: 0 });
+      expect(memberAccess.ownRouteStatus).to.not.equal(HTTP_OK);
+    });
+
+    it("is disabled for a member who can upload to no folder", async () => {
+      await setRolePermissions(roles.latecomer, [LIBRARY_VIEW_PERMISSION]);
+      expect(await latecomerAvailability()).to.deep.equal({
+        reason: "$dms_media.uploads.no_writable_folder",
       });
     });
 
     it("is enabled once the member may upload somewhere", async () => {
       await setRolePermissions(roles.latecomer, [
-        MEDIA_PAGE_PERMISSION,
-        uploadsPagePermission,
-        MEDIA_UPLOAD_PERMISSION,
+        LIBRARY_VIEW_PERMISSION,
+        LIBRARY_UPLOAD_PERMISSION,
       ]);
-      const button = await uploadButton(sessions.latecomer.client);
-      expect(button.disabled).to.not.equal(true);
+      expect(await latecomerAvailability()).to.equal(undefined);
     });
   });
 

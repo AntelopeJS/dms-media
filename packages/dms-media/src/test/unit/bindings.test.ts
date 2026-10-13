@@ -7,10 +7,6 @@ import {
 import { CustomComponent } from "@antelopejs/interface-dms/base/custom";
 import { expect } from "chai";
 import { buildBindingAcl } from "../../bindings";
-import {
-  MEDIA_FOLDERS_MANAGE_PERMISSION,
-  MEDIA_PERMISSIONS_MANAGE_PERMISSION,
-} from "../../constants";
 import type { AclEntry } from "../../types";
 
 @RegisterPage()
@@ -49,15 +45,17 @@ describe("[unit] asset-type/bindings — buildBindingAcl", () => {
     });
   });
 
-  it("always keeps media managers in control of linked folders", () => {
-    const entries = buildBindingAcl({ id: "bare" });
+  it("leaves the control of linked folders to owners", () => {
+    const entries = buildBindingAcl({
+      id: "articles.cover",
+      permissionMapping: {
+        read: ["articles.page"],
+        write: ["articles.page.table.edit"],
+      },
+    });
     const managed = entries.filter((entry) => entry.rights.includes("manage"));
-    expect(managed.map((entry) => entry.subject.id).sort()).to.deep.equal(
-      [
-        MEDIA_FOLDERS_MANAGE_PERMISSION,
-        MEDIA_PERMISSIONS_MANAGE_PERMISSION,
-      ].sort(),
-    );
+    expect(managed).to.deep.equal([]);
+    expect(buildBindingAcl({ id: "bare" })).to.deep.equal([]);
   });
 
   it("derives read and write entries from the owning page permission", () => {

@@ -3,11 +3,14 @@ import { ImplementInterface } from "@antelopejs/interface-core";
 import { AddFrontendModule } from "@antelopejs/interface-dms/page";
 import { Logging } from "@antelopejs/interface-core/logging";
 import "./db";
-import "./permissions";
 import type { ScheduledTask } from "node-cron";
 import { type DmsMediaConfig, configureMediaModule } from "./config";
 import { registerMediaCrons } from "./crons";
 import { cancelLibraryChange } from "./library/realtime";
+import {
+  markRetiredPermissions,
+  unmarkRetiredPermissions,
+} from "./permissions";
 
 export * from "./acl";
 export * from "./bindings";
@@ -26,6 +29,7 @@ let cronTasks: ScheduledTask[] = [];
 
 export async function construct(config: DmsMediaConfig = {}): Promise<void> {
   configureMediaModule(config);
+  markRetiredPermissions();
   ImplementInterface(
     await import("@antelopejs/interface-dms-media"),
     await import("./implementations/interface-dms-media"),
@@ -56,4 +60,8 @@ export async function stop(): Promise<void> {
     }
   }
   cronTasks = [];
+}
+
+export function destroy(): void {
+  unmarkRetiredPermissions();
 }

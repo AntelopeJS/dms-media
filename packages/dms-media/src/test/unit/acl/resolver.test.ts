@@ -6,10 +6,7 @@ import {
   resolveFolderAccess,
   resolveRootRights,
 } from "../../../acl/resolver";
-import {
-  MEDIA_FOLDERS_MANAGE_PERMISSION,
-  MEDIA_UPLOAD_PERMISSION,
-} from "../../../constants";
+import { RETIRED_MEDIA_PERMISSIONS } from "../../../constants";
 import { MEDIA_PAGE_PERMISSION } from "../../../pages/files";
 import type { MediaFolder } from "../../../db/tables";
 import type { AclEntry } from "../../../types";
@@ -39,6 +36,24 @@ function buildActor(permissions: string[], roleIds: string[] = []): AclActor {
 }
 
 const EDIT_ARTICLES_PERMISSION = "articles.table.edit";
+const LIBRARY_VIEW_PERMISSION = "library.view";
+const LIBRARY_UPLOAD_PERMISSION = "library.upload";
+const LIBRARY_MANAGE_PERMISSION = "library.manage";
+
+const libraryRootAcl: AclEntry[] = [
+  {
+    subject: { kind: "permission", id: LIBRARY_VIEW_PERMISSION },
+    rights: ["read"],
+  },
+  {
+    subject: { kind: "permission", id: LIBRARY_UPLOAD_PERMISSION },
+    rights: ["write"],
+  },
+  {
+    subject: { kind: "permission", id: LIBRARY_MANAGE_PERMISSION },
+    rights: ["manage"],
+  },
+];
 
 const editorsRoleAcl: AclEntry[] = [
   { subject: { kind: "role", id: "editors" }, rights: ["write"] },
@@ -67,8 +82,8 @@ describe("[unit] acl/resolver — resolveFolderAccess", () => {
     const folders = [buildFolder({ id: "root" })];
     const reader = resolveFolderAccess(
       folders,
-      buildActor([MEDIA_PAGE_PERMISSION]),
-      DEFAULT_ROOT_ACL,
+      buildActor([LIBRARY_VIEW_PERMISSION]),
+      libraryRootAcl,
     );
     expect(reader.readable.has("root")).to.equal(true);
     expect(reader.writable.has("root")).to.equal(false);
@@ -79,8 +94,8 @@ describe("[unit] acl/resolver — resolveFolderAccess", () => {
     const folders = [buildFolder({ id: "root" })];
     const uploader = resolveFolderAccess(
       folders,
-      buildActor([MEDIA_UPLOAD_PERMISSION]),
-      DEFAULT_ROOT_ACL,
+      buildActor([LIBRARY_UPLOAD_PERMISSION]),
+      libraryRootAcl,
     );
     expect(uploader.readable.has("root")).to.equal(true);
     expect(uploader.writable.has("root")).to.equal(true);
@@ -88,8 +103,8 @@ describe("[unit] acl/resolver — resolveFolderAccess", () => {
 
     const manager = resolveFolderAccess(
       folders,
-      buildActor([MEDIA_FOLDERS_MANAGE_PERMISSION]),
-      DEFAULT_ROOT_ACL,
+      buildActor([LIBRARY_MANAGE_PERMISSION]),
+      libraryRootAcl,
     );
     expect(manager.readable.has("root")).to.equal(true);
     expect(manager.writable.has("root")).to.equal(true);
@@ -191,13 +206,30 @@ describe("[unit] acl/resolver — resolveFolderAccess", () => {
     ];
     const reader = resolveFolderAccess(
       folders,
-      buildActor([MEDIA_PAGE_PERMISSION, MEDIA_FOLDERS_MANAGE_PERMISSION]),
-      DEFAULT_ROOT_ACL,
+      buildActor([LIBRARY_VIEW_PERMISSION, LIBRARY_MANAGE_PERMISSION]),
+      libraryRootAcl,
     );
     expect(reader.readable.size).to.equal(0);
     expect(reader.writable.size).to.equal(0);
     expect(reader.manageable.size).to.equal(0);
     expect(reader.shells.size).to.equal(0);
+  });
+
+  it("grants members nothing at the root by default", () => {
+    const folders = [buildFolder({ id: "root" })];
+    const actor = buildActor([
+      MEDIA_PAGE_PERMISSION,
+      ...RETIRED_MEDIA_PERMISSIONS,
+    ]);
+    expect(resolveRootRights(actor, DEFAULT_ROOT_ACL).size).to.equal(0);
+    const access = resolveFolderAccess(folders, actor, DEFAULT_ROOT_ACL);
+    expect(access.readable.size).to.equal(0);
+    const owner = resolveFolderAccess(
+      folders,
+      buildActor(["*"]),
+      DEFAULT_ROOT_ACL,
+    );
+    expect(owner.manageable.has("root")).to.equal(true);
   });
 
   it("grants every root right to the owner wildcard", () => {
@@ -217,8 +249,8 @@ describe("[unit] acl/resolver — resolveFolderAccess", () => {
 
   it("resolves root rights from the root ACL for regular actors", () => {
     const rights = resolveRootRights(
-      buildActor([MEDIA_UPLOAD_PERMISSION]),
-      DEFAULT_ROOT_ACL,
+      buildActor([LIBRARY_UPLOAD_PERMISSION]),
+      libraryRootAcl,
     );
     expect(rights.has("write")).to.equal(true);
     expect(rights.has("manage")).to.equal(false);
@@ -280,8 +312,8 @@ describe("[unit] acl/resolver — resolveFolderAccess", () => {
     ];
     const reader = resolveFolderAccess(
       folders,
-      buildActor([MEDIA_PAGE_PERMISSION]),
-      DEFAULT_ROOT_ACL,
+      buildActor([LIBRARY_VIEW_PERMISSION]),
+      libraryRootAcl,
     );
     expect(reader.readable.has("sane")).to.equal(true);
     expect(reader.readable.has("a")).to.equal(false);
