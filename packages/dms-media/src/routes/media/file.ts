@@ -4,11 +4,16 @@ import { UserModel } from "@antelopejs/interface-dms/auth/db";
 import { GetModel } from "@antelopejs/interface-database-decorators";
 import { getMediaConfig } from "../../config";
 import type { BannerContent } from "@antelopejs/interface-dms/base/banner";
+import type { BlockText } from "@antelopejs/interface-dms/base/types";
 import type { MediaAsset, MediaFolder } from "../../db";
 import { MEDIA_ROUTES } from "../../library/links";
-import { type MediaPresetConfig } from "../../presets";
-import { composedText } from "../../library/composed-text";
-import { isDescribableImage } from "../../library/type-groups";
+import { DEFAULT_PRESETS, type MediaPresetConfig } from "../../presets";
+import { derivativeFilename } from "../../derivatives";
+import { composedText, numberParam } from "../../library/composed-text";
+import {
+  isDescribableImage,
+  resolveTypeGroup,
+} from "../../library/type-groups";
 import { GetPermissionId } from "@antelopejs/interface-dms/page";
 import { OWNER_WILDCARD_PERMISSION } from "../../constants";
 import { MediaPresetsPage } from "../../pages/manage";
@@ -20,6 +25,7 @@ import { MediaApiController } from "./controller";
 const FILE_TEXTS = "$dms_media.file";
 const STABLE_LINK_COUNT = 1;
 const STABLE_LINK_ID = "stable";
+const ASSET_ID_ROW = "asset-id";
 const PRESETS_LINK: KeyValueListItem = {
   id: "presets",
   label: `${FILE_TEXTS}.delivery_sizes`,
@@ -27,7 +33,9 @@ const PRESETS_LINK: KeyValueListItem = {
   type: "link",
   to: MEDIA_ROUTES.presets,
 };
-const SIZE_UNSET = "–";
+const BUILT_IN_PRESET_IDS = new Set(DEFAULT_PRESETS.map((preset) => preset.id));
+const EXTENSION_SEPARATOR = ".";
+const MIMETYPE_SUFFIX_SEPARATOR = "+";
 
 async function uploaderName(asset: MediaAsset): Promise<string | undefined> {
   const uploader = await GetModel(UserModel).get(asset.createdBy);
@@ -45,8 +53,26 @@ function deliverablePresets(asset: MediaAsset): MediaPresetConfig[] {
     : [];
 }
 
-function presetSize(preset: MediaPresetConfig): string {
-  return `${preset.width ?? SIZE_UNSET} × ${preset.height ?? SIZE_UNSET}`;
+/** A delivery size's name: a translated one for the built-in sizes, else its id. */
+function presetLabel(preset: MediaPresetConfig): string {
+  return BUILT_IN_PRESET_IDS.has(preset.id)
+    ? `${FILE_TEXTS}.preset_names.${preset.id}`
+    : preset.id;
+}
+
+/** "300 × 300", "1600 px wide", "900 px high", or the original size. */
+function presetSize(preset: MediaPresetConfig): BlockText {
+  const { width, height } = preset;
+  if (width && height) return `${width} × ${height}`;
+  if (width)
+    return composedText(`${FILE_TEXTS}.preset_width`, {
+      width: numberParam(width),
+    });
+  if (height)
+    return composedText(`${FILE_TEXTS}.preset_height`, {
+      height: numberParam(height),
+    });
+  return `${FILE_TEXTS}.preset_original_size`;
 }
 
 function deliveryRow(
@@ -65,8 +91,10 @@ function deliveryRow(
 }
 
 /**
- * The links a file is delivered on, each with a button copying its full URL,
- * then the way to every delivery size.
+ * The links a file is delivered on, each with a button copying its full URL
+ * on the dashboard's public origin, then its id and the way to every
+ * delivery size. A size's link ends with the extension of the format it
+ * serves (`photo-01-thumb.webp`), not the original's.
  */
 export function buildDeliveryLinks(
   asset: MediaAsset,
@@ -76,8 +104,8 @@ export function buildDeliveryLinks(
   const presetRows = deliverablePresets(asset).map((preset) => ({
     ...deliveryRow(
       preset.id,
-      preset.id,
-      `/media/${asset._id}/${preset.id}/${encodeURIComponent(asset.name)}`,
+      presetLabel(preset),
+      `/media/${asset._id}/${preset.id}/${encodeURIComponent(derivativeFilename(asset, preset))}`,
       origin,
     ),
     detail: presetSize(preset),
@@ -90,11 +118,22 @@ export function buildDeliveryLinks(
       origin,
     ),
     ...presetRows,
+    {
+      id: ASSET_ID_ROW,
+      label: `${FILE_TEXTS}.asset_id`,
+      value: asset._id,
+      type: "mono",
+      copy: true,
+    },
     ...(canOpenPresets ? [PRESETS_LINK] : []),
   ];
 }
 
-/** How a file is served, by its effective visibility. */
+/**
+ * How a file is served, by its effective visibility. A private file's notice
+ * points to Details › Visibility, where making it public is confirmed and can
+ * be undone.
+ */
 export function buildDeliveryNotice(
   asset: MediaAsset,
   folder: MediaFolder | undefined,
@@ -106,7 +145,7 @@ export function buildDeliveryNotice(
     size: "sm",
     description: isPublic
       ? `${FILE_TEXTS}.delivery_public`
-      : `${FILE_TEXTS}.delivery_private`,
+      : `${FILE_TEXTS}.delivery_private_notice`,
   };
 }
 
@@ -121,7 +160,21 @@ function canOpenPage(
   );
 }
 
-/** The facts the file page lists under its properties. */
+/** `photo.final.JPG` → `JPG`; a name without one falls back on the mimetype. */
+function displayedExtension(asset: MediaAsset): string {
+  const dot = asset.name.lastIndexOf(EXTENSION_SEPARATOR);
+  const fromName =
+    dot > 0 && dot < asset.name.length - 1 ? asset.name.slice(dot + 1) : "";
+  const fromMimetype =
+    asset.mimetype.split("/").at(-1)?.split(MIMETYPE_SUFFIX_SEPARATOR)[0] ?? "";
+  return (fromName || fromMimetype).toUpperCase();
+}
+
+/**
+ * The facts the file page lists under its properties, in the owner's words:
+ * the type as "Image · JPG" rather than its mimetype. The id sits with the
+ * delivery links, for developers.
+ */
 export function buildFileInformation(
   asset: MediaAsset,
   uploadedBy: string | undefined,
@@ -137,27 +190,31 @@ export function buildFileInformation(
     {
       id: "modified",
       label: "$dms_media.columns.modified",
-      value: composedText(`${FILE_TEXTS}.modified_value`, {
-        date: { type: "relative", value: asset.updatedAt.toISOString() },
-      }),
+      value: asset.updatedAt.toISOString(),
+      type: "date",
       detail: asset.originalKey ? `${FILE_TEXTS}.edited` : undefined,
     },
     {
       id: "type",
       label: "$dms_media.columns.type",
-      value: asset.mimetype,
-      type: "mono",
-    },
-    {
-      id: "asset-id",
-      label: `${FILE_TEXTS}.asset_id`,
-      value: asset._id,
-      type: "mono",
+      value: composedText(`${FILE_TEXTS}.type_value`, {
+        group: composedText(
+          `${FILE_TEXTS}.type_names.${resolveTypeGroup(asset.mimetype)}`,
+        ),
+        extension: displayedExtension(asset),
+      }),
     },
   ];
 }
 
 export class MediaFileController extends MediaApiController {
+  /** The origin the file explorer builds the links it copies on. */
+  @Get("/links/origin")
+  async linksOrigin() {
+    await this.resolveContext();
+    return { origin: this.publicOrigin() };
+  }
+
   @Get("/assets/:assetId/information")
   async information(@Parameter("assetId", "param") assetId: string) {
     const context = await this.resolveContext();
@@ -174,7 +231,7 @@ export class MediaFileController extends MediaApiController {
     return {
       items: buildDeliveryLinks(
         asset,
-        this.requestOrigin(),
+        this.publicOrigin(),
         canOpenPage(context, MediaPresetsPage),
       ),
     };

@@ -7,16 +7,26 @@ import { RoleModel, TenantMemberModel } from "@antelopejs/interface-dms/db";
 import { AuthTenantMember } from "@antelopejs/interface-dms/guards";
 import { TenantScopedModel } from "@antelopejs/interface-dms/tenant-scoped-model";
 import type { User } from "@antelopejs/interface-dms/auth/db";
+import { getMediaConfig } from "../../config";
 import { MediaAssetModel, MediaFolderModel } from "../../db";
 import { type MediaEventInput, recordMediaEvent } from "../../library/events";
 import { type MediaRequestContext, resolveMediaContext } from "./context";
 
 const DEFAULT_PROTOCOL = "http";
 const HEADER_LIST_SEPARATOR = ",";
+const TRAILING_SLASHES = /\/+$/;
 
 function firstHeader(value: string | string[] | undefined): string | undefined {
   const raw = Array.isArray(value) ? value[0] : value;
   return raw?.split(HEADER_LIST_SEPARATOR)[0]?.trim() || undefined;
+}
+
+/** The configured public base URL of the API, else the request's origin. */
+export function resolvePublicOrigin(
+  configured: string | undefined,
+  requestOrigin: string,
+): string {
+  return (configured || requestOrigin).replace(TRAILING_SLASHES, "");
 }
 
 /**
@@ -49,6 +59,18 @@ export class MediaApiController extends Controller("/api/media") {
     const host = firstHeader(headers["x-forwarded-host"]) ?? headers.host;
     if (!host) return "";
     return `${forwardedProto ?? DEFAULT_PROTOCOL}://${host}`;
+  }
+
+  /**
+   * The origin copied links start with: the API's, which serves `/media`
+   * to any browser (the dashboard's origin only relays non-HTML requests
+   * there). The module's `publicBaseUrl` wins over the request's origin.
+   */
+  protected publicOrigin(): string {
+    return resolvePublicOrigin(
+      getMediaConfig().publicBaseUrl,
+      this.requestOrigin(),
+    );
   }
 
   protected resolveContext(): Promise<MediaRequestContext> {

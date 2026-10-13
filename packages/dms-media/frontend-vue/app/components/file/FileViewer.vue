@@ -1,23 +1,24 @@
 <script setup lang="ts">
 import type { MediaAsset } from '../../types/media'
+import type { AssetContent } from '../../composables/useAssetContent'
 import AssetThumb from '../shared/AssetThumb.vue'
 
 const props = defineProps<{ asset: MediaAsset; siblings: MediaAsset[] }>()
 const emit = defineEmits<{ open: [string]; fullscreen: [] }>()
-const api = useMediaApi()
+const contents = useAssetContent()
+const assetLink = useAssetLink()
 const format = useMediaFormat()
 const { t } = useI18n()
-const source = ref<string | null>(null)
+const content = ref<AssetContent>({ kind: 'none' })
 const filmstrip = useTemplateRef<HTMLElement>('filmstrip')
 
 watch(
 	() => [props.asset.id, props.asset.updatedAt],
 	async () => {
-		source.value = null
-		const canShow = isImageAsset(props.asset) || props.asset.typeGroup === 'video'
-		if (!canShow) return
-		const preset = props.asset.typeGroup === 'image' ? 'preview' : undefined
-		source.value = (await api.readUrl(props.asset.id, preset).catch(() => null))?.url ?? null
+		const shown = props.asset
+		content.value = { kind: 'none' }
+		const loaded = await contents.load(shown)
+		if (shown.id === props.asset.id) content.value = loaded
 	},
 	{ immediate: true },
 )
@@ -37,19 +38,32 @@ watch(
 		<div
 			class="relative flex min-h-[420px] flex-1 items-center justify-center bg-[radial-gradient(var(--ui-border)_1px,transparent_1px)] [background-size:16px_16px] p-6"
 		>
-			<video v-if="asset.typeGroup === 'video' && source" :src="source" controls class="max-h-[60vh] max-w-full rounded-md" />
-			<img v-else-if="source" :src="source" :alt="asset.alt || ''" class="max-h-[60vh] max-w-full rounded-md object-contain shadow-lg" />
-			<AssetThumb v-else :asset="asset" size="lg" />
-			<UButton
-				icon="i-ph-arrows-out-simple"
-				color="neutral"
-				variant="outline"
-				size="sm"
-				square
-				class="absolute end-3 top-3"
-				:aria-label="t('dms_media.file.fullscreen')"
-				@click="emit('fullscreen')"
+			<video v-if="content.kind === 'video' && content.url" :src="content.url" controls class="max-h-[60vh] max-w-full rounded-md" />
+			<img v-else-if="content.kind === 'image' && content.url" :src="content.url" :alt="asset.alt || ''" class="max-h-[60vh] max-w-full rounded-md object-contain shadow-lg" />
+			<iframe
+				v-else-if="content.kind === 'frame' && content.url"
+				:src="content.url"
+				:title="asset.name"
+				class="border-default h-[60vh] w-full rounded-md border bg-white"
 			/>
+			<pre
+				v-else-if="content.kind === 'text' && content.text !== undefined"
+				class="border-default text-default h-[60vh] w-full overflow-auto rounded-md border bg-(--dms-surface-card) p-4 font-mono text-[12px] whitespace-pre-wrap"
+				>{{ content.text }}<template v-if="content.isTruncated">…</template></pre
+			>
+			<AssetThumb v-else :asset="asset" size="lg" />
+			<div class="absolute end-3 top-3 flex gap-2">
+				<UButton
+					v-if="content.kind === 'frame' || content.kind === 'text'"
+					icon="i-ph-arrow-square-out"
+					color="neutral"
+					variant="outline"
+					size="sm"
+					:label="t('dms_media.asset_link.open_in_new_tab')"
+					@click="assetLink.openInNewTab(asset)"
+				/>
+				<UButton icon="i-ph-arrows-out-simple" color="neutral" variant="outline" size="sm" square :aria-label="t('dms_media.file.fullscreen')" @click="emit('fullscreen')" />
+			</div>
 		</div>
 		<div class="border-default text-muted flex flex-wrap items-center gap-3 border-t px-4 py-2 text-[12px]">
 			<span class="font-mono">
