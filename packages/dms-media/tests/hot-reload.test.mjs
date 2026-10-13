@@ -75,7 +75,7 @@ const OWNER = {
 const CONSUMER_INTERFACES = {
   "@antelopejs/interface-api": ">=0.0.13 <1.0.0",
   "@antelopejs/interface-core": ">=0.1.1 <1.0.0",
-  "@antelopejs/interface-dms": ">=0.4.0 <1.0.0",
+  "@antelopejs/interface-dms": ">=0.5.12 <1.0.0",
 };
 const COUNTER_ID_PATTERN = /^\d+$/;
 const MEDIA_ID_PATTERN = /^(media|modules\.media|settings\.media)(\.|$)/;
@@ -141,7 +141,7 @@ function projectConfig(mongoUrl, storagePath) {
         config: {},
       },
       dms: {
-        ...packageSource("@antelopejs/dms", ">=0.7.8 <0.8.0"),
+        ...packageSource("@antelopejs/dms", ">=0.7.18 <0.8.0"),
         config: { auth: { jwtSecret: JWT_SECRET } },
       },
       mongodb: {
