@@ -1,4 +1,5 @@
 import type { MediaTree } from '../types/media'
+import type { MediaApi } from './useMediaApi'
 
 const DEFAULT_MAX_UPLOAD_BYTES = 500 * 1024 * 1024
 
@@ -30,7 +31,7 @@ export function rememberUploadLimits(answer: UploadLimits): void {
 
 /** Reads the folder tree (counted over `scopeFolderId` when given) and keeps the upload limits it carries. */
 export async function fetchTree(
-	api: ReturnType<typeof useMediaApi>,
+	api: MediaApi,
 	scopeFolderId?: string,
 ): Promise<MediaTree> {
 	const tree = await api.tree(scopeFolderId)

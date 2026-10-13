@@ -225,5 +225,3 @@ export function useFileDetails(assetId: Ref<string | undefined>, order: Ref<File
 		remove,
 	}
 }
-
-export type FileDetailsState = ReturnType<typeof useFileDetails>

@@ -247,5 +247,3 @@ export function useLibraryListing(options: LibraryListingOptions = {}) {
 		insertAsset,
 	}
 }
-
-export type LibraryListing = ReturnType<typeof useLibraryListing>

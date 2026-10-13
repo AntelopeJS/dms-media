@@ -108,5 +108,3 @@ export function useLibrarySelection(visible: Ref<MediaAsset[]>, isKept = false) 
 		forget,
 	}
 }
-
-export type LibrarySelection = ReturnType<typeof useLibrarySelection>
