@@ -3,6 +3,7 @@ import {
   Controller,
   type RequestContext,
 } from "@antelopejs/interface-api";
+import { GetApiBaseUrl } from "@antelopejs/interface-dms/api-base-url";
 import { RoleModel, TenantMemberModel } from "@antelopejs/interface-dms/db";
 import { AuthTenantMember } from "@antelopejs/interface-dms/guards";
 import { TenantScopedModel } from "@antelopejs/interface-dms/tenant-scoped-model";
@@ -12,21 +13,17 @@ import { MediaAssetModel, MediaFolderModel } from "../../db";
 import { type MediaEventInput, recordMediaEvent } from "../../library/events";
 import { type MediaRequestContext, resolveMediaContext } from "./context";
 
-const DEFAULT_PROTOCOL = "http";
-const HEADER_LIST_SEPARATOR = ",";
 const TRAILING_SLASHES = /\/+$/;
 
-function firstHeader(value: string | string[] | undefined): string | undefined {
-  const raw = Array.isArray(value) ? value[0] : value;
-  return raw?.split(HEADER_LIST_SEPARATOR)[0]?.trim() || undefined;
-}
-
-/** The configured public base URL of the API, else the request's origin. */
+/**
+ * The module's `publicBaseUrl`, else the DMS `apiBaseUrl`; empty when neither
+ * is configured, so links stay relative to the API.
+ */
 export function resolvePublicOrigin(
   configured: string | undefined,
-  requestOrigin: string,
+  apiBaseUrl: string | undefined,
 ): string {
-  return (configured || requestOrigin).replace(TRAILING_SLASHES, "");
+  return (configured || apiBaseUrl || "").replace(TRAILING_SLASHES, "");
 }
 
 /**
@@ -52,24 +49,15 @@ export class MediaApiController extends Controller("/api/media") {
   @AuthTenantMember()
   declare user: User;
 
-  /** The origin the caller reached the API on, behind a proxy included. */
-  protected requestOrigin(): string {
-    const headers = this.ctx.rawRequest.headers;
-    const forwardedProto = firstHeader(headers["x-forwarded-proto"]);
-    const host = firstHeader(headers["x-forwarded-host"]) ?? headers.host;
-    if (!host) return "";
-    return `${forwardedProto ?? DEFAULT_PROTOCOL}://${host}`;
-  }
-
   /**
    * The origin copied links start with: the API's, which serves `/media`
    * to any browser (the dashboard's origin only relays non-HTML requests
-   * there). The module's `publicBaseUrl` wins over the request's origin.
+   * there). The module's `publicBaseUrl` wins over the DMS `apiBaseUrl`.
    */
-  protected publicOrigin(): string {
+  protected async publicOrigin(): Promise<string> {
     return resolvePublicOrigin(
       getMediaConfig().publicBaseUrl,
-      this.requestOrigin(),
+      await GetApiBaseUrl(),
     );
   }
 

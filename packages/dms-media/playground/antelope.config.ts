@@ -38,6 +38,7 @@ export default defineConfig({
         version: ">=0.7.18 <0.8.0",
       },
       config: {
+        apiBaseUrl: "${@api.API_PUBLIC_BASE_URL}",
         homepage: "/welcome",
         auth: {
           jwtSecret: "dev",

@@ -182,7 +182,7 @@ export class MediaManageController extends MediaApiController {
         ) === "public",
     );
     const presets = [...getMediaConfig().presets.values()];
-    const origin = this.publicOrigin();
+    const origin = await this.publicOrigin();
     const sweep = getLastSweep();
     return {
       isDefault: usesDefaultPresets(presets),

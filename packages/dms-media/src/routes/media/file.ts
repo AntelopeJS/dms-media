@@ -212,7 +212,7 @@ export class MediaFileController extends MediaApiController {
   @Get("/links/origin")
   async linksOrigin() {
     await this.resolveContext();
-    return { origin: this.publicOrigin() };
+    return { origin: await this.publicOrigin() };
   }
 
   @Get("/assets/:assetId/information")
@@ -231,7 +231,7 @@ export class MediaFileController extends MediaApiController {
     return {
       items: buildDeliveryLinks(
         asset,
-        this.publicOrigin(),
+        await this.publicOrigin(),
         canOpenPage(context, MediaPresetsPage),
       ),
     };

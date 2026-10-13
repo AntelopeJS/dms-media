@@ -8,6 +8,7 @@ import type {
 } from "@antelopejs/interface-dms/page";
 import { MediaAssetModel, MediaFolderModel } from "../db";
 import { countFailedUploads } from "./batches";
+import { type ByteUnit, scaleBytes } from "./composed-text";
 import { loadAssetsInFolders } from "./listing";
 import { storedSize } from "./overview";
 import { isDescribableImage } from "./type-groups";
@@ -15,9 +16,13 @@ import { loadUploadHistoryEvents } from "./upload-history";
 
 const TEXTS = "$dms_media.readout";
 const DEFAULT_LANGUAGE = "en";
-const BYTES_PER_UNIT = 1000;
-const BYTE_UNITS = ["byte", "kilobyte", "megabyte", "gigabyte", "terabyte"];
-const SINGLE_DIGIT_BELOW = 10;
+const INTL_BYTE_UNITS: Record<ByteUnit, string> = {
+  b: "byte",
+  kb: "kilobyte",
+  mb: "megabyte",
+  gb: "gigabyte",
+  tb: "terabyte",
+};
 const PACKAGE_MANIFEST = join(__dirname, "..", "..", "package.json");
 
 interface LibraryHealth {
@@ -75,17 +80,11 @@ async function readLibraryHealth(tenantId: string): Promise<LibraryHealth> {
 
 /** A byte size in the reader's language, units included ("24 MB", "24 Mo"). */
 function formatBytes(bytes: number, language: string): string {
-  let value = Math.max(bytes, 0);
-  let unit = 0;
-  while (value >= BYTES_PER_UNIT && unit < BYTE_UNITS.length - 1) {
-    value /= BYTES_PER_UNIT;
-    unit += 1;
-  }
+  const { value, unit } = scaleBytes(bytes);
   return new Intl.NumberFormat(language, {
     style: "unit",
-    unit: BYTE_UNITS[unit],
+    unit: INTL_BYTE_UNITS[unit],
     unitDisplay: "short",
-    maximumFractionDigits: unit > 0 && value < SINGLE_DIGIT_BELOW ? 1 : 0,
   }).format(value);
 }
 
