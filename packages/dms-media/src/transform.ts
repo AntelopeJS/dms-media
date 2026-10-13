@@ -4,29 +4,50 @@ import sharp from "sharp";
 import { cleanupAssetFiles, updateAssetMedia } from "./asset-lifecycle";
 import type { MediaAsset, MediaAssetModel } from "./db";
 import { downloadStorageBytes, uploadStorageBytes } from "./derivatives";
+import {
+  composeTransforms,
+  type CropRegion,
+  type ImageTransformOps,
+  parseTransform,
+} from "./transform-ops";
 
-export interface CropRegion {
-  x: number;
-  y: number;
-  width: number;
-  height: number;
-}
-
-export interface ImageTransformOps {
-  crop?: CropRegion;
-  rotate?: number;
-}
+export * from "./transform-ops";
 
 const TRANSFORMED_PATH_PREFIX = "media-transformed";
 const MIN_CROP_PIXELS = 1;
 const SINGLE_FRAME_PAGE_COUNT = 1;
+const NO_ROTATION = 0;
+
+/**
+ * Re-encoding settings of an edited image: high enough that a crop does not
+ * visibly degrade the photo. PNG stays lossless (a quality would quantize it).
+ */
+type EditOutputOptions =
+  | sharp.JpegOptions
+  | sharp.WebpOptions
+  | sharp.AvifOptions;
+
+const EDIT_OUTPUT_OPTIONS: Record<string, EditOutputOptions> = {
+  jpeg: { quality: 92, mozjpeg: true },
+  webp: { quality: 92 },
+  avif: { quality: 80 },
+};
 
 export class AnimatedImageTransformError extends Error {}
-class MediaAssetChangedError extends Error {}
+/** Someone else changed the image while this edit was being rendered. */
+export class MediaAssetChangedError extends Error {}
 
 export interface PixelDimensions {
   width: number;
   height: number;
+}
+
+/** A rendered edit: the bytes and the cumulative operations they hold. */
+export interface RenderedTransform {
+  bytes: Buffer;
+  width?: number;
+  height?: number;
+  cumulative?: ImageTransformOps;
 }
 
 function rotatedDimensions(
@@ -88,7 +109,17 @@ function assertStaticSource(metadata: sharp.Metadata): void {
   );
 }
 
-async function renderTransform(
+function encodeLikeSource(
+  pipeline: sharp.Sharp,
+  metadata: sharp.Metadata,
+): sharp.Sharp {
+  const kept = pipeline.keepMetadata();
+  const options = metadata.format && EDIT_OUTPUT_OPTIONS[metadata.format];
+  if (!options || !metadata.format) return kept;
+  return kept.toFormat(metadata.format, options);
+}
+
+export async function renderTransform(
   source: Buffer,
   ops: ImageTransformOps,
 ): Promise<Buffer> {
@@ -100,23 +131,35 @@ async function renderTransform(
     pipeline = pipeline.rotate(ops.rotate);
   }
   if (ops.crop) {
-    const dimensions = rotatedDimensions(sourceDimensions, ops.rotate ?? 0);
+    const dimensions = rotatedDimensions(
+      sourceDimensions,
+      ops.rotate ?? NO_ROTATION,
+    );
     pipeline = pipeline.extract(cropToPixels(ops.crop, dimensions));
   }
-  return pipeline.toBuffer();
+  return encodeLikeSource(pipeline, metadata).toBuffer();
 }
 
-export async function clearDerivatives(
-  assetModel: MediaAssetModel,
+/**
+ * Renders an edit from the untouched original whenever the operations
+ * already applied are known, so successive edits never stack re-encodings.
+ * Images edited before cumulative tracking fall back to the current file.
+ */
+export async function renderAssetTransform(
   asset: MediaAsset,
-): Promise<void> {
-  for (;;) {
-    const fresh = await assetModel.get(asset._id);
-    if (!fresh || fresh.isDeleting) return;
-    if (await updateAssetMedia(assetModel, fresh, { json_derivatives: "" }))
-      break;
-  }
-  await cleanupAssetFiles(assetModel, asset._id);
+  ops: ImageTransformOps,
+): Promise<RenderedTransform> {
+  const isLegacyEdit = Boolean(asset.originalKey) && !asset.json_transform;
+  const cumulative = isLegacyEdit
+    ? undefined
+    : composeTransforms(parseTransform(asset.json_transform), ops);
+  const sourceKey = isLegacyEdit
+    ? asset.storageKey
+    : asset.originalKey || asset.storageKey;
+  const source = await downloadStorageBytes(sourceKey, asset.storage);
+  const bytes = await renderTransform(source, cumulative ?? ops);
+  const metadata = await sharp(bytes).metadata();
+  return { bytes, width: metadata.width, height: metadata.height, cumulative };
 }
 
 async function commitTransform(
@@ -137,16 +180,24 @@ async function commitTransform(
   await cleanupAssetFiles(model, asset._id);
 }
 
+function originalPatch(asset: MediaAsset): Partial<MediaAsset> {
+  if (asset.originalKey) {
+    return {
+      originalKey: asset.originalKey,
+      originalSize: asset.originalSize ?? 0,
+    };
+  }
+  return { originalKey: asset.storageKey, originalSize: asset.size };
+}
+
 export async function applyImageTransform(
   assetModel: MediaAssetModel,
   asset: MediaAsset,
   ops: ImageTransformOps,
 ): Promise<void> {
-  const source = await downloadStorageBytes(asset.storageKey, asset.storage);
-  const output = await renderTransform(source, ops);
-  const outputMetadata = await sharp(output).metadata();
+  const rendered = await renderAssetTransform(asset, ops);
   const storageKey = await uploadStorageBytes(
-    output,
+    rendered.bytes,
     asset.name,
     asset.mimetype,
     `${TRANSFORMED_PATH_PREFIX}/${asset._id}/${randomUUID()}`,
@@ -154,10 +205,13 @@ export async function applyImageTransform(
   );
   await commitTransform(assetModel, asset, {
     storageKey,
-    originalKey: asset.originalKey || asset.storageKey,
-    width: outputMetadata.width,
-    height: outputMetadata.height,
-    size: output.byteLength,
+    ...originalPatch(asset),
+    json_transform: rendered.cumulative
+      ? JSON.stringify(rendered.cumulative)
+      : "",
+    width: rendered.width,
+    height: rendered.height,
+    size: rendered.bytes.byteLength,
   }).catch(async (error: unknown) => {
     if (error instanceof MediaAssetChangedError) {
       await DeleteFile(storageKey, asset.storage).catch(() => undefined);
@@ -173,11 +227,14 @@ export async function revertImageTransform(
   if (!asset.originalKey) return;
   const original = await downloadStorageBytes(asset.originalKey, asset.storage);
   const metadata = await sharp(original).metadata();
+  const dimensions = orientedDimensions(metadata);
   await commitTransform(assetModel, asset, {
     storageKey: asset.originalKey,
     originalKey: "",
-    width: metadata.width,
-    height: metadata.height,
+    originalSize: 0,
+    json_transform: "",
+    width: dimensions.width,
+    height: dimensions.height,
     size: original.byteLength,
   });
 }
