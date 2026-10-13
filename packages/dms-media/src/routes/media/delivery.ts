@@ -40,8 +40,9 @@ const HTTP_SERVICE_UNAVAILABLE = 503;
 const PATH_SEPARATOR = "/";
 const TRAILING_SLASHES = /\/+$/;
 const HTML_MIMETYPE = "text/html";
+/** Language-neutral: the dashboard URL is unknown, so nothing can be localized or linked. */
 const SIGN_IN_PAGE =
-  '<!doctype html><html lang="en"><head><meta charset="utf-8"><title>Sign in required</title></head><body><p>This file is private. Sign in to the dashboard, then open it from the media library.</p></body></html>';
+  '<!doctype html><html><head><meta charset="utf-8"><title>401</title></head><body><p>401</p></body></html>';
 
 /**
  * Formats accepted by the transform pipeline. Sharp would silently

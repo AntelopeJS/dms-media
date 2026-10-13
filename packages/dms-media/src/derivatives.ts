@@ -6,6 +6,7 @@ import {
 import sharp from "sharp";
 import { TECHNICAL_MUTATION, updateAssetMedia } from "./asset-lifecycle";
 import { ORIGINAL_FILENAME_METADATA_KEY } from "./constants";
+import { MAX_ANIMATION_FRAMES, MAX_INPUT_PIXELS } from "./image-limits";
 import type { MediaAsset, MediaAssetModel } from "./db";
 import {
   type MediaPresetConfig,
@@ -105,13 +106,18 @@ function keepsAnimation(
   metadata: sharp.Metadata,
   preset: MediaPresetConfig,
 ): boolean {
+  const pages = metadata.pages ?? SINGLE_FRAME_PAGE_COUNT;
   const isAnimated =
-    (metadata.pages ?? SINGLE_FRAME_PAGE_COUNT) > SINGLE_FRAME_PAGE_COUNT;
+    pages > SINGLE_FRAME_PAGE_COUNT && pages <= MAX_ANIMATION_FRAMES;
   const outputFormat = preset.format ?? metadata.format ?? "";
   return isAnimated && ANIMATED_OUTPUT_FORMATS.has(outputFormat);
 }
 
-/** Renders a preset: upright (EXIF), vectors at full size, animation kept when the format allows. */
+/**
+ * Renders a preset: upright (EXIF), vectors at full size, animation kept when
+ * the format allows and the frames are few enough. Refuses sources past
+ * `MAX_INPUT_PIXELS`.
+ */
 export async function transformImage(
   source: Buffer,
   preset: MediaPresetConfig,
@@ -120,6 +126,7 @@ export async function transformImage(
   let pipeline = sharp(source, {
     density: vectorDensity(metadata, preset),
     animated: keepsAnimation(metadata, preset),
+    limitInputPixels: MAX_INPUT_PIXELS,
   }).autoOrient();
   if (preset.width || preset.height) {
     pipeline = pipeline.resize({

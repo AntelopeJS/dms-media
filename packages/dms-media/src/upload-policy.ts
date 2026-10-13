@@ -4,11 +4,14 @@ const WILDCARD = "*";
 const PARAMETER_SEPARATOR = ";";
 const EXTENSION_SEPARATOR = ".";
 
-/** Active documents a browser would run from the library origin. */
+/** Active documents a browser or a misconfigured web server would run. */
 const REFUSED_MIMETYPES = new Set([
   "text/html",
   "application/xhtml+xml",
   "application/x-httpd-php",
+  "application/x-httpd-php-source",
+  "application/x-php",
+  "text/x-php",
 ]);
 const REFUSED_EXTENSIONS = new Set([
   "htm",
@@ -18,6 +21,16 @@ const REFUSED_EXTENSIONS = new Set([
   "shtml",
   "mht",
   "mhtml",
+  "php",
+  "php3",
+  "php4",
+  "php5",
+  "php7",
+  "php8",
+  "phps",
+  "pht",
+  "phtml",
+  "phar",
 ]);
 
 /** Image formats sharp decodes: a file declared as one of them must decode. */

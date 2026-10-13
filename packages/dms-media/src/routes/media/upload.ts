@@ -17,7 +17,7 @@ import { getRegisteredBindings } from "../../bindings";
 import { getMediaConfig } from "../../config";
 import { ORIGINAL_FILENAME_METADATA_KEY } from "../../constants";
 import { MediaUploadModel } from "../../db";
-import { loadAssetsInFolders } from "../../library/listing";
+import { loadAssetsInFolders, sumStoredBytes } from "../../library/listing";
 import { suggestFreeNames } from "../../upload-names";
 import {
   expectedImageFormat,
@@ -141,11 +141,7 @@ async function assertWithinQuota(
 ): Promise<void> {
   const quota = getMediaConfig().storageQuotaBytes;
   if (!quota) return;
-  const assets = await loadAssetsInFolders(
-    context.assetModel,
-    context.folders.map((folder) => folder._id),
-  );
-  const used = assets.reduce((total, asset) => total + asset.size, 0);
+  const used = await sumStoredBytes(context.assetModel);
   if (used + size > quota)
     refuse(
       HTTP_PAYLOAD_TOO_LARGE,
@@ -300,6 +296,7 @@ export class MediaUploadController extends MediaApiController {
     const storage = getMediaConfig().storage;
     const metadata = await GetFileMetadata(resourceKey, storage);
     assertTypeAllowed(context, folderId, filename, metadata.mimetype);
+    await assertWithinQuota(context, metadata.size);
     const image = await readImage(resourceKey, metadata);
     const promoted = await PromoteFile(resourceKey, storage);
     await this.uploadModel.forgetKey(resourceKey);

@@ -201,6 +201,23 @@ describe("[integration] media upload policy — types, quota, real content and s
     }
   });
 
+  it("checks the quota again at confirm, on the stored size", async () => {
+    const staged = await stage("late.txt", "text/plain", Buffer.from("late"));
+    configureMediaModule({ ...initialConfig, storageQuotaBytes: 1 });
+    try {
+      const confirm = await client.post("/api/media/upload/confirm", {
+        folderId,
+        resourceKey: staged.resourceKey,
+        filename: "late.txt",
+      });
+      expect(confirm.status).to.equal(HTTP_PAYLOAD_TOO_LARGE);
+      expect(confirm.data.reason).to.equal("quota");
+      expect(await FileExists(staged.resourceKey)).to.equal(false);
+    } finally {
+      configureMediaModule(initialConfig);
+    }
+  });
+
   it("refuses a fake image at confirm and deletes its staged file", async () => {
     const staged = await stage(
       "fake.png",

@@ -10,6 +10,7 @@ import {
   applyImageTransform,
   type ImageTransformOps,
   MediaAssetChangedError,
+  OversizedImageTransformError,
   renderAssetTransform,
   revertImageTransform,
 } from "../../transform";
@@ -28,6 +29,11 @@ function translateTransformError(error: unknown): never {
     !(error instanceof AnimatedImageTransformError),
     HTTP_UNPROCESSABLE_ENTITY,
     "Animated images cannot be edited",
+  );
+  assert(
+    !(error instanceof OversizedImageTransformError),
+    HTTP_UNPROCESSABLE_ENTITY,
+    "This image is too large to be edited",
   );
   assert(
     !(error instanceof MediaAssetChangedError),

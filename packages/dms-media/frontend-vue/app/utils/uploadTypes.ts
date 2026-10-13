@@ -2,8 +2,33 @@ const ANY_TYPE_PATTERNS = new Set(['*', '*/*'])
 const WILDCARD = '*'
 const FAMILY_WILDCARD = '/*'
 const UNKNOWN_MIMETYPE = 'application/octet-stream'
-const REFUSED_MIMETYPES = new Set(['text/html', 'application/xhtml+xml'])
-const REFUSED_EXTENSIONS = new Set(['htm', 'html', 'xhtml', 'xht', 'shtml', 'mht', 'mhtml'])
+const REFUSED_MIMETYPES = new Set([
+	'text/html',
+	'application/xhtml+xml',
+	'application/x-httpd-php',
+	'application/x-httpd-php-source',
+	'application/x-php',
+	'text/x-php',
+])
+const REFUSED_EXTENSIONS = new Set([
+	'htm',
+	'html',
+	'xhtml',
+	'xht',
+	'shtml',
+	'mht',
+	'mhtml',
+	'php',
+	'php3',
+	'php4',
+	'php5',
+	'php7',
+	'php8',
+	'phps',
+	'pht',
+	'phtml',
+	'phar',
+])
 /** Extensions a file picker understands for prefix patterns it cannot take as such. */
 const PREFIX_EXTENSIONS: Record<string, string[]> = {
 	'application/vnd.openxmlformats-officedocument.': ['.docx', '.xlsx', '.pptx'],
@@ -27,7 +52,7 @@ export function matchesUploadType(mimetype: string, patterns: readonly string[])
 	return patterns.some((pattern) => matchesPattern(mimetype, pattern))
 }
 
-/** HTML and XHTML never enter the library, whatever the configuration says. */
+/** HTML, XHTML and PHP never enter the library, whatever the configuration says. */
 export function isActiveDocument(file: File): boolean {
 	const extension = file.name.includes('.') ? (file.name.split('.').pop() ?? '').toLowerCase() : ''
 	return REFUSED_EXTENSIONS.has(extension) || REFUSED_MIMETYPES.has(uploadMimetype(file))

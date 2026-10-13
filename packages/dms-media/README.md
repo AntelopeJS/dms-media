@@ -90,7 +90,7 @@ All keys are optional:
 
 - `storage` selects a named `interface-file-storage` backend (default storage otherwise).
 - `rootAcl` sets the rights every folder without its own ACL inherits. The default is empty: owners hold every right anyway, and members only reach the linked folders of their pages. An entry you add here opens the whole library to its subject.
-- `allowedMimetypes` lists the file types the library accepts (`image/*` matches a prefix). The default is `image/*`, `video/*`, `audio/*`, `application/pdf`, the Office types (`application/msword`, `application/vnd.ms-excel`, `application/vnd.ms-powerpoint`, `application/vnd.openxmlformats-officedocument.*`), OpenDocument (`application/vnd.oasis.opendocument.*`), `application/rtf`, `text/plain`, `text/markdown` and `text/csv`. HTML, XHTML and PHP (`text/html`, `application/xhtml+xml`, `application/x-httpd-php`, and `.htm`, `.html`, `.xhtml`, `.xht`, `.shtml`, `.mht`, `.mhtml` files) are always refused, whatever the list says.
+- `allowedMimetypes` lists the file types the library accepts (`image/*` matches a prefix). The default is `image/*`, `video/*`, `audio/*`, `application/pdf`, the Office types (`application/msword`, `application/vnd.ms-excel`, `application/vnd.ms-powerpoint`, `application/vnd.openxmlformats-officedocument.*`), OpenDocument (`application/vnd.oasis.opendocument.*`), `application/rtf`, `text/plain`, `text/markdown` and `text/csv`. HTML, XHTML and PHP (`text/html`, `application/xhtml+xml`, the PHP types, and `.htm`, `.html`, `.xhtml`, `.xht`, `.shtml`, `.mht`, `.mhtml`, `.php`, `.php3`–`.php8`, `.phps`, `.pht`, `.phtml`, `.phar` files) are always refused, whatever the list says.
 - `storageQuotaBytes` sets the storage plan: the overview measures usage against it, and `presign` refuses an upload that would go past it.
 - `publicBaseUrl` is the public URL of the API, the origin serving `/media/...`: "Copy link" in the library and the links of the file page's Delivery tab start with it. Point it at the api module's public base URL (`"${@api.API_PUBLIC_BASE_URL}"`, as `file-storage-local`'s `baseUrl`). Without it, links start with the DMS `apiBaseUrl` (`GetApiBaseUrl`), and stay relative when neither is set; request headers (`Host`, `X-Forwarded-*`) are never read. Links do not use the dashboard's origin: it only relays non-HTML requests to `/media`, so a link opened in a tab would end on its 404.
 - `presets` replaces the default `thumb`/`preview` presets. Keep a `thumb` preset — the Finder uses it for grid thumbnails.
@@ -169,7 +169,7 @@ Status codes worth handling:
 
 | Route | Status | Body |
 |---|---|---|
-| `upload/presign` | 415 | `{ reason: "type_not_allowed", message }`: not in `allowedMimetypes`, or HTML/XHTML |
+| `upload/presign` | 415 | `{ reason: "type_not_allowed", message }`: not in `allowedMimetypes`, or HTML/XHTML/PHP (by type or extension) |
 | `upload/presign` | 415 | `{ reason: "field_type", message, accepted }`: the linked folder feeds a field that accepts fewer types |
 | `upload/presign` | 413 | `{ reason: "quota", message, remaining, quota }`: the upload would go past `storageQuotaBytes` |
 | `upload/confirm` | 422 | `{ reason: "invalid_image", message }`: a declared image that does not decode; the staged file is deleted |

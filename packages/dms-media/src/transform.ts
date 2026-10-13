@@ -4,6 +4,7 @@ import sharp from "sharp";
 import { cleanupAssetFiles, updateAssetMedia } from "./asset-lifecycle";
 import type { MediaAsset, MediaAssetModel } from "./db";
 import { downloadStorageBytes, uploadStorageBytes } from "./derivatives";
+import { MAX_INPUT_PIXELS } from "./image-limits";
 import {
   composeTransforms,
   type CropRegion,
@@ -36,6 +37,8 @@ const EDIT_OUTPUT_OPTIONS: Record<string, EditOutputOptions> = {
 export class AnimatedImageTransformError extends Error {}
 /** Someone else changed the image while this edit was being rendered. */
 export class MediaAssetChangedError extends Error {}
+
+export class OversizedImageTransformError extends Error {}
 
 export interface PixelDimensions {
   width: number;
@@ -100,6 +103,12 @@ function orientedDimensions(metadata: sharp.Metadata): PixelDimensions {
   return swapsAxes ? { width: height, height: width } : { width, height };
 }
 
+function assertDecodableSize(metadata: sharp.Metadata): void {
+  const pixels = (metadata.width ?? 0) * (metadata.height ?? 0);
+  if (pixels <= MAX_INPUT_PIXELS) return;
+  throw new OversizedImageTransformError("Image too large to be edited");
+}
+
 function assertStaticSource(metadata: sharp.Metadata): void {
   if ((metadata.pages ?? SINGLE_FRAME_PAGE_COUNT) <= SINGLE_FRAME_PAGE_COUNT) {
     return;
@@ -125,8 +134,11 @@ export async function renderTransform(
 ): Promise<Buffer> {
   const metadata = await sharp(source).metadata();
   assertStaticSource(metadata);
+  assertDecodableSize(metadata);
   const sourceDimensions = orientedDimensions(metadata);
-  let pipeline = sharp(source).autoOrient();
+  let pipeline = sharp(source, {
+    limitInputPixels: MAX_INPUT_PIXELS,
+  }).autoOrient();
   if (ops.rotate) {
     pipeline = pipeline.rotate(ops.rotate);
   }

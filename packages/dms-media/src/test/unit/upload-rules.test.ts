@@ -41,11 +41,16 @@ describe("[unit] upload rules — free names and accepted types", () => {
     expect(mimetypeMatches("application/pdf", ["image/*"])).to.equal(false);
   });
 
-  it("refuses HTML by type or extension, whatever the configuration", () => {
+  it("refuses HTML and PHP by type or extension, whatever the configuration", () => {
     configureMediaModule({ allowedMimetypes: ["text/*", "application/*"] });
     expect(isUploadTypeAllowed("page.txt", "text/html")).to.equal(false);
     expect(isUploadTypeAllowed("page.HTML", "text/plain")).to.equal(false);
     expect(isUploadTypeAllowed("doc.xhtml", "application/xml")).to.equal(false);
+    expect(isUploadTypeAllowed("shell.php", "text/plain")).to.equal(false);
+    expect(isUploadTypeAllowed("shell.PHTML", "image/jpeg")).to.equal(false);
+    expect(isUploadTypeAllowed("shell.txt", "application/x-php")).to.equal(
+      false,
+    );
     expect(isUploadTypeAllowed("notes.txt", "text/plain")).to.equal(true);
     configureMediaModule({});
     expect(

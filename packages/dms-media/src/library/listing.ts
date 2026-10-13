@@ -48,6 +48,16 @@ export async function loadAssetsInFolders(
     .filter((row): row is MediaAsset => row !== undefined);
 }
 
+/** Bytes the tenant's live assets keep in storage, edited originals included. */
+export async function sumStoredBytes(model: AssetsTableModel): Promise<number> {
+  const total = await model.table
+    .filter((row) => row.key("isDeleting").default(false).eq(false))
+    .map((row) => row.key("size").add(row.key("originalSize").default(0)))
+    .sum()
+    .run();
+  return total ?? 0;
+}
+
 function sortAssets(
   assets: MediaAsset[],
   sort: AssetSortKey,
