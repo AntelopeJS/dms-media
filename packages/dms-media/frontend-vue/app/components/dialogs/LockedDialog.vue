@@ -23,15 +23,7 @@ const { t } = useI18n()
 			<p class="text-default">{{ t('dms_media.dialogs.locked.allowed') }}</p>
 		</div>
 		<template #footer>
-			<UButton
-				color="neutral"
-				variant="outline"
-				:to="MEDIA_ROUTES.linked"
-				icon="i-ph-arrow-square-out"
-				:label="t('dms_media.dialogs.locked.see_linked')"
-				@click="emit('close')"
-			/>
-			<UButton :label="t('dms_media.actions.got_it')" @click="emit('close')" />
+			<UButton data-initial-focus :label="t('dms_media.actions.got_it')" @click="emit('close')" />
 		</template>
 	</MediaDialog>
 </template>

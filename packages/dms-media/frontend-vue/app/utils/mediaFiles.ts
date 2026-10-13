@@ -1,19 +1,20 @@
 import type {
 	AssetTypeGroup,
+	ListingParams,
 	MediaAsset,
 	MediaFolder,
 	PathSegment,
 } from '../types/media'
 
+const MEDIA_MODULE_URL = '/modules/media'
+
 export const MEDIA_ROUTES = {
-	overview: '/media/overview',
-	files: '/media/files',
-	file: '/media/file',
-	editor: '/media/editor',
-	uploads: '/media/uploads',
-	access: '/media/access',
-	linked: '/media/linked',
-	presets: '/media/presets',
+	overview: `${MEDIA_MODULE_URL}/overview`,
+	files: `${MEDIA_MODULE_URL}/files`,
+	file: `${MEDIA_MODULE_URL}/file`,
+	editor: `${MEDIA_MODULE_URL}/editor`,
+	uploads: `${MEDIA_MODULE_URL}/uploads`,
+	presets: `${MEDIA_MODULE_URL}/presets`,
 } as const
 
 /** Realtime topic the backend publishes on after each write to the library. */
@@ -25,7 +26,7 @@ export const TYPE_GROUP_ICONS: Record<AssetTypeGroup, string> = {
 	audio: 'i-ph-waveform',
 	pdf: 'i-ph-file-pdf',
 	document: 'i-ph-file-text',
-	spreadsheet: 'i-ph-file-xls',
+	spreadsheet: 'i-ph-table',
 	vector: 'i-ph-bezier-curve',
 	archive: 'i-ph-file-zip',
 	other: 'i-ph-file',
@@ -43,17 +44,45 @@ export const TYPE_GROUP_ORDER: AssetTypeGroup[] = [
 	'other',
 ]
 
+/** The formats the image editor saves, as the server's `EDITABLE_IMAGE_MIMETYPES`. */
 const EDITABLE_MIMETYPES = new Set([
 	'image/jpeg',
 	'image/png',
 	'image/webp',
 	'image/avif',
-	'image/tiff',
-	'image/gif',
 ])
 
-export function fileLink(assetId: string): string {
-	return `${MEDIA_ROUTES.file}?asset=${encodeURIComponent(assetId)}`
+/** Icons naming the format itself, where the type group's icon would name another one. */
+const EXTENSION_ICONS: Record<string, string> = {
+	csv: 'i-ph-file-csv',
+	xls: 'i-ph-file-xls',
+	xlsx: 'i-ph-file-xls',
+	doc: 'i-ph-file-doc',
+	docx: 'i-ph-file-doc',
+	ppt: 'i-ph-file-ppt',
+	pptx: 'i-ph-file-ppt',
+	txt: 'i-ph-file-txt',
+}
+
+/** Formats the browser shows in a frame from their read URL. */
+const FRAMED_MIMETYPES = new Set(['application/pdf'])
+
+/** Formats shown as their first lines of text. */
+const TEXT_MIMETYPES = new Set(['text/plain', 'text/csv', 'text/markdown'])
+
+/** The order and filter of the list a file was opened from, which its page browses in. */
+export type FileListingOrder = Pick<ListingParams, 'sort' | 'direction' | 'type'>
+
+const FILE_LISTING_KEYS = ['sort', 'direction', 'type'] as const
+
+/** The file page of a file; given the explorer's order, previous and next follow it. */
+export function fileLink(assetId: string, order: FileListingOrder = {}): string {
+	const query = new URLSearchParams({ asset: assetId })
+	for (const key of FILE_LISTING_KEYS) {
+		const value = order[key]
+		if (value) query.set(key, value)
+	}
+	return `${MEDIA_ROUTES.file}?${query.toString()}`
 }
 
 export function editorLink(assetId: string): string {
@@ -64,16 +93,24 @@ export function folderLink(folderId: string): string {
 	return `${MEDIA_ROUTES.files}?folder=${encodeURIComponent(folderId)}`
 }
 
-export function accessLink(folderId: string): string {
-	return `${MEDIA_ROUTES.access}?folder=${encodeURIComponent(folderId)}`
-}
-
 export function isImageAsset(asset: Pick<MediaAsset, 'typeGroup'>): boolean {
 	return asset.typeGroup === 'image' || asset.typeGroup === 'vector'
 }
 
 export function isEditableAsset(asset: Pick<MediaAsset, 'mimetype'>): boolean {
 	return EDITABLE_MIMETYPES.has(asset.mimetype)
+}
+
+export function assetIconOf(asset: Pick<MediaAsset, 'name' | 'mimetype' | 'typeGroup'>): string {
+	return EXTENSION_ICONS[extensionOf(asset)] ?? TYPE_GROUP_ICONS[asset.typeGroup]
+}
+
+export function isFramedAsset(asset: Pick<MediaAsset, 'mimetype'>): boolean {
+	return FRAMED_MIMETYPES.has(asset.mimetype)
+}
+
+export function isTextAsset(asset: Pick<MediaAsset, 'mimetype'>): boolean {
+	return TEXT_MIMETYPES.has(asset.mimetype)
 }
 
 export function needsAltText(

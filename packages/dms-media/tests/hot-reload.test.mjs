@@ -4,9 +4,11 @@
 // consumer modules declared BEFORE dms-media declare an AssetType field at load
 // time, one through `@antelopejs/interface-dms-media`, one through the
 // deprecated `@antelopejs/dms-media` re-export. Then it reloads a consumer and
-// dms-media itself, and checks that dms-media's routes, permissions, page and
-// category stay owned by dms-media, survive the consumer's reload, and are
-// evaluated again from the edited file when dms-media reloads.
+// dms-media itself, and checks that dms-media's routes, pages and page topics
+// stay owned by dms-media, survive the consumer's reload, and are evaluated
+// again from the edited file when dms-media reloads. The media permissions 0.2
+// offered stay owner-only through every generation, and no longer once
+// dms-media is gone.
 //
 // Expects `pnpm run build` to have run: it loads the module from `dist`.
 
@@ -27,7 +29,9 @@ const PACKAGE_ROOT = path.resolve(
   path.dirname(fileURLToPath(import.meta.url)),
   "..",
 );
-const PERMISSIONS_FILE = path.join(PACKAGE_ROOT, "dist", "permissions.js");
+const CONSTANTS_FILE = path.join(PACKAGE_ROOT, "dist", "constants.js");
+// Required once the project runs: a copy loaded before `launch` is refused.
+const requireFromMedia = createRequire(path.join(PACKAGE_ROOT, "package.json"));
 function findFreePort() {
   return new Promise((resolve, reject) => {
     const server = net.createServer();
@@ -50,9 +54,14 @@ const HTTP_BAD_REQUEST = 400;
 const MEDIA_MODULE = "dms-media";
 const CONSUMER_MODULE = "consumer";
 const LEGACY_CONSUMER_MODULE = "legacy-consumer";
-const UPLOAD_PERMISSION = "media.upload";
-const ORIGINAL_UPLOAD_TITLE = "$dms_media.permissions.upload.title";
-const EDITED_UPLOAD_TITLE = "$dms_media.permissions.upload.title_reloaded";
+const ORIGINAL_TOPIC = "media.library";
+const EDITED_TOPIC = "media.library.reloaded";
+const FILES_PAGE_PERMISSION = "modules.media.library.files";
+const RETIRED_PERMISSIONS = [
+  "media.upload",
+  "media.folders.manage",
+  "media.permissions.manage",
+];
 const CONSUMER_BINDING = "reload-probe.cover";
 const CONSUMER_FOLDER = "Reload probe covers";
 const LEGACY_BINDING = "reload-probe.legacy";
@@ -69,7 +78,7 @@ const CONSUMER_INTERFACES = {
   "@antelopejs/interface-dms": ">=0.4.0 <1.0.0",
 };
 const COUNTER_ID_PATTERN = /^\d+$/;
-const MEDIA_ID_PATTERN = /^(media|settings\.media)(\.|$)/;
+const MEDIA_ID_PATTERN = /^(media|modules\.media|settings\.media)(\.|$)/;
 const RUNTIME = Symbol.for("@antelopejs/interface-core/runtime");
 
 function consumerSource(specifier, bindingId, folderName, revision) {
@@ -181,14 +190,29 @@ function findEntry(id) {
   return registeringEntries().find((entry) => entry.id === id);
 }
 
+// A page topic registers under its [page, topic] pair, serialized.
+function pageTopicPair(id) {
+  if (typeof id !== "string" || !id.startsWith("[")) return undefined;
+  return JSON.parse(id);
+}
+
+function findFilesPageTopic() {
+  return registeringEntries().find(
+    (entry) => pageTopicPair(entry.id)?.[0] === FILES_PAGE_PERMISSION,
+  );
+}
+
 function ownedBy(module) {
   return registeringEntries().filter((entry) => entry.module === module);
 }
 
 // Routes register under a running counter and pages under their class, so
-// only named ids are stable across generations: the others count by kind.
+// only named ids are stable across generations: the others count by kind. A
+// page topic counts by its page, the topic itself being what the test edits.
 function stableId(id) {
   if (typeof id !== "string") return typeof id;
+  const topicPair = pageTopicPair(id);
+  if (topicPair) return `topic of ${topicPair[0]}`;
   return COUNTER_ID_PATTERN.test(id) ? "counter" : id;
 }
 
@@ -199,7 +223,19 @@ function registrationKeys(entries) {
 }
 
 function isMediaId(id) {
-  return typeof id === "string" && MEDIA_ID_PATTERN.test(id);
+  const key = pageTopicPair(id)?.[0] ?? id;
+  return typeof key === "string" && MEDIA_ID_PATTERN.test(key);
+}
+
+function markedRetiredPermissions() {
+  const { IsModuleScopedPermission } = requireFromMedia(
+    "@antelopejs/interface-dms/permissions",
+  );
+  return RETIRED_PERMISSIONS.filter((id) => IsModuleScopedPermission(id));
+}
+
+function retiredPermissionsStayOwnerOnly() {
+  return markedRetiredPermissions().length === RETIRED_PERMISSIONS.length;
 }
 
 function ownersOf(entries) {
@@ -252,15 +288,15 @@ describe("hot reload keeps dms-media's registrations with dms-media", () => {
   let mongo;
   let projectFolder;
   let manager;
-  let originalPermissions;
+  let originalConstants;
   let consumerIndex;
   let initialMediaKeys;
 
   before(async () => {
-    originalPermissions = await fs.readFile(PERMISSIONS_FILE, "utf8");
+    originalConstants = await fs.readFile(CONSTANTS_FILE, "utf8");
     assert.ok(
-      originalPermissions.includes(`"${ORIGINAL_UPLOAD_TITLE}"`),
-      "dist/permissions.js is built",
+      originalConstants.includes(`"${ORIGINAL_TOPIC}"`),
+      "dist/constants.js is built",
     );
     mongo = await MongoMemoryReplSet.create({
       replSet: { count: 1 },
@@ -309,10 +345,11 @@ describe("hot reload keeps dms-media's registrations with dms-media", () => {
   });
 
   after(async () => {
-    await fs.writeFile(PERMISSIONS_FILE, originalPermissions);
+    await fs.writeFile(CONSTANTS_FILE, originalConstants);
     if (manager) {
       await manager.stopAll();
       await manager.destroyAll();
+      assert.deepEqual(markedRetiredPermissions(), []);
     }
     await mongo?.stop();
     if (projectFolder) {
@@ -322,13 +359,17 @@ describe("hot reload keeps dms-media's registrations with dms-media", () => {
 
   it("owns its registrations even when consumers load first", async () => {
     assert.equal(await mediaTreeStatus(), HTTP_UNAUTHORIZED);
-    const upload = findEntry(UPLOAD_PERMISSION);
-    assert.equal(upload?.module, MEDIA_MODULE);
-    assert.equal(upload.args[0].title, ORIGINAL_UPLOAD_TITLE);
+    const topic = findFilesPageTopic();
+    assert.equal(topic?.module, MEDIA_MODULE);
+    assert.equal(pageTopicPair(topic.id)[1], ORIGINAL_TOPIC);
+    for (const id of RETIRED_PERMISSIONS) {
+      assert.equal(findEntry(id), undefined, `${id} is not registered`);
+    }
+    assert.ok(retiredPermissionsStayOwnerOnly(), "retired ids are owner-only");
     initialMediaKeys = registrationKeys(ownedBy(MEDIA_MODULE));
     assert.ok(
       initialMediaKeys.length > 0,
-      "dms-media registered its routes, pages and permissions",
+      "dms-media registered its routes, pages and topics",
     );
     const mediaIds = registeringEntries().filter((entry) =>
       isMediaId(entry.id),
@@ -342,7 +383,7 @@ describe("hot reload keeps dms-media's registrations with dms-media", () => {
     assert.equal(findEntry(LEGACY_BINDING)?.module, LEGACY_CONSUMER_MODULE);
   });
 
-  it("keeps routes, permissions and pages through a consumer reload", async () => {
+  it("keeps routes, pages and topics through a consumer reload", async () => {
     const consumerOwner = findEntry(CONSUMER_BINDING).owner;
     const mediaOwners = ownersOf(ownedBy(MEDIA_MODULE));
     await fs.writeFile(
@@ -367,15 +408,15 @@ describe("hot reload keeps dms-media's registrations with dms-media", () => {
   it("re-registers everything from the edited files on its own reload", async () => {
     const mediaOwners = ownersOf(ownedBy(MEDIA_MODULE));
     await fs.writeFile(
-      PERMISSIONS_FILE,
-      originalPermissions.replace(
-        `"${ORIGINAL_UPLOAD_TITLE}"`,
-        `"${EDITED_UPLOAD_TITLE}"`,
-      ),
+      CONSTANTS_FILE,
+      originalConstants.replace(`"${ORIGINAL_TOPIC}"`, `"${EDITED_TOPIC}"`),
     );
     await waitFor(
-      "dms-media to register the edited permission",
-      () => findEntry(UPLOAD_PERMISSION)?.args[0].title === EDITED_UPLOAD_TITLE,
+      "dms-media to register the edited topic",
+      () => pageTopicPair(findFilesPageTopic()?.id)?.[1] === EDITED_TOPIC,
+    );
+    await waitFor("the retired permissions to be marked again", () =>
+      retiredPermissionsStayOwnerOnly(),
     );
 
     assert.equal(await mediaTreeStatus(), HTTP_UNAUTHORIZED);

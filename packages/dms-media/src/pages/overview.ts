@@ -5,22 +5,22 @@ import { Grid, GridRow } from "@antelopejs/interface-dms/base/grid";
 import { KeyValueList } from "@antelopejs/interface-dms/base/key-value-list";
 import { DefaultLayout } from "@antelopejs/interface-dms/base/layouts";
 import { Meter } from "@antelopejs/interface-dms/base/meter";
-import { NavCardGrid } from "@antelopejs/interface-dms/base/nav-card-grid";
 import { StatGroup } from "@antelopejs/interface-dms/base/stat-group";
 import { ButtonVariant } from "@antelopejs/interface-dms/base/types/button";
 import { PageController, RegisterPage } from "@antelopejs/interface-dms/page";
-import { MEDIA_ROUTES } from "../library/links";
-import { libraryCategory } from "./category";
+import { MEDIA_ROUTES, viewLink } from "../library/links";
+import { libraryCategory, MEDIA_MODULE_ID } from "./module";
 import { blockMeta } from "./texts";
-import { uploadAvailability } from "./upload-availability";
 import { MEDIA_LIBRARY_TOPIC } from "../constants";
 
 const TEXTS = "$dms_media.overview";
+/** Shortest interval, in seconds, between two refetches of a block while files upload. */
+const LIVE_MAX_RATE_SECONDS = 2;
 const GAP = "1rem";
 const MIN_COLUMN_WIDTH = "320px";
 const WIDE_SPAN = 2;
+const FULL_SPAN = 3;
 const KPI_COUNT = 4;
-const FOLDER_COLUMNS = 3;
 const ACTIVITY_LENGTH = 6;
 
 const storage = Card({ title: `${TEXTS}.storage.title` })
@@ -33,40 +33,27 @@ const storage = Card({ title: `${TEXTS}.storage.title` })
       legend: true,
       size: "md",
       format: "none",
+      actions: [
+        {
+          label: `${TEXTS}.storage.largest_files`,
+          to: viewLink("largest"),
+          icon: "i-ph-sort-descending",
+          variant: "link",
+        },
+      ],
     }).meta(blockMeta("storage_types", "i-ph-chart-bar-horizontal")),
-  )
-  .child(
-    "largest",
-    KeyValueList({
-      title: `${TEXTS}.largest.title`,
-      fetchUrl: "/api/media/stats/largest",
-      realtimeTopic: MEDIA_LIBRARY_TOPIC,
-      card: false,
-      dense: true,
-      skeletonCount: 3,
-      empty: { title: `${TEXTS}.largest.empty` },
-    }).meta(blockMeta("largest_folders", "i-ph-folders")),
   );
 
 const attention = KeyValueList({
   title: `${TEXTS}.attention.title`,
   fetchUrl: "/api/media/stats/attention",
   realtimeTopic: MEDIA_LIBRARY_TOPIC,
-  skeletonCount: 3,
+  skeletonCount: 2,
   empty: {
     title: `${TEXTS}.attention.empty`,
     description: `${TEXTS}.attention.empty_description`,
   },
 }).meta(blockMeta("attention", "i-ph-warning-circle"));
-
-const folders = NavCardGrid({
-  title: `${TEXTS}.folders.title`,
-  fetchUrl: "/api/media/stats/folders",
-  realtimeTopic: MEDIA_LIBRARY_TOPIC,
-  columns: FOLDER_COLUMNS,
-  skeletonCount: FOLDER_COLUMNS,
-  empty: { title: `${TEXTS}.folders.empty` },
-}).meta(blockMeta("folders", "i-ph-folder-simple"));
 
 const activity = ActivityFeed({
   title: `${TEXTS}.activity.title`,
@@ -77,6 +64,13 @@ const activity = ActivityFeed({
   card: true,
   skeletonCount: ACTIVITY_LENGTH,
   empty: { title: `${TEXTS}.activity.empty` },
+  actions: [
+    {
+      label: `${TEXTS}.activity.view_all`,
+      to: MEDIA_ROUTES.activity,
+      variant: "link",
+    },
+  ],
 }).meta(blockMeta("activity", "i-ph-clock-counter-clockwise"));
 
 @RegisterPage()
@@ -86,8 +80,10 @@ export class MediaOverviewPage extends PageController(
     displayName: `${TEXTS}.title`,
     description: `${TEXTS}.description`,
     category: libraryCategory,
+    module: MEDIA_MODULE_ID,
     icon: "i-ph-squares-four",
     order: 0,
+    live: { maxRate: LIVE_MAX_RATE_SECONDS },
   },
   DefaultLayout({
     headerActions: [
@@ -99,15 +95,6 @@ export class MediaOverviewPage extends PageController(
         color: "neutral",
         target: { type: "page", url: MEDIA_ROUTES.files },
       },
-      {
-        id: "upload",
-        availability: uploadAvailability,
-        label: `${TEXTS}.upload`,
-        icon: "i-ph-upload-simple",
-        variant: ButtonVariant.solid,
-        color: "primary",
-        target: { type: "page", url: `${MEDIA_ROUTES.uploads}?pick=1` },
-      },
     ],
   }),
 ) {
@@ -118,6 +105,8 @@ export class MediaOverviewPage extends PageController(
   static uploadStrip = CustomComponent("DmsMediaUploadStrip").meta(
     blockMeta("upload_strip", "i-ph-cloud-arrow-up"),
   );
+
+  static attention = attention;
 
   static kpis = StatGroup({
     layout: "cards",
@@ -135,7 +124,7 @@ export class MediaOverviewPage extends PageController(
       GridRow()
         .meta(blockMeta("health", "i-ph-rows"))
         .child("storage", storage, { colSpan: WIDE_SPAN })
-        .child("attention", attention),
+        .child("activity", activity),
     )
     .child(
       "recent",
@@ -146,14 +135,7 @@ export class MediaOverviewPage extends PageController(
           CustomComponent("DmsMediaRecentFiles").meta(
             blockMeta("recent", "i-ph-images"),
           ),
-          { colSpan: WIDE_SPAN + 1 },
+          { colSpan: FULL_SPAN },
         ),
-    )
-    .child(
-      "browse",
-      GridRow()
-        .meta(blockMeta("browse", "i-ph-rows"))
-        .child("folders", folders, { colSpan: WIDE_SPAN })
-        .child("activity", activity),
     );
 }

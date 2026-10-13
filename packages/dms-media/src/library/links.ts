@@ -1,13 +1,14 @@
+const MEDIA_MODULE_URL = "/modules/media";
+
 /** Dashboard routes of the media pages, for links served by the API. */
 export const MEDIA_ROUTES = {
-  overview: "/media/overview",
-  files: "/media/files",
-  file: "/media/file",
-  editor: "/media/editor",
-  uploads: "/media/uploads",
-  access: "/media/access",
-  linked: "/media/linked",
-  presets: "/media/presets",
+  overview: `${MEDIA_MODULE_URL}/overview`,
+  activity: `${MEDIA_MODULE_URL}/activity`,
+  files: `${MEDIA_MODULE_URL}/files`,
+  file: `${MEDIA_MODULE_URL}/file`,
+  editor: `${MEDIA_MODULE_URL}/editor`,
+  uploads: `${MEDIA_MODULE_URL}/uploads`,
+  presets: `${MEDIA_MODULE_URL}/presets`,
 } as const;
 
 export function folderLink(folderId: string): string {
@@ -20,8 +21,4 @@ export function fileLink(assetId: string): string {
 
 export function viewLink(view: string): string {
   return `${MEDIA_ROUTES.files}?view=${encodeURIComponent(view)}`;
-}
-
-export function accessLink(folderId: string): string {
-  return `${MEDIA_ROUTES.access}?folder=${encodeURIComponent(folderId)}`;
 }

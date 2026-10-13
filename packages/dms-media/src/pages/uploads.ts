@@ -6,20 +6,45 @@ import { DefaultDisplays } from "@antelopejs/interface-dms/base/table-view/colum
 import { ButtonVariant } from "@antelopejs/interface-dms/base/types/button";
 import { PageController, RegisterPage } from "@antelopejs/interface-dms/page";
 import { MEDIA_ROUTES } from "../library/links";
-import { libraryCategory } from "./category";
+import { libraryCategory, MEDIA_MODULE_ID } from "./module";
 import { blockMeta } from "./texts";
 import { uploadAvailability } from "./upload-availability";
 import { MEDIA_LIBRARY_TOPIC } from "../constants";
 
 const TEXTS = "$dms_media.uploads";
 const HISTORY_PAGE_SIZE = 10;
+const NEEDS_ATTENTION = "yes";
 
 const history = TableView.fromSource({
   caption: `${TEXTS}.history.title`,
   fetchUrl: "/api/media/upload/batches",
   realtimeTopic: MEDIA_LIBRARY_TOPIC,
-  layout: "compact",
+  layout: "full",
+  density: "compact",
   pageSize: HISTORY_PAGE_SIZE,
+  rowClick: "single",
+  capabilities: { filter: true },
+  tabs: [
+    {
+      id: "failed",
+      label: `${TEXTS}.history.tab_failed`,
+      icon: "i-ph-warning-circle",
+      filter: { accessorKey: "attention", mode: "is", value: NEEDS_ATTENTION },
+    },
+  ],
+  rowActions: {
+    custom: [
+      {
+        label: `${TEXTS}.history.open_folder`,
+        icon: "i-ph-folder-open",
+        target: {
+          type: "page",
+          url: `${MEDIA_ROUTES.files}?folder={folderId}`,
+        },
+        isDefault: true,
+      },
+    ],
+  },
   emptyStates: {
     firstRun: {
       title: `${TEXTS}.history.empty`,
@@ -42,7 +67,9 @@ const history = TableView.fromSource({
     size: {
       name: `${TEXTS}.history.size`,
       type: new DefaultDataTypes.NumberType(),
-      display: new DefaultDisplays.BytesDisplay(),
+      display: new DefaultDisplays.TwoLineDisplay({
+        primaryField: "sizeLabel",
+      }),
       order: 4,
       sortable: true,
     },
@@ -59,7 +86,15 @@ const history = TableView.fromSource({
         tones: { complete: "success", partial: "warning", failed: "error" },
         subField: "resultDetail",
       }),
+      filterable: true,
       order: 5,
+    },
+    attention: {
+      name: `${TEXTS}.history.attention`,
+      type: new DefaultDataTypes.StringType(),
+      isVisible: false,
+      filterable: true,
+      order: 7,
     },
     finishedAt: {
       name: `${TEXTS}.history.finished`,
@@ -78,6 +113,7 @@ export class MediaUploadsPage extends PageController(
     displayName: `${TEXTS}.title`,
     description: `${TEXTS}.description`,
     category: libraryCategory,
+    module: MEDIA_MODULE_ID,
     icon: "i-ph-cloud-arrow-up",
     order: 2,
   },

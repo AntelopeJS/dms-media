@@ -9,11 +9,10 @@ import { DefaultLayout } from "@antelopejs/interface-dms/base/layouts";
 import { VStack } from "@antelopejs/interface-dms/base/stack";
 import { Tab } from "@antelopejs/interface-dms/base/tab";
 import { PageController, RegisterPage } from "@antelopejs/interface-dms/page";
-import { libraryCategory } from "./category";
+import { libraryCategory, MEDIA_MODULE_ID } from "./module";
 import { blockMeta } from "./texts";
 import { MEDIA_LIBRARY_TOPIC } from "../constants";
 
-const ASSET_QUERY_PARAM = "asset";
 const FILE_TEXTS = "$dms_media.file";
 const ASSET_API = "/api/media/assets/{{query.asset}}";
 const GAP = "1rem";
@@ -110,10 +109,10 @@ export class MediaFilePage extends PageController(
     displayName: "$dms_media.file.title",
     description: "$dms_media.file.description",
     category: libraryCategory,
+    module: MEDIA_MODULE_ID,
     icon: "i-ph-file-image",
     hidden: true,
     order: 3,
-    validation: { requiredQueryParams: [ASSET_QUERY_PARAM] },
     noComponentPermissions: true,
   },
   DefaultLayout({ hideHeader: true }),
@@ -151,10 +150,10 @@ export class MediaEditorPage extends PageController(
     displayName: "$dms_media.editor.title",
     description: "$dms_media.editor.description",
     category: libraryCategory,
+    module: MEDIA_MODULE_ID,
     icon: "i-ph-crop",
     hidden: true,
     order: 4,
-    validation: { requiredQueryParams: [ASSET_QUERY_PARAM] },
     noComponentPermissions: true,
   },
   DefaultLayout({ hideHeader: true }),
