@@ -4,6 +4,7 @@ import { DEFAULT_TENANT_ID } from "@antelopejs/interface-dms/constants";
 import { RoleModel, UserInviteModel } from "@antelopejs/interface-dms/db";
 import type { AxiosInstance } from "axios";
 import { authorizedClient, createClient } from "./http";
+import { withPermissionAncestors } from "./permission-ancestors";
 
 const MEMBER_PASSWORD = "TestPassw0rd!";
 const MEMBER_LANGUAGE = "en";
@@ -22,7 +23,10 @@ export async function createRole(
   permissions: string[],
 ): Promise<string> {
   const model = GetModel(RoleModel, DEFAULT_TENANT_ID);
-  const [roleId] = await model.insert({ name, permissions });
+  const [roleId] = await model.insert({
+    name,
+    permissions: withPermissionAncestors(permissions),
+  });
   return roleId;
 }
 
@@ -30,7 +34,9 @@ export async function setRolePermissions(
   roleId: string,
   permissions: string[],
 ): Promise<void> {
-  await GetModel(RoleModel, DEFAULT_TENANT_ID).update(roleId, { permissions });
+  await GetModel(RoleModel, DEFAULT_TENANT_ID).update(roleId, {
+    permissions: withPermissionAncestors(permissions),
+  });
 }
 
 async function seedMemberInvite(
@@ -45,7 +51,6 @@ async function seedMemberInvite(
     token,
     asTenantOwner: false,
     expiresAt: new Date(Date.now() + INVITE_LIFETIME_MS),
-    skipEmailValidation: true,
   });
   return token;
 }

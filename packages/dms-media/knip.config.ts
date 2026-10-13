@@ -8,9 +8,4 @@ export default antelopeKnipConfig({
     // report its vitest suite against this manifest.
     "frontend-vue/**",
   ],
-  ignoreDependencies: [
-    // Mocha's globals are ambient: nothing imports the types, so Knip cannot
-    // see that dropping them would break the test build.
-    "@types/mocha",
-  ],
 });

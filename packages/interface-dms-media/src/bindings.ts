@@ -13,6 +13,13 @@ export interface AssetPermissionMapping {
  * the `Content` root of each tenant, keyed by `id`, with an ACL derived from
  * the mapping below.
  */
+/** What the asset field bound to a folder accepts, as declared on `AssetType`. */
+export interface AssetBindingField {
+  multiple?: boolean;
+  max?: number;
+  mimetypes?: string[];
+}
+
 export interface AssetBindingConfig {
   id: string;
   folderName?: string;
@@ -26,6 +33,8 @@ export interface AssetBindingConfig {
    */
   permissionsFromPage?: ControllerClass;
   acl?: AclEntry[];
+  /** Filled by `AssetType`: what the field accepts, shown next to the folder. */
+  field?: AssetBindingField;
 }
 
 /**

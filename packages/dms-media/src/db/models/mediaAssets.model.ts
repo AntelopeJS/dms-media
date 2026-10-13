@@ -4,6 +4,11 @@ import { BasicDataModel } from "@antelopejs/interface-database-decorators";
 import { triggerEvent } from "@antelopejs/interface-database-decorators/modifiers/common";
 import { MEDIA_ASSETS_TABLE_NAME, MediaAsset } from "../tables";
 
+export interface MediaMutationOptions {
+  /** False for bookkeeping writes that must not move `updatedAt`. */
+  touchesAsset?: boolean;
+}
+
 function mutationApplied(outcome: AtomicMutationOutcome): boolean {
   if (outcome === "unknown")
     throw new Error("Media mutation acknowledgement is unknown");
@@ -18,9 +23,10 @@ export class MediaAssetModel extends BasicDataModel(
   async compareMedia(
     expected: MediaAsset,
     patch: Partial<MediaAsset>,
+    options: MediaMutationOptions = {},
   ): Promise<boolean> {
     const instance = MediaAssetModel.fromPlainData(patch);
-    triggerEvent(instance, "update");
+    if (options.touchesAsset !== false) triggerEvent(instance, "update");
     const payload = MediaAssetModel.toDatabase(instance);
     const outcome = await this.table
       .atomicMutation(expected._id, {

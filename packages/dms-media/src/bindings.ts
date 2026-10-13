@@ -2,10 +2,6 @@ import { createHash } from "node:crypto";
 import { GetPermissionId } from "@antelopejs/interface-dms/page";
 import type { AssetBindingConfig } from "@antelopejs/interface-dms-media";
 import { serializeAcl } from "./acl";
-import {
-  MEDIA_FOLDERS_MANAGE_PERMISSION,
-  MEDIA_PERMISSIONS_MANAGE_PERMISSION,
-} from "./constants";
 import type { MediaFolder, MediaFolderModel } from "./db";
 import type { AclEntry } from "./types";
 
@@ -74,10 +70,6 @@ export function buildBindingAcl(config: AssetBindingConfig): AclEntry[] {
     ...permissionEntries(config.permissionMapping?.write ?? pagePermissions, [
       "write",
     ]),
-    ...permissionEntries(
-      [MEDIA_FOLDERS_MANAGE_PERMISSION, MEDIA_PERMISSIONS_MANAGE_PERMISSION],
-      ["manage"],
-    ),
   ];
 }
 

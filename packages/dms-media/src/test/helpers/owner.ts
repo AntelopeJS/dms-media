@@ -2,7 +2,9 @@ import { createClient } from "./http";
 
 const OWNER_EMAIL = "owner@test.local";
 const OWNER_PASSWORD = "TestPassw0rd!";
-const OWNER_NAME = "Test Owner";
+const OWNER_FIRST_NAME = "Test";
+const OWNER_LAST_NAME = "Owner";
+const ADMIN_ALREADY_SET = "error.admin_already_set";
 const HTTP_BAD_REQUEST = 400;
 
 export interface OwnerSession {
@@ -13,12 +15,15 @@ export interface OwnerSession {
 export async function ensureOwnerSession(): Promise<OwnerSession> {
   const client = createClient();
   const registration = await client.post("/api/onboarding/register", {
-    name: OWNER_NAME,
+    firstName: OWNER_FIRST_NAME,
+    lastName: OWNER_LAST_NAME,
     email: OWNER_EMAIL,
     password: OWNER_PASSWORD,
   });
   const isRegistered = registration.status < HTTP_BAD_REQUEST;
-  const isAlreadyRegistered = registration.status === HTTP_BAD_REQUEST;
+  const isAlreadyRegistered =
+    registration.status === HTTP_BAD_REQUEST &&
+    JSON.stringify(registration.data).includes(ADMIN_ALREADY_SET);
   if (!isRegistered && !isAlreadyRegistered) {
     throw new Error(
       `Onboarding failed [${registration.status}]: ${JSON.stringify(registration.data)}`,

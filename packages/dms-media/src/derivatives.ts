@@ -1,12 +1,12 @@
 import { randomUUID } from "node:crypto";
 import {
-  CreateReadUrl,
   CreateUploadUrl,
   DeleteFile,
 } from "@antelopejs/interface-file-storage";
 import sharp from "sharp";
-import { updateAssetMedia } from "./asset-lifecycle";
+import { TECHNICAL_MUTATION, updateAssetMedia } from "./asset-lifecycle";
 import { ORIGINAL_FILENAME_METADATA_KEY } from "./constants";
+import { MAX_ANIMATION_FRAMES, MAX_INPUT_PIXELS } from "./image-limits";
 import type { MediaAsset, MediaAssetModel } from "./db";
 import {
   type MediaPresetConfig,
@@ -15,20 +15,33 @@ import {
   RASTERIZED_SVG_FORMAT,
   SVG_MIMETYPE,
 } from "./presets";
+import { signedReadUrl } from "./read-urls";
 import { parseDerivatives } from "./routes/media/storage-keys";
 
 const DERIVATIVES_PATH_PREFIX = "media-derivatives";
 const GENERATION_FAILURE_RETRY_MS = 60_000;
+const UNREADABLE_IMAGE_RETRY_MS = 60 * 60_000;
+const VECTOR_BASE_DENSITY = 72;
+const MAX_VECTOR_DENSITY = 2400;
+const SINGLE_FRAME_PAGE_COUNT = 1;
+const ANIMATED_OUTPUT_FORMATS = new Set(["webp", "gif"]);
+
+/** The stored bytes of an image asset cannot be decoded. */
+export class UnreadableImageError extends Error {}
+
+interface GenerationFailure {
+  failedAt: number;
+  error: unknown;
+}
 
 const generationLocks = new Map<string, Promise<string>>();
-const generationFailures = new Map<string, number>();
+const generationFailures = new Map<string, GenerationFailure>();
 
 export async function downloadStorageBytes(
   storageKey: string,
   storage: string | undefined,
 ): Promise<Buffer> {
-  const readUrl = await CreateReadUrl(storageKey, undefined, storage);
-  const response = await fetch(readUrl.url);
+  const response = await fetch(await signedReadUrl(storageKey, storage));
   if (!response.ok) {
     throw new Error(`Failed to download ${storageKey}: ${response.status}`);
   }
@@ -64,11 +77,57 @@ export async function uploadStorageBytes(
   return presigned.resourceKey;
 }
 
+async function readSourceMetadata(source: Buffer): Promise<sharp.Metadata> {
+  try {
+    return await sharp(source).metadata();
+  } catch (error) {
+    throw new UnreadableImageError(
+      error instanceof Error ? error.message : String(error),
+    );
+  }
+}
+
+function vectorDensity(
+  metadata: sharp.Metadata,
+  preset: MediaPresetConfig,
+): number | undefined {
+  if (metadata.format !== "svg" || !metadata.width || !metadata.height) {
+    return undefined;
+  }
+  const scale = Math.max(
+    (preset.width ?? 0) / metadata.width,
+    (preset.height ?? 0) / metadata.height,
+  );
+  if (scale <= 1) return undefined;
+  return Math.min(Math.ceil(VECTOR_BASE_DENSITY * scale), MAX_VECTOR_DENSITY);
+}
+
+function keepsAnimation(
+  metadata: sharp.Metadata,
+  preset: MediaPresetConfig,
+): boolean {
+  const pages = metadata.pages ?? SINGLE_FRAME_PAGE_COUNT;
+  const isAnimated =
+    pages > SINGLE_FRAME_PAGE_COUNT && pages <= MAX_ANIMATION_FRAMES;
+  const outputFormat = preset.format ?? metadata.format ?? "";
+  return isAnimated && ANIMATED_OUTPUT_FORMATS.has(outputFormat);
+}
+
+/**
+ * Renders a preset: upright (EXIF), vectors at full size, animation kept when
+ * the format allows and the frames are few enough. Refuses sources past
+ * `MAX_INPUT_PIXELS`.
+ */
 export async function transformImage(
   source: Buffer,
   preset: MediaPresetConfig,
 ): Promise<Buffer> {
-  let pipeline = sharp(source);
+  const metadata = await readSourceMetadata(source);
+  let pipeline = sharp(source, {
+    density: vectorDensity(metadata, preset),
+    animated: keepsAnimation(metadata, preset),
+    limitInputPixels: MAX_INPUT_PIXELS,
+  }).autoOrient();
   if (preset.width || preset.height) {
     pipeline = pipeline.resize({
       width: preset.width,
@@ -82,7 +141,11 @@ export async function transformImage(
       quality: preset.quality,
     });
   }
-  return pipeline.toBuffer();
+  return pipeline.toBuffer().catch((error: unknown) => {
+    throw new UnreadableImageError(
+      error instanceof Error ? error.message : String(error),
+    );
+  });
 }
 
 function derivativeExtension(
@@ -94,13 +157,13 @@ function derivativeExtension(
   return asset.name.split(".").pop() ?? "bin";
 }
 
-function derivativeFilename(
+/** Readable download name of a derivative: `photo-01-thumb.webp`. */
+export function derivativeFilename(
   asset: MediaAsset,
   preset: MediaPresetConfig,
-  cacheKey: string,
 ): string {
   const baseName = asset.name.replace(/\.[^.]+$/, "");
-  return `${baseName}.${cacheKey}.${derivativeExtension(asset, preset)}`;
+  return `${baseName}-${preset.id}.${derivativeExtension(asset, preset)}`;
 }
 
 async function generateDerivative(
@@ -113,7 +176,7 @@ async function generateDerivative(
   const output = await transformImage(source, preset);
   const storageKey = await uploadStorageBytes(
     output,
-    derivativeFilename(asset, preset, cacheKey),
+    derivativeFilename(asset, preset),
     presetMimetype(preset, asset.mimetype),
     `${DERIVATIVES_PATH_PREFIX}/${asset._id}/${randomUUID()}`,
     asset.storage,
@@ -150,12 +213,17 @@ export async function commitDerivative(
       return derivatives[cacheKey];
     }
     if (
-      await updateAssetMedia(assetModel, fresh, {
-        json_derivatives: JSON.stringify({
-          ...derivatives,
-          [cacheKey]: storageKey,
-        }),
-      })
+      await updateAssetMedia(
+        assetModel,
+        fresh,
+        {
+          json_derivatives: JSON.stringify({
+            ...derivatives,
+            [cacheKey]: storageKey,
+          }),
+        },
+        TECHNICAL_MUTATION,
+      )
     )
       return storageKey;
   }
@@ -183,9 +251,15 @@ export function partitionDerivatives(
   return { fresh, stale };
 }
 
+function failureRetryDelay(error: unknown): number {
+  return error instanceof UnreadableImageError
+    ? UNREADABLE_IMAGE_RETRY_MS
+    : GENERATION_FAILURE_RETRY_MS;
+}
+
 function pruneExpiredGenerationFailures(now: number): void {
-  for (const [lockKey, failedAt] of generationFailures) {
-    if (now - failedAt >= GENERATION_FAILURE_RETRY_MS) {
+  for (const [lockKey, failure] of generationFailures) {
+    if (now - failure.failedAt >= failureRetryDelay(failure.error)) {
       generationFailures.delete(lockKey);
     }
   }
@@ -193,8 +267,10 @@ function pruneExpiredGenerationFailures(now: number): void {
 
 function assertNoRecentGenerationFailure(lockKey: string): void {
   pruneExpiredGenerationFailures(Date.now());
-  if (!generationFailures.has(lockKey)) return;
-  throw new Error(`Derivative generation for ${lockKey} recently failed`);
+  const failure = generationFailures.get(lockKey);
+  if (!failure) return;
+  if (failure.error instanceof UnreadableImageError) throw failure.error;
+  throw new Error("Derivative generation recently failed");
 }
 
 export async function ensureDerivative(
@@ -218,7 +294,7 @@ export async function ensureDerivative(
       return storageKey;
     })
     .catch((error: unknown) => {
-      generationFailures.set(lockKey, Date.now());
+      generationFailures.set(lockKey, { failedAt: Date.now(), error });
       throw error;
     })
     .finally(() => generationLocks.delete(lockKey));

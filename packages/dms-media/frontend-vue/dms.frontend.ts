@@ -5,37 +5,26 @@ interface VueModule {
 	default: Component
 }
 
-const components = import.meta.glob<VueModule>([
-	'./app/components/**/*.vue',
-	'!./app/components/finder/**/*.vue',
-])
-const finderComponents = import.meta.glob<VueModule>(
-	'./app/components/finder/**/*.vue',
-)
+const blocks = import.meta.glob<VueModule>('./app/components/*.vue')
 
-function pascalCase(path: string): string {
+function componentName(path: string): string {
 	return path
-		.replace(/(?:^|\/)index\.vue$/, '')
+		.split('/')
+		.at(-1)!
 		.replace(/\.vue$/, '')
-		.split(/[\/._-]+/)
-		.filter(Boolean)
-		.map((part) => part[0].toUpperCase() + part.slice(1))
-		.join('')
 }
 
 const frontendModule: DmsFrontendModule = {
+	componentPrefix: 'DmsMedia',
 	setup(sdk) {
-		for (const [path, loader] of Object.entries(components).sort()) {
-			const name = pascalCase(path.split('/').at(-1)!)
+		sdk.registerPlugin(async () => {
+			const { registerAssetDataType } =
+				await import('./app/utils/assetDataType')
+			registerAssetDataType()
+		})
+		for (const [path, loader] of Object.entries(blocks).sort()) {
 			sdk.registerComponent(
-				`DmsMedia${name}`,
-				defineAsyncComponent(async () => (await loader()).default),
-			)
-		}
-		for (const [path, loader] of Object.entries(finderComponents).sort()) {
-			const name = pascalCase(path.replace('./app/components/finder/', ''))
-			sdk.registerComponent(
-				`Finder${name}`,
+				componentName(path),
 				defineAsyncComponent(async () => (await loader()).default),
 			)
 		}

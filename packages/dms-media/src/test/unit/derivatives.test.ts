@@ -1,5 +1,9 @@
 import { expect } from "chai";
-import { partitionDerivatives } from "../../derivatives";
+import {
+  partitionDerivatives,
+  transformImage,
+  UnreadableImageError,
+} from "../../derivatives";
 import { presetCacheKey } from "../../presets";
 
 const THUMB_PRESET = {
@@ -50,5 +54,17 @@ describe("[unit] derivatives — partitionDerivatives", () => {
       base,
     );
     expect(presetCacheKey({ ...THUMB_PRESET })).to.equal(base);
+  });
+});
+
+describe("[unit] derivatives — decoding limits", () => {
+  it("refuses a source past the pixel limit instead of rasterizing it", async () => {
+    const huge = Buffer.from(
+      '<svg xmlns="http://www.w3.org/2000/svg" width="20000" height="20000"><rect width="100%" height="100%"/></svg>',
+    );
+    const error = await transformImage(huge, THUMB_PRESET).catch(
+      (cause: unknown) => cause,
+    );
+    expect(error).to.be.instanceOf(UnreadableImageError);
   });
 });

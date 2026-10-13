@@ -3,10 +3,10 @@ import { ImplementInterface } from "@antelopejs/interface-core";
 import { AddFrontendModule } from "@antelopejs/interface-dms/page";
 import { Logging } from "@antelopejs/interface-core/logging";
 import "./db";
-import "./permissions";
 import type { ScheduledTask } from "node-cron";
 import { type DmsMediaConfig, configureMediaModule } from "./config";
 import { registerMediaCrons } from "./crons";
+import { cancelLibraryChange } from "./library/realtime";
 
 export * from "./acl";
 export * from "./bindings";
@@ -45,6 +45,7 @@ export function start(): void {
 }
 
 export async function stop(): Promise<void> {
+  cancelLibraryChange();
   const teardowns = await Promise.allSettled(
     cronTasks.map(async (task) => task.destroy()),
   );

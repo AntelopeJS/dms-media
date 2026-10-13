@@ -1,0 +1,249 @@
+import { expect } from "chai";
+import { buildActivityItems } from "../../../library/activity";
+import { buildUploadBatches } from "../../../library/batches";
+import { composedBytes, composedText } from "../../../library/composed-text";
+import { computeFolderStats } from "../../../library/folder-stats";
+import {
+  fileLink,
+  folderLink,
+  MEDIA_ROUTES,
+  viewLink,
+} from "../../../library/links";
+import { countByTypeGroup, pageAssets } from "../../../library/listing";
+import { searchAssets, searchFolders } from "../../../library/search";
+import {
+  isDescribableImage,
+  resolveTypeGroup,
+} from "../../../library/type-groups";
+import { uniqueEntryName, ZipWriter } from "../../../library/zip";
+import { asset, event, folder } from "./fixtures";
+
+const ZIP_END_SIGNATURE = 0x06054b50;
+const ZIP_END_RECORD_SIZE = 22;
+const ZIP_ENTRY_COUNT_OFFSET = 10;
+
+describe("[unit] library — type groups", () => {
+  it("files mimetypes into the groups the library shows", () => {
+    expect(resolveTypeGroup("image/svg+xml")).to.equal("vector");
+    expect(resolveTypeGroup("IMAGE/PNG")).to.equal("image");
+    expect(resolveTypeGroup("video/mp4")).to.equal("video");
+    expect(resolveTypeGroup("application/pdf")).to.equal("pdf");
+    expect(resolveTypeGroup("text/csv")).to.equal("spreadsheet");
+    expect(resolveTypeGroup("application/msword")).to.equal("document");
+    expect(resolveTypeGroup("application/zip")).to.equal("archive");
+    expect(resolveTypeGroup("application/x-unknown")).to.equal("other");
+    expect(isDescribableImage("image/svg+xml")).to.equal(true);
+    expect(isDescribableImage("application/pdf")).to.equal(false);
+  });
+});
+
+describe("[unit] library — listing", () => {
+  const assets = [
+    asset("b", { size: 30, createdAt: new Date("2026-02-01") }),
+    asset("a10", { size: 10 }),
+    asset("a2", { size: 20, mimetype: "application/pdf" }),
+  ];
+
+  it("sorts names naturally and pages the result", () => {
+    const page = pageAssets(assets, {
+      offset: 0,
+      limit: 2,
+      sort: "name",
+      direction: "asc",
+    });
+    expect(page.assets.map((entry) => entry._id)).to.deep.equal(["a2", "a10"]);
+    expect(page.total).to.equal(3);
+  });
+
+  it("filters on a type group before counting", () => {
+    const page = pageAssets(assets, {
+      offset: 0,
+      limit: 10,
+      sort: "size",
+      direction: "desc",
+      type: "image",
+    });
+    expect(page.assets.map((entry) => entry._id)).to.deep.equal(["b", "a10"]);
+    expect(page.total).to.equal(2);
+    expect(countByTypeGroup(assets)).to.include({ image: 2, pdf: 1 });
+  });
+});
+
+describe("[unit] library — folder stats", () => {
+  it("adds every file to its folder and each ancestor", () => {
+    const folders = [folder("root"), folder("child", "root", ["root"])];
+    const stats = computeFolderStats(folders, [
+      asset("x", { folderId: "child", size: 5 }),
+      asset("y", { folderId: "root", size: 7 }),
+      asset("z", { folderId: "missing" }),
+    ]);
+    expect(stats.get("root")).to.deep.equal({
+      fileCount: 2,
+      size: 12,
+      directFileCount: 1,
+    });
+    expect(stats.get("child")).to.deep.equal({
+      fileCount: 1,
+      size: 5,
+      directFileCount: 1,
+    });
+  });
+});
+
+describe("[unit] library — search", () => {
+  const assets = [
+    asset("oak-desk"),
+    asset("walnut", { alt: "An OAK finish" }),
+    asset("old", { updatedAt: new Date("2020-01-01") }),
+  ];
+
+  it("matches names first, then alt text, and applies the filters", () => {
+    const hits = searchAssets(assets, {
+      query: {
+        q: "oak",
+        offset: 0,
+        limit: 10,
+        sort: "name",
+        direction: "asc",
+        visibility: "any",
+        modified: "any",
+        orientation: "any",
+      },
+      now: new Date("2026-06-01"),
+      visibilityOf: () => "private",
+    });
+    expect(hits.map((hit) => [hit.asset._id, hit.matchedOn])).to.deep.equal([
+      ["oak-desk", "name"],
+      ["walnut", "alt"],
+    ]);
+    const recent = searchAssets(assets, {
+      query: {
+        q: "",
+        offset: 0,
+        limit: 10,
+        sort: "name",
+        direction: "asc",
+        visibility: "private",
+        modified: "year",
+        orientation: "any",
+      },
+      now: new Date("2026-06-01"),
+      visibilityOf: () => "private",
+    });
+    expect(recent.map((hit) => hit.asset._id)).to.not.include("old");
+  });
+
+  it("matches folder names without a term only when one is given", () => {
+    const folders = [folder("Oak shots"), folder("Brand")];
+    expect(
+      searchFolders(folders, "OAK").map((entry) => entry._id),
+    ).to.deep.equal(["Oak shots"]);
+    expect(searchFolders(folders, "")).to.deep.equal([]);
+  });
+});
+
+describe("[unit] library — activity and batches", () => {
+  const folders = new Map([["root", folder("root")]]);
+  const events = [
+    event("e3", { kind: "asset.delete", createdAt: new Date("2026-01-03") }),
+    event("e2", { json_details: JSON.stringify({ batchId: "b1" }) }),
+    event("e1", { json_details: JSON.stringify({ batchId: "b1" }) }),
+    event("e0", {
+      kind: "upload.batch",
+      count: 2,
+      json_details: JSON.stringify({ batchId: "b1", total: 3, failed: 1 }),
+    }),
+  ];
+
+  it("shows a batch with failures as its report, in place of its files", () => {
+    const items = buildActivityItems({ events, foldersById: folders }, 10);
+    expect(items.map((item) => item.title)).to.deep.equal([
+      "$dms_media.activity.asset_delete",
+      "$dms_media.activity.upload_batch_partial",
+    ]);
+    expect(items[1]?.params?.failed).to.deep.equal({ type: "count", value: 1 });
+  });
+
+  it("folds the files of a complete batch into one entry", () => {
+    const complete = events.filter((entry) => entry.kind !== "upload.batch");
+    const items = buildActivityItems(
+      { events: complete, foldersById: folders },
+      10,
+    );
+    expect(items.map((item) => item.title)).to.deep.equal([
+      "$dms_media.activity.asset_delete",
+      "$dms_media.activity.asset_upload",
+    ]);
+    expect(items[1]?.params?.count).to.deep.equal({ type: "count", value: 2 });
+  });
+
+  it("summarizes a batch with its failures", () => {
+    const [batch] = buildUploadBatches(events, folders);
+    expect(batch).to.include({
+      _id: "b1",
+      files: 2,
+      failed: 1,
+      result: "partial",
+    });
+    expect(batch?.resultDetail).to.deep.equal({
+      key: "dms_media.uploads.history.failed_detail",
+      params: { failed: { type: "count", value: 1 }, total: 3 },
+    });
+    expect(batch?.byLine.key).to.equal("dms_media.uploads.history.by_line");
+  });
+});
+
+describe("[unit] library — composed texts", () => {
+  it("writes a byte size in its largest decimal unit, rounded like the explorer", () => {
+    expect(composedBytes(512)).to.deep.equal({
+      key: "dms_media.units.b",
+      params: { value: { type: "number", value: 512 } },
+    });
+    expect(composedBytes(3.25 * 1000 * 1000).params?.value).to.deep.equal({
+      type: "number",
+      value: 3.3,
+    });
+    expect(composedBytes(42 * 1000).key).to.equal("dms_media.units.kb");
+    expect(composedBytes(1000).key).to.equal("dms_media.units.kb");
+  });
+
+  it("drops the leading $ of a key", () => {
+    expect(composedText("$dms_media.title")).to.deep.equal({
+      key: "dms_media.title",
+    });
+  });
+});
+
+describe("[unit] library — links", () => {
+  it("points at the pages of the media module", () => {
+    expect(MEDIA_ROUTES.overview).to.equal("/modules/media/overview");
+    expect(folderLink("f 1")).to.equal("/modules/media/files?folder=f%201");
+    expect(fileLink("a1")).to.equal("/modules/media/file?asset=a1");
+    expect(viewLink("missing-alt")).to.equal(
+      "/modules/media/files?view=missing-alt",
+    );
+  });
+});
+
+describe("[unit] library — zip", () => {
+  it("writes a stored archive with every entry", () => {
+    const chunks: Buffer[] = [];
+    const zip = new ZipWriter((chunk) => chunks.push(chunk));
+    zip.addFile("a.txt", Buffer.from("hello"), new Date("2026-01-01"));
+    zip.addFile("b.txt", Buffer.from("world"), new Date("2026-01-01"));
+    zip.finish();
+    const archive = Buffer.concat(chunks);
+    const end = archive.subarray(archive.length - ZIP_END_RECORD_SIZE);
+    expect(end.readUInt32LE(0)).to.equal(ZIP_END_SIGNATURE);
+    expect(end.readUInt16LE(ZIP_ENTRY_COUNT_OFFSET)).to.equal(2);
+    expect(archive.includes(Buffer.from("hello"))).to.equal(true);
+  });
+
+  it("renames duplicate entries", () => {
+    const taken = new Set<string>();
+    expect(uniqueEntryName("photo.jpg", taken)).to.equal("photo.jpg");
+    expect(uniqueEntryName("Photo.jpg", taken)).to.equal("Photo (2).jpg");
+    expect(uniqueEntryName("notes", taken)).to.equal("notes");
+    expect(uniqueEntryName("notes", taken)).to.equal("notes (2)");
+  });
+});

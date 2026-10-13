@@ -1,38 +1,25 @@
-import {
-  Context,
-  Controller,
-  Delete,
-  Get,
-  JSONBody,
-  Parameter,
-  Post,
-  Put,
-  type RequestContext,
-} from "@antelopejs/interface-api";
-import { assert, assertValidation } from "@antelopejs/interface-api-util";
-import { RoleModel, TenantMemberModel } from "@antelopejs/interface-dms/db";
-import { AuthTenantMember } from "@antelopejs/interface-dms/guards";
-import { TenantScopedModel } from "@antelopejs/interface-dms/tenant-scoped-model";
-import type { User } from "@antelopejs/interface-dms/auth/db";
-import { serializeAcl } from "../../acl";
+import { MediaApiController } from "./controller";
+import { Delete, JSONBody, Parameter, Post } from "@antelopejs/interface-api";
+import { assert } from "@antelopejs/interface-api-util";
 import { deleteMediaAsset } from "../../asset-lifecycle";
-import { MediaAssetModel, type MediaFolder, MediaFolderModel } from "../../db";
+import { forgetFavorites } from "../../library/favorites";
+import { type MediaFolder } from "../../db";
 import {
+  comparableName,
   createFolderSchema,
-  folderAclSchema,
   folderVisibilitySchema,
+  MEDIA_ERRORS,
   moveFolderSchema,
+  parseBody,
   renameFolderSchema,
 } from "../../validation/media.schema";
 import {
   assertNotBound,
-  assertPermissionsManager,
+  assertMediaOwner,
   getDescendantFolders,
   type MediaRequestContext,
   requireFolderRight,
-  resolveMediaContext,
 } from "./context";
-import { buildAssetDto, listVisibleFolders, readFolderAclEntries } from "./dto";
 
 const HTTP_BAD_REQUEST = 400;
 const HTTP_FORBIDDEN = 403;
@@ -44,13 +31,14 @@ function assertUniqueSiblingName(
   parentId: string | undefined,
   ignoredId?: string,
 ): void {
+  const wanted = comparableName(name);
   const clash = context.folders.some(
     (folder) =>
       folder._id !== ignoredId &&
       (folder.parentId ?? undefined) === parentId &&
-      folder.name === name,
+      comparableName(folder.name) === wanted,
   );
-  assert(!clash, HTTP_CONFLICT, "A sibling folder already has this name");
+  assert(!clash, HTTP_CONFLICT, MEDIA_ERRORS.folderNameTaken);
 }
 
 function assertCanPlaceUnder(
@@ -65,7 +53,9 @@ function assertCanPlaceUnder(
     );
     return undefined;
   }
-  return requireFolderRight(context, parentId, "manage");
+  const parent = requireFolderRight(context, parentId, "manage");
+  assert(!parent.binding, HTTP_FORBIDDEN, MEDIA_ERRORS.boundParent);
+  return parent;
 }
 
 function buildChildPath(parent: MediaFolder | undefined): string[] {
@@ -141,62 +131,10 @@ function assertMoveTargetOutsideSubtree(
   assert(!insideItself, HTTP_BAD_REQUEST, "Cannot move a folder inside itself");
 }
 
-export class MediaFoldersController extends Controller("/api/media") {
-  @Context()
-  declare ctx: RequestContext;
-
-  @TenantScopedModel(MediaFolderModel)
-  declare folderModel: MediaFolderModel;
-
-  @TenantScopedModel(MediaAssetModel)
-  declare assetModel: MediaAssetModel;
-
-  @TenantScopedModel(RoleModel)
-  declare roleModel: RoleModel;
-
-  @TenantScopedModel(TenantMemberModel)
-  declare memberModel: TenantMemberModel;
-
-  @AuthTenantMember()
-  declare user: User;
-
-  private resolveContext(): Promise<MediaRequestContext> {
-    return resolveMediaContext(this);
-  }
-
-  @Get("/tree")
-  async tree() {
-    const context = await this.resolveContext();
-    return {
-      folders: listVisibleFolders(context),
-      root: {
-        write: context.rootRights.has("write"),
-        manage: context.rootRights.has("manage"),
-      },
-    };
-  }
-
-  @Get("/folders/:folderId/assets")
-  async listAssets(@Parameter("folderId", "param") folderId: string) {
-    const context = await this.resolveContext();
-    requireFolderRight(context, folderId, "read");
-    const assets = await context.assetModel.getByFolder(folderId);
-    return { assets: assets.map((asset) => buildAssetDto(context, asset)) };
-  }
-
-  @Get("/folders/:folderId/acl")
-  async getAcl(@Parameter("folderId", "param") folderId: string) {
-    const context = await this.resolveContext();
-    const folder = requireFolderRight(context, folderId, "manage");
-    await assertPermissionsManager(context);
-    return { entries: readFolderAclEntries(folder) };
-  }
-
+export class MediaFoldersController extends MediaApiController {
   @Post("/folders")
   async createFolder(@JSONBody() body: unknown) {
-    const { name, parentId } = assertValidation(body, (v) =>
-      createFolderSchema.parse(v),
-    );
+    const { name, parentId } = parseBody(body, createFolderSchema);
     const context = await this.resolveContext();
     const parent = assertCanPlaceUnder(context, parentId);
     assertUniqueSiblingName(context, name, parentId);
@@ -206,6 +144,12 @@ export class MediaFoldersController extends Controller("/api/media") {
       path: buildChildPath(parent),
       visibility: "private",
     });
+    await this.record(context, {
+      kind: "folder.create",
+      targetName: name,
+      folderId: parentId,
+      details: { targetId: folderId },
+    });
     return { id: folderId };
   }
 
@@ -214,7 +158,7 @@ export class MediaFoldersController extends Controller("/api/media") {
     @Parameter("folderId", "param") folderId: string,
     @JSONBody() body: unknown,
   ) {
-    const { name } = assertValidation(body, (v) => renameFolderSchema.parse(v));
+    const { name } = parseBody(body, renameFolderSchema);
     const context = await this.resolveContext();
     const folder = requireFolderRight(context, folderId, "manage");
     assertNotBound(folder);
@@ -225,6 +169,12 @@ export class MediaFoldersController extends Controller("/api/media") {
       folderId,
     );
     await context.folderModel.update(folderId, { name });
+    await this.record(context, {
+      kind: "folder.rename",
+      targetName: name,
+      folderId,
+      details: { previous: folder.name },
+    });
     return { ok: true };
   }
 
@@ -233,9 +183,7 @@ export class MediaFoldersController extends Controller("/api/media") {
     @Parameter("folderId", "param") folderId: string,
     @JSONBody() body: unknown,
   ) {
-    const { parentId } = assertValidation(body, (v) =>
-      moveFolderSchema.parse(v),
-    );
+    const { parentId } = parseBody(body, moveFolderSchema);
     const context = await this.resolveContext();
     const folder = requireFolderRight(context, folderId, "manage");
     assertNotBound(folder);
@@ -244,6 +192,12 @@ export class MediaFoldersController extends Controller("/api/media") {
     assertMoveTargetOutsideSubtree(folder, targetParentId, newParent);
     assertUniqueSiblingName(context, folder.name, targetParentId, folderId);
     await applyFolderMove(context, folder, newParent);
+    await this.record(context, {
+      kind: "folder.move",
+      targetName: folder.name,
+      folderId,
+      details: { destination: newParent?.name ?? "" },
+    });
     return { ok: true };
   }
 
@@ -252,28 +206,16 @@ export class MediaFoldersController extends Controller("/api/media") {
     @Parameter("folderId", "param") folderId: string,
     @JSONBody() body: unknown,
   ) {
-    const { visibility } = assertValidation(body, (v) =>
-      folderVisibilitySchema.parse(v),
-    );
-    const context = await this.resolveContext();
-    requireFolderRight(context, folderId, "manage");
-    await assertPermissionsManager(context);
-    await context.folderModel.update(folderId, { visibility });
-    return { ok: true };
-  }
-
-  @Put("/folders/:folderId/acl")
-  async setAcl(
-    @Parameter("folderId", "param") folderId: string,
-    @JSONBody() body: unknown,
-  ) {
-    const { entries } = assertValidation(body, (v) => folderAclSchema.parse(v));
+    const { visibility } = parseBody(body, folderVisibilitySchema);
     const context = await this.resolveContext();
     const folder = requireFolderRight(context, folderId, "manage");
-    assertNotBound(folder);
-    await assertPermissionsManager(context);
-    await context.folderModel.update(folderId, {
-      json_acl: serializeAcl(entries ?? undefined) ?? "",
+    assertMediaOwner(context);
+    await context.folderModel.update(folderId, { visibility });
+    await this.record(context, {
+      kind: "folder.visibility",
+      targetName: folder.name,
+      folderId,
+      details: { visibility: `$dms_media.visibility.${visibility}` },
     });
     return { ok: true };
   }
@@ -293,7 +235,23 @@ export class MediaFoldersController extends Controller("/api/media") {
       );
     }
     const folderIds = [folderId, ...descendants.map((child) => child._id)];
+    const assets = await context.assetModel.getBy("folderId", ...folderIds);
     await deleteFolderTree(context, folderIds);
+    await forgetFavorites(context.tenantId, [
+      ...folderIds,
+      ...assets.map((asset) => asset._id),
+    ]);
+    await this.record(context, {
+      kind: "folder.delete",
+      targetName: folder.name,
+      folderId: folder.parentId,
+      count: assets.length,
+      size: assets.reduce((total, asset) => total + asset.size, 0),
+      details: {
+        files: assets.length,
+        folders: folderIds.length,
+      },
+    });
     return { ok: true };
   }
 }

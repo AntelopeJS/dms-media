@@ -8,6 +8,7 @@ import { CustomComponent } from "@antelopejs/interface-dms/base/custom";
 import type { AxiosInstance } from "axios";
 import { expect } from "chai";
 import { RegisterAssetBinding } from "@antelopejs/interface-dms-media";
+import { readFolderAcl } from "../helpers/folders";
 import { authorizedClient } from "../helpers/http";
 import { ensureOwnerSession } from "../helpers/owner";
 
@@ -85,13 +86,12 @@ describe("[integration] media bindings — linked folder provisioning", () => {
   });
 
   it("stores the derived permission mapping as the folder ACL", async () => {
-    const acl = await client.get(`/api/media/folders/${linkedFolderId}/acl`);
-    expect(acl.status).to.equal(HTTP_OK);
-    expect(acl.data.entries).to.deep.include({
+    const entries = await readFolderAcl(linkedFolderId);
+    expect(entries).to.deep.include({
       subject: { kind: "permission", id: "articles.page" },
       rights: ["read"],
     });
-    expect(acl.data.entries).to.deep.include({
+    expect(entries).to.deep.include({
       subject: { kind: "permission", id: "articles.page.table.edit" },
       rights: ["write"],
     });
@@ -105,19 +105,18 @@ describe("[integration] media bindings — linked folder provisioning", () => {
       (node: FolderNode) => node.name === PAGE_BOUND_FOLDER_NAME,
     );
     expect(folder, "page-bound folder").to.not.equal(undefined);
-    const acl = await client.get(`/api/media/folders/${folder.id}/acl`);
-    expect(acl.status).to.equal(HTTP_OK);
-    expect(acl.data.entries).to.deep.include({
+    const entries = await readFolderAcl(folder.id);
+    expect(entries).to.deep.include({
       subject: { kind: "permission", id: pagePermission },
       rights: ["read"],
     });
-    expect(acl.data.entries).to.deep.include({
+    expect(entries).to.deep.include({
       subject: { kind: "permission", id: pagePermission },
       rights: ["write"],
     });
   });
 
-  it("refuses to restructure or re-ACL linked folders", async () => {
+  it("refuses to restructure linked folders", async () => {
     const renamed = await client.post(
       `/api/media/folders/${linkedFolderId}/rename`,
       { name: "Hijacked" },
@@ -132,11 +131,6 @@ describe("[integration] media bindings — linked folder provisioning", () => {
 
     const deleted = await client.delete(`/api/media/folders/${linkedFolderId}`);
     expect(deleted.status).to.equal(HTTP_FORBIDDEN);
-
-    const reAcl = await client.put(`/api/media/folders/${linkedFolderId}/acl`, {
-      entries: [],
-    });
-    expect(reAcl.status).to.equal(HTTP_FORBIDDEN);
   });
 
   it("provisions a freshly registered binding exactly once under concurrent requests", async () => {
