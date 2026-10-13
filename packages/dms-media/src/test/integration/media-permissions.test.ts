@@ -936,6 +936,7 @@ describe("[integration] media permissions — multi-actor ACL enforcement", () =
           write: [WAREHOUSE_EDIT_PERMISSION],
         },
       });
+      await fetchTree(owner);
       expect(await readFolderAcl(folders.stock)).to.deep.include(
         permissionEntry(WAREHOUSE_VIEW_PERMISSION, ["read"]),
       );
