@@ -2,7 +2,11 @@ import { Logging } from "@antelopejs/interface-core/logging";
 import { GetModel } from "@antelopejs/interface-database-decorators";
 import { TenantModel } from "@antelopejs/interface-dms/db";
 import cron, { type ScheduledTask } from "node-cron";
-import { cleanupAssetFiles, updateAssetMedia } from "../asset-lifecycle";
+import {
+  cleanupAssetFiles,
+  TECHNICAL_MUTATION,
+  updateAssetMedia,
+} from "../asset-lifecycle";
 import { getMediaConfig } from "../config";
 import { type MediaAsset, MediaAssetModel, MediaEventModel } from "../db";
 import { partitionDerivatives } from "../derivatives";
@@ -40,11 +44,16 @@ export async function sweepAssetDerivatives(
     );
     if (Object.keys(stale).length === 0) break;
     if (
-      await updateAssetMedia(assetModel, current, {
-        json_derivatives: Object.keys(fresh).length
-          ? JSON.stringify(fresh)
-          : "",
-      })
+      await updateAssetMedia(
+        assetModel,
+        current,
+        {
+          json_derivatives: Object.keys(fresh).length
+            ? JSON.stringify(fresh)
+            : "",
+        },
+        TECHNICAL_MUTATION,
+      )
     )
       break;
   }

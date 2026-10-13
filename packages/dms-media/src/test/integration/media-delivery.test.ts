@@ -65,7 +65,7 @@ describe("[integration] media delivery — visibility and derivatives", () => {
     expect(bytes.equals(ONE_PIXEL_PNG)).to.equal(true);
   });
 
-  it("serves public assets anonymously with a cacheable redirect", async () => {
+  it("serves public assets anonymously with a redirect revalidated on every use", async () => {
     const flip = await client.post(
       `/api/media/folders/${folderId}/visibility`,
       {
@@ -75,7 +75,7 @@ describe("[integration] media delivery — visibility and derivatives", () => {
     expect(flip.status).to.equal(HTTP_OK);
     const response = await rawGet(`/media/${assetId}/${PNG_NAME}`);
     expect(response.status).to.equal(HTTP_FOUND);
-    expect(response.cacheControl).to.equal("public, max-age=3600");
+    expect(response.cacheControl).to.equal("no-cache");
   });
 
   it("generates a derivative lazily and serves it through the preset route", async () => {

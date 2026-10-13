@@ -74,6 +74,14 @@ export class MediaAsset extends Table {
   @Field("string")
   declare originalKey?: string;
 
+  /** Byte size of the pre-edit file kept in originalKey. */
+  @Field("number")
+  declare originalSize?: number;
+
+  /** JSON-serialized cumulative ImageTransformOps applied to originalKey. */
+  @Field("string")
+  declare json_transform?: string;
+
   @Field("string")
   declare createdBy: string;
 }

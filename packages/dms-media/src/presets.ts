@@ -14,6 +14,12 @@ export interface MediaPresetConfig {
 }
 
 const CACHE_KEY_HASH_LENGTH = 8;
+/**
+ * Bumped whenever the rendering pipeline changes its output (EXIF
+ * orientation, vector density, animation), so derivatives rendered by an
+ * older pipeline get a new cache key and are re-rendered on next request.
+ */
+const DERIVATIVE_RENDERER_VERSION = 2;
 
 export const SVG_MIMETYPE = "image/svg+xml";
 export const RASTERIZED_SVG_FORMAT: PresetFormat = "png";
@@ -38,6 +44,7 @@ export const DEFAULT_PRESETS: MediaPresetConfig[] = [
 
 export function presetCacheKey(preset: MediaPresetConfig): string {
   const signature = JSON.stringify({
+    renderer: DERIVATIVE_RENDERER_VERSION,
     width: preset.width,
     height: preset.height,
     fit: preset.fit,

@@ -1,6 +1,13 @@
 import { DeleteFile, FileExists } from "@antelopejs/interface-file-storage";
-import { type MediaAsset, MediaAssetModel } from "./db";
+import {
+  type MediaAsset,
+  MediaAssetModel,
+  type MediaMutationOptions,
+} from "./db";
 import { collectAssetStorageKeys } from "./routes/media/storage-keys";
+
+/** Bookkeeping write (derivatives, file queue) that leaves `updatedAt` alone. */
+export const TECHNICAL_MUTATION: MediaMutationOptions = { touchesAsset: false };
 
 /** Reads the durable, retryable file deletion queue for an asset. */
 export function retiredFiles(asset: MediaAsset): string[] {
@@ -12,6 +19,7 @@ export async function updateAssetMedia(
   model: MediaAssetModel,
   asset: MediaAsset,
   patch: Partial<MediaAsset>,
+  options?: MediaMutationOptions,
 ): Promise<boolean> {
   if (asset.isDeleting) return false;
   const next = MediaAssetModel.fromPlainData(
@@ -25,10 +33,14 @@ export async function updateAssetMedia(
   const retired = collectAssetStorageKeys(asset).filter(
     (key) => !live.has(key),
   );
-  return model.compareMedia(asset, {
-    ...patch,
-    json_retiredFiles: JSON.stringify([...new Set([...pending, ...retired])]),
-  });
+  return model.compareMedia(
+    asset,
+    {
+      ...patch,
+      json_retiredFiles: JSON.stringify([...new Set([...pending, ...retired])]),
+    },
+    options,
+  );
 }
 
 async function acknowledgeFile(
@@ -43,9 +55,11 @@ async function acknowledgeFile(
       (candidate) => candidate !== key,
     );
     if (
-      await model.compareMedia(fresh, {
-        json_retiredFiles: JSON.stringify(pending),
-      })
+      await model.compareMedia(
+        fresh,
+        { json_retiredFiles: JSON.stringify(pending) },
+        TECHNICAL_MUTATION,
+      )
     )
       return;
   }
