@@ -1,6 +1,6 @@
 {
   "name": "@antelopejs/interface-dms-media",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "AntelopeJS interface for the DMS media module: declare asset fields and the media folders bound to them from any module",
   "keywords": [
     "antelopejs",
