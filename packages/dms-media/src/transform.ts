@@ -47,7 +47,7 @@ export interface RenderedTransform {
   bytes: Buffer;
   width?: number;
   height?: number;
-  cumulative?: ImageTransformOps;
+  cumulative: ImageTransformOps;
 }
 
 function rotatedDimensions(
@@ -141,23 +141,20 @@ export async function renderTransform(
 }
 
 /**
- * Renders an edit from the untouched original whenever the operations
- * already applied are known, so successive edits never stack re-encodings.
- * Images edited before cumulative tracking fall back to the current file.
+ * Renders an edit from the untouched original with the operations already
+ * applied, so successive edits never stack re-encodings.
  */
 export async function renderAssetTransform(
   asset: MediaAsset,
   ops: ImageTransformOps,
 ): Promise<RenderedTransform> {
-  const isLegacyEdit = Boolean(asset.originalKey) && !asset.json_transform;
-  const cumulative = isLegacyEdit
-    ? undefined
-    : composeTransforms(parseTransform(asset.json_transform), ops);
-  const sourceKey = isLegacyEdit
-    ? asset.storageKey
-    : asset.originalKey || asset.storageKey;
+  const cumulative = composeTransforms(
+    parseTransform(asset.json_transform),
+    ops,
+  );
+  const sourceKey = asset.originalKey || asset.storageKey;
   const source = await downloadStorageBytes(sourceKey, asset.storage);
-  const bytes = await renderTransform(source, cumulative ?? ops);
+  const bytes = await renderTransform(source, cumulative);
   const metadata = await sharp(bytes).metadata();
   return { bytes, width: metadata.width, height: metadata.height, cumulative };
 }
@@ -184,7 +181,7 @@ function originalPatch(asset: MediaAsset): Partial<MediaAsset> {
   if (asset.originalKey) {
     return {
       originalKey: asset.originalKey,
-      originalSize: asset.originalSize ?? 0,
+      originalSize: asset.originalSize,
     };
   }
   return { originalKey: asset.storageKey, originalSize: asset.size };
@@ -206,9 +203,7 @@ export async function applyImageTransform(
   await commitTransform(assetModel, asset, {
     storageKey,
     ...originalPatch(asset),
-    json_transform: rendered.cumulative
-      ? JSON.stringify(rendered.cumulative)
-      : "",
+    json_transform: JSON.stringify(rendered.cumulative),
     width: rendered.width,
     height: rendered.height,
     size: rendered.bytes.byteLength,

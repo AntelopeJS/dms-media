@@ -24,7 +24,7 @@ import {
 } from "../../validation/media.schema";
 import {
   assertNotBound,
-  assertPermissionsManager,
+  assertMediaOwner,
   getDescendantFolders,
   type MediaRequestContext,
   requireFolderRight,
@@ -146,7 +146,7 @@ export class MediaFoldersController extends MediaApiController {
   async getAcl(@Parameter("folderId", "param") folderId: string) {
     const context = await this.resolveContext();
     const folder = requireFolderRight(context, folderId, "manage");
-    await assertPermissionsManager(context);
+    assertMediaOwner(context);
     return { entries: readFolderAclEntries(folder) };
   }
 
@@ -227,7 +227,7 @@ export class MediaFoldersController extends MediaApiController {
     const { visibility } = parseBody(body, folderVisibilitySchema);
     const context = await this.resolveContext();
     const folder = requireFolderRight(context, folderId, "manage");
-    await assertPermissionsManager(context);
+    assertMediaOwner(context);
     await context.folderModel.update(folderId, { visibility });
     await this.record(context, {
       kind: "folder.visibility",
@@ -247,7 +247,7 @@ export class MediaFoldersController extends MediaApiController {
     const context = await this.resolveContext();
     const folder = requireFolderRight(context, folderId, "manage");
     assertNotBound(folder);
-    await assertPermissionsManager(context);
+    assertMediaOwner(context);
     await context.folderModel.update(folderId, {
       json_acl: serializeAcl(entries ?? undefined) ?? "",
     });

@@ -2,13 +2,10 @@
 //
 // Runs a real project with `@antelopejs/core`'s `launch` in watch mode: two
 // consumer modules declared BEFORE dms-media declare an AssetType field at load
-// time, one through `@antelopejs/interface-dms-media`, one through the
-// deprecated `@antelopejs/dms-media` re-export. Then it reloads a consumer and
-// dms-media itself, and checks that dms-media's routes, pages and page topics
-// stay owned by dms-media, survive the consumer's reload, and are evaluated
-// again from the edited file when dms-media reloads. The media permissions 0.2
-// offered stay owner-only through every generation, and no longer once
-// dms-media is gone.
+// time through `@antelopejs/interface-dms-media`. Then it reloads the consumer
+// and dms-media itself, and checks that dms-media's routes, pages and page
+// topics stay owned by dms-media, survive the consumer's reload, and are
+// evaluated again from the edited file when dms-media reloads.
 //
 // Expects `pnpm run build` to have run: it loads the module from `dist`.
 
@@ -31,7 +28,6 @@ const PACKAGE_ROOT = path.resolve(
 );
 const CONSTANTS_FILE = path.join(PACKAGE_ROOT, "dist", "constants.js");
 // Required once the project runs: a copy loaded before `launch` is refused.
-const requireFromMedia = createRequire(path.join(PACKAGE_ROOT, "package.json"));
 function findFreePort() {
   return new Promise((resolve, reject) => {
     const server = net.createServer();
@@ -53,18 +49,11 @@ const HTTP_UNAUTHORIZED = 401;
 const HTTP_BAD_REQUEST = 400;
 const MEDIA_MODULE = "dms-media";
 const CONSUMER_MODULE = "consumer";
-const LEGACY_CONSUMER_MODULE = "legacy-consumer";
 const ORIGINAL_TOPIC = "media.library";
 const EDITED_TOPIC = "media.library.reloaded";
 const FILES_PAGE_PERMISSION = "modules.media.library.files";
-const RETIRED_PERMISSIONS = [
-  "media.upload",
-  "media.folders.manage",
-  "media.permissions.manage",
-];
 const CONSUMER_BINDING = "reload-probe.cover";
 const CONSUMER_FOLDER = "Reload probe covers";
-const LEGACY_BINDING = "reload-probe.legacy";
 const OWNER = {
   firstName: "Reload",
   lastName: "Owner",
@@ -107,19 +96,6 @@ async function writeConsumer(folder, manifest, source) {
 
 // Stands in for the npm copy a consumer installs: the manifest and the
 // `exports` target, nothing of the module itself.
-async function installLegacyDependency(folder) {
-  const target = path.join(folder, "node_modules", "@antelopejs", "dms-media");
-  await fs.mkdir(path.join(target, "dist"), { recursive: true });
-  await fs.copyFile(
-    path.join(PACKAGE_ROOT, "package.json"),
-    path.join(target, "package.json"),
-  );
-  await fs.copyFile(
-    path.join(PACKAGE_ROOT, "dist", "public.js"),
-    path.join(target, "dist", "public.js"),
-  );
-}
-
 function packageSource(name, version) {
   return { source: { type: "package", package: name, version } };
 }
@@ -130,9 +106,6 @@ function projectConfig(mongoUrl, storagePath) {
     cacheFolder: path.join(PACKAGE_ROOT, ".antelope", "cache"),
     logging: { channelFilter: { "*": "error" } },
     modules: {
-      [LEGACY_CONSUMER_MODULE]: {
-        source: { type: "local", path: "./legacy-consumer", main: "index.js" },
-      },
       [CONSUMER_MODULE]: {
         source: { type: "local", path: "./consumer", main: "index.js" },
       },
@@ -227,17 +200,6 @@ function isMediaId(id) {
   return typeof key === "string" && MEDIA_ID_PATTERN.test(key);
 }
 
-function markedRetiredPermissions() {
-  const { IsModuleScopedPermission } = requireFromMedia(
-    "@antelopejs/interface-dms/permissions",
-  );
-  return RETIRED_PERMISSIONS.filter((id) => IsModuleScopedPermission(id));
-}
-
-function retiredPermissionsStayOwnerOnly() {
-  return markedRetiredPermissions().length === RETIRED_PERMISSIONS.length;
-}
-
 function ownersOf(entries) {
   return new Set(entries.map((entry) => entry.owner));
 }
@@ -325,17 +287,6 @@ describe("hot reload keeps dms-media's registrations with dms-media", () => {
         1,
       ),
     );
-    const legacyFolder = path.join(projectFolder, "legacy-consumer");
-    await writeConsumer(
-      legacyFolder,
-      {
-        name: "reload-legacy-consumer",
-        dependencies: { ...CONSUMER_INTERFACES, "@antelopejs/dms-media": "*" },
-      },
-      consumerSource("@antelopejs/dms-media", LEGACY_BINDING, "Legacy", 1),
-    );
-    await installLegacyDependency(legacyFolder);
-
     const config = projectConfig(mongo.getUri(), storagePath);
     await fs.writeFile(
       path.join(projectFolder, "antelope.config.ts"),
@@ -349,7 +300,6 @@ describe("hot reload keeps dms-media's registrations with dms-media", () => {
     if (manager) {
       await manager.stopAll();
       await manager.destroyAll();
-      assert.deepEqual(markedRetiredPermissions(), []);
     }
     await mongo?.stop();
     if (projectFolder) {
@@ -362,10 +312,6 @@ describe("hot reload keeps dms-media's registrations with dms-media", () => {
     const topic = findFilesPageTopic();
     assert.equal(topic?.module, MEDIA_MODULE);
     assert.equal(pageTopicPair(topic.id)[1], ORIGINAL_TOPIC);
-    for (const id of RETIRED_PERMISSIONS) {
-      assert.equal(findEntry(id), undefined, `${id} is not registered`);
-    }
-    assert.ok(retiredPermissionsStayOwnerOnly(), "retired ids are owner-only");
     initialMediaKeys = registrationKeys(ownedBy(MEDIA_MODULE));
     assert.ok(
       initialMediaKeys.length > 0,
@@ -380,7 +326,6 @@ describe("hot reload keeps dms-media's registrations with dms-media", () => {
       new Set([MEDIA_MODULE]),
     );
     assert.equal(findEntry(CONSUMER_BINDING)?.module, CONSUMER_MODULE);
-    assert.equal(findEntry(LEGACY_BINDING)?.module, LEGACY_CONSUMER_MODULE);
   });
 
   it("keeps routes, pages and topics through a consumer reload", async () => {
@@ -415,9 +360,6 @@ describe("hot reload keeps dms-media's registrations with dms-media", () => {
       "dms-media to register the edited topic",
       () => pageTopicPair(findFilesPageTopic()?.id)?.[1] === EDITED_TOPIC,
     );
-    await waitFor("the retired permissions to be marked again", () =>
-      retiredPermissionsStayOwnerOnly(),
-    );
 
     assert.equal(await mediaTreeStatus(), HTTP_UNAUTHORIZED);
     const mediaEntries = ownedBy(MEDIA_MODULE);
@@ -427,7 +369,7 @@ describe("hot reload keeps dms-media's registrations with dms-media", () => {
     assert.ok(!mediaOwners.has([...reloadedOwners][0]), "a new generation");
   });
 
-  it("replays the consumers' bindings to the reloaded generation", async () => {
+  it("replays the consumer's binding to the reloaded generation", async () => {
     const token = await ownerToken();
     const tree = await request("/api/media/tree", {
       headers: { authorization: `Bearer ${token}` },
@@ -436,6 +378,5 @@ describe("hot reload keeps dms-media's registrations with dms-media", () => {
     const { folders } = await tree.json();
     const names = folders.map((folder) => folder.name);
     assert.ok(names.includes(CONSUMER_FOLDER), names.join(", "));
-    assert.ok(names.includes("Legacy"), names.join(", "));
   });
 });

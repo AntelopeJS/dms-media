@@ -4,10 +4,7 @@ import type {
   RoleModel,
   TenantMemberModel,
 } from "@antelopejs/interface-dms/db";
-import {
-  GetEffectiveUserPermissions,
-  HasPermission,
-} from "@antelopejs/interface-dms/permissions";
+import { GetEffectiveUserPermissions } from "@antelopejs/interface-dms/permissions";
 import { getRequestTenantId } from "@antelopejs/interface-dms/request-tenant";
 import type { User } from "@antelopejs/interface-dms/auth/db";
 import {
@@ -19,7 +16,7 @@ import {
 } from "../../acl";
 import { ensureTenantBindings } from "../../bindings";
 import { getMediaConfig } from "../../config";
-import { MEDIA_PERMISSIONS_MANAGE_PERMISSION } from "../../constants";
+import { OWNER_WILDCARD_PERMISSION } from "../../constants";
 import type { MediaAssetModel, MediaFolder, MediaFolderModel } from "../../db";
 import type { AclRight } from "../../types";
 
@@ -143,14 +140,13 @@ export function requireFolderRight(
   return folder;
 }
 
-export async function assertPermissionsManager(
-  context: MediaRequestContext,
-): Promise<void> {
-  const allowed = await HasPermission(
-    context.permissions,
-    MEDIA_PERMISSIONS_MANAGE_PERMISSION,
-  );
-  assert(allowed, HTTP_FORBIDDEN, "Missing media permissions management");
+/** Whether the actor owns the tenant: media pages and access settings are owner-only. */
+export function isMediaOwner(context: MediaRequestContext): boolean {
+  return context.permissions.has(OWNER_WILDCARD_PERMISSION);
+}
+
+export function assertMediaOwner(context: MediaRequestContext): void {
+  assert(isMediaOwner(context), HTTP_FORBIDDEN, "Reserved to the owner");
 }
 
 export function assertNotBound(folder: MediaFolder): void {

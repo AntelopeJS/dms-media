@@ -6,7 +6,6 @@ import {
   resolveFolderAccess,
   resolveRootRights,
 } from "../../../acl/resolver";
-import { RETIRED_MEDIA_PERMISSIONS } from "../../../constants";
 import { MEDIA_PAGE_PERMISSION } from "../../../pages/files";
 import type { MediaFolder } from "../../../db/tables";
 import type { AclEntry } from "../../../types";
@@ -217,10 +216,7 @@ describe("[unit] acl/resolver — resolveFolderAccess", () => {
 
   it("grants members nothing at the root by default", () => {
     const folders = [buildFolder({ id: "root" })];
-    const actor = buildActor([
-      MEDIA_PAGE_PERMISSION,
-      ...RETIRED_MEDIA_PERMISSIONS,
-    ]);
+    const actor = buildActor([MEDIA_PAGE_PERMISSION]);
     expect(resolveRootRights(actor, DEFAULT_ROOT_ACL).size).to.equal(0);
     const access = resolveFolderAccess(folders, actor, DEFAULT_ROOT_ACL);
     expect(access.readable.size).to.equal(0);

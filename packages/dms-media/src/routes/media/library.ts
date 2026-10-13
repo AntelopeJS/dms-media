@@ -1,10 +1,8 @@
 import { Get, JSONBody, Parameter, Post } from "@antelopejs/interface-api";
 import { assert, assertValidation } from "@antelopejs/interface-api-util";
-import { HasPermission } from "@antelopejs/interface-dms/permissions";
 import { GetModel } from "@antelopejs/interface-database-decorators";
 import { UserModel } from "@antelopejs/interface-dms/auth/db";
 import { getMediaConfig } from "../../config";
-import { MEDIA_PERMISSIONS_MANAGE_PERMISSION } from "../../constants";
 import type { MediaAsset, MediaFolder } from "../../db";
 import type { FolderVisibility } from "../../types";
 import { filterAssets } from "../../library/asset-filters";
@@ -37,6 +35,7 @@ import { requireReadableAsset } from "./assets";
 import { MediaApiController } from "./controller";
 import {
   getDescendantFolders,
+  isMediaOwner,
   type MediaRequestContext,
   requireFolderRight,
   requireVisibleFolder,
@@ -189,10 +188,9 @@ export class MediaLibraryController extends MediaApiController {
   @Get("/tree")
   async tree() {
     const context = await this.resolveContext();
-    const [assets, starred, canManagePermissions] = await Promise.all([
+    const [assets, starred] = await Promise.all([
       readableAssets(context),
       loadStarredTargets(this.owner(context)),
-      HasPermission(context.permissions, MEDIA_PERMISSIONS_MANAGE_PERMISSION),
     ]);
     const stats = computeFolderStats(context.folders, assets);
     return {
@@ -208,7 +206,7 @@ export class MediaLibraryController extends MediaApiController {
         starred,
         treeViewScope(context, this.readQuery().folderId),
       ),
-      canManagePermissions,
+      isOwner: isMediaOwner(context),
       maxUploadBytes: MAX_UPLOAD_SIZE_BYTES,
       allowedMimetypes: [...getMediaConfig().allowedMimetypes],
       quotaBytes: getMediaConfig().storageQuotaBytes ?? null,

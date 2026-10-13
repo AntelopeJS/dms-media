@@ -6,10 +6,7 @@ import {
 } from "@antelopejs/interface-dms/permissions";
 import { expect } from "chai";
 import { filterGrantablePermissions } from "../../../acl/grantable";
-import {
-  OWNER_WILDCARD_PERMISSION,
-  RETIRED_MEDIA_PERMISSIONS,
-} from "../../../constants";
+import { OWNER_WILDCARD_PERMISSION } from "../../../constants";
 import { MEDIA_PAGE_PERMISSION } from "../../../pages/files";
 import { withPermissionAncestors } from "../../helpers/permission-ancestors";
 
@@ -74,21 +71,6 @@ describe("[unit] acl/grantable — filterGrantablePermissions", () => {
       new Set(withPermissionAncestors([MEDIA_PAGE_PERMISSION])),
     );
     expect(filtered.size).to.equal(0);
-  });
-
-  it("drops the retired media permissions a stored role may still hold", async () => {
-    const filtered = await filterGrantablePermissions(
-      new Set(
-        withPermissionAncestors([
-          REGULAR_PERMISSION,
-          ...RETIRED_MEDIA_PERMISSIONS,
-        ]),
-      ),
-    );
-    for (const permissionId of RETIRED_MEDIA_PERMISSIONS) {
-      expect(filtered.has(permissionId), permissionId).to.equal(false);
-    }
-    expect(filtered.has(REGULAR_PERMISSION)).to.equal(true);
   });
 
   it("returns the owner wildcard set unchanged", async () => {

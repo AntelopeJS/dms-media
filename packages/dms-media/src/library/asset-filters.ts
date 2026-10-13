@@ -38,9 +38,9 @@ export interface AssetFilterContext {
 
 function matchesOrientation(
   asset: MediaAsset,
-  orientation: OrientationFilter | undefined,
+  orientation: OrientationFilter,
 ): boolean {
-  if (!orientation || orientation === "any") return true;
+  if (orientation === "any") return true;
   if (!asset.width || !asset.height) return false;
   return ORIENTATION_TESTS[orientation](asset.width, asset.height);
 }

@@ -55,8 +55,7 @@ function percentOf(part: number, total: number): number {
 
 /** Bytes an asset keeps in storage: its current file and, once edited, its original. */
 export function storedSize(asset: MediaAsset): number {
-  const original = asset.originalKey ? (asset.originalSize ?? 0) : 0;
-  return asset.size + original;
+  return asset.size + (asset.originalSize ?? 0);
 }
 
 function totalSize(assets: MediaAsset[]): number {

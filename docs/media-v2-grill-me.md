@@ -424,11 +424,12 @@ owner-only: Settings › Roles offered them to members for nothing, ticking one
 silently added `modules.media.library.files` as a hidden dependency that
 unticking left behind, and since the DMS skips a dependency that is not
 registered, `media.upload` alone gave `write` on the whole library through the
-default root ACL. The module no longer registers them and marks them
-module-scoped while it runs, so a role saved with one grants nothing and no
-data needs migrating. The default `rootAcl` is now empty (owners hold every
-right through the wildcard), linked folders no longer carry `manage` entries,
-and editing folder ACLs or the visibility of files and folders is owner-only.
+default root ACL. The module no longer declares them at all: owner-only
+actions check the owner wildcard (`*`), and projects start from a fresh
+database, so nothing is migrated. The default `rootAcl` is now empty (owners
+hold every right through the wildcard), linked folders no longer carry
+`manage` entries, and changing the visibility of files and folders is
+owner-only.
 Members keep every right Q10.15 lists in the linked folders of their pages.
 `src/test/integration/media-member-access.test.ts` covers it.
 

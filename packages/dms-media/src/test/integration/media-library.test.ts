@@ -6,7 +6,6 @@ import {
   uploadAssetInBatch,
   uploadTextAsset,
 } from "../helpers/assets";
-import { RETIRED_MEDIA_PERMISSIONS } from "../../constants";
 import { authorizedClient } from "../helpers/http";
 import { ensureOwnerSession } from "../helpers/owner";
 
@@ -87,7 +86,7 @@ describe("[integration] media library — listings, search, bulk and overview", 
     expect(root.size).to.be.greaterThan(0);
     expect(response.data.views.missingAlt).to.be.at.least(3);
     expect(response.data.maxUploadBytes).to.equal(500 * 1024 * 1024);
-    expect(response.data.canManagePermissions).to.equal(true);
+    expect(response.data.isOwner).to.equal(true);
   });
 
   it("pages, sorts and filters a folder listing with type facets", async () => {
@@ -353,14 +352,6 @@ describe("[integration] media library — listings, search, bulk and overview", 
     expect(response.data.isOwn).to.equal(false);
     expect(response.data.rights.manage.count).to.be.at.least(1);
     expect(response.data.canEdit).to.equal(true);
-    const subjects = await client.get("/api/media/access/subjects");
-    expect(subjects.status).to.equal(HTTP_OK);
-    const subjectIds = subjects.data.permissions.map(
-      (entry: { id: string }) => entry.id,
-    );
-    for (const permissionId of RETIRED_MEDIA_PERMISSIONS) {
-      expect(subjectIds).to.not.include(permissionId);
-    }
   });
 
   it("lists delivery presets with their cache keys", async () => {

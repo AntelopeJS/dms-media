@@ -2,12 +2,10 @@ import { Get, Parameter } from "@antelopejs/interface-api";
 import {
   GetPermission,
   GetPermissions,
-  HasPermission,
   type PermissionTree,
 } from "@antelopejs/interface-dms/permissions";
 import type { RoleModel } from "@antelopejs/interface-dms/db";
 import { getMediaConfig } from "../../config";
-import { MEDIA_PERMISSIONS_MANAGE_PERMISSION } from "../../constants";
 import {
   buildInheritanceChain,
   buildRightsStats,
@@ -18,7 +16,11 @@ import {
 import { loadAssetsInFolders } from "../../library/listing";
 import type { AclEntry } from "../../types";
 import { MediaApiController } from "./controller";
-import { assertPermissionsManager, requireVisibleFolder } from "./context";
+import {
+  assertMediaOwner,
+  isMediaOwner,
+  requireVisibleFolder,
+} from "./context";
 import { buildFolderDto } from "./dto";
 
 const ROOT_NAME = "$dms_media.library.root";
@@ -82,7 +84,7 @@ export class MediaAccessController extends MediaApiController {
         memberModel: this.memberModel,
         roleModel: this.roleModel,
       }),
-      HasPermission(context.permissions, MEDIA_PERMISSIONS_MANAGE_PERMISSION),
+      isMediaOwner(context),
       context.access.readable.has(folderId)
         ? loadAssetsInFolders(context.assetModel, [folderId])
         : Promise.resolve([]),
@@ -142,7 +144,7 @@ export class MediaAccessController extends MediaApiController {
   @Get("/access/subjects")
   async subjects() {
     const context = await this.resolveContext();
-    await assertPermissionsManager(context);
+    assertMediaOwner(context);
     const [roles, tree] = await Promise.all([
       this.roleModel.getAll(),
       GetPermissions(),

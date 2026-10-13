@@ -6,7 +6,6 @@ import {
   type DmsMediaConfig,
   getMediaConfig,
 } from "../../config";
-import { RETIRED_MEDIA_PERMISSIONS } from "../../constants";
 import { GetPermissionId } from "@antelopejs/interface-dms/page";
 import { UserModel } from "@antelopejs/interface-dms/auth/db";
 import { DEFAULT_TENANT_ID } from "@antelopejs/interface-dms/constants";
@@ -73,7 +72,6 @@ interface WorldRoles {
   viewer: string;
   uploader: string;
   folderManager: string;
-  legacyManager: string;
   clerk: string;
   secretTeam: string;
   latecomer: string;
@@ -84,7 +82,6 @@ interface WorldSessions {
   viewer: MemberSession;
   uploader: MemberSession;
   folderManager: MemberSession;
-  legacyManager: MemberSession;
   clerk: MemberSession;
   secretMember: MemberSession;
   hybrid: MemberSession;
@@ -187,15 +184,11 @@ async function createWorldRoles(): Promise<WorldRoles> {
     viewer,
     uploader,
     folderManager,
-    legacyManager,
     clerk,
     secretTeam,
     latecomer,
   ] = await Promise.all([
-    createRole("media-page-holder", [
-      MEDIA_PAGE_PERMISSION,
-      ...RETIRED_MEDIA_PERMISSIONS,
-    ]),
+    createRole("media-page-holder", [MEDIA_PAGE_PERMISSION]),
     createRole("media-viewer", [LIBRARY_VIEW_PERMISSION]),
     createRole("media-uploader", [
       LIBRARY_VIEW_PERMISSION,
@@ -204,11 +197,6 @@ async function createWorldRoles(): Promise<WorldRoles> {
     createRole("media-folder-manager", [
       LIBRARY_VIEW_PERMISSION,
       LIBRARY_MANAGE_PERMISSION,
-    ]),
-    createRole("media-legacy-manager", [
-      LIBRARY_VIEW_PERMISSION,
-      LIBRARY_MANAGE_PERMISSION,
-      ...RETIRED_MEDIA_PERMISSIONS,
     ]),
     createRole("warehouse-clerk", [WAREHOUSE_EDIT_PERMISSION]),
     createRole("secret-team", []),
@@ -219,7 +207,6 @@ async function createWorldRoles(): Promise<WorldRoles> {
     viewer,
     uploader,
     folderManager,
-    legacyManager,
     clerk,
     secretTeam,
     latecomer,
@@ -232,7 +219,6 @@ async function registerWorldMembers(roles: WorldRoles): Promise<WorldSessions> {
     viewer: await registerMember("Viewer", [roles.viewer]),
     uploader: await registerMember("Uploader", [roles.uploader]),
     folderManager: await registerMember("FolderManager", [roles.folderManager]),
-    legacyManager: await registerMember("LegacyManager", [roles.legacyManager]),
     clerk: await registerMember("Clerk", [roles.clerk]),
     secretMember: await registerMember("SecretMember", [roles.secretTeam]),
     hybrid: await registerMember("Hybrid", [roles.viewer, roles.secretTeam]),
@@ -347,7 +333,7 @@ describe("[integration] media permissions — multi-actor ACL enforcement", () =
       expect(tree.root).to.include({ write: false, manage: false });
     });
 
-    it("grants nothing through the All files page permission nor the retired media permissions", async () => {
+    it("grants nothing through the All files page permission", async () => {
       const tree = await fetchTree(sessions.pageHolder.client);
       expect(tree.folders).to.deep.equal([]);
       expect(tree.root).to.include({ write: false, manage: false });
@@ -773,22 +759,22 @@ describe("[integration] media permissions — multi-actor ACL enforcement", () =
       expect(cleanup.status).to.equal(HTTP_OK);
     });
 
-    it("keeps ACL and visibility edition owner-only, even for a stored role holding media.permissions.manage", async () => {
-      const aclRead = await sessions.legacyManager.client.get(
+    it("keeps ACL and visibility edition owner-only, even for a folder manager", async () => {
+      const aclRead = await sessions.folderManager.client.get(
         `/api/media/folders/${folders.depot}/acl`,
       );
       expect(aclRead.status).to.equal(HTTP_FORBIDDEN);
-      const aclWrite = await sessions.legacyManager.client.put(
+      const aclWrite = await sessions.folderManager.client.put(
         `/api/media/folders/${folders.depot}/acl`,
         { entries: [] },
       );
       expect(aclWrite.status).to.equal(HTTP_FORBIDDEN);
-      const folderFlip = await sessions.legacyManager.client.post(
+      const folderFlip = await sessions.folderManager.client.post(
         `/api/media/folders/${folders.depot}/visibility`,
         { visibility: "public" },
       );
       expect(folderFlip.status).to.equal(HTTP_FORBIDDEN);
-      const assetFlip = await sessions.legacyManager.client.post(
+      const assetFlip = await sessions.folderManager.client.post(
         `/api/media/assets/${assets.notes.id}/visibility`,
         { visibility: "public" },
       );

@@ -14,12 +14,7 @@
     "src"
   ],
   "main": "dist/index.js",
-  "types": "dist/public.d.ts",
   "exports": {
-    ".": {
-      "types": "./dist/public.d.ts",
-      "default": "./dist/public.js"
-    },
     "./package.json": "./package.json"
   },
   "publishConfig": {

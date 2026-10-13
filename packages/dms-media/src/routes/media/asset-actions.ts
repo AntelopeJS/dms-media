@@ -6,7 +6,7 @@ import { forgetFavorites } from "../../library/favorites";
 import type { AssetVisibility } from "../../types";
 import { comparableName, MEDIA_ERRORS } from "../../validation/media.schema";
 import {
-  assertPermissionsManager,
+  assertMediaOwner,
   type MediaRequestContext,
   requireFolderRight,
 } from "./context";
@@ -85,7 +85,7 @@ export async function moveAsset(
   const targetFolder = requireFolderRight(context, folderId, "write");
   if (sourceFolder._id === targetFolder._id) return;
   if (changesEffectiveVisibility(asset, sourceFolder, targetFolder)) {
-    await assertPermissionsManager(context);
+    assertMediaOwner(context);
   }
   await context.assetModel.update(asset._id, { folderId });
   await recordMediaEvent(context, {
@@ -103,7 +103,7 @@ export async function setAssetVisibility(
   visibility: AssetVisibility,
 ): Promise<void> {
   requireFolderRight(context, asset.folderId, "manage");
-  await assertPermissionsManager(context);
+  assertMediaOwner(context);
   await context.assetModel.update(asset._id, { visibility });
   await recordMediaEvent(context, {
     kind: "asset.visibility",

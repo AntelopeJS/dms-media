@@ -49,7 +49,7 @@ export function useFileDetails(assetId: Ref<string | undefined>, order: Ref<File
 	)
 	const canWrite = computed(() => Boolean(details.value?.folder.rights.write))
 	const canChangeVisibility = computed(
-		() => Boolean(details.value?.folder.rights.manage) && Boolean(tree.value?.canManagePermissions),
+		() => Boolean(details.value?.folder.rights.manage) && Boolean(tree.value?.isOwner),
 	)
 
 	function fetchSiblings(folderId: string, offset: number): Promise<AssetPage> {

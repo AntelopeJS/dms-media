@@ -82,7 +82,7 @@ export interface MediaTree {
 	folders: MediaFolder[]
 	root: MediaRootInfo
 	views: MediaViewCounts
-	canManagePermissions: boolean
+	isOwner: boolean
 	maxUploadBytes: number
 	/** Mimetype patterns the library accepts at all, from the module config. */
 	allowedMimetypes: string[]

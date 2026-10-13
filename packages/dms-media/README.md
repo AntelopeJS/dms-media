@@ -38,10 +38,9 @@ The module registers no permission: nothing about media is offered in Settings â
 
 | Permission | Effect |
 |---|---|
-| `modules.media.library.files` | Page permission of Library. It replaces `settings.media.assets` of 0.2. Like every module page permission it is owner-only: it is not listed in Roles and `HasPermission` refuses it to any non-owner. It grants no folder right |
-| `media.upload`, `media.folders.manage`, `media.permissions.manage` | Retired: 0.2 offered them in Roles. They are no longer registered and stay owner-only while the module runs, so a stored role that still holds one grants nothing, and an ACL entry naming one only matches owners. Remove them from roles at your pace, and see [Upgrading from 0.2](#upgrading-from-02) for the ACLs that name them |
+| `modules.media.library.files` | Page permission of Library. Like every module page permission it is owner-only: it is not listed in Roles and `HasPermission` refuses it to any non-owner. It grants no folder right |
 
-Per-folder rights are the single authority for operations: upload requires `write` on the target folder, folder structure changes require `manage`. The owner holds every right on every folder. Editing a folder ACL and changing a file or folder visibility are owner-only.
+Per-folder rights are the single authority for operations: upload requires `write` on the target folder, folder structure changes require `manage`. The owner holds every right on every folder. Changing a file or folder visibility is owner-only.
 
 ## Access model
 
@@ -68,17 +67,6 @@ export class ArticlesPage extends PageController("articles", { displayName: "Art
 ```
 
 The page permission must be an explicit grant of the role: a page every member opens by default (`memberAccess`, `publicAccess`) grants no folder right, because folder ACL subjects match the permissions a member holds. In a linked folder, the member can upload, describe, rename, move, delete and edit every file of the folder, whoever added it; making a file public or private stays with the owner. The rest of the library stays closed to members: the default root ACL grants nothing, and only a permission or role a project adds to `rootAcl`, or to a folder's own ACL through the API, opens it to the picker.
-
-### Upgrading from 0.2
-
-Nothing migrates stored data, so check these before upgrading a project:
-
-- The Media pages move under `/modules/media/...` and their permission ids to `modules.media.*` (`settings.media.assets` becomes `modules.media.library.files`). These ids are owner-only: a role cannot be given them.
-- `media.upload`, `media.folders.manage` and `media.permissions.manage` are retired. A role that holds them keeps them but they grant nothing, and an ACL entry naming one now only matches owners: replace it with a project page permission or a role.
-- The default `rootAcl` is empty, where 0.2 opened the whole library to the holders of the page and of those permissions. Members now reach only the linked folders of their pages: add entries to `rootAcl` to keep a wider access.
-- Linked folders no longer grant `manage`; their ACL is rewritten when the folder is provisioned again.
-- Uploads are checked against `allowedMimetypes` (a default allow-list), `storageQuotaBytes` is enforced, and refusals answer the 415/413/422 bodies described under [HTTP surface](#http-surface).
-- `/media/...` redirects are no longer cacheable, SVG, HTML and XML files are served by the API under a sandbox policy, and `GET /api/media/stats/folders|largest` are removed.
 
 ## Module configuration
 
@@ -162,10 +150,6 @@ new AssetType({
 When the field lives on a DMS page, `permissionsFromPage` derives the mapping from that page's effective permission instead of duplicating its id â€” pass the page class itself (`permissionsFromPage: ArticlesPage`); resolution happens lazily at folder provisioning, and explicit `permissionMapping` entries still win per right (an empty array opts that right out of the fallback).
 
 A `binding` is registered through `RegisterAssetBinding` (also exported by the interface, together with `UnregisterAssetBinding`). The registration belongs to the module that declares the field: it is released when that module is destroyed, and replayed to dms-media whenever dms-media reloads.
-
-### Deprecated: importing from `@antelopejs/dms-media`
-
-`import { AssetType } from "@antelopejs/dms-media"` keeps working for now: the package `exports` map points that import at a file that only re-exports the interface, so it never evaluates the module's pages, permissions or routes in the importer's context. Every re-exported name is marked `@deprecated`, and the re-export is removed in a later breaking release. Only the interface's names are re-exported: the module internals the package entry used to expose (ACL helpers, constants, models, routes) are gone. The AntelopeJS module entry stays `main` (`dist/index.js`), which only the runtime loads.
 
 ## HTTP surface
 

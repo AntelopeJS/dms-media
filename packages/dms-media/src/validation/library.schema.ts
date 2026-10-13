@@ -70,11 +70,11 @@ export type PageQuery = Pick<
   "offset" | "limit" | "sort" | "direction" | "type"
 >;
 
-/** The facets narrowing a listing; orientation is optional for older callers. */
+/** The facets narrowing a listing. */
 export interface AssetFilterQuery {
   visibility: VisibilityFilter;
   modified: ModifiedWindow;
-  orientation?: OrientationFilter;
+  orientation: OrientationFilter;
 }
 
 export const smartViewSchema = z.enum(SMART_VIEWS);

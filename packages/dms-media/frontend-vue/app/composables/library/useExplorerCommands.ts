@@ -39,8 +39,8 @@ export function useExplorerCommands(library: MediaLibrary, handlers: ExplorerHan
 	const shortcutsDialog = overlay.create(ShortcutsDialog)
 	const lockedDialog = overlay.create(LockedDialog)
 	const isBrowse = library.mode === 'browse'
-	const canManagePermissions = computed(
-		() => library.tree.tree.value?.canManagePermissions ?? false,
+	const isOwner = computed(
+		() => library.tree.tree.value?.isOwner ?? false,
 	)
 
 	function folderOf(asset: MediaAsset): MediaFolder | undefined {
@@ -52,11 +52,11 @@ export function useExplorerCommands(library: MediaLibrary, handlers: ExplorerHan
 	}
 
 	function canChangeVisibility(asset: MediaAsset): boolean {
-		return Boolean(folderOf(asset)?.rights.manage) && canManagePermissions.value
+		return Boolean(folderOf(asset)?.rights.manage) && isOwner.value
 	}
 
 	function canChangeFolderVisibility(folder: MediaFolder): boolean {
-		return isBrowse && folder.rights.manage && canManagePermissions.value
+		return isBrowse && folder.rights.manage && isOwner.value
 	}
 
 	function siblingNames(parentId: string | null, exceptId?: string): string[] {

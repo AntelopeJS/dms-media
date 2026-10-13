@@ -13,12 +13,6 @@ import type { AxiosInstance } from "axios";
 import { expect } from "chai";
 import { RegisterAssetBinding } from "@antelopejs/interface-dms-media";
 import { DEFAULT_ROOT_ACL } from "../../acl/defaults";
-import {
-  configureMediaModule,
-  type DmsMediaConfig,
-  getMediaConfig,
-} from "../../config";
-import { RETIRED_MEDIA_PERMISSIONS } from "../../constants";
 import { MEDIA_PAGE_PERMISSION } from "../../pages/files";
 import type { AclEntry } from "../../types";
 import { type UploadedAsset, uploadTextAsset } from "../helpers/assets";
@@ -71,13 +65,13 @@ interface RootRights {
 interface TreeResponse {
   folders: TreeFolder[];
   root: RootRights;
-  canManagePermissions: boolean;
+  isOwner: boolean;
 }
 
 interface MemberAccessWorld {
   owner: AxiosInstance;
   pageMember: MemberSession;
-  legacyMember: MemberSession;
+  modulePageMember: MemberSession;
   linkedFolderId: string;
   shelfFolderId: string;
   ownerAsset: UploadedAsset;
@@ -109,29 +103,13 @@ function presignInto(client: AxiosInstance, folderId: string) {
   });
 }
 
-function snapshotMediaConfig(): DmsMediaConfig {
-  const config = getMediaConfig();
-  return {
-    ...config,
-    presets: [...config.presets.values()],
-    allowedMimetypes: [...config.allowedMimetypes],
-  };
-}
-
-function permissionEntry(id: string, rights: AclEntry["rights"]): AclEntry {
-  return { subject: { kind: "permission", id }, rights };
-}
-
 async function buildWorld(): Promise<MemberAccessWorld> {
   const session = await ensureOwnerSession();
   const owner = authorizedClient(session.accessToken);
   const pagePermission = GetPermissionId(MemberAccessProbePage) as string;
-  const [pageRole, legacyRole] = await Promise.all([
+  const [pageRole, modulePageRole] = await Promise.all([
     createRole("member-access-page", [pagePermission]),
-    createRole("member-access-legacy", [
-      MEDIA_PAGE_PERMISSION,
-      ...RETIRED_MEDIA_PERMISSIONS,
-    ]),
+    createRole("member-access-module-page", [MEDIA_PAGE_PERMISSION]),
   ]);
   const shelf = await owner.post("/api/media/folders", {
     name: SHELF_FOLDER_NAME,
@@ -143,7 +121,9 @@ async function buildWorld(): Promise<MemberAccessWorld> {
   return {
     owner,
     pageMember: await registerMember("PageMember", [pageRole]),
-    legacyMember: await registerMember("LegacyMember", [legacyRole]),
+    modulePageMember: await registerMember("ModulePageMember", [
+      modulePageRole,
+    ]),
     linkedFolderId,
     shelfFolderId: shelf.data.id,
     ownerAsset: await uploadTextAsset(owner, linkedFolderId, "owner-file.txt"),
@@ -170,12 +150,7 @@ describe("[integration] media member access — roles, root ACL and linked folde
   describe("roles editor", () => {
     it("offers no media permission and no hidden dependency on the All files page", async () => {
       const permissionIds = collectPermissionIds(await GetPermissions());
-      for (const permissionId of [
-        ...RETIRED_MEDIA_PERMISSIONS,
-        MEDIA_PAGE_PERMISSION,
-      ]) {
-        expect(permissionIds, permissionId).to.not.include(permissionId);
-      }
+      expect(permissionIds).to.not.include(MEDIA_PAGE_PERMISSION);
     });
   });
 
@@ -184,44 +159,25 @@ describe("[integration] media member access — roles, root ACL and linked folde
       expect(DEFAULT_ROOT_ACL).to.deep.equal([]);
     });
 
-    it("opens nothing to a stored role still holding the retired permissions and the All files page", async () => {
-      const tree = await fetchTree(world.legacyMember.client);
+    it("opens nothing to a role holding the All files page", async () => {
+      const tree = await fetchTree(world.modulePageMember.client);
       expect(tree.folders).to.deep.equal([]);
       expect(tree.root).to.include({ write: false, manage: false });
-      expect(tree.canManagePermissions).to.equal(false);
-      const listing = await world.legacyMember.client.get(
+      expect(tree.isOwner).to.equal(false);
+      const listing = await world.modulePageMember.client.get(
         `/api/media/folders/${world.shelfFolderId}/assets`,
       );
       expect(listing.status).to.equal(HTTP_NOT_FOUND);
       const presign = await presignInto(
-        world.legacyMember.client,
+        world.modulePageMember.client,
         world.shelfFolderId,
       );
       expect(presign.status).to.equal(HTTP_NOT_FOUND);
-      const created = await world.legacyMember.client.post(
+      const created = await world.modulePageMember.client.post(
         "/api/media/folders",
-        { name: "Legacy attempt" },
+        { name: "Member attempt" },
       );
       expect(created.status).to.equal(HTTP_FORBIDDEN);
-    });
-
-    it("keeps a project root ACL naming the retired permissions owner-only", async () => {
-      const previous = snapshotMediaConfig();
-      configureMediaModule({
-        ...previous,
-        rootAcl: RETIRED_MEDIA_PERMISSIONS.map((id) =>
-          permissionEntry(id, ["manage"]),
-        ),
-      });
-      try {
-        const tree = await fetchTree(world.legacyMember.client);
-        expect(tree.folders).to.deep.equal([]);
-        expect(tree.root).to.include({ write: false, manage: false });
-        const ownerTree = await fetchTree(world.owner);
-        expect(ownerTree.root).to.include({ write: true, manage: true });
-      } finally {
-        configureMediaModule(previous);
-      }
     });
   });
 
@@ -279,7 +235,7 @@ describe("[integration] media member access — roles, root ACL and linked folde
     it("keeps every right for the owner", async () => {
       const tree = await fetchTree(world.owner);
       expect(tree.root).to.include({ write: true, manage: true });
-      expect(tree.canManagePermissions).to.equal(true);
+      expect(tree.isOwner).to.equal(true);
       expect(findFolder(tree, LINKED_FOLDER_NAME)?.rights.manage).to.equal(
         true,
       );
