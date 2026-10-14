@@ -58,3 +58,5 @@ pnpm typecheck
 pnpm knip
 pnpm check:exports  # after build: the exports map matches dist
 ```
+
+Usage guide: [dms.antelopejs.com/docs/modules/media/extending](https://dms.antelopejs.com/docs/modules/media/extending).

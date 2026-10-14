@@ -11,6 +11,7 @@
     "dist",
     "!dist/.tsbuildinfo",
     "frontend-vue",
+    "skills",
     "src"
   ],
   "main": "dist/index.js",
@@ -87,6 +88,9 @@
     "implements": [
       "@antelopejs/interface-dms-media"
     ],
-    "test": "src/test/antelope.test.ts"
+    "test": "src/test/antelope.test.ts",
+    "skills": [
+      "./skills"
+    ]
   }
 }

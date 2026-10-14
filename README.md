@@ -14,7 +14,7 @@ publishing, with provenance) and released independently from
 Release the interface first: the module release checks that the interface
 version in the tree is already on npm.
 
-Start with the module's own [README](packages/dms-media/README.md). See
+Start with the module's own [README](packages/dms-media/README.md) and the documentation at [dms.antelopejs.com/docs/modules/media](https://dms.antelopejs.com/docs/modules/media). See
 [AGENTS.md](AGENTS.md) for code conventions.
 
 ## Development
