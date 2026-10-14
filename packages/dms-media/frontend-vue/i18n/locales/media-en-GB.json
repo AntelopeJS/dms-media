@@ -1011,6 +1011,7 @@
 				"tab_failed": "Failed today",
 				"attention": "Needs attention",
 				"open_folder": "Open the folder",
+				"row_actions": "Actions for the upload to {folder}",
 				"failed_names": "1 of {total} failed: {names} | {failed} of {total} failed: {names}"
 			},
 			"title": "Uploads",

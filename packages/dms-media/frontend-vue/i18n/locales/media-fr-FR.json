@@ -1011,6 +1011,7 @@
 				"tab_failed": "En échec aujourd'hui",
 				"attention": "À traiter",
 				"open_folder": "Ouvrir le dossier",
+				"row_actions": "Actions pour l'import dans {folder}",
 				"failed_names": "1 sur {total} en échec : {names} | {failed} sur {total} en échec : {names}"
 			},
 			"title": "Imports",
