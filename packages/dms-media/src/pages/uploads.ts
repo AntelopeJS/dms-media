@@ -33,13 +33,14 @@ const history = TableView.fromSource({
     },
   ],
   rowActions: {
+    menuLabel: `${TEXTS}.history.row_actions`,
     custom: [
       {
         label: `${TEXTS}.history.open_folder`,
         icon: "i-ph-folder-open",
         target: {
           type: "page",
-          url: `${MEDIA_ROUTES.files}?folder={folderId}`,
+          url: `${MEDIA_ROUTES.files}?folder={{row.folderId}}`,
         },
         isDefault: true,
       },
