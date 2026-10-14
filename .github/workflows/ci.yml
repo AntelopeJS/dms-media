@@ -16,10 +16,13 @@ concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
+# Three independent jobs instead of one sequence: the pull request waits for
+# the slowest of them (verify-source) rather than for the sum of all steps.
+# No branch ruleset requires a check by name, so no aggregate job is needed.
 jobs:
-  ubuntu:
+  static:
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    timeout-minutes: 15
     steps:
       - uses: actions/checkout@v4
 
@@ -42,7 +45,7 @@ jobs:
       # The whole workspace, root included: the shared oxlint, oxfmt and
       # TypeScript configs live there and both packages extend them. The module
       # resolves the interface to the workspace sibling through
-      # `link-workspace-packages`.
+      # `link-workspace-packages`. The module lint also lints frontend-vue.
       - run: pnpm install --frozen-lockfile
       - run: pnpm --dir packages/dms-media/frontend-vue install --frozen-lockfile
 
@@ -61,12 +64,64 @@ jobs:
       # Unused dependencies only. `pnpm knip:all` also reports dead files and
       # exports, which need a human to confirm, so they stay out of the gate.
       - run: pnpm --dir packages/dms-media knip
+
+  backend:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      # The build step below is the only build of the job: the test scripts
+      # and the test harness `installCommand` skip their own rebuild.
+      DMS_PREBUILT: "1"
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+          cache-dependency-path: pnpm-lock.yaml
+
+      # The AntelopeJS modules the harness packs and installs (dms, mongodb,
+      # api...) and the MongoDB binary both tests start. Without them every
+      # run downloads the whole stack before the first test.
+      - uses: actions/cache@v4
+        with:
+          path: |
+            packages/dms-media/.antelope/cache
+            ~/.cache/mongodb-binaries
+          key: antelope-${{ runner.os }}-${{ hashFiles('packages/dms-media/src/test/antelope.test.ts', 'packages/dms-media/tests/hot-reload.test.mjs', 'pnpm-lock.yaml') }}
+          restore-keys: antelope-${{ runner.os }}-
+
+      - run: pnpm install --frozen-lockfile
       - run: pnpm --dir packages/dms-media build
-      - run: pnpm --dir packages/dms-media test:unit
+      # Unit and integration suites in one boot of the DMS stack: a second
+      # boot for the integration folder alone would cost more than its tests.
+      - run: pnpm --dir packages/dms-media test
       # Boots a real project in watch mode and reloads a consumer and the
       # module itself: dms-media's routes, permissions and pages must stay
       # registered and be evaluated again from the edited files (#26).
       - run: pnpm --dir packages/dms-media test:reload
+
+  frontend:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+          cache-dependency-path: |
+            pnpm-lock.yaml
+            packages/dms-media/frontend-vue/pnpm-lock.yaml
+
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm --dir packages/dms-media/frontend-vue install --frozen-lockfile
+
+      # The frontend layer's own unit tests: pure helpers, locales and the
+      # component registration.
+      - run: pnpm --dir packages/dms-media/frontend-vue test
       # Typechecks the frontend layer against the DMS layer from the
       # `@antelopejs/dms` devDependency: no running backend needed.
       - run: pnpm --dir packages/dms-media test:frontend

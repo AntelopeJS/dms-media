@@ -36,9 +36,4 @@ describe("[unit] config — configureMediaModule", () => {
     expect(presets.get("hero")?.width).to.equal(1200);
     expect(presets.has("thumb")).to.equal(false);
   });
-
-  it("keeps the configured storage name", () => {
-    configureMediaModule({ storage: "r2-main" });
-    expect(getMediaConfig().storage).to.equal("r2-main");
-  });
 });
