@@ -1,5 +1,26 @@
 # Changelog
 
+## v0.3.1
+
+[compare changes](https://github.com/AntelopeJS/dms-media/compare/v0.3.0...v0.3.1)
+
+### 📦 Build
+
+- **deps:** Bump DMS to 0.8.0 and interface-dms to 0.6.0 ([#43](https://github.com/AntelopeJS/dms-media/pull/43))
+- **deps:** Require @antelopejs/interface-dms-media 0.2.1 ([#44](https://github.com/AntelopeJS/dms-media/pull/44))
+
+### 🏡 Chore
+
+- **release:** @antelopejs/interface-dms-media v0.2.1 ([db14b3d](https://github.com/AntelopeJS/dms-media/commit/db14b3d))
+
+### 🤖 CI
+
+- Speed up pipeline ([#42](https://github.com/AntelopeJS/dms-media/pull/42))
+
+### ❤️ Contributors
+
+- Antony Rizzitelli <rizzitelli.antony@pm.me>
+
 ## v0.3.0
 
 [compare changes](https://github.com/AntelopeJS/dms-media/compare/v0.2.0...v0.3.0)
