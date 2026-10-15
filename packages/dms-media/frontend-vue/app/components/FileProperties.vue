@@ -16,7 +16,14 @@ const assetLink = useAssetLink()
 const file = useCurrentFile()
 const asset = computed(() => file.asset.value)
 const details = computed(() => file.details.value)
-const nameDraft = ref('')
+/** What the reader typed in the name field; the file's own name until then, so a server render shows it. */
+const typedName = ref<string | null>(null)
+const nameDraft = computed({
+	get: () => typedName.value ?? (asset.value ? baseNameOf(asset.value) : ''),
+	set: (value: string) => {
+		typedName.value = value
+	},
+})
 const extension = computed(() => (asset.value ? extensionOf(asset.value) : ''))
 const hasExtension = computed(() => Boolean(asset.value?.name.toLowerCase().endsWith(`.${extension.value}`)))
 const nameMaxLength = computed(() => NAME_MAX_LENGTH - (hasExtension.value ? extension.value.length + 1 : 0))
@@ -33,9 +40,8 @@ const keepsFormatHint = computed(() =>
 watch(
 	() => [asset.value?.id, asset.value?.name],
 	() => {
-		if (asset.value) nameDraft.value = baseNameOf(asset.value)
+		typedName.value = null
 	},
-	{ immediate: true },
 )
 
 /** `banner.jpg` typed on a JPG keeps one `.jpg`, rather than saving `banner.jpg.jpg`. */

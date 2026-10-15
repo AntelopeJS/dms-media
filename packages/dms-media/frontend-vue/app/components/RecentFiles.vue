@@ -2,24 +2,15 @@
 import type { MediaAsset } from '../types/media'
 import AssetThumb from './shared/AssetThumb.vue'
 
-const api = useMediaApi()
 const format = useMediaFormat()
 const { t } = useI18n()
-const assets = ref<MediaAsset[]>([])
+const recent = useApiData<{ assets: MediaAsset[] }>(MEDIA_READS.recent)
+const assets = computed(() => recent.data.value?.assets ?? [])
 const { tree } = useSharedTree()
-const isLoading = ref(true)
+const isLoading = computed(() => recent.status.value === 'pending' && !recent.data.value)
 const SKELETONS = 6
 
-async function load(): Promise<void> {
-	try {
-		assets.value = (await api.recent()).assets
-	} finally {
-		isLoading.value = false
-	}
-}
-
-onMounted(() => void load())
-onLibraryChange(load)
+onLibraryChange(() => recent.refresh())
 
 const foldersById = computed(() => new Map((tree.value?.folders ?? []).map((folder) => [folder.id, folder])))
 </script>

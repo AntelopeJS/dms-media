@@ -1,27 +1,14 @@
 <script setup lang="ts">
 import type { MediaAsset } from '../../types/media'
-import type { AssetContent } from '../../composables/useAssetContent'
 import AssetThumb from '../shared/AssetThumb.vue'
 
 const props = defineProps<{ asset: MediaAsset; siblings: MediaAsset[] }>()
 const emit = defineEmits<{ open: [string]; fullscreen: [] }>()
-const contents = useAssetContent()
 const assetLink = useAssetLink()
 const format = useMediaFormat()
 const { t } = useI18n()
-const content = ref<AssetContent>({ kind: 'none' })
+const content = useShownContent(() => props.asset)
 const filmstrip = useTemplateRef<HTMLElement>('filmstrip')
-
-watch(
-	() => [props.asset.id, props.asset.updatedAt],
-	async () => {
-		const shown = props.asset
-		content.value = { kind: 'none' }
-		const loaded = await contents.load(shown)
-		if (shown.id === props.asset.id) content.value = loaded
-	},
-	{ immediate: true },
-)
 
 watch(
 	() => props.asset.id,

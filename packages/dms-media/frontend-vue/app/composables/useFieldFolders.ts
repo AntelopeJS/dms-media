@@ -1,5 +1,5 @@
 import type { ComputedRef } from 'vue'
-import type { MediaFolder } from '../types/media'
+import type { BoundFolderAnswer, MediaFolder } from '../types/media'
 
 interface FolderSource {
 	/** The folder the field's binding created, when it has one the user can see. */
@@ -11,28 +11,28 @@ interface FolderSource {
 	ensureLoaded: () => Promise<void>
 }
 
-/** A bound field only needs its own folder: it reads that one alone, not the whole tree. */
+/**
+ * A bound field only needs its own folder: it reads that one alone, not the
+ * whole tree, with the page. A failed read keeps the folder last read.
+ */
 function useBoundFolder(bindingId: string): FolderSource {
-	const api = useMediaApi()
-	const folder = ref<MediaFolder | null>(null)
-	const isLoaded = ref(false)
+	const read = useApiData<BoundFolderAnswer>(MEDIA_READS.boundFolder(bindingId))
+	const folder = computed(() => read.data.value?.folder ?? undefined)
 
-	async function load(): Promise<void> {
-		const answer = await api.boundFolder(bindingId).catch(() => null)
-		if (!answer) return
-		rememberUploadLimits(answer)
-		folder.value = answer.folder
-		isLoaded.value = true
-	}
-
-	onMounted(() => void load())
-	onLibraryChange(load)
+	watch(
+		read.data,
+		(answer) => {
+			if (answer) rememberUploadLimits(answer)
+		},
+		{ immediate: true },
+	)
+	onLibraryChange(() => read.refresh())
 
 	return {
-		boundFolder: computed(() => folder.value ?? undefined),
+		boundFolder: folder,
 		folders: computed(() => (folder.value ? [folder.value] : [])),
 		canWriteRoot: computed(() => false),
-		ensureLoaded: () => (isLoaded.value ? Promise.resolve() : load()),
+		ensureLoaded: () => (read.data.value ? Promise.resolve() : read.refresh()),
 	}
 }
 

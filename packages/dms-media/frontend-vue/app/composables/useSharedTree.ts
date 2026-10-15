@@ -10,19 +10,17 @@ export interface UploadLimits {
 	allowedMimetypes: readonly string[] | null
 }
 
-const sharedTree = ref<MediaTree | null>(null)
 const limits = ref<UploadLimits>({
 	maxUploadBytes: DEFAULT_MAX_UPLOAD_BYTES,
 	allowedMimetypes: null,
 })
-let pendingLoad: Promise<void> | null = null
-let consumers = 0
 
 /** The upload limits the server last sent, shared by every screen that uploads. */
 export const uploadLimits = readonly(limits)
 
-/** Keeps the upload limits a server answer carries. */
+/** Keeps the upload limits a server answer carries: browser state, which a server render leaves alone. */
 export function rememberUploadLimits(answer: UploadLimits): void {
+	if (import.meta.env.SSR) return
 	limits.value = {
 		maxUploadBytes: answer.maxUploadBytes,
 		allowedMimetypes: answer.allowedMimetypes,
@@ -40,34 +38,26 @@ export async function fetchTree(
 }
 
 /**
- * The folder tree every block of a page shares: read once when the first block
- * mounts, read again on each library change, and dropped when the last block
- * leaves so the next page starts from fresh data.
+ * The folder tree every block of a page shares: read with the page (a server
+ * render hands it over), read again on each library change, and kept in step
+ * with the upload limits it carries.
  */
 export function useSharedTree() {
-	const api = useMediaApi()
+	const read = useApiData<MediaTree>(MEDIA_READS.tree)
 
+	/** Reads the tree again; the blocks asking at once share one request. */
 	function reload(): Promise<void> {
-		pendingLoad ??= fetchTree(api)
-			.then((tree) => {
-				sharedTree.value = tree
-			})
-			.catch(() => undefined)
-			.finally(() => {
-				pendingLoad = null
-			})
-		return pendingLoad
+		return read.refresh({ dedupe: 'defer' })
 	}
 
-	consumers += 1
-	onScopeDispose(() => {
-		consumers -= 1
-		if (consumers === 0) sharedTree.value = null
-	})
-	onMounted(() => {
-		if (!sharedTree.value) void reload()
-	})
+	watch(
+		read.data,
+		(tree) => {
+			if (tree) rememberUploadLimits(tree)
+		},
+		{ immediate: true },
+	)
 	onLibraryChange(reload)
 
-	return { tree: computed(() => sharedTree.value), reload }
+	return { tree: computed(() => read.data.value), reload }
 }
