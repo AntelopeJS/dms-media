@@ -109,8 +109,8 @@ const detailsRead = useApiData<AssetDetails>(() => (assetId.value ? MEDIA_READS.
 const details = computed(() => (detailsRead.error.value || detailsRead.placeholder.value ? null : detailsRead.data.value))
 const asset = computed(() => details.value?.asset)
 const isEditable = computed(() => Boolean(asset.value && isEditableAsset(asset.value)))
-/** The delivery sizes previewed under the crop, which only the browser draws: read once mounted. */
-const presetsRead = useApiData<PresetsResponse>(() => (isMounted.value && isEditable.value ? MEDIA_READS.presets : null))
+/** The delivery sizes previewed under the crop, which only the browser draws: left to the browser. */
+const presetsRead = useApiData<PresetsResponse>(() => (isEditable.value ? MEDIA_READS.presets : null), { server: false })
 const presets = computed<DeliveryPreset[]>(() => presetsRead.data.value?.presets ?? [])
 const loadState = computed<LoadState>(() => {
 	const error = detailsRead.error.value
