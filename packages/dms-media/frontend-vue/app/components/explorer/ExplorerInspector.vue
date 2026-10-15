@@ -1,4 +1,7 @@
 <script setup lang="ts">
+import type { ApiDataResult } from '#dms-core/app/composables/auth/useApiData'
+import type { ReadUrl } from '../../composables/useMediaApi'
+import type { AssetDetails } from '../../types/media'
 import AltTextField from '../shared/AltTextField.vue'
 import AssetThumb from '../shared/AssetThumb.vue'
 import FolderGlyph from '../shared/FolderGlyph.vue'
@@ -22,25 +25,23 @@ const assetPath = computed(() => folderPathLabel(assetFolder.value, library.tree
 const canEdit = computed(() => (asset.value ? commands.canWriteAsset(asset.value) : false))
 const isBrowse = library.mode === 'browse'
 const PREVIEW_PRESET = 'preview'
-const previewUrl = ref<string>()
-const uploadedBy = ref<string | null>(null)
+// The preview uncropped, at the file's own ratio, and who added it, for the
+// file in view: read while it is in view, shared with the other blocks
+// reading the same file.
+const assetId = computed(() => asset.value?.id)
+const previewRead = useApiData<ReadUrl>(
+	() => (asset.value && isImageAsset(asset.value) ? MEDIA_READS.readUrl(asset.value.id) : null),
+	{ query: { preset: PREVIEW_PRESET } },
+)
+const detailsRead = useApiData<AssetDetails>(() => (assetId.value ? MEDIA_READS.details(assetId.value) : null))
 
-/** The preview uncropped, at the file's own ratio, and who added it, for the file in view. */
-async function loadDetails(assetId: string | undefined): Promise<void> {
-	previewUrl.value = undefined
-	uploadedBy.value = null
-	const target = asset.value
-	if (!assetId || !target) return
-	const [read, details] = await Promise.all([
-		isImageAsset(target) ? library.api.readUrl(assetId, PREVIEW_PRESET).catch(() => undefined) : undefined,
-		library.api.details(assetId).catch(() => undefined),
-	])
-	if (asset.value?.id !== assetId) return
-	previewUrl.value = read?.url
-	uploadedBy.value = details?.uploadedBy ?? null
+/** Nothing of the previous file shows while the next one's reads are under way. */
+function isCurrent<T>(read: ApiDataResult<T>): boolean {
+	return !read.placeholder.value && !read.error.value
 }
 
-watch(() => asset.value?.id, (assetId) => void loadDetails(assetId), { immediate: true })
+const previewUrl = computed(() => (isCurrent(previewRead) ? previewRead.data.value?.url : undefined))
+const uploadedBy = computed(() => (isCurrent(detailsRead) ? (detailsRead.data.value?.uploadedBy ?? null) : null))
 
 function saveAlt(alt: string): Promise<boolean> {
 	return asset.value ? library.actions.setAlt(asset.value, alt) : Promise.resolve(false)

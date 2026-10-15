@@ -202,7 +202,9 @@ The playground connects to MongoDB at `mongodb://localhost:27017` by default. Se
 
 The frontend entry is `frontend-vue/dms.frontend.ts`. It declares `componentPrefix: "DmsMedia"` and registers the blocks of `app/components/*.vue` by file name (`Explorer` is served as `DmsMediaExplorer`); the parts in subfolders are imported by path. `dms.frontend.build.ts` auto-imports `app/composables` and `app/utils`. Use relative imports for module-local files because the Inertia adapter copies the frontend separately from the backend. The adapter discovers locale files and `app/config/shortcuts-registry.ts`; no Nuxt installation is required.
 
-The blocks read the data they render with the DMS's `useApiData` (`@antelopejs/dms` 0.8.4, `@antelopejs/dms-frontend` 0.5.7): a server render reads it and hands it to the browser with the page. Writes, and the reads of the explorer, the dialogs and the image editor's canvas, stay `$authFetch` calls in the browser.
+The blocks read the data they render with the DMS's `useApiData` (`@antelopejs/dms` 0.9, `@antelopejs/interface-dms` 0.7, `@antelopejs/dms-frontend` 0.6): a server render reads it and hands it to the browser with the page. The reads that follow the library's realtime changes on their own opt out of the page's refreshes. Writes, and the reads of the explorer's listing and tree, the asset field's entries, the dialogs and the image editor's canvas, stay `$authFetch` calls in the browser.
+
+The file links (`/media/<id>/<name>`) are served by the backend. The module declares `/media/**` as a backend prefix (`backendProxies`, with the session), so that a link on the dashboard's origin reaches the backend and a private file opens for a signed-in member.
 
 The playground uses the `@antelopejs/dms-frontend` CLI. Run `pnpm --dir frontend-vue install` and `pnpm --dir frontend-vue test` for frontend tests; `tests/serverRender.test.ts` renders the blocks on the server with the renderer and the DMS layer the package installs. `pnpm test:frontend` typechecks the layer against the DMS layer (`ajs dms verify-source`), without a running backend; CI runs it.
 

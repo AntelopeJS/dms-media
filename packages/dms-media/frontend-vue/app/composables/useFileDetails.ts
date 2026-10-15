@@ -86,6 +86,8 @@ export function useFileDetails(assetId: Ref<string | undefined>, order: Ref<File
 				!isNearWindowEdge(previous, id)
 			return { details, siblings: keepsWindow ? previous : await readSiblings($authFetch, signal, details.asset.folderId, id) }
 		},
+		// Read again on each library change, its own trigger: the page's refreshes leave it alone.
+		{ refreshOnPageRefresh: false },
 	)
 
 	const error = computed(() => read.error.value)

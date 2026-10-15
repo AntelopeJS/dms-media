@@ -16,7 +16,8 @@ interface FolderSource {
  * whole tree, with the page. A failed read keeps the folder last read.
  */
 function useBoundFolder(bindingId: string): FolderSource {
-	const read = useApiData<BoundFolderAnswer>(MEDIA_READS.boundFolder(bindingId))
+	// Read again on each library change, its own trigger: the page's refreshes leave it alone.
+	const read = useApiData<BoundFolderAnswer>(MEDIA_READS.boundFolder(bindingId), { refreshOnPageRefresh: false })
 	const folder = computed(() => read.data.value?.folder ?? undefined)
 
 	watch(

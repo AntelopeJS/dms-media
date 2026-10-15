@@ -43,7 +43,8 @@ export async function fetchTree(
  * with the upload limits it carries.
  */
 export function useSharedTree() {
-	const read = useApiData<MediaTree>(MEDIA_READS.tree)
+	// Read again on each library change, its own trigger: the page's refreshes leave it alone.
+	const read = useApiData<MediaTree>(MEDIA_READS.tree, { refreshOnPageRefresh: false })
 
 	/** Reads the tree again; the blocks asking at once share one request. */
 	function reload(): Promise<void> {

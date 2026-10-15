@@ -69,6 +69,7 @@ export const MEDIA_READS = {
 	boundFolder: (bindingId: string) => `${API}/bindings/${encodeURIComponent(bindingId)}/folder`,
 	asset: (assetId: string) => `${API}/assets/${assetId}`,
 	details: (assetId: string) => `${API}/assets/${assetId}/details`,
+	readUrl: (assetId: string) => `${API}/assets/${assetId}/read-url`,
 	folderAssets: (folderId: string) => `${API}/folders/${folderId}/assets`,
 } as const
 
@@ -92,7 +93,7 @@ export function useMediaApi() {
 		previews: (ids: string[]) =>
 			post<{ previews: Record<string, string> }>('/previews', { ids }),
 		readUrl: (assetId: string, preset?: string) =>
-			$authFetch<ReadUrl>(`${API}/assets/${assetId}/read-url`, {
+			$authFetch<ReadUrl>(MEDIA_READS.readUrl(assetId), {
 				query: preset ? { preset } : {},
 			}),
 		createFolder: (name: string, parentId?: string) =>
