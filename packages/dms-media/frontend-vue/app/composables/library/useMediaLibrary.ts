@@ -269,8 +269,8 @@ function createDetailActions(library: LibraryCore) {
 		const { sort, direction } = listing.filters.value
 		if (sort !== 'name') return
 		const factor = direction === 'desc' ? -1 : 1
-		listing.assets.value = [...listing.assets.value].sort(
-			(left, right) => NAME_COLLATOR.compare(left.name, right.name) * factor,
+		listing.reorderAssets(
+			[...listing.assets.value].sort((left, right) => NAME_COLLATOR.compare(left.name, right.name) * factor),
 		)
 	}
 
@@ -385,7 +385,7 @@ function createStarActions(library: LibraryCore) {
 
 	function leaveStarredView(target: MediaAsset | MediaFolder, kind: 'asset' | 'folder'): void {
 		if (kind === 'asset') listing.removeAssets([target.id])
-		else listing.extraFolders.value = listing.extraFolders.value.filter((folder) => folder.id !== target.id)
+		else listing.removeExtraFolder(target.id)
 		library.toast.add({
 			title: t('dms_media.toasts.unstarred', { name: target.name }),
 			color: 'neutral',

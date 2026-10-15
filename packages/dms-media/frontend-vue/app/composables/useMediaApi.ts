@@ -1,14 +1,10 @@
 import type {
 	AssetDetails,
-	AssetPage,
 	AssetVisibility,
 	BulkOutcome,
 	FolderImpact,
 	FolderVisibility,
-	ListingParams,
 	MediaAsset,
-	MediaTree,
-	SearchParams,
 	SmartView,
 } from '../types/media'
 
@@ -71,23 +67,17 @@ export const MEDIA_READS = {
 	details: (assetId: string) => `${API}/assets/${assetId}/details`,
 	readUrl: (assetId: string) => `${API}/assets/${assetId}/read-url`,
 	folderAssets: (folderId: string) => `${API}/folders/${folderId}/assets`,
+	smartView: (view: SmartView) => `${API}/views/${view}`,
+	search: `${API}/search`,
 } as const
 
-/** Typed calls to the media API, through the authenticated DMS fetch: the writes, and the reads the explorer, the dialogs and the viewers make themselves. */
+/** Typed calls to the media API, through the authenticated DMS fetch: the writes, and the reads a click or a viewer makes itself. */
 export function useMediaApi() {
 	const { $authFetch } = useAuthFetch()
 	const post = <T>(path: string, body?: object) =>
 		$authFetch<T>(`${API}${path}`, { method: 'POST', body })
 
 	return {
-		tree: (scopeFolderId?: string) =>
-			$authFetch<MediaTree>(MEDIA_READS.tree, { query: scopeFolderId ? { folderId: scopeFolderId } : {} }),
-		folderAssets: (folderId: string, query: ListingParams = {}) =>
-			$authFetch<AssetPage>(MEDIA_READS.folderAssets(folderId), { query }),
-		smartView: (view: SmartView, query: ListingParams = {}) =>
-			$authFetch<AssetPage>(`${API}/views/${view}`, { query }),
-		search: (query: SearchParams) =>
-			$authFetch<AssetPage>(`${API}/search`, { query }),
 		asset: (assetId: string) => $authFetch<{ asset: MediaAsset }>(MEDIA_READS.asset(assetId)),
 		details: (assetId: string) => $authFetch<AssetDetails>(MEDIA_READS.details(assetId)),
 		previews: (ids: string[]) =>

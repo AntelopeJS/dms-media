@@ -46,10 +46,11 @@ function provideGlobal(name: string, value: unknown): void {
 // The application's auto-imports: Vue's API, the renderer's, the DMS layers'
 // the module calls, and the module's own composables and utilities.
 for (const [name, value] of Object.entries(vue)) if (/^[a-z]/.test(name)) vi.stubGlobal(name, value)
-for (const name of ['useDmsFetch', 'useDmsAsyncData', 'useDmsState', 'useDmsRoute', 'useDmsRouter'] as const)
+for (const name of ['useDmsFetch', 'useDmsAsyncData', 'useDmsPagedData', 'useDmsState', 'useDmsRoute', 'useDmsRouter'] as const)
 	provideGlobal(name, engine[name])
-const { useApiData } = await import('#dms-core/app/composables/auth/useApiData')
+const { useApiData, useApiPagedData } = await import('#dms-core/app/composables/auth/useApiData')
 provideGlobal('useApiData', useApiData)
+provideGlobal('useApiPagedData', useApiPagedData)
 provideGlobal('useAuthFetch', () => ({ $authFetch }))
 provideGlobal('useI18n', () => ({
 	t: (key: string, params?: Record<string, unknown>) => (params ? `${key} ${Object.values(params).join(' ')}` : key),
@@ -130,45 +131,8 @@ const describeRead = (method: string, url: string, query: Record<string, unknown
 	return `${method} ${url}${search ? `?${search}` : ''}`
 }
 
-// The renderer's request key: a digest of the method, the base URL, the URL,
-// the query and the body (`requestKey` in `#dms/frontend-module`).
-const HASH_SEEDS = [0xdeadbeef, 0x41c6ce57] as const
-const HASH_MULTIPLIERS = [2654435761, 1597334677] as const
-const HASH_FINALIZERS = [2246822507, 3266489909] as const
-const HASH_SHIFTS = [16, 13] as const
-const HASH_RADIX = 36
-const HASH_LANE_LENGTH = 7
-
-function stableJson(value: unknown): string {
-	if (value === undefined || value === null) return 'null'
-	if (typeof value !== 'object') return JSON.stringify(value)
-	if (Array.isArray(value)) return `[${value.map(stableJson).join(',')}]`
-	const record = value as Record<string, unknown>
-	const members = Object.keys(record)
-		.filter((name) => record[name] !== undefined)
-		.sort()
-		.map((name) => `${JSON.stringify(name)}:${stableJson(record[name])}`)
-	return `{${members.join(',')}}`
-}
-
-function hashText(text: string): string {
-	let first: number = HASH_SEEDS[0]
-	let second: number = HASH_SEEDS[1]
-	for (let index = 0; index < text.length; index++) {
-		const code = text.charCodeAt(index)
-		first = Math.imul(first ^ code, HASH_MULTIPLIERS[0])
-		second = Math.imul(second ^ code, HASH_MULTIPLIERS[1])
-	}
-	first = Math.imul(first ^ (first >>> HASH_SHIFTS[0]), HASH_FINALIZERS[0])
-	first ^= Math.imul(second ^ (second >>> HASH_SHIFTS[1]), HASH_FINALIZERS[1])
-	second = Math.imul(second ^ (second >>> HASH_SHIFTS[0]), HASH_FINALIZERS[0])
-	second ^= Math.imul(first ^ (first >>> HASH_SHIFTS[1]), HASH_FINALIZERS[1])
-	return [second, first].map((lane) => (lane >>> 0).toString(HASH_RADIX).padStart(HASH_LANE_LENGTH, '0')).join('')
-}
-
 /** The payload key a `useApiData(url)` read's response is handed over under. */
-const fetchKey = (read: BackendRead) =>
-	`$dmsfetch:${hashText(stableJson([read.method, '', read.url, givenQueries.get(read) ?? null, null]))}`
+const fetchKey = (read: BackendRead) => engine.dmsRequestKey(read.url, { method: read.method, query: givenQueries.get(read) })
 
 /** A payload key, as `describeRead` writes the request it answers for `$dmsfetch` keys. */
 function handedKey(key: string, made: BackendRead[]): string {
@@ -201,5 +165,29 @@ export async function serverRender(
 		payload,
 		reads: reads.map((read) => describeRead(read.method, read.url, read.query)),
 		handed: Object.keys({ ...payload.data, ...payload.errors }).map((key) => handedKey(key, reads)),
+	}
+}
+
+/** What `inBrowserApp` gives back: what `setup` returned, and the backend requests made so far. */
+export interface BrowserApp<T> {
+	result: T
+	/** Every backend request made so far, as `METHOD url?query`. */
+	reads: () => string[]
+}
+
+/**
+ * Runs `setup` as a browser application runs a call outside any component, on
+ * the renderer's real data layer, answering each backend request with
+ * `respond`.
+ */
+export function inBrowserApp<T>(setup: () => T, respond: Backend = () => ({})): BrowserApp<T> {
+	backend = respond
+	reads.length = 0
+	const runtime = engine.createDmsFrontendRuntime(undefined, {}, false)
+	const app = vue.createApp({ render: () => null })
+	engine.provideDmsFrontendRuntime(app, runtime)
+	return {
+		result: app.runWithContext(setup),
+		reads: () => reads.map((read) => describeRead(read.method, read.url, read.query)),
 	}
 }

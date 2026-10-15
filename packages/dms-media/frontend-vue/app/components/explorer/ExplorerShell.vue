@@ -149,7 +149,7 @@ async function navigate(target: LibraryLocation, filters: Partial<ListingFilters
 }
 
 onMounted(async () => {
-	await library.tree.refresh()
+	await library.tree.ready()
 	await navigate(props.initialLocation ?? startLocation(), props.initialFilters)
 })
 
