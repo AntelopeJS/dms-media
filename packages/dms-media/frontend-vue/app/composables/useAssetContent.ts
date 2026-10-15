@@ -59,3 +59,23 @@ export function useAssetContent() {
 
 	return { load }
 }
+
+const NO_CONTENT: AssetContent = { kind: 'none' }
+
+/**
+ * What a viewer shows of the file `asset` returns, read with the page under a
+ * key per file version. A server render gives an image, a video or a frame its
+ * read URL, so the browser loads it before hydrating; the first lines of a text
+ * file are read from the storage by the browser alone (the viewer's first file
+ * decides, as only it can be rendered on the server). Nothing shows while the
+ * next file's content loads.
+ */
+export function useShownContent(asset: () => ShownAsset & Pick<MediaAsset, 'updatedAt'>) {
+	const { load } = useAssetContent()
+	const read = useApiData<AssetContent>(
+		() => `dms-media:content:${asset().id}:${asset().updatedAt}`,
+		() => load(asset()),
+		{ server: contentKindOf(asset()) !== 'text' },
+	)
+	return computed(() => (read.placeholder.value ? NO_CONTENT : (read.data.value ?? NO_CONTENT)))
+}

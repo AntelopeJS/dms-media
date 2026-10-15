@@ -2,14 +2,12 @@ import type {
 	AssetDetails,
 	AssetPage,
 	AssetVisibility,
-	BoundFolderAnswer,
 	BulkOutcome,
 	FolderImpact,
 	FolderVisibility,
 	ListingParams,
 	MediaAsset,
 	MediaTree,
-	PresetsResponse,
 	SearchParams,
 	SmartView,
 } from '../types/media'
@@ -63,7 +61,18 @@ export interface ReadUrl {
 	expiresAt: number
 }
 
-/** Typed calls to the media API, through the authenticated DMS fetch. */
+/** The URLs of the reads the pages render, which `useApiData` reads and shares by URL. */
+export const MEDIA_READS = {
+	tree: `${API}/tree`,
+	recent: `${API}/stats/recent`,
+	presets: `${API}/presets`,
+	boundFolder: (bindingId: string) => `${API}/bindings/${encodeURIComponent(bindingId)}/folder`,
+	asset: (assetId: string) => `${API}/assets/${assetId}`,
+	details: (assetId: string) => `${API}/assets/${assetId}/details`,
+	folderAssets: (folderId: string) => `${API}/folders/${folderId}/assets`,
+} as const
+
+/** Typed calls to the media API, through the authenticated DMS fetch: the writes, and the reads the explorer, the dialogs and the viewers make themselves. */
 export function useMediaApi() {
 	const { $authFetch } = useAuthFetch()
 	const post = <T>(path: string, body?: object) =>
@@ -71,26 +80,21 @@ export function useMediaApi() {
 
 	return {
 		tree: (scopeFolderId?: string) =>
-			$authFetch<MediaTree>(`${API}/tree`, { query: scopeFolderId ? { folderId: scopeFolderId } : {} }),
-		boundFolder: (bindingId: string) =>
-			$authFetch<BoundFolderAnswer>(`${API}/bindings/${encodeURIComponent(bindingId)}/folder`),
+			$authFetch<MediaTree>(MEDIA_READS.tree, { query: scopeFolderId ? { folderId: scopeFolderId } : {} }),
 		folderAssets: (folderId: string, query: ListingParams = {}) =>
-			$authFetch<AssetPage>(`${API}/folders/${folderId}/assets`, { query }),
+			$authFetch<AssetPage>(MEDIA_READS.folderAssets(folderId), { query }),
 		smartView: (view: SmartView, query: ListingParams = {}) =>
 			$authFetch<AssetPage>(`${API}/views/${view}`, { query }),
 		search: (query: SearchParams) =>
 			$authFetch<AssetPage>(`${API}/search`, { query }),
-		asset: (assetId: string) =>
-			$authFetch<{ asset: MediaAsset }>(`${API}/assets/${assetId}`),
-		details: (assetId: string) =>
-			$authFetch<AssetDetails>(`${API}/assets/${assetId}/details`),
+		asset: (assetId: string) => $authFetch<{ asset: MediaAsset }>(MEDIA_READS.asset(assetId)),
+		details: (assetId: string) => $authFetch<AssetDetails>(MEDIA_READS.details(assetId)),
 		previews: (ids: string[]) =>
 			post<{ previews: Record<string, string> }>('/previews', { ids }),
 		readUrl: (assetId: string, preset?: string) =>
 			$authFetch<ReadUrl>(`${API}/assets/${assetId}/read-url`, {
 				query: preset ? { preset } : {},
 			}),
-		recent: () => $authFetch<{ assets: MediaAsset[] }>(`${API}/stats/recent`),
 		createFolder: (name: string, parentId?: string) =>
 			post<{ id: string }>('/folders', { name, parentId }),
 		createStarterFolders: (folders: StarterFolder[]) =>
@@ -132,7 +136,6 @@ export function useMediaApi() {
 			post<{ asset: MediaAsset }>(`/assets/${assetId}/revert`),
 		star: (kind: 'asset' | 'folder', targetId: string, starred: boolean) =>
 			post('/favorites', { kind, targetId, starred }),
-		presets: () => $authFetch<PresetsResponse>(`${API}/presets`),
 	}
 }
 

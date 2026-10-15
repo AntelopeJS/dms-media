@@ -202,7 +202,9 @@ The playground connects to MongoDB at `mongodb://localhost:27017` by default. Se
 
 The frontend entry is `frontend-vue/dms.frontend.ts`. It declares `componentPrefix: "DmsMedia"` and registers the blocks of `app/components/*.vue` by file name (`Explorer` is served as `DmsMediaExplorer`); the parts in subfolders are imported by path. `dms.frontend.build.ts` auto-imports `app/composables` and `app/utils`. Use relative imports for module-local files because the Inertia adapter copies the frontend separately from the backend. The adapter discovers locale files and `app/config/shortcuts-registry.ts`; no Nuxt installation is required.
 
-The playground uses the `@antelopejs/dms-frontend` CLI. Run `pnpm --dir frontend-vue install` and `pnpm --dir frontend-vue test` for frontend tests. `pnpm test:frontend` typechecks the layer against the DMS layer (`ajs dms verify-source`), without a running backend; CI runs it.
+The blocks read the data they render with the DMS's `useApiData` (`@antelopejs/dms` 0.8.4, `@antelopejs/dms-frontend` 0.5.7): a server render reads it and hands it to the browser with the page. Writes, and the reads of the explorer, the dialogs and the image editor's canvas, stay `$authFetch` calls in the browser.
+
+The playground uses the `@antelopejs/dms-frontend` CLI. Run `pnpm --dir frontend-vue install` and `pnpm --dir frontend-vue test` for frontend tests; `tests/serverRender.test.ts` renders the blocks on the server with the renderer and the DMS layer the package installs. `pnpm test:frontend` typechecks the layer against the DMS layer (`ajs dms verify-source`), without a running backend; CI runs it.
 
 ## Known limitations (v1)
 

@@ -1,7 +1,8 @@
 <script setup lang="ts">
+import { useMounted } from '@vueuse/core'
 import { Cropper, Preview } from 'vue-advanced-cropper'
 import 'vue-advanced-cropper/dist/style.css'
-import type { AssetDetails, DeliveryPreset, MediaAsset } from '../types/media'
+import type { AssetDetails, DeliveryPreset, MediaAsset, PresetsResponse } from '../types/media'
 import type { TransformOperations } from '../composables/useMediaApi'
 import { type AspectOption, aspectOptions, FREE_ASPECT_ID, ORIGINAL_ASPECT_ID, type PixelSize, rotatedSize as turnSize } from '../utils/editorAspects'
 
@@ -91,10 +92,11 @@ const { confirm } = useConfirm()
 const cropper = useTemplateRef<CropperHandle>('cropper')
 const stage = useTemplateRef<HTMLElement>('stage')
 const aspectGroup = useTemplateRef<HTMLElement>('aspectGroup')
-const details = ref<AssetDetails | null>(null)
-const presets = ref<DeliveryPreset[]>([])
+const isMounted = useMounted()
 const source = ref<string | null>(null)
-const loadState = ref<LoadState>('loading')
+const sourceFailed = ref(false)
+/** Counts the retries, so that a retry loads the image again. */
+const attempt = ref(0)
 const rotation = ref(0)
 const aspect = ref(FREE_ASPECT_ID)
 const change = ref<CropperChange | null>(null)
@@ -102,8 +104,20 @@ const isSaving = ref(false)
 const isCropperReady = ref(false)
 
 const assetId = computed(() => (typeof route.query.asset === 'string' ? route.query.asset : undefined))
+/** The file's details, read with the page: a server render shows its name and whether it can be edited. */
+const detailsRead = useApiData<AssetDetails>(() => (assetId.value ? MEDIA_READS.details(assetId.value) : null))
+const details = computed(() => (detailsRead.error.value || detailsRead.placeholder.value ? null : detailsRead.data.value))
 const asset = computed(() => details.value?.asset)
 const isEditable = computed(() => Boolean(asset.value && isEditableAsset(asset.value)))
+/** The delivery sizes previewed under the crop, which only the browser draws: read once mounted. */
+const presetsRead = useApiData<PresetsResponse>(() => (isMounted.value && isEditable.value ? MEDIA_READS.presets : null))
+const presets = computed<DeliveryPreset[]>(() => presetsRead.data.value?.presets ?? [])
+const loadState = computed<LoadState>(() => {
+	const error = detailsRead.error.value
+	if (error && detailsRead.status.value !== 'pending') return isOutOfReachError(error) ? 'missing' : 'error'
+	if (sourceFailed.value) return 'error'
+	return asset.value ? 'ready' : 'loading'
+})
 const isEditing = computed(() => loadState.value === 'ready' && isEditable.value)
 
 const imageSize = computed<PixelSize | undefined>(() => {
@@ -224,25 +238,18 @@ function resetEdits(): void {
 	isCropperReady.value = false
 }
 
-async function load(): Promise<void> {
-	source.value = null
-	details.value = null
-	resetEdits()
-	if (!assetId.value) return
-	loadState.value = 'loading'
-	try {
-		details.value = await api.details(assetId.value)
-	} catch (error) {
-		loadState.value = isOutOfReachError(error) ? 'missing' : 'error'
-		return
-	}
-	loadState.value = 'ready'
-	if (!isEditable.value || !asset.value) return
-	void api.presets().then((response) => (presets.value = response.presets)).catch(() => undefined)
-	source.value = await editingSource(asset.value).catch(() => {
-		loadState.value = 'error'
-		return null
-	})
+/** The image the cropper edits, loaded by the browser once the file is known to be editable. */
+async function loadSource(target: MediaAsset): Promise<void> {
+	const url = await editingSource(target).catch(() => null)
+	if (asset.value?.id !== target.id) return
+	if (url) source.value = url
+	else sourceFailed.value = true
+}
+
+async function retry(): Promise<void> {
+	sourceFailed.value = false
+	await detailsRead.refresh()
+	attempt.value += 1
 }
 
 function onCropperReady(): void {
@@ -395,7 +402,16 @@ const notEditableDescription = computed(() =>
 	asset.value?.mimetype === VECTOR_MIMETYPE ? t('dms_media.editor.not_editable_vector') : t('dms_media.editor.not_editable_formats'),
 )
 
-watch(assetId, () => void load(), { immediate: true })
+watch(
+	() => [isMounted.value && isEditable.value ? asset.value?.id : undefined, attempt.value] as const,
+	([id]) => {
+		source.value = null
+		sourceFailed.value = false
+		resetEdits()
+		if (id && asset.value) void loadSource(asset.value)
+	},
+	{ immediate: true },
+)
 /** A fixed ratio starts as the largest frame of that ratio, centred on the image. */
 watch(stencilRatio, async (ratio) => {
 	await nextTick()
@@ -436,7 +452,7 @@ definePageShortcuts(() => ({
 			variant="error"
 			:title="t('dms_media.editor.load_failed')"
 			:description="t('dms_media.editor.load_failed_description')"
-			:actions="[{ label: t('dms_media.actions.retry'), icon: 'i-ph-arrow-clockwise', onClick: load }]"
+			:actions="[{ label: t('dms_media.actions.retry'), icon: 'i-ph-arrow-clockwise', onClick: retry }]"
 		/>
 		<DmsEmptyState
 			v-else-if="asset && !isEditable"
