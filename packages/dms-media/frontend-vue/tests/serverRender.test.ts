@@ -2,6 +2,7 @@ import { defineComponent, h } from 'vue'
 import { describe, expect, it } from 'vitest'
 import { serverRender, type BackendRead } from './fixtures/serverRender'
 import AssetValue from '../app/components/field/AssetValue.vue'
+import Explorer from '../app/components/Explorer.vue'
 import FileHeader from '../app/components/FileHeader.vue'
 import FilePreview from '../app/components/FilePreview.vue'
 import FileProperties from '../app/components/FileProperties.vue'
@@ -160,6 +161,27 @@ describe('server render: the blocks read with the page and hand it over', () => 
 		expect(page.reads).toContain('GET /api/media/assets/gone/details')
 		expect(page.payload.errors).toHaveProperty(['dms-media:file:gone:[null,null,null]'])
 		expect(page.html).toContain('dms_media.file.not_found')
+	})
+
+	it('library: a link to a folder reads its files with the page', async () => {
+		const page = await render(Explorer, {}, '/modules/media/files?folder=catalog&sort=name&direction=desc')
+		expect(page.reads).toEqual([
+			'GET /api/media/tree',
+			'GET /api/media/folders/catalog/assets?offset=0&limit=120&sort=name&direction=desc&visibility=any&modified=any&orientation=any',
+		])
+		expect(page.handed).toEqual(expect.arrayContaining(['GET /api/media/tree']))
+		expect(page.handed.some((key) => key.startsWith('dms-media:listing:'))).toBe(true)
+		expect(page.html).toContain('aria-current="location">Catalog')
+		expect(page.html).toContain('dms_media.status.items 3')
+	})
+
+	it('library and image editor: the key hints are the platform labels the browser hydrates with', async () => {
+		const library = await render(Explorer, {}, '/modules/media/files')
+		const editor = await render(ImageEditor, {}, '/modules/media/editor?asset=a1')
+		for (const page of [library, editor]) {
+			expect(page.html).not.toContain('data-stub="UKbd" value="meta"')
+			expect(page.html).toContain('data-stub="UKbd" value="Ctrl"')
+		}
 	})
 
 	it('image editor: the details, not the image the browser edits', async () => {

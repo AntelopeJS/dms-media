@@ -42,6 +42,10 @@ export interface LibraryListingOptions {
 	scopeFolderId?: string
 	/** The explorer's tree, to skip folders the caller may see but not open. */
 	tree?: LibraryTree
+	/** Where the listing starts, such as a link's folder: a server render reads it with the page. */
+	initialLocation?: LibraryLocation
+	/** The filters a link gives the starting location. */
+	initialFilters?: Partial<ListingFilters>
 }
 
 type AssetComparator = (left: MediaAsset, right: MediaAsset) => number
@@ -78,6 +82,10 @@ const NO_FACETS: TypeFacets = {}
 
 export function sameLocation(left: LibraryLocation, right: LibraryLocation): boolean {
 	return JSON.stringify(left) === JSON.stringify(right)
+}
+
+function definedFilters(filters: Partial<ListingFilters> = {}): Partial<ListingFilters> {
+	return Object.fromEntries(Object.entries(filters).filter(([, value]) => value !== undefined))
 }
 
 /** Where `asset` belongs among `assets` already in the listing's order. */
@@ -118,10 +126,19 @@ function spreadOver(pages: ListingPage[], assets: MediaAsset[]): ListingPage[] {
  */
 export function useLibraryListing(options: LibraryListingOptions = {}) {
 	const previews = useMediaPreviews()
-	const location = ref<LibraryLocation>({ kind: 'root' })
+	const location = ref<LibraryLocation>(options.initialLocation ?? { kind: 'root' })
 	const { prefs, update: updatePrefs } = useMediaPrefs()
 	const preferredSort = computed(() => prefs.value.sort)
-	const filters = ref<ListingFilters>({ ...preferredSort.value, ...NARROWING_FILTERS })
+	const filters = ref<ListingFilters>({
+		...sortOf(location.value),
+		...NARROWING_FILTERS,
+		...definedFilters(options.initialFilters),
+	})
+
+	/** The order a location opens in: a smart view's own, the caller's otherwise. */
+	function sortOf(current: LibraryLocation): ListingSort {
+		return current.kind === 'view' ? (VIEW_SORTS[current.view] ?? preferredSort.value) : preferredSort.value
+	}
 	let pageLimit = PAGE_SIZE
 
 	/** The picker's bound folder, once the tree confirms the caller can see it. */
@@ -246,7 +263,7 @@ export function useLibraryListing(options: LibraryListingOptions = {}) {
 	function setLocation(next: LibraryLocation): Promise<void> {
 		const keepsNarrowing = location.value.kind === 'search' && next.kind === 'search'
 		location.value = next
-		const sort = next.kind === 'view' ? (VIEW_SORTS[next.view] ?? preferredSort.value) : preferredSort.value
+		const sort = sortOf(next)
 		filters.value = keepsNarrowing ? { ...filters.value, ...sort } : { ...sort, ...NARROWING_FILTERS }
 		return settled()
 	}

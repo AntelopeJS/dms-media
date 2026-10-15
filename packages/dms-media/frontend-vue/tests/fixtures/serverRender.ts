@@ -65,6 +65,12 @@ provideGlobal('useApiError', noop)
 provideGlobal('useUnsavedChanges', noop)
 provideGlobal('usePageLiveRefresh', noop)
 provideGlobal('defineShortcuts', noop)
+const keyboard = await import('#dms-ui/app/composables/global/keyboardPlatform')
+// The labels a server render prints before the browser names its platform.
+provideGlobal('useKeyboardPlatform', () => ({
+	keyLabel: (key: string) => keyboard.keyboardKeyLabel(key, keyboard.DEFAULT_KEYBOARD_PLATFORM),
+	formatShortcut: (keys: readonly string[]) => keyboard.formatKeyboardShortcut(keys, keyboard.DEFAULT_KEYBOARD_PLATFORM),
+}))
 provideGlobal('navigateDms', noop)
 for (const util of [await import('#dms-core/app/utils/http-status'), await import('#dms-core/app/composables/useFieldErrors')])
 	for (const [name, value] of Object.entries(util)) provideGlobal(name, value)
@@ -109,7 +115,8 @@ const uiStub = (name: string): Component =>
 							Object.entries(attrs).filter(([, value]) => ['string', 'number', 'boolean'].includes(typeof value)),
 						),
 					},
-					slots.default?.(),
+					// Every slot, named ones included: a field's trailing hint renders with it.
+					Object.values(slots).flatMap((slot) => slot?.() ?? []),
 				),
 	})
 

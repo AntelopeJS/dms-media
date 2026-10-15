@@ -13,6 +13,7 @@ export default defineConfig({
 		alias: {
 			'#dms/frontend-module': resolve(root, 'dms-frontend/templates/vue/frontend-module.ts'),
 			'#dms-core': resolve(root, 'dms/frontend-vue/layers/dms-core'),
+			'#dms-ui': resolve(root, 'dms/frontend-vue/layers/dms-ui'),
 			// One Vue for the renderer and the components.
 			vue: resolve(__dirname, 'node_modules/vue'),
 			// What the renderer reads of Inertia, vue-i18n and unhead in the browser only.

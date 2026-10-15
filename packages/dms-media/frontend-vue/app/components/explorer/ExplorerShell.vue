@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import type { ExplorerHistory } from '../../composables/library/useExplorerLayout'
-import type { LibraryLocation, ListingFilters } from '../../composables/library/useLibraryListing'
+import { type LibraryLocation, type ListingFilters, sameLocation } from '../../composables/library/useLibraryListing'
 import type { MediaAsset, MediaFolder } from '../../types/media'
 import MediaLightbox from '../shared/MediaLightbox.vue'
 import BulkBar from './BulkBar.vue'
@@ -37,6 +37,9 @@ const library = provideMediaLibrary({
 	remaining: props.remaining,
 	scopeFolderId: props.scopeFolderId,
 	alreadyPicked: props.alreadyPicked,
+	// Started here rather than once mounted, so that a server render reads a link's folder with the page.
+	initialLocation: props.initialLocation ?? startLocation(),
+	initialFilters: props.initialFilters,
 })
 const layout = createExplorerLayout(root, {
 	scopeFolderId: props.scopeFolderId,
@@ -150,7 +153,12 @@ async function navigate(target: LibraryLocation, filters: Partial<ListingFilters
 
 onMounted(async () => {
 	await library.tree.ready()
-	await navigate(props.initialLocation ?? startLocation(), props.initialFilters)
+	const start = checkedLocation(props.initialLocation ?? startLocation())
+	// The listing started there, with its filters: opening it again would only reset them. The
+	// page still hears where it starts, as it does after a navigation.
+	if (!sameLocation(start, library.listing.location.value)) return navigate(start, props.initialFilters)
+	emit('location', library.listing.location.value)
+	emit('filters', library.listing.filters.value)
 })
 
 const isBrowse = props.mode === 'browse'

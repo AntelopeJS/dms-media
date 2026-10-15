@@ -9,6 +9,7 @@ const { library, commands } = useExplorerContext()
 const layout = useExplorerLayout()
 const drop = useExplorerDrop()
 const { t } = useI18n()
+const { keyLabel } = useKeyboardPlatform()
 const { prefs, update } = useMediaPrefs()
 const searchInput = useTemplateRef<{ inputRef?: HTMLInputElement }>('search')
 const query = ref('')
@@ -195,7 +196,7 @@ defineExpose({ focusSearch: () => searchInput.value?.inputRef?.focus() })
 					@click="clearQuery"
 				/>
 				<span v-else class="hidden items-center gap-0.5 sm:inline-flex [@media(pointer:coarse)]:hidden">
-					<UKbd value="meta" size="sm" />
+					<UKbd :value="keyLabel('meta')" size="sm" />
 					<UKbd value="/" size="sm" />
 				</span>
 			</template>

@@ -86,6 +86,7 @@ const KEY_STEPS: Record<string, KeyStep> = {
 const route = useDmsRoute()
 const api = useMediaApi()
 const { t } = useI18n()
+const { keyLabel } = useKeyboardPlatform()
 const toast = useToast()
 const format = useMediaFormat()
 const { confirm } = useConfirm()
@@ -588,7 +589,7 @@ definePageShortcuts(() => ({
 						:label="pending.length ? t('dms_media.editor.save', { count: pending.length }, pending.length) : t('dms_media.editor.save_none')"
 						@click="save"
 					>
-						<template #trailing><UKbd value="meta" size="sm" variant="subtle" /><UKbd value="S" size="sm" variant="subtle" /></template>
+						<template #trailing><UKbd :value="keyLabel('meta')" size="sm" variant="subtle" /><UKbd value="S" size="sm" variant="subtle" /></template>
 					</UButton>
 					<div class="grid grid-cols-2 gap-2">
 						<UButton block color="neutral" variant="outline" :label="t('dms_media.editor.discard')" @click="leave" />
