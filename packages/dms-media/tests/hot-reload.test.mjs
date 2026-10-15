@@ -114,7 +114,7 @@ function projectConfig(mongoUrl, storagePath) {
         config: {},
       },
       dms: {
-        ...packageSource("@antelopejs/dms", ">=0.9.0 <0.10.0"),
+        ...packageSource("@antelopejs/dms", ">=0.9.0 <1.0.0"),
         config: { auth: { jwtSecret: JWT_SECRET } },
       },
       mongodb: {

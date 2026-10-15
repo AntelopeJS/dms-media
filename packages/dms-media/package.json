@@ -14,7 +14,12 @@
     "src"
   ],
   "main": "dist/index.js",
+  "types": "dist/index.d.ts",
   "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    },
     "./package.json": "./package.json"
   },
   "publishConfig": {
@@ -39,7 +44,8 @@
     "release": "pnpm --filter @antelopejs/interface-dms-media build && pnpm --dir frontend-vue install --frozen-lockfile && release-it",
     "prepack": "pnpm run build",
     "knip": "knip --dependencies",
-    "knip:all": "knip"
+    "knip:all": "knip",
+    "test:exports": "node --test tests/package-exports.test.mjs"
   },
   "dependencies": {
     "@antelopejs/interface-api": ">=0.0.14 <1.0.0",
@@ -56,7 +62,7 @@
   },
   "devDependencies": {
     "@antelopejs/core": ">=1.13.5 <2",
-    "@antelopejs/dms": ">=0.9.0 <0.10.0",
+    "@antelopejs/dms": ">=0.9.0 <1.0.0",
     "@antelopejs/dms-frontend": "0.6.0",
     "@antelopejs/tooling-configs": ">=0.0.7 <1.0.0",
     "@types/chai": "^4.3.20",
