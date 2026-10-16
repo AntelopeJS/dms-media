@@ -80,6 +80,7 @@ On DMS 0.8, use `@antelopejs/dms-media` 0.3.
 
 ## Documentation
 
+- [Consumer reference](./packages/interface-dms-media/docs/1.index.md)
 - [Introduction](https://dms.antelopejs.com/docs/modules/media/introduction)
 - [Installation](https://dms.antelopejs.com/docs/modules/media/installation)
 - [Configuration](https://dms.antelopejs.com/docs/modules/media/configuration)
