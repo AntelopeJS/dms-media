@@ -9,10 +9,15 @@
     "interface",
     "media"
   ],
+  "homepage": "https://dms.antelopejs.com/docs/modules/media/extending",
+  "bugs": {
+    "url": "https://github.com/AntelopeJS/dms-media/issues"
+  },
   "license": "Apache-2.0",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/AntelopeJS/dms-media.git"
+    "url": "git+https://github.com/AntelopeJS/dms-media.git",
+    "directory": "packages/interface-dms-media"
   },
   "files": [
     "LICENSE",
