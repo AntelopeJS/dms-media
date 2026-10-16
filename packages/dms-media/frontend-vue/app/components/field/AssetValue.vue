@@ -4,8 +4,6 @@ import AssetThumb from '../shared/AssetThumb.vue'
 
 const props = defineProps<{ value: unknown }>()
 const { t } = useI18n()
-const api = useMediaApi()
-const assets = ref<(MediaAsset | null)[]>([])
 
 const SHOWN_NAMES = 2
 
@@ -18,21 +16,22 @@ const ids = computed<string[]>(() => {
 const shownIds = computed(() => ids.value.slice(0, SHOWN_NAMES))
 const hidden = computed(() => Math.max(ids.value.length - SHOWN_NAMES, 0))
 
-/** Only the files the cell names are read: the others are counted. */
-watch(
-	shownIds,
-	async (list) => {
-		assets.value = await Promise.all(
-			list.map((id) =>
-				api
-					.asset(id)
+/**
+ * Only the files the cell names are read, with the page: the others are
+ * counted. A file the server does not answer for shows as missing.
+ */
+const read = useApiData<(MediaAsset | null)[]>(
+	() => `dms-media:asset-names:${shownIds.value.join(',')}`,
+	({ $authFetch, signal }) =>
+		Promise.all(
+			shownIds.value.map((id) =>
+				$authFetch<{ asset: MediaAsset }>(MEDIA_READS.asset(id), { signal })
 					.then((response) => response.asset)
 					.catch(() => null),
 			),
-		)
-	},
-	{ immediate: true },
+		),
 )
+const assets = computed(() => (read.placeholder.value ? [] : (read.data.value ?? [])))
 </script>
 
 <template>

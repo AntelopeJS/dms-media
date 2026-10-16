@@ -7,6 +7,7 @@ import type {
 	MediaFolder,
 	ModifiedWindow,
 	OrientationFilter,
+	SearchParams,
 	SmartView,
 	SortDirection,
 	TypeFacets,
@@ -14,6 +15,14 @@ import type {
 } from '../../types/media'
 import type { ListingSort } from '../useMediaPrefs'
 import type { LibraryTree } from './useLibraryTree'
+
+/** Where a page of the listing starts: the number of files loaded before it. */
+type ListingCursor = number
+
+interface ListingRequest {
+	url: string
+	query: ListingParams | SearchParams
+}
 
 export type LibraryLocation =
 	| { kind: 'root' }
@@ -33,13 +42,23 @@ export interface LibraryListingOptions {
 	scopeFolderId?: string
 	/** The explorer's tree, to skip folders the caller may see but not open. */
 	tree?: LibraryTree
+	/** Where the listing starts, such as a link's folder: a server render reads it with the page. */
+	initialLocation?: LibraryLocation
+	/** The filters a link gives the starting location. */
+	initialFilters?: Partial<ListingFilters>
 }
 
 type AssetComparator = (left: MediaAsset, right: MediaAsset) => number
 
+/** A page of the listing, with the size it was asked for: a revalidation asks for the same. */
+interface ListingPage extends AssetPage {
+	limit: number
+}
+
 const PAGE_SIZE = 120
-/** Largest page the API serves, used to reload or complete a long listing. */
+/** Largest page the API serves, used to complete a long listing. */
 const MAX_PAGE_SIZE = 500
+const LISTING_KEY_PREFIX = 'dms-media:listing:'
 const NARROWING_FILTERS: Omit<ListingFilters, keyof ListingSort> = {
 	type: undefined,
 	visibility: 'any',
@@ -59,9 +78,14 @@ const COMPARATORS: Record<AssetSortKey, AssetComparator> = {
 }
 const DIRECTION_FACTORS: Record<SortDirection, number> = { asc: 1, desc: -1 }
 const EMPTY_PAGE: AssetPage = { assets: [], total: 0, facets: {} }
+const NO_FACETS: TypeFacets = {}
 
 export function sameLocation(left: LibraryLocation, right: LibraryLocation): boolean {
 	return JSON.stringify(left) === JSON.stringify(right)
+}
+
+function definedFilters(filters: Partial<ListingFilters> = {}): Partial<ListingFilters> {
+	return Object.fromEntries(Object.entries(filters).filter(([, value]) => value !== undefined))
 }
 
 /** Where `asset` belongs among `assets` already in the listing's order. */
@@ -72,21 +96,50 @@ function sortedIndex(assets: MediaAsset[], asset: MediaAsset, sort: ListingSort)
 	return index < 0 ? assets.length : index
 }
 
-/** What the explorer shows: the location, its files page by page and their filters. */
+function loadedCount(pages: ListingPage[]): number {
+	return pages.reduce((count, page) => count + page.assets.length, 0)
+}
+
+/** Where the page after `pages` starts, or `null` once every file is loaded. */
+function nextOffset(pages: ListingPage[]): number | null {
+	const last = pages.at(-1)
+	const loaded = loadedCount(pages)
+	return last && loaded < last.total ? loaded : null
+}
+
+/** Spreads `assets` over pages of the sizes `pages` hold, the last one taking the rest. */
+function spreadOver(pages: ListingPage[], assets: MediaAsset[]): ListingPage[] {
+	let start = 0
+	return pages.map((page, index) => {
+		const end = index === pages.length - 1 ? assets.length : start + page.assets.length
+		const slice = assets.slice(start, end)
+		start = end
+		return { ...page, assets: slice }
+	})
+}
+
+/**
+ * What the explorer shows: the location, its files page by page and their
+ * filters. The files are one paged read keyed by the location and the
+ * filters: a return to a listing shows the pages loaded before at once, and
+ * a library change reads every loaded page again.
+ */
 export function useLibraryListing(options: LibraryListingOptions = {}) {
-	const api = useMediaApi()
 	const previews = useMediaPreviews()
-	const location = ref<LibraryLocation>({ kind: 'root' })
+	const location = ref<LibraryLocation>(options.initialLocation ?? { kind: 'root' })
 	const { prefs, update: updatePrefs } = useMediaPrefs()
 	const preferredSort = computed(() => prefs.value.sort)
-	const filters = ref<ListingFilters>({ ...preferredSort.value, ...NARROWING_FILTERS })
-	const assets = ref<MediaAsset[]>([])
-	const extraFolders = ref<MediaFolder[]>([])
-	const total = ref(0)
-	const facets = ref<TypeFacets>({})
-	const isLoading = ref(false)
-	const error = ref<unknown>(null)
-	let requestId = 0
+	const filters = ref<ListingFilters>({
+		...sortOf(location.value),
+		...NARROWING_FILTERS,
+		...definedFilters(options.initialFilters),
+	})
+
+	/** The order a location opens in: a smart view's own, the caller's otherwise. */
+	function sortOf(current: LibraryLocation): ListingSort {
+		return current.kind === 'view' ? (VIEW_SORTS[current.view] ?? preferredSort.value) : preferredSort.value
+	}
+	let pageLimit = PAGE_SIZE
 
 	/** The picker's bound folder, once the tree confirms the caller can see it. */
 	const scopeFolderId = computed(() => {
@@ -100,89 +153,119 @@ export function useLibraryListing(options: LibraryListingOptions = {}) {
 		return Boolean(folder && (folder.shell || !folder.rights.read))
 	}
 
+	const listingKey = computed(() =>
+		location.value.kind === 'root'
+			? null
+			: `${LISTING_KEY_PREFIX}${JSON.stringify([location.value, filters.value, scopeFolderId.value ?? null])}`,
+	)
+
 	function queryFor(offset: number, limit: number): ListingParams {
 		const { sort, direction, type, visibility, modified, orientation } = filters.value
 		return { offset, limit, sort, direction, type, visibility, modified, orientation }
 	}
 
-	function fetchPage(offset: number, limit = PAGE_SIZE): Promise<AssetPage> | null {
-		const current = location.value
-		const query = queryFor(offset, limit)
+	function requestFor(current: LibraryLocation, query: ListingParams): ListingRequest | null {
 		if (current.kind === 'folder')
-			return isUnreadable(current.folderId) ? Promise.resolve(EMPTY_PAGE) : api.folderAssets(current.folderId, query)
-		if (current.kind === 'view') return api.smartView(current.view, { ...query, folderId: scopeFolderId.value })
+			return isUnreadable(current.folderId) ? null : { url: MEDIA_READS.folderAssets(current.folderId), query }
+		if (current.kind === 'view') return { url: MEDIA_READS.smartView(current.view), query: { ...query, folderId: scopeFolderId.value } }
 		if (current.kind === 'search')
-			return api.search({ ...query, q: current.query, folderId: current.scopeId ?? scopeFolderId.value })
+			return { url: MEDIA_READS.search, query: { ...query, q: current.query, folderId: current.scopeId ?? scopeFolderId.value } }
 		return null
 	}
 
-	/** Every file up to `count`, fetched in the largest pages the API serves. */
-	async function fetchFirst(count: number): Promise<AssetPage | null> {
-		const first = await fetchPage(0, Math.min(Math.max(count, PAGE_SIZE), MAX_PAGE_SIZE))
-		if (!first) return null
-		const received = [...first.assets]
-		while (received.length < Math.min(count, first.total)) {
-			const next = await fetchPage(received.length, MAX_PAGE_SIZE)
-			if (!next || next.assets.length === 0) break
-			received.push(...next.assets)
-		}
-		return { ...first, assets: received }
+	let shownPages = (): ListingPage[] => []
+
+	/** The size of the page at `index`: the one it had when shown, so that a revalidation reads as many files. */
+	function limitOf(index: number): number {
+		return shownPages()[index]?.limit ?? pageLimit
 	}
 
-	function applyPage(page: AssetPage | null, append: boolean): void {
-		const received = page?.assets ?? []
-		assets.value = append ? [...assets.value, ...received] : received
-		total.value = page?.total ?? 0
-		facets.value = page?.facets ?? {}
-		extraFolders.value = page?.folders ?? []
-		previews.request(received)
+	const read = useApiPagedData<ListingPage, ListingCursor>(
+		listingKey,
+		async ({ $authFetch, cursor, index, signal }) => {
+			const limit = limitOf(index)
+			const request = requestFor(location.value, queryFor(cursor ?? 0, limit))
+			const page = request ? await $authFetch<AssetPage>(request.url, { query: request.query, signal }) : EMPTY_PAGE
+			return { ...page, limit }
+		},
+		{
+			nextCursor: (page, pages) => (page.assets.length === 0 ? null : nextOffset(pages)),
+			// Read again on each library change, its own trigger: the page's refreshes leave it alone.
+			refreshOnPageRefresh: false,
+		},
+	)
+
+	shownPages = () => (read.placeholder.value ? [] : read.pages.value)
+	const pages = computed<ListingPage[]>(() => shownPages())
+	const lastPage = computed(() => pages.value.at(-1))
+	const assets = computed<MediaAsset[]>(() => pages.value.flatMap((page) => page.assets))
+	const total = computed(() => lastPage.value?.total ?? 0)
+	const facets = computed(() => lastPage.value?.facets ?? NO_FACETS)
+	const extraFolders = computed<MediaFolder[]>(() => lastPage.value?.folders ?? [])
+	const isLoading = computed(
+		() => read.loadingMore.value || (read.pending.value && (read.placeholder.value || pages.value.length === 0)),
+	)
+	const error = computed(() => (listingKey.value ? read.error.value : null))
+	const hasMore = computed(() => read.hasMore.value)
+
+	watch(assets, (shown) => previews.request(shown))
+
+	/** Resolves once the read the location or the filters started is done. */
+	async function settled(): Promise<void> {
+		await nextTick()
+		if (!read.pending.value) return
+		await new Promise<void>((resolve) => {
+			const stop = watch(read.pending, (pending) => {
+				if (pending) return
+				stop()
+				resolve()
+			})
+		})
 	}
 
-	async function run(fetch: () => Promise<AssetPage | null> | null, append: boolean, quiet = false): Promise<void> {
-		const id = ++requestId
-		if (!quiet) isLoading.value = true
-		try {
-			const page = await fetch()
-			if (id !== requestId) return
-			applyPage(page, append)
-			error.value = null
-		} catch (cause) {
-			if (id === requestId && !quiet) error.value = cause
-		} finally {
-			if (id === requestId) isLoading.value = false
-		}
-	}
-
+	/** Loads the next page, or reads the loaded ones again. */
 	function load(append = false): Promise<void> {
-		return run(() => fetchPage(append ? assets.value.length : 0), append)
+		return append ? read.loadMore() : read.refresh()
 	}
 
-	/** Loads the files not fetched yet, so a selection or an action covers the whole listing. */
-	function loadAll(): Promise<void> {
-		if (assets.value.length >= total.value) return Promise.resolve()
-		return run(() => fetchFirst(total.value), false)
+	/** Loads the files not fetched yet, in the largest pages the API serves, so a selection or an action covers the whole listing. */
+	async function loadAll(): Promise<void> {
+		pageLimit = MAX_PAGE_SIZE
+		try {
+			let loaded = -1
+			while (read.hasMore.value && assets.value.length !== loaded) {
+				loaded = assets.value.length
+				await read.loadMore()
+			}
+		} finally {
+			pageLimit = PAGE_SIZE
+		}
 	}
 
 	/** Re-reads what is on screen after a change elsewhere, keeping as many files as were loaded. */
-	function refresh(): Promise<void> {
+	async function refresh(): Promise<void> {
 		const before = new Map(assets.value.map((asset) => [asset.id, asset.updatedAt]))
-		return run(() => fetchFirst(assets.value.length), false, true).then(() => {
-			for (const asset of assets.value) {
-				const previous = before.get(asset.id)
-				if (previous && previous !== asset.updatedAt) previews.forget(asset.id)
-			}
-			previews.request(assets.value)
-		})
+		await read.refresh({ dedupe: 'defer' })
+		for (const asset of assets.value) {
+			const previous = before.get(asset.id)
+			if (previous && previous !== asset.updatedAt) previews.forget(asset.id)
+		}
+		previews.request(assets.value)
+	}
+
+	/** Replaces the pages shown with what `update` makes of them, the next page following. */
+	function rewritePages(update: (shown: ListingPage[]) => ListingPage[]): void {
+		if (pages.value.length === 0) return
+		const next = update(pages.value)
+		read.data.value = { pages: next, next: nextOffset(next) }
 	}
 
 	function setLocation(next: LibraryLocation): Promise<void> {
 		const keepsNarrowing = location.value.kind === 'search' && next.kind === 'search'
 		location.value = next
-		const sort = next.kind === 'view' ? (VIEW_SORTS[next.view] ?? preferredSort.value) : preferredSort.value
+		const sort = sortOf(next)
 		filters.value = keepsNarrowing ? { ...filters.value, ...sort } : { ...sort, ...NARROWING_FILTERS }
-		assets.value = []
-		total.value = 0
-		return load()
+		return settled()
 	}
 
 	function rememberSort(changes: Partial<ListingFilters>): void {
@@ -195,20 +278,39 @@ export function useLibraryListing(options: LibraryListingOptions = {}) {
 	function setFilters(changes: Partial<ListingFilters>): Promise<void> {
 		filters.value = { ...filters.value, ...changes }
 		rememberSort(changes)
-		return load()
+		return settled()
 	}
 
 	function patchAsset(assetId: string, changes: Partial<MediaAsset>): void {
-		assets.value = assets.value.map((asset) =>
-			asset.id === assetId ? { ...asset, ...changes } : asset,
+		rewritePages((shown) =>
+			shown.map((page) => ({
+				...page,
+				assets: page.assets.map((asset) => (asset.id === assetId ? { ...asset, ...changes } : asset)),
+			})),
 		)
+	}
+
+	/** Puts the loaded files in `order`, which holds the same files. */
+	function reorderAssets(order: MediaAsset[]): void {
+		rewritePages((shown) => spreadOver(shown, order))
 	}
 
 	function removeAssets(ids: string[]): void {
 		const removed = new Set(ids)
-		const before = assets.value.length
-		assets.value = assets.value.filter((asset) => !removed.has(asset.id))
-		total.value = Math.max(total.value - (before - assets.value.length), 0)
+		const count = assets.value.filter((asset) => removed.has(asset.id)).length
+		rewritePages((shown) =>
+			shown.map((page) => ({
+				...page,
+				assets: page.assets.filter((asset) => !removed.has(asset.id)),
+				total: Math.max(page.total - count, 0),
+			})),
+		)
+	}
+
+	function removeExtraFolder(folderId: string): void {
+		rewritePages((shown) =>
+			shown.map((page) => ({ ...page, folders: page.folders?.filter((folder) => folder.id !== folderId) })),
+		)
 	}
 
 	/** Places a new file where the current sort puts it, or only counts it when it belongs to a page not loaded yet. */
@@ -216,13 +318,10 @@ export function useLibraryListing(options: LibraryListingOptions = {}) {
 		if (assets.value.some((entry) => entry.id === asset.id)) return
 		if (filters.value.type && asset.typeGroup !== filters.value.type) return
 		const index = sortedIndex(assets.value, asset, filters.value)
-		total.value += 1
-		if (index === assets.value.length && assets.value.length < total.value - 1) return
-		assets.value = [...assets.value.slice(0, index), asset, ...assets.value.slice(index)]
-		previews.request([asset])
+		const isBeyondLoaded = index === assets.value.length && hasMore.value
+		const order = isBeyondLoaded ? assets.value : [...assets.value.slice(0, index), asset, ...assets.value.slice(index)]
+		rewritePages((shown) => spreadOver(shown.map((page) => ({ ...page, total: page.total + 1 })), order))
 	}
-
-	const hasMore = computed(() => assets.value.length < total.value)
 
 	onLibraryChange(() => location.value.kind !== 'root' && refresh())
 
@@ -243,7 +342,9 @@ export function useLibraryListing(options: LibraryListingOptions = {}) {
 		setLocation,
 		setFilters,
 		patchAsset,
+		reorderAssets,
 		removeAssets,
+		removeExtraFolder,
 		insertAsset,
 	}
 }

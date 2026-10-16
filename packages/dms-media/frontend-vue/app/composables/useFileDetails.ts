@@ -1,3 +1,4 @@
+import type { ApiDataContext, ApiDataResult } from '#dms-core/app/composables/auth/useApiData'
 import type { AssetDetails, AssetPage, AssetVisibility, MediaAsset } from '../types/media'
 import type { FileListingOrder } from '../utils/mediaFiles'
 
@@ -6,30 +7,109 @@ const SIBLINGS_HALF_WINDOW = SIBLINGS_PAGE_SIZE / 2
 const SIBLINGS_EDGE_MARGIN = 20
 const DEFAULT_SIBLINGS_SORT = 'name'
 
+/** The page of the file's folder the previous and next files come from. */
+interface SiblingsWindow {
+	folderId: string
+	/** The order it was read in, as `orderKey` writes it. */
+	order: string
+	/** A write may have moved the file among them: the next read of the file reads them again. */
+	isStale?: boolean
+	assets: MediaAsset[]
+	offset: number
+	total: number
+}
+
+/** What the file page reads at once: the file, and the files around it in its folder. */
+interface FileRead {
+	details: AssetDetails
+	siblings: SiblingsWindow
+}
+
+const orderKey = (order: FileListingOrder) => JSON.stringify([order.sort, order.direction, order.type])
+
+function isNearWindowEdge(window: SiblingsWindow, id: string): boolean {
+	const position = window.assets.findIndex((entry) => entry.id === id)
+	if (position < 0) return true
+	const hasBefore = window.offset > 0
+	const hasAfter = window.offset + window.assets.length < window.total
+	return (hasBefore && position < SIBLINGS_EDGE_MARGIN) || (hasAfter && position >= window.assets.length - SIBLINGS_EDGE_MARGIN)
+}
+
 /**
  * One file of the library, its neighbours in the folder (in the order and
- * filter the explorer showed them in) and the writes on it. It follows the
- * library's realtime topic, so a change made elsewhere (a revert, a rename,
- * a deletion) shows at once.
+ * filter the explorer showed them in) and the writes on it. The file and its
+ * neighbours are read with the page, under one key per file: the page's blocks
+ * share the read, and a server render hands it over. Moving to the next file
+ * reads that file alone while it sits well inside the neighbours already read.
+ * It follows the library's realtime topic, so a change made elsewhere (a
+ * revert, a rename, a deletion) shows at once.
  */
 export function useFileDetails(assetId: Ref<string | undefined>, order: Ref<FileListingOrder> = ref({})) {
 	const api = useMediaApi()
 	const { t } = useI18n()
 	const toast = useToast()
-	const details = ref<AssetDetails | null>(null)
-	const siblings = ref<MediaAsset[]>([])
-	const siblingsOffset = ref(0)
-	const siblingsTotal = ref(0)
-	const { tree, reload: refreshTree } = useSharedTree()
-	const isLoading = ref(false)
-	const error = ref<unknown>(null)
-	const isDeleted = ref(false)
-	const lastFolderId = ref<string | null>(null)
+	const { tree, refresh: refreshTree } = useLibraryTree()
+
+	async function readSiblings(fetch: ApiDataContext['$authFetch'], signal: AbortSignal, folderId: string, id: string): Promise<SiblingsWindow> {
+		const current = order.value
+		const page = (offset: number) =>
+			fetch<AssetPage>(MEDIA_READS.folderAssets(folderId), {
+				query: { ...current, sort: current.sort ?? DEFAULT_SIBLINGS_SORT, offset, limit: SIBLINGS_PAGE_SIZE },
+				signal,
+			})
+		let offset = 0
+		let found = await page(offset)
+		const holds = (candidate: AssetPage) => candidate.assets.some((entry) => entry.id === id)
+		while (!holds(found) && found.assets.length > 0 && offset + found.assets.length < found.total) {
+			offset += found.assets.length
+			found = await page(offset)
+		}
+		const position = found.assets.findIndex((entry) => entry.id === id)
+		const isInFirstHalf = offset === 0 && position < SIBLINGS_HALF_WINDOW
+		const centered = position < 0 || isInFirstHalf ? offset : Math.max(0, offset + position - SIBLINGS_HALF_WINDOW)
+		if (centered !== offset) found = await page(centered)
+		return { folderId, order: orderKey(current), assets: found.assets, offset: centered, total: found.total }
+	}
+
+	const read: ApiDataResult<FileRead> = useApiData<FileRead>(
+		() => (assetId.value ? `dms-media:file:${assetId.value}:${orderKey(order.value)}` : null),
+		async ({ $authFetch, signal }): Promise<FileRead> => {
+			const id = assetId.value!
+			const details = await $authFetch<AssetDetails>(MEDIA_READS.details(id), { signal })
+			// The neighbours last read, by this key or the previous file's.
+			const previous = read.data.value?.siblings
+			const keepsWindow =
+				previous !== undefined &&
+				!previous.isStale &&
+				previous.folderId === details.asset.folderId &&
+				previous.order === orderKey(order.value) &&
+				!isNearWindowEdge(previous, id)
+			return { details, siblings: keepsWindow ? previous : await readSiblings($authFetch, signal, details.asset.folderId, id) }
+		},
+		// Read again on each library change, its own trigger: the page's refreshes leave it alone.
+		{ refreshOnPageRefresh: false },
+	)
+
+	const error = computed(() => read.error.value)
+	/** A failed read shows no file, whatever it showed before. */
+	const details = computed(() => (error.value ? null : (read.data.value?.details ?? null)))
+	/** The file shown was deleted: it is gone on the next read, not a link to a file that never was. */
+	const isDeleted = computed(
+		() => isNotFoundError(error.value) && read.data.value?.details.asset.id === assetId.value,
+	)
+	const siblingsWindow = computed(() => read.data.value?.siblings)
+	const siblings = computed(() => {
+		const list = siblingsWindow.value?.assets ?? []
+		return isDeleted.value ? list.filter((entry) => entry.id !== assetId.value) : list
+	})
+	const isLoading = computed(() => read.pending.value)
+	/** The folder of the file last read, kept once it is gone. */
+	const lastFolderId = computed(() => read.data.value?.details.asset.folderId ?? null)
 
 	const asset = computed(() => details.value?.asset)
 	const localIndex = computed(() => siblings.value.findIndex((entry) => entry.id === assetId.value))
-	const index = computed(() => (localIndex.value < 0 ? -1 : siblingsOffset.value + localIndex.value))
-	const total = computed(() => siblingsTotal.value)
+	const index = computed(() => (localIndex.value < 0 ? -1 : (siblingsWindow.value?.offset ?? 0) + localIndex.value))
+	const total = computed(() => siblingsWindow.value?.total ?? 0)
 	const previous = computed(() => (localIndex.value > 0 ? siblings.value[localIndex.value - 1] : undefined))
 	const next = computed(() =>
 		localIndex.value >= 0 && localIndex.value < siblings.value.length - 1 ? siblings.value[localIndex.value + 1] : undefined,
@@ -39,72 +119,28 @@ export function useFileDetails(assetId: Ref<string | undefined>, order: Ref<File
 		() => Boolean(details.value?.folder.rights.manage) && Boolean(tree.value?.isOwner),
 	)
 
-	function fetchSiblings(folderId: string, offset: number): Promise<AssetPage> {
-		return api.folderAssets(folderId, {
-			...order.value,
-			sort: order.value.sort ?? DEFAULT_SIBLINGS_SORT,
-			offset,
-			limit: SIBLINGS_PAGE_SIZE,
-		})
+	/**
+	 * Reads the file again; with `rereadSiblings`, its neighbours too. The
+	 * blocks asking at once share one request.
+	 */
+	function load(rereadSiblings = false): Promise<void> {
+		const shown = read.data.value
+		if (rereadSiblings && shown) read.data.value = { ...shown, siblings: { ...shown.siblings, isStale: true } }
+		return read.refresh({ dedupe: 'defer' })
 	}
 
-	/** The page of the folder holding the file, re-read around it when it sits near an end. */
-	async function loadSiblings(folderId: string, id: string): Promise<void> {
-		let offset = 0
-		let page = await fetchSiblings(folderId, offset)
-		const holds = (candidate: AssetPage) => candidate.assets.some((entry) => entry.id === id)
-		while (!holds(page) && page.assets.length > 0 && offset + page.assets.length < page.total) {
-			offset += page.assets.length
-			page = await fetchSiblings(folderId, offset)
-		}
-		const found = page.assets.findIndex((entry) => entry.id === id)
-		const isInFirstHalf = offset === 0 && found < SIBLINGS_HALF_WINDOW
-		const centered = found < 0 || isInFirstHalf ? offset : Math.max(0, offset + found - SIBLINGS_HALF_WINDOW)
-		if (centered !== offset) page = await fetchSiblings(folderId, centered)
-		siblings.value = page.assets
-		siblingsOffset.value = centered
-		siblingsTotal.value = page.total
-	}
-
-	function isNearWindowEdge(id: string): boolean {
-		const position = siblings.value.findIndex((entry) => entry.id === id)
-		if (position < 0) return true
-		const hasBefore = siblingsOffset.value > 0
-		const hasAfter = siblingsOffset.value + siblings.value.length < siblingsTotal.value
-		return (hasBefore && position < SIBLINGS_EDGE_MARGIN) || (hasAfter && position >= siblings.value.length - SIBLINGS_EDGE_MARGIN)
-	}
-
-	function markUnavailable(cause: unknown): void {
-		const wasShown = details.value?.asset.id === assetId.value
-		if (wasShown && isNotFoundError(cause)) {
-			isDeleted.value = true
-			siblings.value = siblings.value.filter((entry) => entry.id !== assetId.value)
-		}
-		details.value = null
-		error.value = cause
-	}
-
-	async function load(id: string, refreshSiblings = false): Promise<void> {
-		isLoading.value = true
-		try {
-			const loaded = await api.details(id)
-			const folderChanged = loaded.asset.folderId !== details.value?.asset.folderId
-			details.value = loaded
-			lastFolderId.value = loaded.asset.folderId
-			error.value = null
-			isDeleted.value = false
-			if (refreshSiblings || folderChanged || isNearWindowEdge(id)) await loadSiblings(loaded.asset.folderId, id)
-		} catch (cause) {
-			markUnavailable(cause)
-		} finally {
-			isLoading.value = false
-		}
-	}
-
+	/** Shows a write at once, before the read that confirms it. */
 	function patch(changes: Partial<MediaAsset>): void {
-		if (!details.value) return
-		details.value = { ...details.value, asset: { ...details.value.asset, ...changes } }
-		siblings.value = siblings.value.map((entry) => (entry.id === details.value?.asset.id ? { ...entry, ...changes } : entry))
+		const shown = read.data.value
+		if (!shown || error.value) return
+		const id = shown.details.asset.id
+		read.data.value = {
+			details: { ...shown.details, asset: { ...shown.details.asset, ...changes } },
+			siblings: {
+				...shown.siblings,
+				assets: shown.siblings.assets.map((entry) => (entry.id === id ? { ...entry, ...changes } : entry)),
+			},
+		}
 	}
 
 	async function rename(name: string): Promise<boolean> {
@@ -113,7 +149,7 @@ export function useFileDetails(assetId: Ref<string | undefined>, order: Ref<File
 		patch({ name })
 		try {
 			await api.updateAsset(current.id, { name })
-			await load(current.id, true)
+			await load(true)
 			return true
 		} catch (cause) {
 			patch({ name: current.name })
@@ -139,7 +175,7 @@ export function useFileDetails(assetId: Ref<string | undefined>, order: Ref<File
 		try {
 			const outcome = await api.setAssetsVisibility([id], visibility)
 			if (outcome.refused.length) throw { data: { message: outcome.refused[0]?.message } }
-			await load(id)
+			await load()
 			return true
 		} catch (cause) {
 			useApiError(cause, { title: t('dms_media.toasts.visibility_failed') })
@@ -165,7 +201,7 @@ export function useFileDetails(assetId: Ref<string | undefined>, order: Ref<File
 		try {
 			const outcome = await api.moveAssets([current.id], folderId)
 			if (outcome.refused.length) throw { data: { message: outcome.refused[0]?.message } }
-			await load(current.id)
+			await load()
 			toast.add({ title: t('dms_media.toasts.moved', { count: 1 }, 1), color: 'success' })
 		} catch (cause) {
 			useApiError(cause, { title: t('dms_media.toasts.move_failed') })
@@ -187,17 +223,9 @@ export function useFileDetails(assetId: Ref<string | undefined>, order: Ref<File
 	}
 
 	function refresh(): void {
-		if (assetId.value) void load(assetId.value, true)
+		if (assetId.value) void load(true)
 	}
 
-	watch(
-		assetId,
-		(id) => {
-			if (id) void load(id)
-		},
-		{ immediate: true },
-	)
-	watch(() => JSON.stringify(order.value), refresh)
 	onLibraryChange(refresh)
 
 	return {
@@ -215,7 +243,6 @@ export function useFileDetails(assetId: Ref<string | undefined>, order: Ref<File
 		lastFolderId,
 		canWrite,
 		canChangeVisibility,
-		load,
 		refresh,
 		refreshTree,
 		rename,

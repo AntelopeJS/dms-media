@@ -25,12 +25,21 @@ function subtreeIds(folders: MediaFolder[], rootId: string): Set<string> {
 	return ids
 }
 
-/** The folder tree the caller can see, with lookups by id and by parent. */
+/**
+ * The folder tree the caller can see, with lookups by id and by parent. The
+ * tree is read with the page (counted over the scope folder when given),
+ * shared with the other blocks reading it, and read again on each library
+ * change.
+ */
 export function useLibraryTree(options: LibraryTreeOptions = {}) {
-	const api = useMediaApi()
-	const tree = ref<MediaTree | null>(null)
-	const isLoading = ref(false)
-	const error = ref<unknown>(null)
+	// Read again on each library change, its own trigger: the page's refreshes leave it alone.
+	const read = useApiData<MediaTree>(MEDIA_READS.tree, {
+		query: options.scopeFolderId ? { folderId: options.scopeFolderId } : undefined,
+		refreshOnPageRefresh: false,
+	})
+	const tree = read.data
+	const isLoading = read.pending
+	const error = read.error
 
 	const allFolders = computed(() => tree.value?.folders ?? [])
 	const scopeFolder = computed(() =>
@@ -71,17 +80,23 @@ export function useLibraryTree(options: LibraryTreeOptions = {}) {
 		return result
 	}
 
-	async function refresh(): Promise<void> {
-		isLoading.value = true
-		try {
-			tree.value = await fetchTree(api, options.scopeFolderId)
-			error.value = null
-		} catch (cause) {
-			error.value = cause
-		} finally {
-			isLoading.value = false
-		}
+	/** Resolves once the tree's first read is done. */
+	async function ready(): Promise<void> {
+		await read
 	}
+
+	/** Reads the tree again; the blocks asking at once share one request. */
+	function refresh(): Promise<void> {
+		return read.refresh({ dedupe: 'defer' })
+	}
+
+	watch(
+		tree,
+		(current) => {
+			if (current) rememberUploadLimits(current)
+		},
+		{ immediate: true },
+	)
 
 	function patchFolder(folderId: string, changes: Partial<MediaFolder>): void {
 		if (!tree.value) return
@@ -141,6 +156,7 @@ export function useLibraryTree(options: LibraryTreeOptions = {}) {
 		foldersById,
 		childrenOf,
 		descendantsOf,
+		ready,
 		refresh,
 		patchFolder,
 		adjustCounts,

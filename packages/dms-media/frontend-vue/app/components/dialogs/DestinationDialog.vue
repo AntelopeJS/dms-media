@@ -19,7 +19,7 @@ const api = useMediaApi()
 const toast = useToast()
 const format = useMediaFormat()
 const nameDialog = useOverlay().create(NameDialog)
-const { tree, reload } = useSharedTree()
+const { tree, refresh: reload } = useLibraryTree()
 const pickerRoot = useTemplateRef<HTMLElement>('pickerRoot')
 const isCreating = ref(false)
 
@@ -87,7 +87,6 @@ const stopFocusing = watch(pickerRoot, (root) => {
 	setTimeout(() => root.querySelector('input')?.focus())
 })
 
-onMounted(() => void reload())
 </script>
 
 <template>

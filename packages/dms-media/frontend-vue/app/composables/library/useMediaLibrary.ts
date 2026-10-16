@@ -7,7 +7,7 @@ import type {
 	MediaAsset,
 	MediaFolder,
 } from '../../types/media'
-import { type LibraryLocation, sameLocation } from './useLibraryListing'
+import { type LibraryLocation, type ListingFilters, sameLocation } from './useLibraryListing'
 
 const LIBRARY_KEY: InjectionKey<MediaLibrary> = Symbol('dms-media-library')
 
@@ -22,6 +22,10 @@ export interface MediaLibraryOptions {
 	scopeFolderId?: string
 	/** Files the picker's field already holds: shown, but not picked twice. */
 	alreadyPicked?: string[]
+	/** Where the explorer starts, read with the page by a server render. */
+	initialLocation?: LibraryLocation
+	/** The filters it starts with. */
+	initialFilters?: Partial<ListingFilters>
 }
 
 /** What a name dialog learns from a write: whether it is done, or the refusal to show under the field. */
@@ -39,13 +43,19 @@ function createMediaLibrary(options: MediaLibraryOptions) {
 	const previews = useMediaPreviews()
 	const uploads = useUploadQueue()
 	const tree = useLibraryTree({ scopeFolderId: options.scopeFolderId })
-	const listing = useLibraryListing({ scopeFolderId: options.scopeFolderId, tree })
+	const listing = useLibraryListing({
+		scopeFolderId: options.scopeFolderId,
+		tree,
+		initialLocation: options.initialLocation,
+		initialFilters: options.initialFilters,
+	})
 	const isPick = options.mode === 'pick'
 	const selection = useLibrarySelection(listing.assets, isPick)
 	const backStack = ref<LibraryLocation[]>([])
 	const forwardStack = ref<LibraryLocation[]>([])
-	const lastFolderId = ref<string | null>(null)
-	const beforeSearch = ref<LibraryLocation>({ kind: 'root' })
+	const start = listing.location.value
+	const lastFolderId = ref<string | null>(start.kind === 'folder' ? start.folderId : null)
+	const beforeSearch = ref<LibraryLocation>(start.kind === 'search' ? { kind: 'root' } : start)
 	const accept = options.accept ?? []
 	const alreadyPicked = new Set(options.alreadyPicked ?? [])
 
@@ -269,8 +279,8 @@ function createDetailActions(library: LibraryCore) {
 		const { sort, direction } = listing.filters.value
 		if (sort !== 'name') return
 		const factor = direction === 'desc' ? -1 : 1
-		listing.assets.value = [...listing.assets.value].sort(
-			(left, right) => NAME_COLLATOR.compare(left.name, right.name) * factor,
+		listing.reorderAssets(
+			[...listing.assets.value].sort((left, right) => NAME_COLLATOR.compare(left.name, right.name) * factor),
 		)
 	}
 
@@ -385,7 +395,7 @@ function createStarActions(library: LibraryCore) {
 
 	function leaveStarredView(target: MediaAsset | MediaFolder, kind: 'asset' | 'folder'): void {
 		if (kind === 'asset') listing.removeAssets([target.id])
-		else listing.extraFolders.value = listing.extraFolders.value.filter((folder) => folder.id !== target.id)
+		else listing.removeExtraFolder(target.id)
 		library.toast.add({
 			title: t('dms_media.toasts.unstarred', { name: target.name }),
 			color: 'neutral',

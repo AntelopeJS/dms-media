@@ -1,6 +1,9 @@
 import path from "node:path";
 import { ImplementInterface } from "@antelopejs/interface-core";
-import { AddFrontendModule } from "@antelopejs/interface-dms/page";
+import {
+  AddFrontendModule,
+  type FrontendBackendProxy,
+} from "@antelopejs/interface-dms/page";
 import { Logging } from "@antelopejs/interface-core/logging";
 import "./db";
 import type { ScheduledTask } from "node-cron";
@@ -23,6 +26,19 @@ export * from "./types";
 
 let cronTasks: ScheduledTask[] = [];
 
+/** The frontend module the dashboard loads: its blocks, viewers and fields. */
+export const MEDIA_FRONTEND_MODULE = "@antelopejs/dms-media-frontend-vue";
+
+/**
+ * The file links a dashboard page shows (`/media/<id>/<name>`), which the
+ * backend serves: proxied by the frontend server with the member's session,
+ * so that a private file opens for a member signed in, as on the API origin.
+ */
+export const MEDIA_DELIVERY_PROXY: FrontendBackendProxy = {
+  path: "/media/**",
+  auth: "session",
+};
+
 export async function construct(config: DmsMediaConfig = {}): Promise<void> {
   configureMediaModule(config);
   ImplementInterface(
@@ -32,11 +48,12 @@ export async function construct(config: DmsMediaConfig = {}): Promise<void> {
   const sourcePath = path.join(__dirname, "../frontend-vue");
 
   await AddFrontendModule({
-    name: "@antelopejs/dms-media-frontend-vue",
+    name: MEDIA_FRONTEND_MODULE,
     sourcePath,
     renderer: { name: "vue", version: "3" },
     configKey: "dmsMedia",
     priority: 0,
+    backendProxies: [MEDIA_DELIVERY_PROXY],
   });
 }
 

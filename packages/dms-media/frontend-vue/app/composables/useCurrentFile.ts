@@ -1,4 +1,3 @@
-import { createSharedComposable } from '@vueuse/core'
 import type { AssetSortKey, AssetTypeGroup, SortDirection } from '../types/media'
 import type { FileListingOrder } from '../utils/mediaFiles'
 import MediaLightbox from '../components/shared/MediaLightbox.vue'
@@ -11,16 +10,18 @@ function queryValue<T extends string>(value: unknown, allowed: readonly T[]): T 
 }
 
 /**
- * The file the file page shows, named by its `asset` query parameter: one state
- * shared by the page's blocks (header, viewer, properties, delivery links), so a
- * rename in the properties shows in the header at once. Its `sort`, `direction`
- * and `type` parameters keep the explorer's order for previous and next.
+ * The file the file page shows, named by its `asset` query parameter. Each of
+ * the page's blocks (header, viewer, properties) reads it, and they share the
+ * read: a rename in the properties shows in the header at once, and a server
+ * render reads the file once. Its `sort`, `direction` and `type` parameters
+ * keep the explorer's order for previous and next.
  */
-export const useCurrentFile = createSharedComposable(() => {
+export function useCurrentFile() {
 	const route = useDmsRoute()
 	const router = useDmsRouter()
 	const overlay = useOverlay()
-	const lightbox = overlay.create(MediaLightbox)
+	const createLightbox = () => overlay.create(MediaLightbox)
+	let lightbox: ReturnType<typeof createLightbox> | undefined
 	const assetId = computed(() => (typeof route.query.asset === 'string' ? route.query.asset : undefined))
 	const order = computed<FileListingOrder>(() => ({
 		sort: queryValue(route.query.sort, SORT_KEYS),
@@ -37,6 +38,7 @@ export const useCurrentFile = createSharedComposable(() => {
 	async function fullscreen(): Promise<void> {
 		const asset = file.asset.value
 		if (!asset) return
+		lightbox ??= createLightbox()
 		const shownId = await lightbox.open({
 			assets: file.siblings.value.length ? file.siblings.value : [asset],
 			startId: asset.id,
@@ -51,4 +53,4 @@ export const useCurrentFile = createSharedComposable(() => {
 	}
 
 	return { ...file, assetId, order, open, fullscreen, edit }
-})
+}

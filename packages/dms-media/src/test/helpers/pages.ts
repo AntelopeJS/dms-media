@@ -1,7 +1,8 @@
+import { pageRoutePath } from "@antelopejs/interface-dms/page";
 import type { AxiosInstance } from "axios";
 
 const HTTP_OK = 200;
-const PAGE_LAYOUT_SUFFIX = "/pagelayout";
+const PAGE_LAYOUT_ROUTE = "/pagelayout";
 const OMIT_SHARED_PAGE = "false";
 
 /** What a caller gets from each surface that serves a DMS page. */
@@ -25,7 +26,7 @@ export async function readPageAccess(
   slug: string,
 ): Promise<PageAccess> {
   const [ownRoute, page, layout] = await Promise.all([
-    client.get(`${slug}${PAGE_LAYOUT_SUFFIX}`),
+    client.get(pageRoutePath(slug, PAGE_LAYOUT_ROUTE)),
     client.get("/dms/page", {
       params: { path: slug, shared: OMIT_SHARED_PAGE },
     }),

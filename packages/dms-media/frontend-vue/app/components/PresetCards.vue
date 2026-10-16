@@ -29,24 +29,16 @@ interface PresetFact {
 	hint?: string
 }
 
-const api = useMediaApi()
 const format = useMediaFormat()
 const { t, te } = useI18n()
-const data = ref<ImageSizesResponse | null>(null)
-const failed = ref(false)
+const presets = useApiData<ImageSizesResponse>(MEDIA_READS.presets)
+const data = presets.data
+const failed = computed(() => Boolean(presets.error.value) && presets.status.value !== 'pending')
 const brokenExamples = ref(new Set<string>())
 const BOX_SIZE = 140
 const MIN_BOX_SIZE = 28
 const UNBOUNDED_RATIO = 0.62
 const DEFAULT_FIT = 'cover'
-
-onMounted(async () => {
-	try {
-		data.value = (await api.presets()) as ImageSizesResponse
-	} catch {
-		failed.value = true
-	}
-})
 
 /** The example's own size, or a landscape stand-in when there is none. */
 const sourceSize = computed<PixelSize>(() => {
