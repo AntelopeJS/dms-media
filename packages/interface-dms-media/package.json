@@ -9,10 +9,15 @@
     "interface",
     "media"
   ],
+  "homepage": "https://dms.antelopejs.com/docs/modules/media/extending",
+  "bugs": {
+    "url": "https://github.com/AntelopeJS/dms-media/issues"
+  },
   "license": "Apache-2.0",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/AntelopeJS/dms-media.git"
+    "url": "git+https://github.com/AntelopeJS/dms-media.git",
+    "directory": "packages/interface-dms-media"
   },
   "files": [
     "LICENSE",
@@ -54,7 +59,7 @@
   },
   "devDependencies": {
     "@antelopejs/interface-api": ">=0.0.14 <1.0.0",
-    "@antelopejs/interface-core": ">=0.1.1 <1.0.0",
+    "@antelopejs/interface-core": ">=0.2.3 <1.0.0",
     "@antelopejs/interface-dms": ">=0.6.0 <1.0.0",
     "@antelopejs/tooling-configs": ">=0.0.7 <1.0.0",
     "@types/node": "^24.0.0",
@@ -69,7 +74,7 @@
   },
   "peerDependencies": {
     "@antelopejs/interface-api": ">=0.0.14 <1.0.0",
-    "@antelopejs/interface-core": ">=0.1.1 <1.0.0",
+    "@antelopejs/interface-core": ">=0.2.3 <1.0.0",
     "@antelopejs/interface-dms": ">=0.5.12 <1.0.0"
   },
   "packageManager": "pnpm@10.2.0",

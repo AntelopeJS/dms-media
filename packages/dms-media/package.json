@@ -1,16 +1,31 @@
 {
   "name": "@antelopejs/dms-media",
   "version": "0.4.0",
+  "description": "Media library for the AntelopeJS DMS: uploads, folders with per-folder permissions, image sizes and light editing, with a Finder-style explorer.",
+  "keywords": [
+    "antelopejs",
+    "assets",
+    "dms",
+    "dms-module",
+    "file-explorer",
+    "media"
+  ],
+  "homepage": "https://dms.antelopejs.com/docs/modules/media",
+  "bugs": {
+    "url": "https://github.com/AntelopeJS/dms-media/issues"
+  },
   "license": "Apache-2.0",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/AntelopeJS/dms-media.git"
+    "url": "git+https://github.com/AntelopeJS/dms-media.git",
+    "directory": "packages/dms-media"
   },
   "files": [
     "LICENSE",
     "dist",
     "!dist/.tsbuildinfo",
     "frontend-vue",
+    "skills",
     "src"
   ],
   "main": "dist/index.js",
@@ -50,7 +65,7 @@
   "dependencies": {
     "@antelopejs/interface-api": ">=0.0.14 <1.0.0",
     "@antelopejs/interface-api-util": ">=0.1.2 <1.0.0",
-    "@antelopejs/interface-core": ">=0.1.1 <1.0.0",
+    "@antelopejs/interface-core": ">=0.2.3 <1.0.0",
     "@antelopejs/interface-database": ">=0.1.8 <1.0.0",
     "@antelopejs/interface-database-decorators": ">=0.1.7 <1.0.0",
     "@antelopejs/interface-dms": ">=0.7.0 <1.0.0",
@@ -61,7 +76,7 @@
     "zod": "~3.24.2"
   },
   "devDependencies": {
-    "@antelopejs/core": ">=1.13.5 <2",
+    "@antelopejs/core": ">=1.15.2 <2",
     "@antelopejs/dms": ">=0.9.0 <1.0.0",
     "@antelopejs/dms-frontend": "0.6.0",
     "@antelopejs/tooling-configs": ">=0.0.7 <1.0.0",
@@ -87,6 +102,9 @@
     "implements": [
       "@antelopejs/interface-dms-media"
     ],
-    "test": "src/test/antelope.test.ts"
+    "test": "src/test/antelope.test.ts",
+    "skills": [
+      "./skills"
+    ]
   }
 }

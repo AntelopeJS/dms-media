@@ -1,37 +1,33 @@
+<div align="center">
+
 # @antelopejs/interface-dms-media
 
-<div align="center">
-<a href="https://www.npmjs.com/package/@antelopejs/interface-dms-media"><img alt="NPM version" src="https://img.shields.io/npm/v/@antelopejs/interface-dms-media.svg?style=for-the-badge&labelColor=000000"></a>
-<a href="./LICENSE"><img alt="License" src="https://img.shields.io/badge/license-Apache--2.0-blue?style=for-the-badge&labelColor=000000"></a>
-<a href="https://discord.gg/sjK28QHrA7"><img src="https://img.shields.io/badge/Discord-18181B?logo=discord&style=for-the-badge&color=000000" alt="Discord"></a>
-<a href="https://antelopejs.com"><img src="https://img.shields.io/badge/Docs-18181B?style=for-the-badge&color=000000" alt="Documentation"></a>
+<a href="https://www.npmjs.com/package/@antelopejs/interface-dms-media"><img alt="npm" src="https://img.shields.io/npm/v/@antelopejs/interface-dms-media?style=for-the-badge&labelColor=000000&color=000000"></a>
+<a href="./LICENSE"><img alt="License" src="https://img.shields.io/npm/l/@antelopejs/interface-dms-media?style=for-the-badge&labelColor=000000&color=000000"></a>
+<a href="https://discord.gg/sjK28QHrA7"><img alt="Discord" src="https://img.shields.io/badge/Discord-18181B?logo=discord&style=for-the-badge&color=000000"></a>
+<a href="https://dms.antelopejs.com/docs/modules/media/extending"><img alt="Documentation" src="https://img.shields.io/badge/Docs-18181B?style=for-the-badge&color=000000"></a>
+
+The AntelopeJS interface to add media library fields, and the folders bound to them, to DMS pages.
+
 </div>
 
-AntelopeJS interface for the DMS media module (`@antelopejs/dms-media`):
-declare asset fields, and the media folders bound to them, from any module.
+## What it does
 
-- **Implemented by** `@antelopejs/dms-media` (declared in its
-  `antelopeJs.implements`).
-- **Consumed by** modules that declare `AssetType` fields on their DMS pages.
-  Declare this package in `dependencies`.
+- Adds an `AssetType` form field that references library assets by id (one id, or an array with `multiple`) and opens the library as a picker.
+- Binds a field to a folder provisioned under the `Content` root of each tenant: `RegisterAssetBinding` and `UnregisterAssetBinding`, or `new AssetType({ binding })`.
+- Derives the folder's rights from a page (`permissionsFromPage`), a `permissionMapping` or an explicit `acl`.
+- Replays bindings to every new generation of the implementation, so either side can hot reload.
+- Keeps your module independent of the implementation, [`@antelopejs/dms-media`](https://www.npmjs.com/package/@antelopejs/dms-media).
 
-## Surface
+## Install
 
-- `AssetType` — form field referencing media library assets by id (one id, or
-  an array with `multiple`). Registers the `asset` data type; its widget is the
-  `dms-media-asset-picker` component the module ships.
-- `RegisterAssetBinding(config)` / `UnregisterAssetBinding(id)` — declare or
-  withdraw a folder binding. `new AssetType({ binding })` registers its binding
-  itself. The implementer provisions the bound folder under the `Content` root
-  of each tenant, with an ACL derived from `permissionMapping`,
-  `permissionsFromPage` or an explicit `acl`.
-- Types: `AssetTypeOptions`, `AssetPickerComponentOptions`,
-  `AssetBindingConfig`, `AssetPermissionMapping`, `AclEntry`, `AclSubject`,
-  `AclSubjectKind`, `AclRight`.
+Add the interface to the `dependencies` of the module that declares asset fields:
 
-A binding registration belongs to the module that makes it: it is released
-when that module is destroyed and replayed to every new generation of the
-implementer, so either side can hot reload without losing it.
+```bash
+pnpm add @antelopejs/interface-dms-media
+```
+
+## Quick start
 
 ```ts
 import { AssetType } from "@antelopejs/interface-dms-media";
@@ -46,15 +42,26 @@ new AssetType({
 });
 ```
 
-## Development
+The interface also exports the option and ACL types: `AssetTypeOptions`, `AssetPickerComponentOptions`, `AssetBindingConfig`, `AssetPermissionMapping`, `AclEntry`, `AclSubject`, `AclSubjectKind` and `AclRight`.
 
-Lives in the [`dms-media`](https://github.com/AntelopeJS/dms-media) workspace,
-next to the module that implements it.
+## Compatibility
 
-```bash
-pnpm build
-pnpm lint
-pnpm typecheck
-pnpm knip
-pnpm check:exports  # after build: the exports map matches dist
-```
+| Package | Version |
+| --- | --- |
+| `@antelopejs/dms-media` (implementation) | `>=0.4.0` |
+| `@antelopejs/interface-dms` | `>=0.6.0 <1.0.0` |
+| `@antelopejs/interface-core` | `>=0.1.1 <1.0.0` |
+
+## Documentation
+
+- [Extending the media module](https://dms.antelopejs.com/docs/modules/media/extending): asset fields, folder bindings, the HTTP API and delivery URLs
+- [The asset field](https://dms.antelopejs.com/docs/modules/media/usage/asset-field)
+- [Media module guide](https://dms.antelopejs.com/docs/modules/media)
+
+## Contributing
+
+This package lives in the [`AntelopeJS/dms-media`](https://github.com/AntelopeJS/dms-media) pnpm workspace, next to the module that implements it. Read [CONTRIBUTING.md](https://github.com/AntelopeJS/dms-media/blob/main/CONTRIBUTING.md) and the [repository README](https://github.com/AntelopeJS/dms-media#contributing) for the development commands; `pnpm check:exports` checks, after a build, that the exports map matches `dist`. Release this package before the module that implements it.
+
+## License
+
+[Apache-2.0](./LICENSE)
