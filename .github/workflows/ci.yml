@@ -57,6 +57,16 @@ jobs:
       # Asserts the exports map still describes the built output.
       - run: pnpm --dir packages/interface-dms-media check:exports
 
+      - uses: AntelopeJS/tooling-configs/actions/docs@310e3d861b2da2244902854379176c91e1ebc68e
+        with:
+          files: |
+            README.md
+            packages/dms-media/README.md
+            packages/dms-media/docs
+            packages/interface-dms-media/README.md
+            packages/interface-dms-media/docs
+          typescript-project: packages/interface-dms-media/docs/tsconfig.json
+
       - run: pnpm --dir packages/dms-media lint
       # oxlint's type-aware pass degrades to `any` on a broken tsconfig
       # without failing, so the typecheck is what catches it.
