@@ -1,5 +1,3 @@
-import type { MediaTree } from '../types/media'
-
 const DEFAULT_MAX_UPLOAD_BYTES = 500 * 1024 * 1024
 
 /** What the library takes at all, from the module config: every upload is checked against it before it is sent. */
@@ -24,30 +22,4 @@ export function rememberUploadLimits(answer: UploadLimits): void {
 		maxUploadBytes: answer.maxUploadBytes,
 		allowedMimetypes: answer.allowedMimetypes,
 	}
-}
-
-/**
- * The folder tree every block of a page shares: read with the page (a server
- * render hands it over), read again on each library change, and kept in step
- * with the upload limits it carries.
- */
-export function useSharedTree() {
-	// Read again on each library change, its own trigger: the page's refreshes leave it alone.
-	const read = useApiData<MediaTree>(MEDIA_READS.tree, { refreshOnPageRefresh: false })
-
-	/** Reads the tree again; the blocks asking at once share one request. */
-	function reload(): Promise<void> {
-		return read.refresh({ dedupe: 'defer' })
-	}
-
-	watch(
-		read.data,
-		(tree) => {
-			if (tree) rememberUploadLimits(tree)
-		},
-		{ immediate: true },
-	)
-	onLibraryChange(reload)
-
-	return { tree: computed(() => read.data.value), reload }
 }

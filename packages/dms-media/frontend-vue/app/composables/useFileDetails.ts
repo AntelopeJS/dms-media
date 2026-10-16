@@ -48,7 +48,7 @@ export function useFileDetails(assetId: Ref<string | undefined>, order: Ref<File
 	const api = useMediaApi()
 	const { t } = useI18n()
 	const toast = useToast()
-	const { tree, reload: refreshTree } = useSharedTree()
+	const { tree, refresh: refreshTree } = useLibraryTree()
 
 	async function readSiblings(fetch: ApiDataContext['$authFetch'], signal: AbortSignal, folderId: string, id: string): Promise<SiblingsWindow> {
 		const current = order.value

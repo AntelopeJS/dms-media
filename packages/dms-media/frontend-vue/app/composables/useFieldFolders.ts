@@ -39,7 +39,7 @@ function useBoundFolder(bindingId: string): FolderSource {
 
 /** A field without a binding picks anywhere: it shares the page's folder tree. */
 function useTreeFolders(): FolderSource {
-	const { tree, reload } = useSharedTree()
+	const { tree, refresh: reload } = useLibraryTree()
 	return {
 		boundFolder: computed(() => undefined),
 		folders: computed(() => tree.value?.folders ?? []),

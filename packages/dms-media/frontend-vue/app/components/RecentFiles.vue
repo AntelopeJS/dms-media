@@ -7,7 +7,7 @@ const { t } = useI18n()
 // Read again on each library change, its own trigger: the page's refreshes leave it alone.
 const recent = useApiData<{ assets: MediaAsset[] }>(MEDIA_READS.recent, { refreshOnPageRefresh: false })
 const assets = computed(() => recent.data.value?.assets ?? [])
-const { tree } = useSharedTree()
+const { tree } = useLibraryTree()
 const isLoading = computed(() => recent.status.value === 'pending' && !recent.data.value)
 const SKELETONS = 6
 
