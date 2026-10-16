@@ -1,27 +1,54 @@
+<div align="center">
+
 # @antelopejs/dms-media
 
-<div align="center">
-<a href="https://www.npmjs.com/package/@antelopejs/dms-media"><img alt="NPM version" src="https://img.shields.io/npm/v/@antelopejs/dms-media.svg?style=for-the-badge&labelColor=000000"></a>
-<a href="./LICENSE"><img alt="License" src="https://img.shields.io/badge/license-Apache--2.0-blue?style=for-the-badge&labelColor=000000"></a>
-<a href="https://discord.gg/sjK28QHrA7"><img src="https://img.shields.io/badge/Discord-18181B?logo=discord&style=for-the-badge&color=000000" alt="Discord"></a>
-<a href="https://antelopejs.com"><img src="https://img.shields.io/badge/Docs-18181B?style=for-the-badge&color=000000" alt="Documentation"></a>
+<a href="https://www.npmjs.com/package/@antelopejs/dms-media"><img alt="npm" src="https://img.shields.io/npm/v/@antelopejs/dms-media?style=for-the-badge&labelColor=000000&color=000000"></a>
+<a href="./LICENSE"><img alt="License" src="https://img.shields.io/npm/l/@antelopejs/dms-media?style=for-the-badge&labelColor=000000&color=000000"></a>
+<a href="https://discord.gg/sjK28QHrA7"><img alt="Discord" src="https://img.shields.io/badge/Discord-18181B?logo=discord&style=for-the-badge&color=000000"></a>
+<a href="https://dms.antelopejs.com/docs/modules/media"><img alt="Documentation" src="https://img.shields.io/badge/Docs-18181B?style=for-the-badge&color=000000"></a>
+
+A media library for the AntelopeJS DMS: uploads, folders, image sizes and light editing.
+
 </div>
 
-AntelopeJS DMS module providing an asset/media library: upload, folders, delivery derivatives and light image editing, with per-folder permissions that reuse the DMS authorization system. Ships a Finder-style file explorer and an `AssetType` field to reference library assets from forms.
+![The Media library explorer: views and folders on the left, the files of a folder in the middle, the selected file's details on the right](https://raw.githubusercontent.com/AntelopeJS/dms-media/main/packages/dms-media/docs/images/library.png)
 
-![The Media library explorer](./docs/images/library.png)
+## What it does
 
-**Documentation: [dms.antelopejs.com/docs/modules/media](https://dms.antelopejs.com/docs/modules/media)** (sources in [`docs/`](./docs); design notes in [`docs/design/`](./docs/design)).
+- Organises images, videos and documents in a Finder-style explorer, with smart views, search, drag and drop and bulk actions.
+- Uploads files straight to the project's file storage and delivers them from stable `/media/<id>/<name>` URLs.
+- Renders named image sizes on first request, with crop and rotation that can revert to the original.
+- Applies per-folder rights built on the DMS permissions and roles.
+- Adds an `AssetType` form field, from [`@antelopejs/interface-dms-media`](https://github.com/AntelopeJS/dms-media/tree/main/packages/interface-dms-media), that opens the library as a picker on your pages.
 
-See [AGENTS.md](../../AGENTS.md) for code conventions.
+## Install
 
-## Installation
+Run the AntelopeJS CLI from the root of a project that already loads `@antelopejs/dms` and a file storage module:
 
 ```bash
 ajs project modules add @antelopejs/dms-media
 ```
 
-The browser uploads straight to the storage: list the dashboard's origins in the api module's `cors.allowedOrigins`. See [Installation](https://dms.antelopejs.com/docs/modules/media/installation) and [Configuration](https://dms.antelopejs.com/docs/modules/media/configuration).
+## Quick start
+
+Point the module's links at the API's public URL, and allow the dashboard's origin, since the browser uploads straight to the storage:
+
+```ts
+// antelope.config.ts
+"dms-media": {
+  source: { type: "package", package: "@antelopejs/dms-media", version: "^0.4.0" },
+  config: {
+    publicBaseUrl: "${@api.API_PUBLIC_BASE_URL}",
+  },
+},
+api: {
+  config: {
+    cors: { allowedOrigins: ["https://dms.example.com"] },
+  },
+},
+```
+
+Restart the backend, then the frontend, and open **Modules › Media** (`/modules/media/overview`). To let members pick files from your own pages, add an asset field:
 
 ```ts
 import { AssetType } from "@antelopejs/interface-dms-media";
@@ -32,34 +59,33 @@ new AssetType({
 });
 ```
 
-## Claude Code skill
+## Compatibility
 
-The package ships the `dms-media` skill in [`skills/`](./skills), declared in `package.json` under `antelopeJs.skills`.
+| Package | Version |
+| --- | --- |
+| `@antelopejs/dms` | `>=0.9.0 <1.0.0` |
+| `@antelopejs/interface-dms` | `>=0.7.0 <1.0.0` |
+| `@antelopejs/dms-frontend` (renderer) | `>=0.6.0 <0.7.0` |
+| `@antelopejs/interface-dms-media` | `>=0.2.1 <0.3.0` |
+| File storage | an `@antelopejs/interface-file-storage` implementation, such as `@antelopejs/file-storage-local` |
 
-## Development
+On DMS 0.8, use `@antelopejs/dms-media` 0.3.
 
-The module lives in `packages/dms-media` of a pnpm workspace, next to the interface package it implements (`packages/interface-dms-media`). Run these from `packages/dms-media`:
+## Documentation
 
-```bash
-pnpm install        # whole workspace; the interface resolves to the sibling package
-pnpm build          # builds the interface, then the module
-pnpm dev            # backend, via playground (ajs project run -w -p playground)
-pnpm frontend:dev   # Vue 3 Inertia frontend, from playground (ajs dms dev)
-pnpm test           # build + full mocha suite (unit + HTTP integration)
-pnpm test:unit      # build + unit tests only (no HTTP)
-pnpm test:reload    # hot reload of a consumer and of the module, in a real project
-```
+- [Introduction](https://dms.antelopejs.com/docs/modules/media/introduction)
+- [Installation](https://dms.antelopejs.com/docs/modules/media/installation)
+- [Configuration](https://dms.antelopejs.com/docs/modules/media/configuration)
+- [Usage](https://dms.antelopejs.com/docs/modules/media/usage/overview)
+- [Extending](https://dms.antelopejs.com/docs/modules/media/extending)
+- [FAQ](https://dms.antelopejs.com/docs/modules/media/faq)
 
-The playground is a project of its own, outside the workspace: install it with `pnpm --dir playground install --ignore-workspace` before `pnpm dev`. It links `@antelopejs/interface-dms-media` from `packages/interface-dms-media`, and `pnpm dev` builds the interface, the module and the playground in that order before starting the backend.
+The guide's sources live in [`packages/dms-media/docs`](https://github.com/AntelopeJS/dms-media/tree/main/packages/dms-media/docs). The module ships the `dms-media` Claude Code skill in [`packages/dms-media/skills`](https://github.com/AntelopeJS/dms-media/tree/main/packages/dms-media/skills), declared under `antelopeJs.skills`.
 
-The playground's Media demo page (`/media-demo`) holds every flavour of the `AssetType` picker: a single cover image with a linked folder, a gallery with a maximum, a PDF-only spec sheet, documents restricted to PDF, Word and text files in their own linked folder, and a free attachment.
+## Contributing
 
-The playground connects to MongoDB at `mongodb://localhost:27017` by default. Set `MONGO_URL` to point it at another instance, e.g. `MONGO_URL=mongodb://127.0.0.1:27019 pnpm dev`.
+This package lives in the [`AntelopeJS/dms-media`](https://github.com/AntelopeJS/dms-media) pnpm workspace, next to `@antelopejs/interface-dms-media`. Read [CONTRIBUTING.md](https://github.com/AntelopeJS/dms-media/blob/main/CONTRIBUTING.md) and the [repository README](https://github.com/AntelopeJS/dms-media#contributing) for the development commands.
 
-The frontend entry is `frontend-vue/dms.frontend.ts`. It declares `componentPrefix: "DmsMedia"` and registers the blocks of `app/components/*.vue` by file name (`Explorer` is served as `DmsMediaExplorer`); the parts in subfolders are imported by path. `dms.frontend.build.ts` auto-imports `app/composables` and `app/utils`. Use relative imports for module-local files because the Inertia adapter copies the frontend separately from the backend. The adapter discovers locale files and `app/config/shortcuts-registry.ts`; no Nuxt installation is required.
+## License
 
-The blocks read the data they render with the DMS's `useApiData` (`@antelopejs/dms` 0.9, `@antelopejs/interface-dms` 0.7, `@antelopejs/dms-frontend` 0.6): a server render reads it and hands it to the browser with the page. The explorer's folder tree is the same read, and its file listing one `useApiPagedData` read keyed by the location and the filters ("Load more" appends a page, a library change reads every loaded page again). The reads that follow the library's realtime changes on their own opt out of the page's refreshes. Writes, downloads, and the reads of the asset field's entries, the dialogs and the image editor's canvas, stay `$authFetch` calls in the browser.
-
-The file links (`/media/<id>/<name>`) are served by the backend. The module declares `/media/**` as a backend prefix (`backendProxies`, with the session), so that a link on the dashboard's origin reaches the backend and a private file opens for a signed-in member.
-
-The playground uses the `@antelopejs/dms-frontend` CLI. Run `pnpm --dir frontend-vue install` and `pnpm --dir frontend-vue test` for frontend tests; `tests/serverRender.test.ts` renders the blocks on the server with the renderer and the DMS layer the package installs. `pnpm test:frontend` typechecks the layer against the DMS layer (`ajs dms verify-source`), without a running backend; CI runs it.
+[Apache-2.0](./LICENSE)
