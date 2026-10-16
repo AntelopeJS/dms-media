@@ -17,7 +17,7 @@ const STARTERS: StarterFolder[] = [
 const api = useMediaApi()
 const { t } = useI18n()
 const toast = useToast()
-const { tree } = useSharedTree()
+const { tree } = useLibraryTree()
 const isCreating = ref(false)
 
 const isEmpty = computed(
