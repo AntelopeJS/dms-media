@@ -63,12 +63,13 @@ const OWNER = {
 // What a module declaring DMS pages depends on anyway, as template-dms-demo does.
 const CONSUMER_INTERFACES = {
   "@antelopejs/interface-api": ">=0.0.13 <1.0.0",
-  "@antelopejs/interface-core": ">=0.1.1 <1.0.0",
+  "@antelopejs/interface-core": ">=0.2.3 <1.0.0",
   "@antelopejs/interface-dms": ">=0.7.0 <1.0.0",
 };
 const COUNTER_ID_PATTERN = /^\d+$/;
 const MEDIA_ID_PATTERN = /^(media|modules\.media|settings\.media)(\.|$)/;
 const RUNTIME = Symbol.for("@antelopejs/interface-core/runtime");
+const PROXY_BRAND = Symbol.for("@antelopejs/interface-core/proxy");
 
 function consumerSource(specifier, bindingId, folderName, revision) {
   return `const { AssetType } = require("${specifier}");
@@ -150,9 +151,10 @@ function projectConfig(mongoUrl, storagePath) {
 
 function registeringEntries() {
   const entries = [];
-  for (const [identity, state] of globalThis[RUNTIME].proxyStates) {
-    if (state.kind !== "registering") continue;
-    for (const [id, entry] of state.value.registered) {
+  // interface-core 0.2 keeps each registering proxy's entries on the proxy.
+  for (const proxy of globalThis[RUNTIME].registeringProxies) {
+    const { identity } = proxy[PROXY_BRAND];
+    for (const [id, entry] of proxy.registered) {
       entries.push({ identity, id, ...entry });
     }
   }
