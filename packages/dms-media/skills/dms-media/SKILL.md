@@ -15,6 +15,8 @@ https://dms.antelopejs.com/docs/modules/media.
 
 ## Setup
 
+- Media 0.4 requires `@antelopejs/dms` >=0.9 (interface-dms 0.7, renderer `@antelopejs/dms-frontend` 0.6); 0.3 is the
+  DMS 0.8 line.
 - `ajs project modules add @antelopejs/dms-media`, plus an `interface-file-storage` module (`file-storage-local`).
 - Set the storage's `baseUrl` and the module's `publicBaseUrl` to `${@api.API_PUBLIC_BASE_URL}`, and list every
   dashboard origin in the api module's `cors.allowedOrigins`: the browser `PUT`s files straight to the storage.
@@ -50,6 +52,8 @@ static form = Form({
 
 - `GET /media/<assetId>/<filename>` and `/media/<assetId>/<presetId>/<filename>` (302 to a signed URL; stable
   across edits, renames and visibility changes). Private files need a token.
+- The module declares `/media/**` to the frontend server (`backendProxies`, `auth: "session"`): the same links work on
+  the dashboard's origin, a private file opening for a signed-in member. Copied links start with `publicBaseUrl`.
 - Authenticated: `GET /api/media/assets/:id/read-url?preset=`.
 
 ## Gotchas
