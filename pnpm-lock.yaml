@@ -42,7 +42,7 @@ importers:
         specifier: '>=0.7.2 <1.0.0'
         version: 0.7.2(b5e69c53551eb70729f724ee88b348b0)
       '@antelopejs/interface-dms-media':
-        specifier: '>=0.2.2 <0.3.0'
+        specifier: '>=0.3.0 <0.4.0'
         version: link:../interface-dms-media
       '@antelopejs/interface-file-storage':
         specifier: '>=0.1.4 <1.0.0'
