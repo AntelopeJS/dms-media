@@ -121,6 +121,7 @@ export interface AppliedDeclaration {
   declaredHash: string;
   appliedHash: string;
   contentHash?: string;
+  version?: string;
 }
 
 /** Remembers what was declared and the state it left the row in. */
@@ -137,10 +138,26 @@ export async function saveDeclaration(
 }
 
 /**
- * The rule shared by folders and files: a row deleted since it was declared
- * stays deleted, and a row whose editable state no longer hashes to what the
- * last declaration left was changed by a member and stays as they made it.
- * Returns undefined when the row may be refreshed.
+ * The part of the rule that needs no new declaration: a row deleted since it
+ * was declared stays deleted, and a row whose editable state no longer hashes
+ * to what the last declaration left was changed by a member and stays as they
+ * made it. Returns undefined when the row is still as declared.
+ */
+export function judgeMemberChange(
+  record: MediaDeclaration,
+  row: { _id: string } | undefined,
+  stateHash: string | undefined,
+): MediaDeclarationResult | undefined {
+  if (!row) return { status: "deleted" };
+  if (stateHash !== record.appliedHash)
+    return { status: "preserved", id: row._id };
+  return undefined;
+}
+
+/**
+ * The rule shared by folders and files: `judgeMemberChange`, then a
+ * declaration equal to the last one leaves the row unchanged. Returns
+ * undefined when the row may be refreshed.
  */
 export function judgeDeclaredRow(
   record: MediaDeclaration,
@@ -148,9 +165,8 @@ export function judgeDeclaredRow(
   stateHash: string | undefined,
   declaredHash: string,
 ): MediaDeclarationResult | undefined {
-  if (!row) return { status: "deleted" };
-  if (stateHash !== record.appliedHash)
-    return { status: "preserved", id: row._id };
+  const change = judgeMemberChange(record, row, stateHash);
+  if (change || !row) return change;
   if (record.declaredHash === declaredHash)
     return { status: "unchanged", id: row._id };
   return undefined;

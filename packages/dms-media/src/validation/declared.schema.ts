@@ -47,6 +47,15 @@ const folderTargetSchema = z.union([
 const sourceSchema = z.union([
   z.object({ bytes: z.instanceof(Uint8Array) }).strict(),
   z.object({ filePath: z.string().min(1) }).strict(),
+  // Checked as a function only: wrapping it in z.function() would replace the caller's loader.
+  z
+    .object({
+      load: z.custom<() => Uint8Array | Promise<Uint8Array>>(
+        (value) => typeof value === "function",
+        { message: "load must be a function" },
+      ),
+    })
+    .strict(),
 ]);
 
 export const declaredAssetSchema = z.object({
@@ -55,6 +64,7 @@ export const declaredAssetSchema = z.object({
   name: fileNameSchema,
   mimetype: z.string().trim().min(1),
   source: sourceSchema,
+  version: keySchema.optional(),
   alt: altSchema.optional(),
   tenantId: tenantSchema,
 });

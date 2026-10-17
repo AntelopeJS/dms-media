@@ -3,6 +3,7 @@ import { expect } from "chai";
 import {
   hashState,
   judgeDeclaredRow,
+  judgeMemberChange,
   MediaDeclarationError,
   parseDeclaration,
   withDeclarationLock,
@@ -51,6 +52,16 @@ describe("[unit] declared content — the refresh rule", () => {
     expect(
       judgeDeclaredRow(record(), ROW, APPLIED, hashState({ declared: 2 })),
     ).to.equal(undefined);
+  });
+
+  it("judges a member's change without a new declaration", () => {
+    expect(judgeMemberChange(record(), undefined, undefined)).to.deep.equal({
+      status: "deleted",
+    });
+    expect(
+      judgeMemberChange(record(), ROW, hashState({ name: "Ours" })),
+    ).to.deep.equal({ status: "preserved", id: ROW._id });
+    expect(judgeMemberChange(record(), ROW, APPLIED)).to.equal(undefined);
   });
 
   it("hashes equal states equally and different states differently", () => {

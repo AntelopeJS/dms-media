@@ -62,7 +62,8 @@ export async function declareMedia(tenantId: string): Promise<void> {
     folder: { key: "helio.procedures" },   // or { binding: "projects.cover" } for a field's folder
     name: "Roof safety checklist.pdf",
     mimetype: "application/pdf",
-    source: { filePath: "/abs/path.pdf" }, // or { bytes: buffer }
+    source: { filePath: "/abs/path.pdf" }, // or { bytes: buffer }, or { load: () => bytes }
+    version: "2026-10-17",                 // optional: while unchanged, the source is not read
   });
 }
 ```
@@ -80,6 +81,8 @@ export async function declareMedia(tenantId: string): Promise<void> {
 - Deployment refresh/backfill is separate: enumerate trusted tenants, require `IsWorkspaceProvisioningCommitted(tenantId)`,
   fail closed on lookup errors, and coordinate writers. Idempotent APIs do not make all effects exactly-once.
   See the [canonical lifecycle guidance](https://dms.antelopejs.com/docs/modules/media/reference#new-saas-tenants-application-owned-durable-lifecycle).
+- Generated files: `source: { load }` is called only when the bytes are needed; with a `version` changed whenever the
+  bytes change, an unchanged file is not read or generated again on reload. Files a member changed or deleted are never read.
 - Never undoes a member: a row changed since its last declaration is `preserved`, a deleted one stays `deleted`;
   only a row still exactly as declared is refreshed. Parents before children, folders before files (await each).
 - Same rules as the dashboard (names, unique sibling folders, allowed and field types, quota, decodable images); errors

@@ -609,6 +609,151 @@ describe("[integration] media declared content — folders and files shipped as 
       expect(third.status).to.equal("unchanged");
     });
 
+    it("does not read the source while the caller's version is unchanged", async () => {
+      let loads = 0;
+      const load = (text: string) => () => {
+        loads++;
+        return Buffer.from(text);
+      };
+      const declaration = {
+        tenantId: DEFAULT_TENANT_ID,
+        key: "declared.generated",
+        folder: { key: ROOT_KEY },
+        name: "generated.txt",
+        mimetype: "text/plain",
+      };
+      const first = await ImportMediaAsset({
+        ...declaration,
+        version: "v1",
+        source: { load: load("Generated v1") },
+      });
+      expect(first.status).to.equal("created");
+      expect(loads).to.equal(1);
+      // Same version: neither the loader nor a file path that does not exist is read.
+      expect(
+        await ImportMediaAsset({
+          ...declaration,
+          version: "v1",
+          source: { load: load("never read") },
+        }),
+      ).to.deep.equal({ status: "unchanged", id: first.id });
+      expect(
+        (
+          await ImportMediaAsset({
+            ...declaration,
+            version: "v1",
+            source: { filePath: join(tempDir, "never-written.txt") },
+          })
+        ).status,
+      ).to.equal("unchanged");
+      expect(loads).to.equal(1);
+      // New metadata under the same version refreshes without reading the bytes.
+      const renamed = await ImportMediaAsset({
+        ...declaration,
+        version: "v1",
+        name: "generated-renamed.txt",
+        source: { load: load("never read") },
+      });
+      expect(renamed).to.deep.equal({ status: "updated", id: first.id });
+      expect(loads).to.equal(1);
+      const updated = await ImportMediaAsset({
+        ...declaration,
+        version: "v2",
+        name: "generated-renamed.txt",
+        source: { load: load("Generated v2") },
+      });
+      expect(updated).to.deep.equal({ status: "updated", id: first.id });
+      expect(loads).to.equal(2);
+      const asset = await assets().get(first.id as string);
+      expect(asset?.size).to.equal("Generated v2".length);
+    });
+
+    it("reads a new version once, and not again when its bytes did not change", async () => {
+      let loads = 0;
+      const declaration = {
+        tenantId: DEFAULT_TENANT_ID,
+        key: "declared.rebuilt",
+        folder: { key: ROOT_KEY },
+        name: "rebuilt.txt",
+        mimetype: "text/plain",
+        source: {
+          load: async () => {
+            loads++;
+            return Buffer.from("Same bytes");
+          },
+        },
+      };
+      const first = await ImportMediaAsset({ ...declaration, version: "a" });
+      const rebuilt = await ImportMediaAsset({ ...declaration, version: "b" });
+      expect(rebuilt).to.deep.equal({ status: "unchanged", id: first.id });
+      expect(loads).to.equal(2);
+      expect(
+        (await ImportMediaAsset({ ...declaration, version: "b" })).status,
+      ).to.equal("unchanged");
+      expect(loads).to.equal(2);
+    });
+
+    it("does not read the source of a file a member changed or deleted", async () => {
+      let loads = 0;
+      const declaration = {
+        tenantId: DEFAULT_TENANT_ID,
+        key: "declared.untouchable",
+        folder: { key: ROOT_KEY },
+        name: "untouchable.txt",
+        mimetype: "text/plain",
+        source: {
+          load: () => {
+            loads++;
+            return Buffer.from(`Untouchable ${loads}`);
+          },
+        },
+      };
+      const first = await ImportMediaAsset(declaration);
+      await client.post(`/api/media/assets/${first.id}/update`, {
+        name: "member-owned.txt",
+      });
+      expect((await ImportMediaAsset(declaration)).status).to.equal(
+        "preserved",
+      );
+      await client.delete(`/api/media/assets/${first.id}`);
+      expect((await ImportMediaAsset(declaration)).status).to.equal("deleted");
+      expect(loads).to.equal(1);
+    });
+
+    it("names the key when a lazy source fails or returns no bytes", async () => {
+      const declaration = {
+        tenantId: DEFAULT_TENANT_ID,
+        folder: { key: ROOT_KEY },
+        name: "lazy.txt",
+        mimetype: "text/plain",
+      };
+      const thrown = await rejectionOf(
+        ImportMediaAsset({
+          ...declaration,
+          key: "declared.lazy-throws",
+          source: {
+            load: () => {
+              throw new Error("renderer crashed");
+            },
+          },
+        }),
+      );
+      expect(thrown.message)
+        .to.contain("declared.lazy-throws")
+        .and.contain("renderer crashed");
+      const wrong = await rejectionOf(
+        ImportMediaAsset({
+          ...declaration,
+          key: "declared.lazy-wrong",
+          source: {
+            // @ts-expect-error A JavaScript caller can return something else.
+            load: () => "text",
+          },
+        }),
+      );
+      expect(wrong.message).to.contain("must return a Uint8Array");
+    });
+
     it("leaves a file a member renamed as they made it", async () => {
       const declaration = {
         tenantId: DEFAULT_TENANT_ID,

@@ -52,4 +52,8 @@ export class MediaDeclaration extends Table {
   /** Hash of the declared file's bytes; absent for a folder. */
   @Field("string")
   declare contentHash?: string;
+
+  /** Caller's version of those bytes; empty when the last declaration gave none. */
+  @Field("string")
+  declare version?: string;
 }

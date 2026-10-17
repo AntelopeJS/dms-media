@@ -35,6 +35,7 @@ import {
   hashBytes,
   hashState,
   judgeDeclaredRow,
+  judgeMemberChange,
   MediaDeclarationError,
   parseDeclaration,
   saveDeclaration,
@@ -75,9 +76,8 @@ function assetStateHash(asset: MediaAsset): string {
 
 function assetHashes(
   declaration: DeclaredAssetInput,
-  bytes: Buffer,
+  contentHash: string,
 ): AssetHashes {
-  const contentHash = hashBytes(bytes);
   const declaredHash = hashState({
     name: declaration.name,
     folder: declaration.folder,
@@ -88,22 +88,66 @@ function assetHashes(
   return { declaredHash, contentHash };
 }
 
+function describeError(error: unknown): string {
+  return error instanceof Error ? error.message : String(error);
+}
+
+async function loadBytes(
+  load: () => Uint8Array | Promise<Uint8Array>,
+  fail: Fail,
+): Promise<Buffer> {
+  const loaded: unknown = await Promise.resolve()
+    .then(load)
+    .catch((error: unknown) =>
+      fail(`the source failed to load: ${describeError(error)}`),
+    );
+  if (!(loaded instanceof Uint8Array))
+    fail("source.load must return a Uint8Array");
+  return Buffer.from(loaded);
+}
+
 async function readSource(
   declaration: DeclaredAssetInput,
   fail: Fail,
 ): Promise<Buffer> {
   const { source } = declaration;
-  const bytes =
-    "bytes" in source
-      ? Buffer.from(source.bytes)
-      : await readFile(source.filePath).catch((error: unknown) =>
-          fail(
-            `cannot read '${source.filePath}': ${error instanceof Error ? error.message : String(error)}`,
-          ),
-        );
+  let bytes: Buffer;
+  if ("bytes" in source) bytes = Buffer.from(source.bytes);
+  else if ("filePath" in source)
+    bytes = await readFile(source.filePath).catch((error: unknown) =>
+      fail(`cannot read '${source.filePath}': ${describeError(error)}`),
+    );
+  else bytes = await loadBytes(source.load, fail);
   const size = declaredFileSizeSchema.safeParse(bytes.byteLength);
   if (!size.success) fail(describeDeclarationIssues(size.error));
   return bytes;
+}
+
+/**
+ * A declared file's bytes, read at most once and only when a decision needs
+ * them: generating or reading content every boot is what `version` and lazy
+ * sources let callers avoid.
+ */
+class DeclaredContent {
+  private bytes?: Promise<Buffer>;
+
+  constructor(
+    private readonly declaration: DeclaredAssetInput,
+    private readonly fail: Fail,
+  ) {}
+
+  read(): Promise<Buffer> {
+    this.bytes ??= readSource(this.declaration, this.fail);
+    return this.bytes;
+  }
+
+  /** The bytes' hash, taken from the last declaration while the caller's version still matches it. */
+  async hash(record: MediaDeclaration | undefined): Promise<string> {
+    const { version } = this.declaration;
+    if (version && record?.contentHash && record.version === version)
+      return record.contentHash;
+    return hashBytes(await this.read());
+  }
 }
 
 /** The folder bound to an asset field, provisioned like the dashboard does. */
@@ -231,7 +275,7 @@ async function createAsset(
 async function refreshAsset(
   target: AssetTarget,
   asset: MediaAsset,
-  bytes: Buffer,
+  content: DeclaredContent,
   isContentChanged: boolean,
 ): Promise<MediaAsset | undefined> {
   const { models, declaration, folder } = target;
@@ -243,7 +287,7 @@ async function refreshAsset(
   };
   let storageKey: string | undefined;
   if (isContentChanged) {
-    const file = await prepareFile(target, bytes, asset.size);
+    const file = await prepareFile(target, await content.read(), asset.size);
     storageKey = await writeFile(target, file);
     Object.assign(patch, {
       storageKey,
@@ -292,8 +336,19 @@ function rememberAsset(
     key: target.declaration.key,
     targetId: asset._id,
     appliedHash: assetStateHash(asset),
+    version: target.declaration.version ?? "",
     ...hashes,
   });
+}
+
+/** Remembers a new caller version of unchanged bytes, so the next boot does not read them again. */
+async function rememberVersion(
+  models: DeclaredModels,
+  record: MediaDeclaration,
+  version: string | undefined,
+): Promise<void> {
+  if (!version || record.version === version) return;
+  await models.declarationModel.update(record._id, { version });
 }
 
 async function applyAssetDeclaration(
@@ -302,16 +357,20 @@ async function applyAssetDeclaration(
   const fail: Fail = (reason) => {
     throw new MediaDeclarationError("asset", declaration.key, reason);
   };
-  const bytes = await readSource(declaration, fail);
+  const content = new DeclaredContent(declaration, fail);
   await waitForTenant(declaration.tenantId);
   const models = declaredModels(declaration.tenantId);
-  const hashes = assetHashes(declaration, bytes);
   const record = await models.declarationModel.findByKey(
     "asset",
     declaration.key,
   );
   const stored = record && (await models.assetModel.get(record.targetId));
   const asset = stored && !stored.isDeleting ? stored : undefined;
+  // Deleted or changed by a member: the new content cannot matter, so it is not read.
+  const change =
+    record && judgeMemberChange(record, asset, asset && assetStateHash(asset));
+  if (change) return change;
+  const hashes = assetHashes(declaration, await content.hash(record));
   const verdict =
     record &&
     judgeDeclaredRow(
@@ -320,7 +379,10 @@ async function applyAssetDeclaration(
       asset && assetStateHash(asset),
       hashes.declaredHash,
     );
-  if (verdict) return verdict;
+  if (verdict) {
+    if (record) await rememberVersion(models, record, declaration.version);
+    return verdict;
+  }
   const folder = await findTargetFolder(models, declaration, fail);
   // A file whose declared folder a member deleted went with it, or never came.
   if (!folder)
@@ -329,13 +391,18 @@ async function applyAssetDeclaration(
       : { status: "deleted" };
   const target: AssetTarget = { models, declaration, folder };
   if (!record || !asset) {
-    const file = await prepareFile(target, bytes, 0);
+    const file = await prepareFile(target, await content.read(), 0);
     const created = await createAsset(target, file);
     await rememberAsset(target, record, created, hashes);
     return { status: "created", id: created._id };
   }
   const isContentChanged = record.contentHash !== hashes.contentHash;
-  const refreshed = await refreshAsset(target, asset, bytes, isContentChanged);
+  const refreshed = await refreshAsset(
+    target,
+    asset,
+    content,
+    isContentChanged,
+  );
   if (!refreshed) {
     const current = await models.assetModel.get(asset._id);
     return current && !current.isDeleting

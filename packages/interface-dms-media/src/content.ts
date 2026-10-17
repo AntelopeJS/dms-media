@@ -45,7 +45,19 @@ export interface MediaFileSource {
   filePath: string;
 }
 
-export type MediaAssetSource = MediaBytesSource | MediaFileSource;
+/**
+ * File content produced on demand, such as a generated image: the media
+ * module calls `load` only when it needs the bytes, to create the file or to
+ * compare its content.
+ */
+export interface MediaLazySource {
+  load: () => Uint8Array | Promise<Uint8Array>;
+}
+
+export type MediaAssetSource =
+  | MediaBytesSource
+  | MediaFileSource
+  | MediaLazySource;
 
 /**
  * A file the calling project ships as code. It is keyed by `key`: importing
@@ -59,6 +71,13 @@ export interface MediaAssetDeclaration {
   name: string;
   mimetype: string;
   source: MediaAssetSource;
+  /**
+   * Opaque version of the content chosen by the caller, such as a hash of
+   * what it is generated from. While it equals the version of the last
+   * declaration of this key, the content counts as unchanged and `source` is
+   * not read. Change it whenever the bytes change.
+   */
+  version?: string;
   alt?: string;
   /** Explicit existing workspace; required and nonblank. Does not establish authorization or provisioning completion. */
   tenantId: string;
@@ -111,6 +130,9 @@ export function EnsureMediaFolder(
  * declaration only refreshes the file while it still holds what was last
  * declared: renamed, moved, edited or deleted in the library since, it is left
  * as the members made it.
+ *
+ * The source is read only when the bytes are needed: not for a file a member
+ * changed or deleted, nor while `version` equals the last declared one.
  *
  * Requires an explicit, nonblank tenantId before reading the source or writing.
  * Uses the same trusted backend context and readiness as `EnsureMediaFolder`;
