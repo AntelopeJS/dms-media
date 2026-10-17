@@ -1,6 +1,6 @@
 ---
 name: dms-media
-description: Media library with the @antelopejs/dms-media module of the AntelopeJS DMS. Use when installing or configuring dms-media, adding an image or file field to a DMS form with AssetType, binding a field to a folder and its permissions (permissionsFromPage, permissionMapping, rootAcl), serving images in a given size (presets, /media URLs), or debugging uploads refused by CORS, type, quota or folder rights.
+description: Media library with the @antelopejs/dms-media module of the AntelopeJS DMS. Use when installing or configuring dms-media, adding an image or file field to a DMS form with AssetType, binding a field to a folder and its permissions (permissionsFromPage, permissionMapping, rootAcl), shipping folders and files as code (EnsureMediaFolder, ImportMediaAsset, seeding demo content), serving images in a given size (presets, /media URLs), or debugging uploads refused by CORS, type, quota or folder rights.
 icon: i-lucide-images
 category: content
 tags: [media, assets, uploads, images, permissions, dms-module]
@@ -45,8 +45,53 @@ static form = Form({
 - The value is an asset id (an array with `multiple`). The `binding` provisions a linked folder under `Content`
   (idempotent on `id`); its rights derive from the page's permission. Explicit `permissionMapping`
   (`{ read: [...], write: [...] }`) wins per right.
+- Per-record layout under a field's folder (one folder per project): `binding: { id, subfolders: true }`, then
+  `EnsureMediaFolder({ tenantId, key, name, parent: { binding: id } })` or owner-created subfolders.
 - Only an explicit role grant of the page counts: `memberAccess` / `publicAccess` pages grant no folder right.
 - Rights: `manage` ⇒ `write` ⇒ `read`. Upload needs `write`; folder structure needs `manage`; visibility is owner-only.
+
+## Ship content as code
+
+```typescript
+import { EnsureMediaFolder, ImportMediaAsset } from "@antelopejs/interface-dms-media";
+
+// Called by the application's lifecycle with a trusted, explicit tenant.
+export async function declareMedia(tenantId: string): Promise<void> {
+  await EnsureMediaFolder({ tenantId, key: "helio.procedures", name: "Procedures", visibility: "private" });
+  await ImportMediaAsset({
+    tenantId,
+    key: "helio.procedures.roof",
+    folder: { key: "helio.procedures" },   // or { binding: "projects.cover" } for a field's folder
+    name: "Roof safety checklist.pdf",
+    mimetype: "application/pdf",
+    source: { filePath: "/abs/path.pdf" }, // or { bytes: buffer }, or { load: () => bytes }
+    version: "2026-10-17",                 // optional: while unchanged, the source is not read
+  });
+}
+```
+
+- Required `tenantId` in types and runtime: omitted/empty/whitespace-only rejects before writes. No fallback;
+  an explicitly chosen `DEFAULT_TENANT_ID` remains valid. Idempotent per tenant + kind + key. Returns
+  `{ status: "created" | "updated" | "unchanged" | "preserved" | "deleted", id? }`.
+- New SaaS tenants: the application registers `RegisterWorkspaceLifecycleConsumer` from
+  `@antelopejs/interface-dms-saas/workspace-lifecycle` for `created` before startup reconciliation.
+  Delivery follows preparation/payment and is at least once: deduplicate `operationId`, persist resource links
+  before returning a receipt, and recover incomplete attempts. Media does not register it or depend on SaaS.
+- `start()` is process-global: use it for registration or explicitly scoped global work, not implicit default content.
+  Never await declarations in `construct()`. A required tenant does not prove authorization or committed provisioning.
+  The prepayment `TENANT_BEING_PROVISIONED` hook has no automatic replay/compensation and is not durable `created`.
+- Deployment refresh/backfill is separate: enumerate trusted tenants, require `IsWorkspaceProvisioningCommitted(tenantId)`,
+  fail closed on lookup errors, and coordinate writers. Idempotent APIs do not make all effects exactly-once.
+  See the [canonical lifecycle guidance](https://dms.antelopejs.com/docs/modules/media/reference#new-saas-tenants-application-owned-durable-lifecycle).
+- Generated files: `source: { load }` is called only when the bytes are needed; with a `version` changed whenever the
+  bytes change, an unchanged file is not read or generated again on reload. Files a member changed or deleted are never read.
+- Dropped content: `PruneMediaDeclarations({ tenantId, prefix: "helio.", keep: declaredKeys })` after declaring retires
+  the namespace's other keys (files, then deepest folders); `RetireMediaDeclaration({ tenantId, kind, key })` one key.
+  Removed only while still as declared (folders only when empty), else `preserved` and handed to members; never a cascade.
+- Never undoes a member: a row changed since its last declaration is `preserved`, a deleted one stays `deleted`;
+  only a row still exactly as declared is refreshed. Parents before children, folders before files (await each).
+- Same rules as the dashboard (names, unique sibling folders, allowed and field types, quota, decodable images); errors
+  name the key (`Media file 'helio.x': ...`). Never write `media_folders` / `media_assets` directly.
 
 ## Delivery
 
@@ -59,6 +104,7 @@ static form = Form({
 ## Gotchas
 
 - Upload refusals answer `{ reason }`: `type_not_allowed` / `field_type` (415), `quota` (413), `invalid_image` (422).
-- Linked folders cannot be renamed, moved, deleted, re-ACLed or hold subfolders (403 `bound_parent`).
+- Linked folders cannot be renamed, moved, deleted or re-ACLed; they hold subfolders only with `subfolders: true`
+  on the binding (otherwise 403 `bound_parent`). Subfolders inherit the folder's ACL and the field's accepted types.
 - Names are unique per folder, case aside (409 `name_taken`).
 - Editing an image changes it everywhere it is used; there is no per-usage crop and no usage tracking yet.

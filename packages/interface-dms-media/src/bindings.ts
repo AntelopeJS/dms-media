@@ -1,6 +1,6 @@
 import type { ControllerClass } from "@antelopejs/interface-api";
-import { RegisteringProxy } from "@antelopejs/interface-core";
 import type { AclEntry } from "./acl";
+import { internal } from "./internal";
 
 /** Permission ids granted `read` and `write` on a bound folder. */
 export interface AssetPermissionMapping {
@@ -33,17 +33,16 @@ export interface AssetBindingConfig {
    */
   permissionsFromPage?: ControllerClass;
   acl?: AclEntry[];
+  /**
+   * Lets the linked folder hold subfolders, such as one per record: owners
+   * create them in the library, and backend code with `EnsureMediaFolder`
+   * and `parent: { binding }`. The linked folder itself stays locked. Its
+   * subfolders inherit its ACL unless given their own, and accept only the
+   * types its field accepts. Defaults to false.
+   */
+  subfolders?: boolean;
   /** Filled by `AssetType`: what the field accepts, shown next to the folder. */
   field?: AssetBindingField;
-}
-
-/**
- * @internal
- */
-export namespace internal {
-  export const RegisterAssetBinding = new RegisteringProxy<
-    (id: string, config: AssetBindingConfig) => void
-  >();
 }
 
 /**

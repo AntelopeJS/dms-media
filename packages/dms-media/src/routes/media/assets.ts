@@ -17,7 +17,7 @@ import { CreateReadUrl } from "@antelopejs/interface-file-storage";
 import { getMediaConfig } from "../../config";
 import { type MediaAsset, MediaAssetModel } from "../../db";
 import { ensureDerivative } from "../../derivatives";
-import type { MediaPresetConfig } from "../../presets";
+import { type MediaPresetConfig, SVG_MIMETYPE } from "../../presets";
 import {
   assetVisibilitySchema,
   MEDIA_ERRORS,
@@ -38,11 +38,34 @@ const HTTP_NOT_FOUND = 404;
 const MAX_SEARCH_RESULTS = 100;
 const MAX_LISTING_RESULTS = 1000;
 const THUMB_PRESET_ID = "thumb";
+const UNCROPPED_PRESET_ID = "preview";
+
+/** The presets library thumbnails are rendered with: the square crop, and an uncropped size when configured. */
+interface PreviewPresets {
+  thumb: MediaPresetConfig;
+  uncropped?: MediaPresetConfig;
+}
+
+/**
+ * Vectors are mostly logos and icons, often far wider than tall: the square
+ * crop of `thumb` cuts their ends off, so they get the uncropped `preview`
+ * size, which the explorer fits inside the tile.
+ */
+function previewPresetOf(
+  asset: MediaAsset,
+  presets: PreviewPresets,
+): MediaPresetConfig {
+  const isVector = asset.mimetype === SVG_MIMETYPE;
+  const isUncropped = presets.uncropped && presets.uncropped.fit !== "cover";
+  return isVector && isUncropped && presets.uncropped
+    ? presets.uncropped
+    : presets.thumb;
+}
 
 async function buildPreviewEntry(
   context: MediaRequestContext,
   assetId: string,
-  preset: MediaPresetConfig,
+  presets: PreviewPresets,
 ): Promise<[string, string] | null> {
   const asset = await context.assetModel.get(assetId);
   if (
@@ -52,6 +75,7 @@ async function buildPreviewEntry(
   )
     return null;
   if (!asset.mimetype.startsWith("image/")) return null;
+  const preset = previewPresetOf(asset, presets);
   try {
     const derivativeKey = await ensureDerivative(
       context.assetModel,
@@ -111,10 +135,15 @@ export class MediaAssetsController extends MediaApiController {
   async previews(@JSONBody() body: unknown) {
     const { ids } = parseBody(body, previewIdsSchema);
     const context = await this.resolveContext();
-    const thumbPreset = getMediaConfig().presets.get(THUMB_PRESET_ID);
-    if (!thumbPreset) return { previews: {} };
+    const { presets } = getMediaConfig();
+    const thumb = presets.get(THUMB_PRESET_ID);
+    if (!thumb) return { previews: {} };
+    const previewPresets = {
+      thumb,
+      uncropped: presets.get(UNCROPPED_PRESET_ID),
+    };
     const entries = await Promise.all(
-      ids.map((id) => buildPreviewEntry(context, id, thumbPreset)),
+      ids.map((id) => buildPreviewEntry(context, id, previewPresets)),
     );
     const previews = Object.fromEntries(
       entries.filter((entry): entry is [string, string] => entry !== null),

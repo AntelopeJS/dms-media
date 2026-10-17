@@ -508,3 +508,35 @@ Replacing a file, a trash for deleted files and the server-side validation of
 `AssetType` values: three follow-up pull requests, in that order. The 1 MiB
 upload limit and the Windows bug of `@antelopejs/file-storage-local` are
 fixed in that module, not worked around here.
+
+**Q10.17 Can a linked folder hold subfolders? (2026-10-17)**
+When its binding says so: `subfolders: true` on `AssetBindingConfig`, false by
+default. The refusal (403 `bound_parent`) protected the binding's ownership of
+the folder, and nothing in the module depends on a linked folder being a leaf:
+a subfolder without its own ACL inherits the linked folder's (so the members
+of the page reach it), the field's picker is the explorer scoped to the
+linked folder and its subtree, and moves, zips and deletes already walk
+subtrees. What a subfolder could escape is the field's types, so a folder
+inside a linked folder accepts only the types of the nearest linked
+ancestor's field. The linked folder itself stays locked. Declared content
+places folders there with `EnsureMediaFolder({ parent: { binding } })`, which
+a project needs for a layout per record (photos by project) that is also the
+folder of a field. The field's upload button keeps targeting the linked
+folder; picking from its subfolders works, editing their alt text from the
+field does not yet.
+
+**Q10.18 How do vectors and PDFs look in the library? (2026-10-17)**
+A wide SVG logo (880 × 240) lost its ends in the grid and in recent uploads:
+library thumbnails are the `thumb` preset, a 300 × 300 `cover` crop, and the
+tile itself used `object-cover`. SVG files now take the `preview` preset when
+it is configured and does not crop (by default 1600 wide, `inside`), and
+the tile fits vectors inside (`object-contain`). A variant of `thumb` made for
+the occasion was set aside: its cache key would not belong to a configured
+preset, so the nightly sweep would delete it and every library visit would
+render it again. Raster images keep the square crop, which suits photos.
+PDFs keep their type icon. A first-page thumbnail needs a PDF renderer, and
+the prebuilt sharp/libvips the module ships has none
+(`sharp.format.pdf.input` is false with sharp 0.34.5 and libvips 8.17.3);
+pdf.js would add a canvas implementation, and poppler or PDFium native
+binaries per platform, for a preview the icon and the file viewer already
+cover.

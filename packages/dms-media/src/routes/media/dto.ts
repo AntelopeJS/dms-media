@@ -1,4 +1,5 @@
 import { parseFolderAcl } from "../../acl";
+import { feedingBinding, holdsSubfolders } from "../../bindings";
 import type { MediaAsset, MediaFolder } from "../../db";
 import type { AssetVisibility, FolderVisibility } from "../../types";
 import {
@@ -27,7 +28,9 @@ export interface MediaFolderDto {
   bound: boolean;
   binding: string | null;
   link: FolderLinkDto | null;
-  /** Mimetype patterns the linked field accepts; null when unlinked or unrestricted. */
+  /** Whether new folders may go inside: false for a linked folder unless its binding allows subfolders. */
+  acceptsSubfolders: boolean;
+  /** Mimetype patterns the field the folder feeds accepts, itself or through a linked ancestor; null when unlinked or unrestricted. */
   accepts: string[] | null;
   visibility: FolderVisibility;
   hasOwnAcl: boolean;
@@ -78,7 +81,8 @@ export function buildFolderDto(
     bound: Boolean(folder.binding),
     binding: folder.binding ?? null,
     link: describeFolderLink(folder.binding),
-    accepts: bindingAccepts(folder.binding),
+    acceptsSubfolders: holdsSubfolders(folder),
+    accepts: bindingAccepts(feedingBinding(folder, context.foldersById)),
     visibility: folder.visibility,
     hasOwnAcl: parseFolderAcl(folder) !== undefined,
     createdAt: folder.createdAt,

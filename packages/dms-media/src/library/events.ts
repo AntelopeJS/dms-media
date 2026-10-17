@@ -35,9 +35,12 @@ export interface MediaEventInput {
   details?: MediaEventDetails;
 }
 
+/** Who an event is attributed to: a member, or the system for declared content. */
+export type MediaEventAuthor = Pick<User, "_id" | "name" | "email">;
+
 export interface MediaEventActor {
   tenantId: string;
-  user: User;
+  user: MediaEventAuthor;
 }
 
 /** Uploads arrive in bursts: they are announced on a longer window than other writes. */

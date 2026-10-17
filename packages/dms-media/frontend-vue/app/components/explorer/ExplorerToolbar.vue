@@ -25,7 +25,7 @@ const isScoped = computed(() => Boolean(layout.scopeFolderId))
 const canCreateFolder = computed(() => {
 	if (library.mode !== 'browse') return false
 	const folder = library.currentFolder.value
-	if (folder) return folder.rights.manage && !folder.bound
+	if (folder) return folder.rights.manage && folder.acceptsSubfolders
 	return location.value.kind === 'root' && Boolean(library.tree.tree.value?.root.manage)
 })
 const canUpload = computed(() => {

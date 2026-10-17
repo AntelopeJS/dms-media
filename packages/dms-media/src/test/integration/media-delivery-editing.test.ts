@@ -27,6 +27,9 @@ const FOREIGN_ORIGIN = "https://shop.example.com";
 const EXIF_ROTATED_RIGHT = 6;
 const PHOTO_WIDTH = 40;
 const PHOTO_HEIGHT = 20;
+const WIDE_SVG_WIDTH = 880;
+const WIDE_SVG_HEIGHT = 240;
+const WIDE_SVG_SOURCE = `<svg xmlns="http://www.w3.org/2000/svg" width="${WIDE_SVG_WIDTH}" height="${WIDE_SVG_HEIGHT}"><rect width="${WIDE_SVG_WIDTH}" height="${WIDE_SVG_HEIGHT}" fill="#f0a000"/></svg>`;
 const SVG_SOURCE =
   '<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20"><script>alert(1)</script><circle cx="10" cy="10" r="9"/></svg>';
 
@@ -303,6 +306,48 @@ describe("[integration] media delivery and editing — cache, orientation, activ
       "If-None-Match": original.headers.get("etag") as string,
     });
     expect(revalidated.status).to.equal(HTTP_NOT_MODIFIED);
+  });
+
+  it("fits a wide vector inside its library thumbnail instead of cropping it", async () => {
+    const logo = await uploadAsset(
+      client,
+      folderId,
+      "wide-logo.svg",
+      "image/svg+xml",
+      Buffer.from(WIDE_SVG_SOURCE),
+    );
+    const banner = await uploadAsset(
+      client,
+      folderId,
+      "wide-banner.png",
+      "image/png",
+      await sharp({
+        create: {
+          // Larger than the thumb both ways, so its square crop shows.
+          width: WIDE_SVG_WIDTH * 2,
+          height: WIDE_SVG_HEIGHT * 2,
+          channels: 3,
+          background: { r: 240, g: 160, b: 0 },
+        },
+      })
+        .png()
+        .toBuffer(),
+    );
+    const answer = await client.post("/api/media/previews", {
+      ids: [logo.id, banner.id],
+    });
+    expect(answer.status).to.equal(HTTP_OK);
+    const [vector, raster] = await Promise.all(
+      [logo.id, banner.id].map(async (id) => {
+        const response = await fetch(answer.data.previews[id]);
+        return sharp(Buffer.from(await response.arrayBuffer())).metadata();
+      }),
+    );
+    expect((vector.width ?? 0) / (vector.height ?? 1)).to.be.closeTo(
+      WIDE_SVG_WIDTH / WIDE_SVG_HEIGHT,
+      0.05,
+    );
+    expect(raster.width).to.equal(raster.height);
   });
 
   it("never serves an HTML file inline", async () => {

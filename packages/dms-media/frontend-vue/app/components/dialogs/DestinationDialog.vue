@@ -34,7 +34,7 @@ function isFitting(folder: MediaFolder): boolean {
 
 const targetFolder = computed(() => (target.value ? foldersById.value.get(target.value) : undefined))
 const canCreate = computed(() =>
-	targetFolder.value ? targetFolder.value.rights.manage && !targetFolder.value.bound : Boolean(tree.value?.root.manage),
+	targetFolder.value ? targetFolder.value.rights.manage && targetFolder.value.acceptsSubfolders : Boolean(tree.value?.root.manage),
 )
 const acceptedLabel = computed(() =>
 	targetFolder.value?.accepts?.length ? fieldTypesLabel(targetFolder.value.accepts, t) || targetFolder.value.accepts.join(', ') : '',

@@ -27,6 +27,34 @@ export function getRegisteredBindings(): AssetBindingConfig[] {
   return [...registeredBindings.values()];
 }
 
+/** Whether the folder linked to `bindingId` may hold subfolders: opt-in per binding. */
+export function bindingHoldsSubfolders(bindingId: string): boolean {
+  return registeredBindings.get(bindingId)?.subfolders === true;
+}
+
+/** Whether new folders may go under `folder`: any unlinked folder, a linked one when its binding allows. */
+export function holdsSubfolders(folder: MediaFolder): boolean {
+  return !folder.binding || bindingHoldsSubfolders(folder.binding);
+}
+
+/**
+ * The binding whose field a folder's files feed: its own, or the nearest
+ * linked ancestor's, since the subfolders a binding allows hold files for the
+ * same field.
+ */
+export function feedingBinding(
+  folder: MediaFolder | undefined,
+  foldersById: ReadonlyMap<string, MediaFolder>,
+): string | undefined {
+  if (!folder) return undefined;
+  if (folder.binding) return folder.binding;
+  for (const ancestorId of [...folder.path].reverse()) {
+    const binding = foldersById.get(ancestorId)?.binding;
+    if (binding) return binding;
+  }
+  return undefined;
+}
+
 interface BindingFingerprintEntry {
   id: string;
   folderName?: string;

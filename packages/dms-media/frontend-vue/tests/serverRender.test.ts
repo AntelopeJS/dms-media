@@ -24,6 +24,7 @@ const folder = (id: string, name: string): MediaFolder => ({
 	parentId: null,
 	shell: false,
 	bound: false,
+	acceptsSubfolders: true,
 	binding: null,
 	link: null,
 	accepts: null,
@@ -91,7 +92,7 @@ function backend({ url }: BackendRead): unknown {
 		case '/api/media/folders/catalog/assets':
 			return { assets: FILES, total: FILES.length, facets: {} }
 		case '/api/media/bindings/demo.cover/folder':
-			return { folder: { ...folder('covers', 'Demo covers'), bound: true }, maxUploadBytes: 1000, allowedMimetypes: [] }
+			return { folder: { ...folder('covers', 'Demo covers'), bound: true, acceptsSubfolders: false }, maxUploadBytes: 1000, allowedMimetypes: [] }
 		default:
 			return {}
 	}

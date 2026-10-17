@@ -154,7 +154,7 @@ function openStart(): void {
 					<div class="flex flex-wrap justify-center gap-2">
 						<template v-if="location.kind === 'folder' && folder?.rights.write && library.mode === 'browse'">
 							<UButton icon="i-ph-upload-simple" :label="t('dms_media.actions.upload_files')" @click="commands.upload(folder.id)" />
-							<UButton v-if="folder.rights.manage && !folder.bound" icon="i-ph-folder-plus" color="neutral" variant="outline" :label="t('dms_media.actions.new_folder')" @click="commands.newFolder(folder.id)" />
+							<UButton v-if="folder.rights.manage && folder.acceptsSubfolders" icon="i-ph-folder-plus" color="neutral" variant="outline" :label="t('dms_media.actions.new_folder')" @click="commands.newFolder(folder.id)" />
 						</template>
 						<UButton
 							v-if="location.kind === 'search'"

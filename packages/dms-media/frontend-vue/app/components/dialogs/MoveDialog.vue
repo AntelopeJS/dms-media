@@ -15,7 +15,7 @@ const props = defineProps<{
 	right: 'write' | 'manage'
 	allowRoot?: boolean
 	rootAllowed?: boolean
-	/** Linked folders take files but no subfolders. */
+	/** Linked folders take files but no subfolders, unless their binding allows them. */
 	refuseBound?: boolean
 	/** Folders offered first, the last ones used. */
 	recentIds?: readonly string[]
@@ -35,7 +35,7 @@ const NEW_FOLDER_INPUT = 'dms-media-move-new-folder'
 function isAllowed(folder: MediaFolder): string | undefined {
 	if (excluded.value.has(folder.id)) return t('dms_media.dialogs.move_inside_itself')
 	if (folder.id === props.currentFolderId) return t('dms_media.dialogs.already_here')
-	if (props.refuseBound && folder.bound) return t('dms_media.dialogs.no_subfolder_in_linked')
+	if (props.refuseBound && !folder.acceptsSubfolders) return t('dms_media.dialogs.no_subfolder_in_linked')
 	if (!folder.rights[props.right]) return t('dms_media.dialogs.no_right_here')
 	return undefined
 }

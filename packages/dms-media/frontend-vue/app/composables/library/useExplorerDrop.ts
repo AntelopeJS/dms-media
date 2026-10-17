@@ -53,7 +53,7 @@ export function createExplorerDrop(library: MediaLibrary, upload: DropUpload) {
 		const dragged = draggedFolder.value
 		if (!dragged || dragged.parentId === (target?.id ?? null)) return false
 		if (!target) return Boolean(library.tree.tree.value?.root.manage)
-		if (!target.rights.manage || target.bound || target.id === dragged.id) return false
+		if (!target.rights.manage || !target.acceptsSubfolders || target.id === dragged.id) return false
 		return !library.tree.descendantsOf(dragged.id).some((child) => child.id === target.id)
 	}
 

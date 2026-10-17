@@ -80,7 +80,7 @@ export function useExplorerCommands(library: MediaLibrary, handlers: ExplorerHan
 	async function newFolder(parentId?: string | null): Promise<void> {
 		const parentKey = parentId === undefined ? (library.currentFolder.value?.id ?? null) : parentId
 		const parent = parentKey ? library.tree.foldersById.value.get(parentKey) : undefined
-		if (parent?.bound) return showLocked(parent)
+		if (parent && !parent.acceptsSubfolders) return showLocked(parent)
 		await nameDialog.open({
 			title: t('dms_media.dialogs.new_folder.title'),
 			description: parent

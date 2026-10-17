@@ -2,6 +2,7 @@ import { MediaApiController } from "./controller";
 import { Delete, JSONBody, Parameter, Post } from "@antelopejs/interface-api";
 import { assert } from "@antelopejs/interface-api-util";
 import { deleteMediaAsset } from "../../asset-lifecycle";
+import { holdsSubfolders } from "../../bindings";
 import { forgetFavorites } from "../../library/favorites";
 import { type MediaFolder } from "../../db";
 import {
@@ -25,19 +26,29 @@ const HTTP_BAD_REQUEST = 400;
 const HTTP_FORBIDDEN = 403;
 const HTTP_CONFLICT = 409;
 
+/** Whether another folder under `parentId` has this name, case and Unicode form aside. */
+export function hasSiblingNamed(
+  folders: MediaFolder[],
+  name: string,
+  parentId: string | undefined,
+  ignoredId?: string,
+): boolean {
+  const wanted = comparableName(name);
+  return folders.some(
+    (folder) =>
+      folder._id !== ignoredId &&
+      (folder.parentId ?? undefined) === parentId &&
+      comparableName(folder.name) === wanted,
+  );
+}
+
 function assertUniqueSiblingName(
   context: MediaRequestContext,
   name: string,
   parentId: string | undefined,
   ignoredId?: string,
 ): void {
-  const wanted = comparableName(name);
-  const clash = context.folders.some(
-    (folder) =>
-      folder._id !== ignoredId &&
-      (folder.parentId ?? undefined) === parentId &&
-      comparableName(folder.name) === wanted,
-  );
+  const clash = hasSiblingNamed(context.folders, name, parentId, ignoredId);
   assert(!clash, HTTP_CONFLICT, MEDIA_ERRORS.folderNameTaken);
 }
 
@@ -54,11 +65,11 @@ function assertCanPlaceUnder(
     return undefined;
   }
   const parent = requireFolderRight(context, parentId, "manage");
-  assert(!parent.binding, HTTP_FORBIDDEN, MEDIA_ERRORS.boundParent);
+  assert(holdsSubfolders(parent), HTTP_FORBIDDEN, MEDIA_ERRORS.boundParent);
   return parent;
 }
 
-function buildChildPath(parent: MediaFolder | undefined): string[] {
+export function buildChildPath(parent: MediaFolder | undefined): string[] {
   return parent ? [...parent.path, parent._id] : [];
 }
 
@@ -94,22 +105,33 @@ export async function deleteFolderTree(
   }
 }
 
-async function applyFolderMove(
-  context: MediaRequestContext,
+/** Moves a folder and rewrites the materialized path of everything under it. */
+export async function applyFolderMove(
+  context: Pick<MediaRequestContext, "folderModel" | "folders">,
   folder: MediaFolder,
   newParent: MediaFolder | undefined,
 ): Promise<void> {
+  const path = buildChildPath(newParent);
+  await context.folderModel.update(folder._id, {
+    parentId: newParent?._id,
+    path,
+  });
+  await rewriteDescendantPaths(context, folder, path);
+}
+
+/** Rewrites descendant paths after the root move has been accepted. */
+export async function rewriteDescendantPaths(
+  context: Pick<MediaRequestContext, "folderModel" | "folders">,
+  folder: MediaFolder,
+  path: string[],
+): Promise<void> {
   const newPaths = new Map<string, string[]>();
-  newPaths.set(folder._id, buildChildPath(newParent));
+  newPaths.set(folder._id, path);
   const descendants = getDescendantFolders(context, folder._id);
   for (const descendant of descendants) {
     const parentPath = newPaths.get(descendant.parentId ?? "") ?? [];
     newPaths.set(descendant._id, [...parentPath, descendant.parentId ?? ""]);
   }
-  await context.folderModel.update(folder._id, {
-    parentId: newParent?._id,
-    path: newPaths.get(folder._id),
-  });
   await Promise.all(
     descendants.map((descendant) =>
       context.folderModel.update(descendant._id, {
@@ -119,16 +141,16 @@ async function applyFolderMove(
   );
 }
 
-function assertMoveTargetOutsideSubtree(
+/** Whether a proposed parent would put a folder inside its own subtree. */
+export function isMoveInsideSubtree(
   folder: MediaFolder,
-  targetParentId: string | undefined,
   newParent: MediaFolder | undefined,
-): void {
-  const insideItself =
-    targetParentId === folder._id ||
+): boolean {
+  return (
+    newParent?._id === folder._id ||
     (newParent?.path ?? []).includes(folder._id) ||
-    newParent?.parentId === folder._id;
-  assert(!insideItself, HTTP_BAD_REQUEST, "Cannot move a folder inside itself");
+    newParent?.parentId === folder._id
+  );
 }
 
 export class MediaFoldersController extends MediaApiController {
@@ -189,7 +211,11 @@ export class MediaFoldersController extends MediaApiController {
     assertNotBound(folder);
     const targetParentId = parentId ?? undefined;
     const newParent = assertCanPlaceUnder(context, targetParentId);
-    assertMoveTargetOutsideSubtree(folder, targetParentId, newParent);
+    assert(
+      !isMoveInsideSubtree(folder, newParent),
+      HTTP_BAD_REQUEST,
+      "Cannot move a folder inside itself",
+    );
     assertUniqueSiblingName(context, folder.name, targetParentId, folderId);
     await applyFolderMove(context, folder, newParent);
     await this.record(context, {

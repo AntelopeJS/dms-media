@@ -7,6 +7,8 @@ import { MEDIA_ASSETS_TABLE_NAME, MediaAsset } from "../tables";
 export interface MediaMutationOptions {
   /** False for bookkeeping writes that must not move `updatedAt`. */
   touchesAsset?: boolean;
+  /** Declarations must also preserve metadata edits, which do not advance mediaRevision. */
+  preserveDetails?: boolean;
 }
 
 function mutationApplied(outcome: AtomicMutationOutcome): boolean {
@@ -28,6 +30,29 @@ export class MediaAssetModel extends BasicDataModel(
     const instance = MediaAssetModel.fromPlainData(patch);
     if (options.touchesAsset !== false) triggerEvent(instance, "update");
     const payload = MediaAssetModel.toDatabase(instance);
+    if (options.preserveDetails) {
+      const count = await this.table
+        .filter((row) =>
+          row
+            .key("_id")
+            .eq(expected._id)
+            .and(row.key("mediaRevision").eq(expected.mediaRevision))
+            .and(row.key("isDeleting").default(false).eq(false))
+            .and(row.key("name").eq(expected.name))
+            .and(row.key("folderId").eq(expected.folderId))
+            .and(
+              row
+                .key("alt")
+                .default("")
+                .eq(expected.alt || ""),
+            )
+            .and(row.key("visibility").eq(expected.visibility))
+            .and(row.key("storageKey").eq(expected.storageKey)),
+        )
+        .update({ ...payload, mediaRevision: randomUUID() })
+        .run();
+      return count === 1;
+    }
     const outcome = await this.table
       .atomicMutation(expected._id, {
         type: "update",

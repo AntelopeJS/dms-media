@@ -20,6 +20,7 @@ A media library for the AntelopeJS DMS: uploads, folders, image sizes and light 
 - Renders named image sizes on first request, with crop and rotation that can revert to the original.
 - Applies per-folder rights built on the DMS permissions and roles.
 - Adds an `AssetType` form field, from [`@antelopejs/interface-dms-media`](https://github.com/AntelopeJS/dms-media/tree/main/packages/interface-dms-media), that opens the library as a picker on your pages.
+- Lets a project ship folders and files as code with `EnsureMediaFolder` and `ImportMediaAsset`, created once and never overwriting what members changed.
 
 ## Install
 
