@@ -13,7 +13,7 @@
     "test:frontend": "pnpm --filter @antelopejs/dms-media test:frontend"
   },
   "devDependencies": {
-    "@antelopejs/tooling-configs": ">=0.0.7 <1.0.0",
+    "@antelopejs/tooling-configs": ">=0.0.9 <1.0.0",
     "oxfmt": "^0.66.0",
     "oxlint": "1.81.0",
     "oxlint-tsgolint": "^7.0.2001"
