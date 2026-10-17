@@ -1,5 +1,26 @@
 # Changelog
 
+## v0.3.0
+
+[compare changes](https://github.com/AntelopeJS/dms-media/compare/interface-v0.2.2...v0.3.0)
+
+### 🚀 Enhancements
+
+- Declare media folders and files from backend code ([#56](https://github.com/AntelopeJS/dms-media/pull/56))
+
+### 📦 Build
+
+- Include shipped frontend in contributor workspace ([#53](https://github.com/AntelopeJS/dms-media/pull/53))
+
+### 🏡 Chore
+
+- **release:** @antelopejs/dms-media v0.4.1 ([8cfa0df](https://github.com/AntelopeJS/dms-media/commit/8cfa0df))
+
+### ❤️ Contributors
+
+- Maxime Westhoven <maxime@altab.be>
+- Antony Rizzitelli <rizzitelli.antony@pm.me>
+
 ## v0.2.2
 
 [compare changes](https://github.com/AntelopeJS/dms-media/compare/interface-v0.2.1...v0.2.2)
