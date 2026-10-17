@@ -36,8 +36,8 @@ jobs:
           # read a TypeScript config, which every value there clears.
           node-version-file: .nvmrc
           cache: pnpm
-          # The frontend module is a project of its own, with its own lockfile;
-          # without it the cache key ignores half of what the job installs.
+          # The root lockfile covers the workspace; the shipped frontend
+          # retains its own lockfile for standalone consumers.
           cache-dependency-path: |
             pnpm-lock.yaml
             packages/dms-media/frontend-vue/pnpm-lock.yaml
@@ -47,7 +47,6 @@ jobs:
       # resolves the interface to the workspace sibling through
       # `link-workspace-packages`. The module lint also lints frontend-vue.
       - run: pnpm install --frozen-lockfile
-      - run: pnpm --dir packages/dms-media/frontend-vue install --frozen-lockfile
 
       # Interface first: it is the contract, and the module builds against it.
       - run: pnpm --dir packages/interface-dms-media lint
@@ -129,7 +128,6 @@ jobs:
             packages/dms-media/frontend-vue/pnpm-lock.yaml
 
       - run: pnpm install --frozen-lockfile
-      - run: pnpm --dir packages/dms-media/frontend-vue install --frozen-lockfile
 
       # The frontend layer's own unit tests: pure helpers, locales and the
       # component registration.

@@ -94,9 +94,10 @@ The guide's sources live in [`packages/dms-media/docs`](./packages/dms-media/doc
 
 Read [CONTRIBUTING.md](./CONTRIBUTING.md) before opening a pull request. The playground is a project of its own, outside the workspace, and links the interface package from the tree. It connects to MongoDB at `mongodb://localhost:27017` unless `MONGO_URL` is set.
 
+One install from the repository root includes the backend, interface and shipped Vue frontend. The root lockfile covers this workspace; the frontend retains its lockfile for standalone consumers. The playground still needs a separate install for local development.
+
 ```bash
 pnpm install --frozen-lockfile
-pnpm --dir packages/dms-media/frontend-vue install --frozen-lockfile
 pnpm --dir packages/dms-media/playground install --frozen-lockfile --ignore-workspace
 pnpm dev            # builds the interface, the module and the playground, then starts the backend
 pnpm frontend:dev   # dashboard, in a second terminal
