@@ -1,2 +1,4 @@
 packages:
-  - packages/*
+  - packages/dms-media
+  - packages/interface-dms-media
+  - packages/dms-media/frontend-vue
