@@ -110,17 +110,27 @@ export async function applyFolderMove(
   folder: MediaFolder,
   newParent: MediaFolder | undefined,
 ): Promise<void> {
+  const path = buildChildPath(newParent);
+  await context.folderModel.update(folder._id, {
+    parentId: newParent?._id,
+    path,
+  });
+  await rewriteDescendantPaths(context, folder, path);
+}
+
+/** Rewrites descendant paths after the root move has been accepted. */
+export async function rewriteDescendantPaths(
+  context: Pick<MediaRequestContext, "folderModel" | "folders">,
+  folder: MediaFolder,
+  path: string[],
+): Promise<void> {
   const newPaths = new Map<string, string[]>();
-  newPaths.set(folder._id, buildChildPath(newParent));
+  newPaths.set(folder._id, path);
   const descendants = getDescendantFolders(context, folder._id);
   for (const descendant of descendants) {
     const parentPath = newPaths.get(descendant.parentId ?? "") ?? [];
     newPaths.set(descendant._id, [...parentPath, descendant.parentId ?? ""]);
   }
-  await context.folderModel.update(folder._id, {
-    parentId: newParent?._id,
-    path: newPaths.get(folder._id),
-  });
   await Promise.all(
     descendants.map((descendant) =>
       context.folderModel.update(descendant._id, {
@@ -130,16 +140,16 @@ export async function applyFolderMove(
   );
 }
 
-function assertMoveTargetOutsideSubtree(
+/** Whether a proposed parent would put a folder inside its own subtree. */
+export function isMoveInsideSubtree(
   folder: MediaFolder,
-  targetParentId: string | undefined,
   newParent: MediaFolder | undefined,
-): void {
-  const insideItself =
-    targetParentId === folder._id ||
+): boolean {
+  return (
+    newParent?._id === folder._id ||
     (newParent?.path ?? []).includes(folder._id) ||
-    newParent?.parentId === folder._id;
-  assert(!insideItself, HTTP_BAD_REQUEST, "Cannot move a folder inside itself");
+    newParent?.parentId === folder._id
+  );
 }
 
 export class MediaFoldersController extends MediaApiController {
@@ -200,7 +210,11 @@ export class MediaFoldersController extends MediaApiController {
     assertNotBound(folder);
     const targetParentId = parentId ?? undefined;
     const newParent = assertCanPlaceUnder(context, targetParentId);
-    assertMoveTargetOutsideSubtree(folder, targetParentId, newParent);
+    assert(
+      !isMoveInsideSubtree(folder, newParent),
+      HTTP_BAD_REQUEST,
+      "Cannot move a folder inside itself",
+    );
     assertUniqueSiblingName(context, folder.name, targetParentId, folderId);
     await applyFolderMove(context, folder, newParent);
     await this.record(context, {

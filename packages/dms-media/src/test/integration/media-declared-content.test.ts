@@ -1,8 +1,12 @@
 import { mkdtemp, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
+import { Schema } from "@antelopejs/interface-database";
 import { GetModel } from "@antelopejs/interface-database-decorators";
-import { DEFAULT_TENANT_ID } from "@antelopejs/interface-dms/constants";
+import {
+  DEFAULT_TENANT_ID,
+  TENANT_SCHEMA_NAME,
+} from "@antelopejs/interface-dms/constants";
 import {
   EnsureMediaFolder,
   ImportMediaAsset,
@@ -78,7 +82,157 @@ describe("[integration] media declared content — folders and files shipped as 
     await rm(tempDir, { recursive: true, force: true });
   });
 
+  it("isolates the same declaration keys and updates in two tenant instances", async () => {
+    const tenantId = "declared-isolation";
+    const schema = Schema.get(TENANT_SCHEMA_NAME);
+    if (!schema) throw new Error("Tenant schema is missing");
+    // Disposable database fixture, not a change to workspace provisioning.
+    await schema.createInstance(tenantId).run();
+    try {
+      const folder = { key: "declared.isolated", name: "Isolated" };
+      const firstFolder = await EnsureMediaFolder(folder);
+      const secondFolder = await EnsureMediaFolder({ ...folder, tenantId });
+      expect(firstFolder.id).to.not.equal(secondFolder.id);
+      const file = {
+        key: folder.key,
+        folder: { key: folder.key },
+        name: "isolated.txt",
+        mimetype: "text/plain",
+        source: { bytes: Buffer.from("Initial") },
+      };
+      const firstFile = await ImportMediaAsset(file);
+      const secondFile = await ImportMediaAsset({ ...file, tenantId });
+      expect(firstFile.id).to.not.equal(secondFile.id);
+      expect(
+        (
+          await EnsureMediaFolder({
+            ...folder,
+            tenantId,
+            name: "Other tenant folder",
+          })
+        ).status,
+      ).to.equal("updated");
+      expect(
+        (
+          await ImportMediaAsset({
+            ...file,
+            tenantId,
+            source: { bytes: Buffer.from("Other tenant content") },
+          })
+        ).status,
+      ).to.equal("updated");
+      expect((await EnsureMediaFolder(folder)).status).to.equal("unchanged");
+      expect((await ImportMediaAsset(file)).status).to.equal("unchanged");
+      expect(
+        await GetModel(MediaAssetModel, tenantId).get(firstFile.id as string),
+      ).to.equal(undefined);
+      expect(await assets().get(secondFile.id as string)).to.equal(undefined);
+    } finally {
+      await schema.destroyInstance(tenantId).run();
+    }
+  });
+
   describe("folders", () => {
+    it("rejects self-parenting without blocking later declarations of the key", async () => {
+      const key = "declared.self-parent";
+      let timeout: ReturnType<typeof setTimeout> | undefined;
+      try {
+        const error = await rejectionOf(
+          Promise.race([
+            EnsureMediaFolder({ key, name: "Self", parent: key }),
+            new Promise((_, reject) => {
+              timeout = setTimeout(
+                () => reject(new Error("Declaration did not settle")),
+                500,
+              );
+            }),
+          ]),
+        );
+        expect(error.message).to.contain("cannot be its own parent");
+        expect(
+          (await EnsureMediaFolder({ key, name: "Not self" })).status,
+        ).to.equal("created");
+      } finally {
+        clearTimeout(timeout);
+      }
+    });
+
+    it("rejects moving a declared ancestor under its descendant", async () => {
+      const root = { key: "declared.cycle-root", name: "Cycle root" };
+      const parent = await EnsureMediaFolder(root);
+      const child = await EnsureMediaFolder({
+        key: "declared.cycle-child",
+        name: "Cycle child",
+        parent: root.key,
+      });
+      const error = await rejectionOf(
+        EnsureMediaFolder({ ...root, parent: "declared.cycle-child" }),
+      );
+      expect(error.message).to.contain("inside itself");
+      expect((await folders().get(parent.id as string))?.path).to.deep.equal(
+        [],
+      );
+      expect((await folders().get(child.id as string))?.path).to.deep.equal([
+        parent.id,
+      ]);
+      const destination = await EnsureMediaFolder({
+        key: "declared.move-target",
+        name: "Move target",
+      });
+      expect(
+        (await EnsureMediaFolder({ ...root, parent: "declared.move-target" }))
+          .status,
+      ).to.equal("updated");
+      expect((await folders().get(child.id as string))?.path).to.deep.equal([
+        destination.id,
+        parent.id,
+      ]);
+      expect((await EnsureMediaFolder(root)).status).to.equal("updated");
+      expect(
+        (await folders().get(parent.id as string))?.parentId ?? undefined,
+      ).to.equal(undefined);
+      expect((await folders().get(child.id as string))?.path).to.deep.equal([
+        parent.id,
+      ]);
+    });
+
+    it("preserves a member rename racing a folder refresh", async () => {
+      const declaration = {
+        key: "declared.folder-race",
+        name: "Folder before race",
+      };
+      const first = await EnsureMediaFolder(declaration);
+      // oxlint-disable-next-line typescript/unbound-method -- Rebound with call(this) below and restored in finally.
+      const original = MediaFolderModel.prototype.get;
+      let renamed = false;
+      MediaFolderModel.prototype.get = async function (id) {
+        const snapshot = await original.call(this, id);
+        if (id === first.id && !renamed) {
+          renamed = true;
+          await client.post(`/api/media/folders/${id}/rename`, {
+            name: "Member folder name",
+          });
+        }
+        return snapshot;
+      };
+      try {
+        const result = await EnsureMediaFolder({
+          ...declaration,
+          name: "Code folder name",
+          visibility: "public",
+        });
+        expect(result).to.deep.equal({ status: "preserved", id: first.id });
+        const folder = await folders().get(first.id as string);
+        expect(folder?.name).to.equal("Member folder name");
+        expect(folder?.visibility).to.equal("private");
+        expect((await EnsureMediaFolder(declaration)).status).to.equal(
+          "preserved",
+        );
+      } finally {
+        MediaFolderModel.prototype.get = original;
+      }
+    });
+
     it("creates a folder once, however often it is declared", async () => {
       const declaration = { key: ROOT_KEY, name: "Declared procedures" };
       const first = await EnsureMediaFolder(declaration);
@@ -201,6 +355,51 @@ describe("[integration] media declared content — folders and files shipped as 
   });
 
   describe("files", () => {
+    for (const replaceBytes of [false, true]) {
+      it(`preserves a member rename racing an asset ${replaceBytes ? "content" : "metadata"} refresh`, async () => {
+        const declaration = {
+          key: `declared.asset-race.${replaceBytes}`,
+          folder: { key: ROOT_KEY },
+          name: `race-${replaceBytes}.txt`,
+          mimetype: "text/plain",
+          source: { bytes: Buffer.from("Original content") },
+        };
+        const first = await ImportMediaAsset(declaration);
+        const before = await assets().get(first.id as string);
+        // oxlint-disable-next-line typescript/unbound-method -- Rebound with call(this) below and restored in finally.
+        const original = MediaAssetModel.prototype.get;
+        let reads = 0;
+        MediaAssetModel.prototype.get = async function (id) {
+          const snapshot = await original.call(this, id);
+          // Race the last snapshot used to publish, not just the initial verdict.
+          if (id === first.id && ++reads === 2) {
+            await client.post(`/api/media/assets/${id}/update`, {
+              name: `member-${replaceBytes}.txt`,
+            });
+          }
+          return snapshot;
+        };
+        try {
+          const result = await ImportMediaAsset({
+            ...declaration,
+            name: `code-${replaceBytes}.txt`,
+            source: replaceBytes
+              ? { bytes: Buffer.from("Replacement content") }
+              : declaration.source,
+          });
+          expect(result).to.deep.equal({ status: "preserved", id: first.id });
+          const after = await assets().get(first.id as string);
+          expect(after?.name).to.equal(`member-${replaceBytes}.txt`);
+          expect(after?.storageKey).to.equal(before?.storageKey);
+          expect((await ImportMediaAsset(declaration)).status).to.equal(
+            "preserved",
+          );
+        } finally {
+          MediaAssetModel.prototype.get = original;
+        }
+      });
+    }
+
     it("imports bytes once, with their dimensions and an upload event", async () => {
       const declaration = {
         key: "declared.logo",

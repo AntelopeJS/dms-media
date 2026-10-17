@@ -227,61 +227,58 @@ async function createAsset(
   return asset;
 }
 
-/** Swaps the file's bytes the way an edit does, retiring the old file and its sizes. */
-async function replaceContent(
-  target: AssetTarget,
-  asset: MediaAsset,
-  file: PreparedFile,
-): Promise<void> {
-  const { assetModel } = target.models;
-  const storageKey = await writeFile(target, file);
-  const patch: Partial<MediaAsset> = {
-    storageKey,
-    mimetype: file.mimetype,
-    size: file.bytes.byteLength,
-    width: file.image.width,
-    height: file.image.height,
-    json_derivatives: "",
-  };
-  for (;;) {
-    const fresh = await assetModel.get(asset._id);
-    const isStillAsDeclared =
-      fresh !== undefined && assetStateHash(fresh) === assetStateHash(asset);
-    if (!isStillAsDeclared) {
-      await DeleteFile(storageKey, getMediaConfig().storage).catch(
-        () => undefined,
-      );
-      throw new MediaDeclarationError(
-        "asset",
-        target.declaration.key,
-        "the file changed while it was being refreshed",
-      );
-    }
-    if (await updateAssetMedia(assetModel, fresh, patch)) break;
-  }
-  await cleanupAssetFiles(assetModel, asset._id);
-}
-
+/** Publishes metadata and optional new bytes together, only while the file is untouched. */
 async function refreshAsset(
   target: AssetTarget,
   asset: MediaAsset,
   bytes: Buffer,
   isContentChanged: boolean,
-): Promise<MediaAsset> {
+): Promise<MediaAsset | undefined> {
   const { models, declaration, folder } = target;
-  if (isContentChanged) {
-    const file = await prepareFile(target, bytes, asset.size);
-    await replaceContent(target, asset, file);
-  } else {
-    assertUploadTypeAllowed(folder, declaration.name, asset.mimetype);
-  }
-  // An empty alt text reads as none.
-  await models.assetModel.update(asset._id, {
+  const { assetModel } = models;
+  const patch: Partial<MediaAsset> = {
     name: declaration.name,
     folderId: folder._id,
     alt: declaration.alt ?? "",
-  });
-  return (await models.assetModel.get(asset._id)) ?? asset;
+  };
+  let storageKey: string | undefined;
+  if (isContentChanged) {
+    const file = await prepareFile(target, bytes, asset.size);
+    storageKey = await writeFile(target, file);
+    Object.assign(patch, {
+      storageKey,
+      mimetype: file.mimetype,
+      size: file.bytes.byteLength,
+      width: file.image.width,
+      height: file.image.height,
+      json_derivatives: "",
+    });
+  } else {
+    assertUploadTypeAllowed(folder, declaration.name, asset.mimetype);
+  }
+  for (;;) {
+    const fresh = await assetModel.get(asset._id);
+    const isStillAsDeclared =
+      fresh !== undefined &&
+      !fresh.isDeleting &&
+      assetStateHash(fresh) === assetStateHash(asset);
+    if (!isStillAsDeclared) {
+      if (storageKey)
+        await DeleteFile(storageKey, getMediaConfig().storage).catch(
+          () => undefined,
+        );
+      return undefined;
+    }
+    if (
+      await updateAssetMedia(assetModel, fresh, patch, {
+        preserveDetails: true,
+      })
+    )
+      break;
+  }
+  if (storageKey) await cleanupAssetFiles(assetModel, asset._id);
+  // A concurrent edit after publication must not become our new baseline.
+  return Object.assign(asset, patch);
 }
 
 function rememberAsset(
@@ -339,6 +336,12 @@ async function applyAssetDeclaration(
   }
   const isContentChanged = record.contentHash !== hashes.contentHash;
   const refreshed = await refreshAsset(target, asset, bytes, isContentChanged);
+  if (!refreshed) {
+    const current = await models.assetModel.get(asset._id);
+    return current && !current.isDeleting
+      ? { status: "preserved", id: asset._id }
+      : { status: "deleted" };
+  }
   await rememberAsset(target, record, refreshed, hashes);
   return { status: "updated", id: refreshed._id };
 }

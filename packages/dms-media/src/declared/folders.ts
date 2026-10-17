@@ -6,9 +6,10 @@ import { serializeAcl } from "../acl";
 import type { MediaDeclaration, MediaFolder } from "../db";
 import { recordMediaEvent } from "../library/events";
 import {
-  applyFolderMove,
   buildChildPath,
   hasSiblingNamed,
+  isMoveInsideSubtree,
+  rewriteDescendantPaths,
 } from "../routes/media/folders";
 import {
   declaredFolderSchema,
@@ -113,7 +114,13 @@ async function refreshFolder(
   declaration: DeclaredFolderInput,
   folder: MediaFolder,
   parent: MediaFolder | undefined,
-): Promise<MediaFolder> {
+): Promise<MediaFolder | undefined> {
+  if (isMoveInsideSubtree(folder, parent))
+    throw new MediaDeclarationError(
+      "folder",
+      declaration.key,
+      "Cannot move a folder inside itself",
+    );
   const folders = await models.folderModel.getAll();
   if (hasSiblingNamed(folders, declaration.name, parent?._id, folder._id))
     throw new MediaDeclarationError(
@@ -121,20 +128,25 @@ async function refreshFolder(
       declaration.key,
       `a folder named '${declaration.name}' already exists there`,
     );
-  if ((folder.parentId || undefined) !== parent?._id) {
-    await applyFolderMove(
-      { folderModel: models.folderModel, folders },
-      folder,
-      parent,
-    );
-  }
   // An empty ACL string reads as no ACL: the folder inherits its parent's.
-  await models.folderModel.update(folder._id, {
+  const patch: Partial<MediaFolder> = {
     name: declaration.name,
+    parentId: parent?._id,
+    path: buildChildPath(parent),
     visibility: declaration.visibility,
     json_acl: serializeAcl(declaration.acl) ?? "",
-  });
-  return (await models.folderModel.get(folder._id)) ?? folder;
+  };
+  if (!(await models.folderModel.compareDeclared(folder, patch)))
+    return undefined;
+  if ((folder.parentId || undefined) !== parent?._id) {
+    await rewriteDescendantPaths(
+      { folderModel: models.folderModel, folders },
+      folder,
+      patch.path ?? [],
+    );
+  }
+  // Remember only our write, not a member's edit made just after it.
+  return Object.assign(folder, patch);
 }
 
 async function applyFolderDeclaration(
@@ -172,6 +184,12 @@ async function applyFolderDeclaration(
   if (verdict || !folder) return verdict ?? { status: "deleted" };
   if (isParentDeleted) return { status: "preserved", id: folder._id };
   const refreshed = await refreshFolder(models, declaration, folder, parent);
+  if (!refreshed) {
+    const current = await models.folderModel.get(folder._id);
+    return current
+      ? { status: "preserved", id: folder._id }
+      : { status: "deleted" };
+  }
   await rememberFolder(models, record, declaration, refreshed, declaredHash);
   return { status: "updated", id: refreshed._id };
 }
@@ -197,6 +215,12 @@ export async function ensureDeclaredFolder(
   input: MediaFolderDeclaration,
 ): Promise<MediaDeclarationResult> {
   const declaration = parseDeclaration("folder", input, declaredFolderSchema);
+  if (declaration.parent === declaration.key)
+    throw new MediaDeclarationError(
+      "folder",
+      declaration.key,
+      "a folder cannot be its own parent",
+    );
   return withDeclarationLock(
     declaration.tenantId,
     "folder",
