@@ -9,15 +9,15 @@
     "frontend:dev": "ajs dms dev"
   },
   "dependencies": {
-    "@antelopejs/dms": ">=0.9.0 <1.0.0",
-    "@antelopejs/interface-api": ">=0.0.14 <1.0.0",
-    "@antelopejs/interface-core": ">=0.2.3 <1.0.0",
-    "@antelopejs/interface-dms": ">=0.7.0 <1.0.0",
+    "@antelopejs/dms": ">=0.9.3 <1.0.0",
+    "@antelopejs/interface-api": ">=0.0.15 <1.0.0",
+    "@antelopejs/interface-core": ">=0.2.4 <1.0.0",
+    "@antelopejs/interface-dms": ">=0.7.2 <1.0.0",
     "@antelopejs/interface-dms-media": "link:../../interface-dms-media"
   },
   "devDependencies": {
-    "@antelopejs/core": "1.15.2",
-    "@antelopejs/dms-frontend": "0.6.0",
+    "@antelopejs/core": "1.16.0",
+    "@antelopejs/dms-frontend": "0.6.3",
     "@types/node": "^22.14.1",
     "rimraf": "^6.0.1",
     "typescript": "^6.0.3"

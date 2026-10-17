@@ -115,11 +115,11 @@ function projectConfig(mongoUrl, storagePath) {
         config: {},
       },
       dms: {
-        ...packageSource("@antelopejs/dms", ">=0.9.0 <1.0.0"),
+        ...packageSource("@antelopejs/dms", ">=0.9.3 <1.0.0"),
         config: { auth: { jwtSecret: JWT_SECRET } },
       },
       mongodb: {
-        ...packageSource("@antelopejs/mongodb", "1.4.2"),
+        ...packageSource("@antelopejs/mongodb", "1.4.3"),
         config: { url: mongoUrl, database: "dms-media-reload-test" },
       },
       "auth-jwt": {
@@ -127,14 +127,14 @@ function projectConfig(mongoUrl, storagePath) {
         config: { secret: JWT_SECRET },
       },
       api: {
-        ...packageSource("@antelopejs/api", "1.3.3"),
+        ...packageSource("@antelopejs/api", "1.3.5"),
         config: {
           servers: [{ protocol: "http", host: "127.0.0.1", port: API_PORT }],
           publicBaseUrl: BASE_URL,
         },
       },
       "file-storage-local": {
-        ...packageSource("@antelopejs/file-storage-local", "0.1.6"),
+        ...packageSource("@antelopejs/file-storage-local", "0.1.9"),
         config: {
           storagePath,
           baseUrl: BASE_URL,
@@ -142,7 +142,7 @@ function projectConfig(mongoUrl, storagePath) {
         },
       },
       nodemailer: {
-        ...packageSource("@antelopejs/nodemailer", "0.0.5"),
+        ...packageSource("@antelopejs/nodemailer", "0.0.6"),
         config: { host: "127.0.0.1", port: 1, secure: false },
       },
     },

@@ -46,15 +46,15 @@ The interface also exports the option and ACL types: `AssetTypeOptions`, `AssetP
 
 ## Compatibility
 
-The implementation is `@antelopejs/dms-media >=0.4.0`. The interface declares these peer dependencies (the development DMS range is narrower):
+The implementation is `@antelopejs/dms-media >=0.4.0`. The interface declares these peer dependencies:
 
 <!-- docs-compat: ./package.json#peerDependencies -->
 
 | Package | Range |
 | --- | --- |
-| `@antelopejs/interface-api` | `>=0.0.14 <1.0.0` |
-| `@antelopejs/interface-core` | `>=0.2.3 <1.0.0` |
-| `@antelopejs/interface-dms` | `>=0.5.12 <1.0.0` |
+| `@antelopejs/interface-api` | `>=0.0.15 <1.0.0` |
+| `@antelopejs/interface-core` | `>=0.2.4 <1.0.0` |
+| `@antelopejs/interface-dms` | `>=0.7.2 <1.0.0` |
 
 ## Documentation
 

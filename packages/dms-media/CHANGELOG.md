@@ -1,5 +1,30 @@
 # Changelog
 
+## v0.4.1
+
+[compare changes](https://github.com/AntelopeJS/dms-media/compare/v0.4.0...v0.4.1)
+
+### 💅 Refactors
+
+- **frontend:** Leave the editor's image sizes to the browser with server: false ([#49](https://github.com/AntelopeJS/dms-media/pull/49))
+
+### 📖 Documentation
+
+- Add user guide, screenshots and dms-media skill ([#45](https://github.com/AntelopeJS/dms-media/pull/45))
+- Streamline agent guidance ([#50](https://github.com/AntelopeJS/dms-media/pull/50))
+- Establish the media consumer reference ([#51](https://github.com/AntelopeJS/dms-media/pull/51))
+- Make dense guide sections easier to scan ([#52](https://github.com/AntelopeJS/dms-media/pull/52))
+
+### 🏡 Chore
+
+- Prepare media interface 0.2.2 release ([#54](https://github.com/AntelopeJS/dms-media/pull/54))
+- **release:** @antelopejs/interface-dms-media v0.2.2 ([3635a16](https://github.com/AntelopeJS/dms-media/commit/3635a16))
+
+### ❤️ Contributors
+
+- Antony Rizzitelli <rizzitelli.antony@pm.me>
+- Alessandro Aloisio ([@alessaloisio](http://github.com/alessaloisio))
+
 ## v0.4.0
 
 [compare changes](https://github.com/AntelopeJS/dms-media/compare/v0.3.1...v0.4.0)

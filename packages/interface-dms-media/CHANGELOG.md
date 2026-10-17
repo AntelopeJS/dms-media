@@ -1,5 +1,43 @@
 # Changelog
 
+## v0.2.2
+
+[compare changes](https://github.com/AntelopeJS/dms-media/compare/interface-v0.2.1...v0.2.2)
+
+### 🚀 Enhancements
+
+- ⚠️  Migrate to DMS 0.9 and renderer 0.6 ([#48](https://github.com/AntelopeJS/dms-media/pull/48))
+
+### 💅 Refactors
+
+- **frontend:** Leave the editor's image sizes to the browser with server: false ([#49](https://github.com/AntelopeJS/dms-media/pull/49))
+
+### 📖 Documentation
+
+- Add user guide, screenshots and dms-media skill ([#45](https://github.com/AntelopeJS/dms-media/pull/45))
+- Streamline agent guidance ([#50](https://github.com/AntelopeJS/dms-media/pull/50))
+- Establish the media consumer reference ([#51](https://github.com/AntelopeJS/dms-media/pull/51))
+- Make dense guide sections easier to scan ([#52](https://github.com/AntelopeJS/dms-media/pull/52))
+
+### 📦 Build
+
+- **deps:** Require @antelopejs/interface-dms-media 0.2.1 ([#44](https://github.com/AntelopeJS/dms-media/pull/44))
+
+### 🏡 Chore
+
+- **release:** @antelopejs/dms-media v0.3.1 ([320ac3b](https://github.com/AntelopeJS/dms-media/commit/320ac3b))
+- **release:** @antelopejs/dms-media v0.4.0 ([aea0224](https://github.com/AntelopeJS/dms-media/commit/aea0224))
+- Prepare media interface 0.2.2 release ([#54](https://github.com/AntelopeJS/dms-media/pull/54))
+
+#### ⚠️ Breaking Changes
+
+- ⚠️  Migrate to DMS 0.9 and renderer 0.6 ([#48](https://github.com/AntelopeJS/dms-media/pull/48))
+
+### ❤️ Contributors
+
+- Antony Rizzitelli <rizzitelli.antony@pm.me>
+- Alessandro Aloisio ([@alessaloisio](http://github.com/alessaloisio))
+
 ## v0.2.1
 
 [compare changes](https://github.com/AntelopeJS/dms-media/compare/interface-v0.2.0...v0.2.1)
