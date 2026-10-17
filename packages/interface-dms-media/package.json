@@ -59,10 +59,10 @@
     "zod": "~3.24.2"
   },
   "devDependencies": {
-    "@antelopejs/interface-api": ">=0.0.14 <1.0.0",
-    "@antelopejs/interface-core": ">=0.2.3 <1.0.0",
-    "@antelopejs/interface-dms": ">=0.6.0 <1.0.0",
-    "@antelopejs/tooling-configs": ">=0.0.7 <1.0.0",
+    "@antelopejs/interface-api": ">=0.0.15 <1.0.0",
+    "@antelopejs/interface-core": ">=0.2.4 <1.0.0",
+    "@antelopejs/interface-dms": ">=0.7.2 <1.0.0",
+    "@antelopejs/tooling-configs": ">=0.0.9 <1.0.0",
     "@types/node": "^24.0.0",
     "knip": "^6.34.0",
     "oxfmt": "^0.66.0",
@@ -74,9 +74,9 @@
     "typescript": "^6.0.3"
   },
   "peerDependencies": {
-    "@antelopejs/interface-api": ">=0.0.14 <1.0.0",
-    "@antelopejs/interface-core": ">=0.2.3 <1.0.0",
-    "@antelopejs/interface-dms": ">=0.5.12 <1.0.0"
+    "@antelopejs/interface-api": ">=0.0.15 <1.0.0",
+    "@antelopejs/interface-core": ">=0.2.4 <1.0.0",
+    "@antelopejs/interface-dms": ">=0.7.2 <1.0.0"
   },
   "packageManager": "pnpm@10.2.0",
   "antelopeJs": {}
