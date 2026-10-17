@@ -46,12 +46,12 @@ function boundedName(): z.ZodString {
 }
 
 /** A name typed in the library: refuses what Windows or macOS can't save. */
-const nameSchema = boundedName().refine(isPortableName, {
+export const nameSchema = boundedName().refine(isPortableName, {
   message: MEDIA_ERRORS.nameForbidden,
 });
 
 /** The name of an uploaded file, kept as the computer sent it. */
-const fileNameSchema = boundedName().refine(isSafeFileName, {
+export const fileNameSchema = boundedName().refine(isSafeFileName, {
   message: MEDIA_ERRORS.nameForbidden,
 });
 
@@ -111,12 +111,13 @@ export const confirmUploadSchema = z.object({
   batchId: z.string().min(1).max(MAX_NAME_LENGTH).optional(),
 });
 
+export const altSchema = z
+  .string()
+  .max(MAX_NAME_LENGTH, { message: MEDIA_ERRORS.altTooLong });
+
 export const updateAssetSchema = z.object({
   name: nameSchema.optional(),
-  alt: z
-    .string()
-    .max(MAX_NAME_LENGTH, { message: MEDIA_ERRORS.altTooLong })
-    .optional(),
+  alt: altSchema.optional(),
 });
 
 export const moveAssetSchema = z.object({

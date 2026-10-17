@@ -158,7 +158,7 @@ export function assertNotBound(folder: MediaFolder): void {
 }
 
 export function getDescendantFolders(
-  context: MediaRequestContext,
+  context: Pick<MediaRequestContext, "folders">,
   folderId: string,
 ): MediaFolder[] {
   const descendants: MediaFolder[] = [];

@@ -25,19 +25,29 @@ const HTTP_BAD_REQUEST = 400;
 const HTTP_FORBIDDEN = 403;
 const HTTP_CONFLICT = 409;
 
+/** Whether another folder under `parentId` has this name, case and Unicode form aside. */
+export function hasSiblingNamed(
+  folders: MediaFolder[],
+  name: string,
+  parentId: string | undefined,
+  ignoredId?: string,
+): boolean {
+  const wanted = comparableName(name);
+  return folders.some(
+    (folder) =>
+      folder._id !== ignoredId &&
+      (folder.parentId ?? undefined) === parentId &&
+      comparableName(folder.name) === wanted,
+  );
+}
+
 function assertUniqueSiblingName(
   context: MediaRequestContext,
   name: string,
   parentId: string | undefined,
   ignoredId?: string,
 ): void {
-  const wanted = comparableName(name);
-  const clash = context.folders.some(
-    (folder) =>
-      folder._id !== ignoredId &&
-      (folder.parentId ?? undefined) === parentId &&
-      comparableName(folder.name) === wanted,
-  );
+  const clash = hasSiblingNamed(context.folders, name, parentId, ignoredId);
   assert(!clash, HTTP_CONFLICT, MEDIA_ERRORS.folderNameTaken);
 }
 
@@ -58,7 +68,7 @@ function assertCanPlaceUnder(
   return parent;
 }
 
-function buildChildPath(parent: MediaFolder | undefined): string[] {
+export function buildChildPath(parent: MediaFolder | undefined): string[] {
   return parent ? [...parent.path, parent._id] : [];
 }
 
@@ -94,8 +104,9 @@ export async function deleteFolderTree(
   }
 }
 
-async function applyFolderMove(
-  context: MediaRequestContext,
+/** Moves a folder and rewrites the materialized path of everything under it. */
+export async function applyFolderMove(
+  context: Pick<MediaRequestContext, "folderModel" | "folders">,
   folder: MediaFolder,
   newParent: MediaFolder | undefined,
 ): Promise<void> {

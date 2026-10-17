@@ -12,19 +12,20 @@ import {
   PromoteFile,
 } from "@antelopejs/interface-file-storage";
 import { TenantScopedModel } from "@antelopejs/interface-dms/tenant-scoped-model";
-import sharp from "sharp";
-import { getRegisteredBindings } from "../../bindings";
 import { getMediaConfig } from "../../config";
 import { ORIGINAL_FILENAME_METADATA_KEY } from "../../constants";
 import { MediaUploadModel } from "../../db";
-import { loadAssetsInFolders, sumStoredBytes } from "../../library/listing";
-import { suggestFreeNames } from "../../upload-names";
+import { loadAssetsInFolders } from "../../library/listing";
 import {
-  expectedImageFormat,
-  isUploadTypeAllowed,
-  mimetypeMatches,
-  mimetypeOfFormat,
-} from "../../upload-policy";
+  assertReadableImage,
+  assertUploadTypeAllowed,
+  assertWithinQuota,
+  type ImageProbe,
+  probeImageBytes,
+  UploadRefusedError,
+} from "../../upload-checks";
+import { suggestFreeNames } from "../../upload-names";
+import { mimetypeOfFormat } from "../../upload-policy";
 import {
   confirmUploadSchema,
   presignSchema,
@@ -36,40 +37,26 @@ import {
 import { type MediaRequestContext, requireFolderRight } from "./context";
 import { buildAssetDto } from "./dto";
 
+export type { UploadRefusal } from "../../upload-checks";
+
 const HTTP_BAD_REQUEST = 400;
-const HTTP_PAYLOAD_TOO_LARGE = 413;
-const HTTP_UNSUPPORTED_MEDIA_TYPE = 415;
-const HTTP_UNPROCESSABLE_ENTITY = 422;
-// Dimension probing buffers the file in memory, so skip files too large to
-// hold in the heap; they simply stay without width/height metadata.
-const MAX_PROBE_SIZE_BYTES = 32 * 1024 * 1024;
-const FIRST_SWAPPED_ORIENTATION = 5;
 
-/** Why an upload is refused, for the queue to explain it in the member's language. */
-export type UploadRefusal =
-  | "type_not_allowed"
-  | "field_type"
-  | "quota"
-  | "invalid_image";
-
-function refuse(
-  status: number,
-  reason: UploadRefusal,
-  message: string,
-  details: Record<string, unknown> = {},
-): never {
-  throw new HTTPResult(status, { reason, message, ...details });
+/** Answers a refused file with its reason, for the queue to explain it. */
+async function answerRefusal<T>(check: () => T | Promise<T>): Promise<T> {
+  try {
+    return await check();
+  } catch (error) {
+    if (!(error instanceof UploadRefusedError)) throw error;
+    throw new HTTPResult(error.status, {
+      reason: error.reason,
+      message: error.message,
+      ...error.details,
+    });
+  }
 }
 
 function mediaUploadPath(tenantId: string, folderId: string): string {
   return `media/${tenantId}/${folderId}`;
-}
-
-interface ImageProbe {
-  width?: number;
-  height?: number;
-  format?: string;
-  isReadable: boolean;
 }
 
 async function readStoredFile(
@@ -82,93 +69,32 @@ async function readStoredFile(
   return Buffer.from(await response.arrayBuffer());
 }
 
-/** Displayed size: sharp reports stored pixels, EXIF orientations 5-8 swap them. */
-function orientedSize(metadata: sharp.Metadata): ImageProbe {
-  const isSwapped = (metadata.orientation ?? 0) >= FIRST_SWAPPED_ORIENTATION;
-  return {
-    width: isSwapped ? metadata.height : metadata.width,
-    height: isSwapped ? metadata.width : metadata.height,
-    format: metadata.format,
-    isReadable: true,
-  };
-}
-
-async function probeImage(
-  storageKey: string,
-  storage: string | undefined,
-  mimetype: string,
-  size: number,
-): Promise<ImageProbe> {
-  if (!mimetype.startsWith("image/") || size > MAX_PROBE_SIZE_BYTES)
-    return { isReadable: true };
-  try {
-    const buffer = await readStoredFile(storageKey, storage);
-    if (!buffer) return { isReadable: true };
-    return orientedSize(await sharp(buffer).metadata());
-  } catch {
-    return { isReadable: false };
-  }
-}
-
-function assertTypeAllowed(
-  context: MediaRequestContext,
-  folderId: string,
-  filename: string,
-  mimetype: string,
-): void {
-  if (!isUploadTypeAllowed(filename, mimetype))
-    refuse(
-      HTTP_UNSUPPORTED_MEDIA_TYPE,
-      "type_not_allowed",
-      "This type of file can't be added to the library",
-    );
-  const binding = context.foldersById.get(folderId)?.binding;
-  const accepted = getRegisteredBindings().find(
-    (config) => config.id === binding,
-  )?.field?.mimetypes;
-  if (accepted?.length && !mimetypeMatches(mimetype, accepted))
-    refuse(
-      HTTP_UNSUPPORTED_MEDIA_TYPE,
-      "field_type",
-      `This folder feeds a field that only accepts ${accepted.join(", ")}`,
-      { accepted },
-    );
-}
-
-async function assertWithinQuota(
-  context: MediaRequestContext,
-  size: number,
-): Promise<void> {
-  const quota = getMediaConfig().storageQuotaBytes;
-  if (!quota) return;
-  const used = await sumStoredBytes(context.assetModel);
-  if (used + size > quota)
-    refuse(
-      HTTP_PAYLOAD_TOO_LARGE,
-      "quota",
-      "The library's storage plan is full",
-      { remaining: Math.max(quota - used, 0), quota },
-    );
-}
-
 async function readImage(
   resourceKey: string,
   metadata: FileMetadata,
 ): Promise<ImageProbe> {
-  const probe = await probeImage(
-    resourceKey,
-    getMediaConfig().storage,
+  const storage = getMediaConfig().storage;
+  const probe = await probeImageBytes(
+    () => readStoredFile(resourceKey, storage),
     metadata.mimetype,
     metadata.size,
   );
-  const isDecodable = Boolean(expectedImageFormat(metadata.mimetype));
-  if (isDecodable && (!probe.isReadable || !probe.format))
-    refuse(
-      HTTP_UNPROCESSABLE_ENTITY,
-      "invalid_image",
-      "This file is not a readable image",
-    );
+  assertReadableImage(probe, metadata.mimetype);
   return probe;
+}
+
+async function assertUploadAccepted(
+  context: MediaRequestContext,
+  folderId: string,
+  filename: string,
+  file: Pick<FileMetadata, "mimetype" | "size">,
+): Promise<void> {
+  assertUploadTypeAllowed(
+    context.foldersById.get(folderId),
+    filename,
+    file.mimetype,
+  );
+  await assertWithinQuota(context.assetModel, file.size);
 }
 
 export class MediaUploadController extends MediaApiController {
@@ -182,8 +108,9 @@ export class MediaUploadController extends MediaApiController {
     );
     const context = await this.resolveContext();
     requireFolderRight(context, folderId, "write");
-    assertTypeAllowed(context, folderId, filename, mimetype);
-    await assertWithinQuota(context, size);
+    await answerRefusal(() =>
+      assertUploadAccepted(context, folderId, filename, { mimetype, size }),
+    );
     const storage = getMediaConfig().storage;
     const presigned = await CreateUploadUrl(
       {
@@ -295,9 +222,10 @@ export class MediaUploadController extends MediaApiController {
     requireFolderRight(context, folderId, "write");
     const storage = getMediaConfig().storage;
     const metadata = await GetFileMetadata(resourceKey, storage);
-    assertTypeAllowed(context, folderId, filename, metadata.mimetype);
-    await assertWithinQuota(context, metadata.size);
-    const image = await readImage(resourceKey, metadata);
+    const image = await answerRefusal(async () => {
+      await assertUploadAccepted(context, folderId, filename, metadata);
+      return readImage(resourceKey, metadata);
+    });
     const promoted = await PromoteFile(resourceKey, storage);
     await this.uploadModel.forgetKey(resourceKey);
     const [assetId] = await context.assetModel.insert({
