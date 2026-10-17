@@ -1,6 +1,6 @@
 import type { ControllerClass } from "@antelopejs/interface-api";
-import { RegisteringProxy } from "@antelopejs/interface-core";
 import type { AclEntry } from "./acl";
+import { internal } from "./internal";
 
 /** Permission ids granted `read` and `write` on a bound folder. */
 export interface AssetPermissionMapping {
@@ -35,15 +35,6 @@ export interface AssetBindingConfig {
   acl?: AclEntry[];
   /** Filled by `AssetType`: what the field accepts, shown next to the folder. */
   field?: AssetBindingField;
-}
-
-/**
- * @internal
- */
-export namespace internal {
-  export const RegisterAssetBinding = new RegisteringProxy<
-    (id: string, config: AssetBindingConfig) => void
-  >();
 }
 
 /**

@@ -7,7 +7,7 @@
 <a href="https://discord.gg/sjK28QHrA7"><img alt="Discord" src="https://img.shields.io/badge/Discord-18181B?logo=discord&style=for-the-badge&color=000000"></a>
 <a href="https://dms.antelopejs.com/docs/modules/media/extending"><img alt="Documentation" src="https://img.shields.io/badge/Docs-18181B?style=for-the-badge&color=000000"></a>
 
-The AntelopeJS interface to add media library fields, and the folders bound to them, to DMS pages.
+The AntelopeJS interface to add media library fields, and the folders bound to them, to DMS pages, and to ship library folders and files as code.
 
 </div>
 
@@ -17,6 +17,7 @@ The AntelopeJS interface to add media library fields, and the folders bound to t
 - Binds a field to a folder provisioned under the `Content` root of each tenant: `RegisterAssetBinding` and `UnregisterAssetBinding`, or `new AssetType({ binding })`.
 - Derives the folder's rights from a page (`permissionsFromPage`), a `permissionMapping` or an explicit `acl`.
 - Replays bindings to every new generation of the implementation, so either side can hot reload.
+- Ships folders and files from backend code with `EnsureMediaFolder` and `ImportMediaAsset`: idempotent per key, they never undo what members changed since.
 - Keeps your module independent of the implementation, [`@antelopejs/dms-media`](https://www.npmjs.com/package/@antelopejs/dms-media).
 
 ## Install
@@ -42,11 +43,26 @@ new AssetType({
 });
 ```
 
-The interface also exports the option and ACL types: `AssetTypeOptions`, `AssetPickerComponentOptions`, `AssetBindingConfig`, `AssetPermissionMapping`, `AclEntry`, `AclSubject`, `AclSubjectKind` and `AclRight`.
+Ship a folder and a file from `start()`; each call is keyed, so it runs on every boot without duplicating anything:
+
+```ts
+import { EnsureMediaFolder, ImportMediaAsset } from "@antelopejs/interface-dms-media";
+
+await EnsureMediaFolder({ key: "helio.procedures", name: "Procedures" });
+await ImportMediaAsset({
+  key: "helio.procedures.roof",
+  folder: { key: "helio.procedures" },
+  name: "Roof safety checklist.pdf",
+  mimetype: "application/pdf",
+  source: { filePath: "/srv/content/roof-safety-checklist.pdf" },
+});
+```
+
+The interface also exports the option, declaration and ACL types: `AssetTypeOptions`, `AssetPickerComponentOptions`, `AssetBindingConfig`, `AssetPermissionMapping`, `MediaFolderDeclaration`, `MediaAssetDeclaration`, `MediaFolderTarget`, `MediaAssetSource`, `MediaDeclarationResult`, `MediaDeclarationStatus`, `AclEntry`, `AclSubject`, `AclSubjectKind` and `AclRight`.
 
 ## Compatibility
 
-The implementation is `@antelopejs/dms-media >=0.4.0`. The interface declares these peer dependencies:
+The implementation is `@antelopejs/dms-media >=0.4.0`; `EnsureMediaFolder` and `ImportMediaAsset` need the first `@antelopejs/dms-media` release built on this interface's 0.3 line. The interface declares these peer dependencies:
 
 <!-- docs-compat: ./package.json#peerDependencies -->
 
@@ -58,7 +74,7 @@ The implementation is `@antelopejs/dms-media >=0.4.0`. The interface declares th
 
 ## Documentation
 
-- [Consumer reference](./docs/1.index.md): field types, bindings, lifecycle and permission precedence
+- [Consumer reference](./docs/1.index.md): field types, bindings, lifecycle, declared content and permission precedence
 - [Extending the media module](https://dms.antelopejs.com/docs/modules/media/extending): asset fields, folder bindings, the HTTP API and delivery URLs
 - [The asset field](https://dms.antelopejs.com/docs/modules/media/usage/asset-field)
 - [Media module guide](https://dms.antelopejs.com/docs/modules/media)
