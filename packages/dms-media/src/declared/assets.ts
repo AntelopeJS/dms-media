@@ -6,7 +6,7 @@ import type {
   MediaDeclarationResult,
 } from "@antelopejs/interface-dms-media";
 import { cleanupAssetFiles, updateAssetMedia } from "../asset-lifecycle";
-import { ensureTenantBindings } from "../bindings";
+import { feedingBinding } from "../bindings";
 import { getMediaConfig } from "../config";
 import type { MediaAsset, MediaDeclaration, MediaFolder } from "../db";
 import { uploadStorageBytes } from "../derivatives";
@@ -26,7 +26,7 @@ import {
   declaredFileSizeSchema,
   describeDeclarationIssues,
 } from "../validation/declared.schema";
-import { findDeclaredFolder } from "./folders";
+import { findBoundFolder, findDeclaredFolder } from "./folders";
 import { waitForTenant, writeWhenReachable } from "./readiness";
 import {
   DECLARED_CONTENT_AUTHOR,
@@ -42,11 +42,12 @@ import {
   withDeclarationLock,
 } from "./records";
 
-/** A declared file and the folder it goes to. */
+/** A declared file, the folder it goes to and the binding whose field that folder feeds. */
 interface AssetTarget {
   models: DeclaredModels;
   declaration: DeclaredAssetInput;
   folder: MediaFolder;
+  fieldBinding?: string;
 }
 
 /** A declared file's bytes, checked against the library's rules. */
@@ -150,19 +151,21 @@ class DeclaredContent {
   }
 }
 
-/** The folder bound to an asset field, provisioned like the dashboard does. */
-async function findBoundFolder(
+/** The binding whose field the folder feeds, through its linked ancestors when it has no binding itself. */
+async function fieldBindingOf(
   models: DeclaredModels,
-  binding: string,
-  fail: Fail,
-): Promise<MediaFolder> {
-  await ensureTenantBindings(models.tenantId, models.folderModel);
-  const folder = await models.folderModel.getByBinding(binding);
-  if (!folder)
-    fail(
-      `no folder is bound to '${binding}': register the binding with AssetType or RegisterAssetBinding first`,
-    );
-  return folder;
+  folder: MediaFolder,
+): Promise<string | undefined> {
+  if (folder.binding) return folder.binding;
+  const ancestors = await Promise.all(
+    folder.path.map((id) => models.folderModel.get(id)),
+  );
+  const foldersById = new Map(
+    ancestors
+      .filter((ancestor): ancestor is MediaFolder => ancestor !== undefined)
+      .map((ancestor) => [ancestor._id, ancestor]),
+  );
+  return feedingBinding(folder, foldersById);
 }
 
 async function findTargetFolder(
@@ -177,11 +180,11 @@ async function findTargetFolder(
 
 /** The checks of the upload routes: type, field type, quota and image decoding. */
 async function prepareFile(
-  { models, declaration, folder }: AssetTarget,
+  { models, declaration, fieldBinding }: AssetTarget,
   bytes: Buffer,
   replacedSize: number,
 ): Promise<PreparedFile> {
-  assertUploadTypeAllowed(folder, declaration.name, declaration.mimetype);
+  assertUploadTypeAllowed(fieldBinding, declaration.name, declaration.mimetype);
   await assertWithinQuota(
     models.assetModel,
     Math.max(bytes.byteLength - replacedSize, 0),
@@ -278,7 +281,7 @@ async function refreshAsset(
   content: DeclaredContent,
   isContentChanged: boolean,
 ): Promise<MediaAsset | undefined> {
-  const { models, declaration, folder } = target;
+  const { models, declaration, folder, fieldBinding } = target;
   const { assetModel } = models;
   const patch: Partial<MediaAsset> = {
     name: declaration.name,
@@ -298,7 +301,7 @@ async function refreshAsset(
       json_derivatives: "",
     });
   } else {
-    assertUploadTypeAllowed(folder, declaration.name, asset.mimetype);
+    assertUploadTypeAllowed(fieldBinding, declaration.name, asset.mimetype);
   }
   for (;;) {
     const fresh = await assetModel.get(asset._id);
@@ -389,7 +392,12 @@ async function applyAssetDeclaration(
     return asset
       ? { status: "preserved", id: asset._id }
       : { status: "deleted" };
-  const target: AssetTarget = { models, declaration, folder };
+  const target: AssetTarget = {
+    models,
+    declaration,
+    folder,
+    fieldBinding: await fieldBindingOf(models, folder),
+  };
   if (!record || !asset) {
     const file = await prepareFile(target, await content.read(), 0);
     const created = await createAsset(target, file);

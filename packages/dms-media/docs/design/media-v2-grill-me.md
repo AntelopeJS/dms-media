@@ -508,3 +508,19 @@ Replacing a file, a trash for deleted files and the server-side validation of
 `AssetType` values: three follow-up pull requests, in that order. The 1 MiB
 upload limit and the Windows bug of `@antelopejs/file-storage-local` are
 fixed in that module, not worked around here.
+
+**Q10.17 Can a linked folder hold subfolders? (2026-10-17)**
+When its binding says so: `subfolders: true` on `AssetBindingConfig`, false by
+default. The refusal (403 `bound_parent`) protected the binding's ownership of
+the folder, and nothing in the module depends on a linked folder being a leaf:
+a subfolder without its own ACL inherits the linked folder's (so the members
+of the page reach it), the field's picker is the explorer scoped to the
+linked folder and its subtree, and moves, zips and deletes already walk
+subtrees. What a subfolder could escape is the field's types, so a folder
+inside a linked folder accepts only the types of the nearest linked
+ancestor's field. The linked folder itself stays locked. Declared content
+places folders there with `EnsureMediaFolder({ parent: { binding } })`, which
+a project needs for a layout per record (photos by project) that is also the
+folder of a field. The field's upload button keeps targeting the linked
+folder; picking from its subfolders works, editing their alt text from the
+field does not yet.

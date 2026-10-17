@@ -129,7 +129,7 @@ export function createExplorerMenus(library: MediaLibrary, commands: MenuCommand
 			...(folder.rights.write
 				? [{ label: t('dms_media.actions.upload_here'), icon: 'i-ph-upload-simple', onSelect: afterMenu(() => commands.upload(folder.id)) }]
 				: []),
-			...(folder.rights.manage && !folder.bound
+			...(folder.rights.manage && folder.acceptsSubfolders
 				? [{ label: t('dms_media.actions.new_subfolder'), icon: 'i-ph-folder-plus', onSelect: afterMenu(() => commands.newFolder(folder.id)) }]
 				: []),
 			{

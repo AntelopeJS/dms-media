@@ -45,6 +45,8 @@ static form = Form({
 - The value is an asset id (an array with `multiple`). The `binding` provisions a linked folder under `Content`
   (idempotent on `id`); its rights derive from the page's permission. Explicit `permissionMapping`
   (`{ read: [...], write: [...] }`) wins per right.
+- Per-record layout under a field's folder (one folder per project): `binding: { id, subfolders: true }`, then
+  `EnsureMediaFolder({ tenantId, key, name, parent: { binding: id } })` or owner-created subfolders.
 - Only an explicit role grant of the page counts: `memberAccess` / `publicAccess` pages grant no folder right.
 - Rights: `manage` ⇒ `write` ⇒ `read`. Upload needs `write`; folder structure needs `manage`; visibility is owner-only.
 
@@ -99,6 +101,7 @@ export async function declareMedia(tenantId: string): Promise<void> {
 ## Gotchas
 
 - Upload refusals answer `{ reason }`: `type_not_allowed` / `field_type` (415), `quota` (413), `invalid_image` (422).
-- Linked folders cannot be renamed, moved, deleted, re-ACLed or hold subfolders (403 `bound_parent`).
+- Linked folders cannot be renamed, moved, deleted or re-ACLed; they hold subfolders only with `subfolders: true`
+  on the binding (otherwise 403 `bound_parent`). Subfolders inherit the folder's ACL and the field's accepted types.
 - Names are unique per folder, case aside (409 `name_taken`).
 - Editing an image changes it everywhere it is used; there is no per-usage crop and no usage tracking yet.

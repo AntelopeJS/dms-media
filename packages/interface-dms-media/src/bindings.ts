@@ -33,6 +33,14 @@ export interface AssetBindingConfig {
    */
   permissionsFromPage?: ControllerClass;
   acl?: AclEntry[];
+  /**
+   * Lets the linked folder hold subfolders, such as one per record: owners
+   * create them in the library, and backend code with `EnsureMediaFolder`
+   * and `parent: { binding }`. The linked folder itself stays locked. Its
+   * subfolders inherit its ACL unless given their own, and accept only the
+   * types its field accepts. Defaults to false.
+   */
+  subfolders?: boolean;
   /** Filled by `AssetType`: what the field accepts, shown next to the folder. */
   field?: AssetBindingField;
 }

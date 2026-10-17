@@ -1,7 +1,7 @@
 import sharp from "sharp";
 import { getRegisteredBindings } from "./bindings";
 import { getMediaConfig } from "./config";
-import type { MediaAssetModel, MediaFolder } from "./db";
+import type { MediaAssetModel } from "./db";
 import { sumStoredBytes } from "./library/listing";
 import {
   expectedImageFormat,
@@ -87,7 +87,7 @@ export function assertReadableImage(probe: ImageProbe, mimetype: string): void {
 
 /** The library's types, then those of the asset field the folder feeds. */
 export function assertUploadTypeAllowed(
-  folder: MediaFolder | undefined,
+  bindingId: string | undefined,
   filename: string,
   mimetype: string,
 ): void {
@@ -98,7 +98,7 @@ export function assertUploadTypeAllowed(
       "This type of file can't be added to the library",
     );
   const accepted = getRegisteredBindings().find(
-    (config) => config.id === folder?.binding,
+    (config) => config.id === bindingId,
   )?.field?.mimetypes;
   if (accepted?.length && !mimetypeMatches(mimetype, accepted))
     throw new UploadRefusedError(

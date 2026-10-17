@@ -13,8 +13,12 @@ export interface MediaFolderDeclaration {
   /** Stable key chosen by the caller and namespaced, such as `helio.procedures`. */
   key: string;
   name: string;
-  /** Key of another declared folder; absent places the folder at the library root. */
-  parent?: string;
+  /**
+   * Where the folder goes: another declared folder, by its key (or `{ key }`),
+   * or the folder linked to an asset field (`{ binding }`) when that binding
+   * allows `subfolders`. Absent places the folder at the library root.
+   */
+  parent?: string | MediaFolderTarget;
   /** Defaults to `private`. */
   visibility?: MediaFolderVisibility;
   /** The folder's own ACL; absent inherits the parent's, or the root ACL at the root. */

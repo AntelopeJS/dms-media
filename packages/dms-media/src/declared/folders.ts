@@ -3,6 +3,7 @@ import type {
   MediaFolderDeclaration,
 } from "@antelopejs/interface-dms-media";
 import { serializeAcl } from "../acl";
+import { bindingHoldsSubfolders, ensureTenantBindings } from "../bindings";
 import type { MediaDeclaration, MediaFolder } from "../db";
 import { recordMediaEvent } from "../library/events";
 import {
@@ -44,10 +45,20 @@ function folderStateHash(folder: MediaFolder): string {
   });
 }
 
+type ParentTarget = NonNullable<DeclaredFolderInput["parent"]>;
+
+/** The declared folder key a parent names, written as a string or as `{ key }`. */
+function parentKeyOf(parent: ParentTarget | undefined): string | undefined {
+  if (typeof parent === "string") return parent;
+  return parent && "key" in parent ? parent.key : undefined;
+}
+
 function folderDeclarationHash(declaration: DeclaredFolderInput): string {
+  const { parent } = declaration;
   return hashState({
     name: declaration.name,
-    parent: declaration.parent ?? null,
+    // Both spellings of a declared parent hash alike: switching between them changes nothing.
+    parent: parentKeyOf(parent) ?? parent ?? null,
     visibility: declaration.visibility,
     acl: declaration.acl ?? null,
   });
@@ -69,6 +80,38 @@ export async function findDeclaredFolder(
       `'${key}' is not a declared folder: declare it with EnsureMediaFolder first`,
     );
   return { folder: await models.folderModel.get(record.targetId) };
+}
+
+/** The folder bound to an asset field, provisioned like the dashboard does. */
+export async function findBoundFolder(
+  models: DeclaredModels,
+  binding: string,
+  fail: (reason: string) => never,
+): Promise<MediaFolder> {
+  await ensureTenantBindings(models.tenantId, models.folderModel);
+  const folder = await models.folderModel.getByBinding(binding);
+  if (!folder)
+    fail(
+      `no folder is bound to '${binding}': register the binding with AssetType or RegisterAssetBinding first`,
+    );
+  return folder;
+}
+
+async function findParentFolder(
+  models: DeclaredModels,
+  parent: ParentTarget,
+  fail: (reason: string) => never,
+): Promise<DeclaredFolderLookup> {
+  if (typeof parent === "string")
+    return findDeclaredFolder(models, parent, fail);
+  if ("key" in parent) return findDeclaredFolder(models, parent.key, fail);
+  const { binding } = parent;
+  const folder = await findBoundFolder(models, binding, fail);
+  if (!bindingHoldsSubfolders(binding))
+    fail(
+      `the folder linked to '${binding}' cannot hold subfolders: register its binding with subfolders: true`,
+    );
+  return { folder };
 }
 
 async function createFolder(
@@ -158,7 +201,7 @@ async function applyFolderDeclaration(
     throw new MediaDeclarationError("folder", declaration.key, reason);
   };
   const parentLookup = declaration.parent
-    ? await findDeclaredFolder(models, declaration.parent, fail)
+    ? await findParentFolder(models, declaration.parent, fail)
     : undefined;
   const parent = parentLookup?.folder;
   const isParentDeleted = Boolean(parentLookup) && !parent;
@@ -215,7 +258,7 @@ export async function ensureDeclaredFolder(
   input: MediaFolderDeclaration,
 ): Promise<MediaDeclarationResult> {
   const declaration = parseDeclaration("folder", input, declaredFolderSchema);
-  if (declaration.parent === declaration.key)
+  if (parentKeyOf(declaration.parent) === declaration.key)
     throw new MediaDeclarationError(
       "folder",
       declaration.key,

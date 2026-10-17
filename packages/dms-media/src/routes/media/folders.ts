@@ -2,6 +2,7 @@ import { MediaApiController } from "./controller";
 import { Delete, JSONBody, Parameter, Post } from "@antelopejs/interface-api";
 import { assert } from "@antelopejs/interface-api-util";
 import { deleteMediaAsset } from "../../asset-lifecycle";
+import { holdsSubfolders } from "../../bindings";
 import { forgetFavorites } from "../../library/favorites";
 import { type MediaFolder } from "../../db";
 import {
@@ -64,7 +65,7 @@ function assertCanPlaceUnder(
     return undefined;
   }
   const parent = requireFolderRight(context, parentId, "manage");
-  assert(!parent.binding, HTTP_FORBIDDEN, MEDIA_ERRORS.boundParent);
+  assert(holdsSubfolders(parent), HTTP_FORBIDDEN, MEDIA_ERRORS.boundParent);
   return parent;
 }
 

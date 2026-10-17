@@ -30,19 +30,19 @@ const aclEntrySchema = z.object({
   rights: z.array(z.enum(["read", "write", "manage"])).min(1),
 });
 
-export const declaredFolderSchema = z.object({
-  key: keySchema,
-  name: nameSchema,
-  parent: keySchema.optional(),
-  visibility: z.enum(["private", "public"]).default("private"),
-  acl: z.array(aclEntrySchema).optional(),
-  tenantId: tenantSchema,
-});
-
 const folderTargetSchema = z.union([
   z.object({ key: keySchema }).strict(),
   z.object({ binding: keySchema }).strict(),
 ]);
+
+export const declaredFolderSchema = z.object({
+  key: keySchema,
+  name: nameSchema,
+  parent: z.union([keySchema, folderTargetSchema]).optional(),
+  visibility: z.enum(["private", "public"]).default("private"),
+  acl: z.array(aclEntrySchema).optional(),
+  tenantId: tenantSchema,
+});
 
 const sourceSchema = z.union([
   z.object({ bytes: z.instanceof(Uint8Array) }).strict(),

@@ -32,7 +32,9 @@ export interface MediaFolder {
 	bound: boolean
 	binding: string | null
 	link: FolderLink | null
-	/** Mimetype patterns the linked field accepts; null when unlinked or unrestricted. */
+	/** Whether new folders may go inside: false for a linked folder unless its binding allows subfolders. */
+	acceptsSubfolders: boolean
+	/** Mimetype patterns the field the folder feeds accepts; null when unlinked or unrestricted. */
 	accepts: string[] | null
 	visibility: FolderVisibility
 	hasOwnAcl: boolean

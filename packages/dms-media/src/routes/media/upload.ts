@@ -12,6 +12,7 @@ import {
   PromoteFile,
 } from "@antelopejs/interface-file-storage";
 import { TenantScopedModel } from "@antelopejs/interface-dms/tenant-scoped-model";
+import { feedingBinding } from "../../bindings";
 import { getMediaConfig } from "../../config";
 import { ORIGINAL_FILENAME_METADATA_KEY } from "../../constants";
 import { MediaUploadModel } from "../../db";
@@ -90,7 +91,7 @@ async function assertUploadAccepted(
   file: Pick<FileMetadata, "mimetype" | "size">,
 ): Promise<void> {
   assertUploadTypeAllowed(
-    context.foldersById.get(folderId),
+    feedingBinding(context.foldersById.get(folderId), context.foldersById),
     filename,
     file.mimetype,
   );
