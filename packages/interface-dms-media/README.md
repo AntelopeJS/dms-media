@@ -67,7 +67,7 @@ The interface also exports the option, declaration and ACL types: `AssetTypeOpti
 
 ## Compatibility
 
-The implementation is `@antelopejs/dms-media >=0.4.0`; `EnsureMediaFolder` and `ImportMediaAsset` need the first `@antelopejs/dms-media` release built on this interface's 0.3 line. The interface declares these peer dependencies:
+The 0.3 interface line requires `@antelopejs/dms-media >=0.5.0` for `EnsureMediaFolder` and `ImportMediaAsset`. Media 0.4 uses the 0.2 interface line. The interface declares these peer dependencies:
 
 <!-- docs-compat: ./package.json#peerDependencies -->
 
