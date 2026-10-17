@@ -25,6 +25,8 @@ watch(
 const source = computed(() =>
 	hasFailed.value ? undefined : previews.previewOf(props.asset.id),
 )
+// A vector is mostly a logo: cropping it to the tile would cut its ends off.
+const effectiveFit = computed(() => (props.asset.typeGroup === 'vector' ? 'contain' : props.fit))
 const extension = computed(() => extensionOf(props.asset).toUpperCase())
 const sizeClass = computed(
 	() =>
@@ -49,7 +51,7 @@ const iconClass = computed(() => (props.size === 'xs' || props.size === 'sm' ? '
 			:src="source"
 			:alt="asset.alt || ''"
 			class="size-full"
-			:class="fit === 'cover' ? 'object-cover' : 'object-contain'"
+			:class="effectiveFit === 'cover' ? 'object-cover' : 'object-contain'"
 			loading="lazy"
 			draggable="false"
 			@error="hasFailed = true"
