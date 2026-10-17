@@ -85,6 +85,9 @@ export async function declareMedia(tenantId: string): Promise<void> {
   See the [canonical lifecycle guidance](https://dms.antelopejs.com/docs/modules/media/reference#new-saas-tenants-application-owned-durable-lifecycle).
 - Generated files: `source: { load }` is called only when the bytes are needed; with a `version` changed whenever the
   bytes change, an unchanged file is not read or generated again on reload. Files a member changed or deleted are never read.
+- Dropped content: `PruneMediaDeclarations({ tenantId, prefix: "helio.", keep: declaredKeys })` after declaring retires
+  the namespace's other keys (files, then deepest folders); `RetireMediaDeclaration({ tenantId, kind, key })` one key.
+  Removed only while still as declared (folders only when empty), else `preserved` and handed to members; never a cascade.
 - Never undoes a member: a row changed since its last declaration is `preserved`, a deleted one stays `deleted`;
   only a row still exactly as declared is refreshed. Parents before children, folders before files (await each).
 - Same rules as the dashboard (names, unique sibling folders, allowed and field types, quota, decodable images); errors

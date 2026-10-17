@@ -6,6 +6,30 @@ export class MediaFolderModel extends BasicDataModel(
   MediaFolder,
   MEDIA_FOLDERS_TABLE_NAME,
 ) {
+  /** The row of `expected` while its editable state and path are still as observed. */
+  private whileAsObserved(expected: MediaFolder) {
+    return this.table.filter((row) =>
+      row
+        .key("_id")
+        .eq(expected._id)
+        .and(row.key("name").eq(expected.name))
+        .and(
+          row
+            .key("parentId")
+            .default("")
+            .eq(expected.parentId || ""),
+        )
+        .and(row.key("path").eq(expected.path))
+        .and(row.key("visibility").eq(expected.visibility))
+        .and(
+          row
+            .key("json_acl")
+            .default("")
+            .eq(expected.json_acl || ""),
+        ),
+    );
+  }
+
   /** Applies a declaration only while the observed editable state and path still match. */
   async compareDeclared(
     expected: MediaFolder,
@@ -13,29 +37,15 @@ export class MediaFolderModel extends BasicDataModel(
   ): Promise<boolean> {
     const instance = MediaFolderModel.fromPlainData(patch);
     triggerEvent(instance, "update");
-    const count = await this.table
-      .filter((row) =>
-        row
-          .key("_id")
-          .eq(expected._id)
-          .and(row.key("name").eq(expected.name))
-          .and(
-            row
-              .key("parentId")
-              .default("")
-              .eq(expected.parentId || ""),
-          )
-          .and(row.key("path").eq(expected.path))
-          .and(row.key("visibility").eq(expected.visibility))
-          .and(
-            row
-              .key("json_acl")
-              .default("")
-              .eq(expected.json_acl || ""),
-          ),
-      )
+    const count = await this.whileAsObserved(expected)
       .update(MediaFolderModel.toDatabase(instance))
       .run();
+    return count === 1;
+  }
+
+  /** Deletes a retired declaration's folder only while the observed editable state and path still match. */
+  async deleteDeclared(expected: MediaFolder): Promise<boolean> {
+    const count = await this.whileAsObserved(expected).delete().run();
     return count === 1;
   }
 

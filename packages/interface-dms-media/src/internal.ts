@@ -5,8 +5,11 @@ import {
 import type { AssetBindingConfig } from "./bindings";
 import type {
   MediaAssetDeclaration,
+  MediaDeclarationPrune,
   MediaDeclarationResult,
+  MediaDeclarationRetirement,
   MediaFolderDeclaration,
+  MediaRetirementResult,
 } from "./content";
 
 /**
@@ -23,5 +26,13 @@ export namespace internal {
   export const ImportMediaAsset =
     InterfaceFunction<
       (declaration: MediaAssetDeclaration) => MediaDeclarationResult
+    >();
+  export const RetireMediaDeclaration =
+    InterfaceFunction<
+      (retirement: MediaDeclarationRetirement) => MediaRetirementResult
+    >();
+  export const PruneMediaDeclarations =
+    InterfaceFunction<
+      (prune: MediaDeclarationPrune) => MediaRetirementResult[]
     >();
 }

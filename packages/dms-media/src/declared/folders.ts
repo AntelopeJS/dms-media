@@ -36,7 +36,7 @@ export interface DeclaredFolderLookup {
 }
 
 /** The member-editable state of a folder: its name, place, visibility and ACL. */
-function folderStateHash(folder: MediaFolder): string {
+export function folderStateHash(folder: MediaFolder): string {
   return hashState({
     name: folder.name,
     parentId: folder.parentId || null,

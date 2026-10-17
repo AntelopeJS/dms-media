@@ -17,7 +17,7 @@ The AntelopeJS interface to add media library fields, and the folders bound to t
 - Binds a field to a folder provisioned under the `Content` root of each tenant: `RegisterAssetBinding` and `UnregisterAssetBinding`, or `new AssetType({ binding })`.
 - Derives the folder's rights from a page (`permissionsFromPage`), a `permissionMapping` or an explicit `acl`.
 - Replays bindings to every new generation of the implementation, so either side can hot reload.
-- Ships folders and files from backend code with `EnsureMediaFolder` and `ImportMediaAsset`: idempotent per key, they never undo what members changed since.
+- Ships folders and files from backend code with `EnsureMediaFolder` and `ImportMediaAsset`: idempotent per key, they never undo what members changed since. `RetireMediaDeclaration` and `PruneMediaDeclarations` take back what the code stopped declaring, unless members changed it.
 - Keeps your module independent of the implementation, [`@antelopejs/dms-media`](https://www.npmjs.com/package/@antelopejs/dms-media).
 
 ## Install
@@ -63,7 +63,7 @@ await ImportMediaAsset({
 
 Both declarations require `tenantId` in TypeScript and reject missing, empty or whitespace-only values at runtime before writes. Existing users of these new APIs must pass it explicitly; older media APIs are unchanged. A tenant id does not establish authorization or completed provisioning. See the [application-owned lifecycle and backfill guidance](./docs/1.index.md#new-saas-tenants-application-owned-durable-lifecycle) for at-least-once delivery, durable receipts and deployment refreshes.
 
-The interface also exports the option, declaration and ACL types: `AssetTypeOptions`, `AssetPickerComponentOptions`, `AssetBindingConfig`, `AssetPermissionMapping`, `MediaFolderDeclaration`, `MediaAssetDeclaration`, `MediaFolderTarget`, `MediaAssetSource`, `MediaDeclarationResult`, `MediaDeclarationStatus`, `AclEntry`, `AclSubject`, `AclSubjectKind` and `AclRight`.
+The interface also exports the option, declaration and ACL types: `AssetTypeOptions`, `AssetPickerComponentOptions`, `AssetBindingConfig`, `AssetPermissionMapping`, `MediaFolderDeclaration`, `MediaAssetDeclaration`, `MediaFolderTarget`, `MediaAssetSource`, `MediaLazySource`, `MediaDeclarationResult`, `MediaDeclarationStatus`, `MediaContentKind`, `MediaDeclarationRetirement`, `MediaDeclarationPrune`, `MediaRetirementResult`, `MediaRetirementStatus`, `AclEntry`, `AclSubject`, `AclSubjectKind` and `AclRight`.
 
 ## Compatibility
 

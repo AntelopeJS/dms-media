@@ -69,6 +69,18 @@ export const declaredAssetSchema = z.object({
   tenantId: tenantSchema,
 });
 
+export const declarationRetirementSchema = z.object({
+  kind: z.enum(["folder", "asset"]),
+  key: keySchema,
+  tenantId: tenantSchema,
+});
+
+export const declarationPruneSchema = z.object({
+  prefix: keySchema,
+  keep: z.array(keySchema),
+  tenantId: tenantSchema,
+});
+
 export type DeclaredFolderInput = z.output<typeof declaredFolderSchema>;
 export type DeclaredAssetInput = z.output<typeof declaredAssetSchema>;
 

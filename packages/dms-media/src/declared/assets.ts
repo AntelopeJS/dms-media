@@ -65,7 +65,7 @@ interface AssetHashes {
 type Fail = (reason: string) => never;
 
 /** The member-editable state of a file: its name, folder, alt text, visibility and content. */
-function assetStateHash(asset: MediaAsset): string {
+export function assetStateHash(asset: MediaAsset): string {
   return hashState({
     name: asset.name,
     folderId: asset.folderId,

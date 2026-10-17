@@ -137,6 +137,18 @@ export async function saveDeclaration(
   await model.insert(applied);
 }
 
+interface DeletedByMember {
+  status: "deleted";
+}
+
+interface ChangedByMember {
+  status: "preserved";
+  id: string;
+}
+
+/** What a member did to declared content: deleted it, or changed it and so keeps it. */
+export type MemberChange = DeletedByMember | ChangedByMember;
+
 /**
  * The part of the rule that needs no new declaration: a row deleted since it
  * was declared stays deleted, and a row whose editable state no longer hashes
@@ -147,7 +159,7 @@ export function judgeMemberChange(
   record: MediaDeclaration,
   row: { _id: string } | undefined,
   stateHash: string | undefined,
-): MediaDeclarationResult | undefined {
+): MemberChange | undefined {
   if (!row) return { status: "deleted" };
   if (stateHash !== record.appliedHash)
     return { status: "preserved", id: row._id };

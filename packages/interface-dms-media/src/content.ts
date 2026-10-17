@@ -133,7 +133,8 @@ export function EnsureMediaFolder(
  * image dimensions and records the upload in the library activity. A later
  * declaration only refreshes the file while it still holds what was last
  * declared: renamed, moved, edited or deleted in the library since, it is left
- * as the members made it.
+ * as the members made it. Content the code stops declaring stays until it is
+ * retired with `RetireMediaDeclaration` or `PruneMediaDeclarations`.
  *
  * The source is read only when the bytes are needed: not for a file a member
  * changed or deleted, nor while `version` equals the last declared one.
@@ -146,4 +147,84 @@ export function ImportMediaAsset(
   declaration: MediaAssetDeclaration,
 ): Promise<MediaDeclarationResult> {
   return internal.ImportMediaAsset(declaration);
+}
+
+/** What a declaration made: a folder (`EnsureMediaFolder`) or a file (`ImportMediaAsset`). */
+export type MediaContentKind = "folder" | "asset";
+
+/** A declaration the calling code no longer makes, by the kind and key it was made with. */
+export interface MediaDeclarationRetirement {
+  kind: MediaContentKind;
+  key: string;
+  /** Explicit existing workspace; required and nonblank. */
+  tenantId: string;
+}
+
+/**
+ * Retires every declaration under a namespace that the calling code no longer
+ * makes: the keys starting with `prefix`, except those listed in `keep`.
+ */
+export interface MediaDeclarationPrune {
+  /** Namespace of the caller's keys, such as `helio.`; required and nonblank. */
+  prefix: string;
+  /** Keys the code still declares, folders and files alike. */
+  keep: string[];
+  /** Explicit existing workspace; required and nonblank. */
+  tenantId: string;
+}
+
+/**
+ * What retiring a declaration did:
+ * - `removed`: the folder or file still held what was last declared (and the
+ *   folder was empty), so it was deleted from the library;
+ * - `preserved`: someone changed it since it was last declared, or the folder
+ *   holds other content, so it was left as is;
+ * - `deleted`: someone had already deleted it;
+ * - `unknown`: nothing is declared under this kind and key, never or no longer.
+ *
+ * Except for `unknown`, the declaration is forgotten: what stays in the
+ * library belongs to the members, and declaring the key again creates new
+ * content.
+ */
+export type MediaRetirementStatus =
+  | "removed"
+  | "preserved"
+  | "deleted"
+  | "unknown";
+
+export interface MediaRetirementResult {
+  kind: MediaContentKind;
+  key: string;
+  status: MediaRetirementStatus;
+  /** Library id of the folder or file removed or left in place. */
+  id?: string;
+}
+
+/**
+ * Takes back a folder or file the calling code declared and no longer
+ * declares. It is deleted only while it still holds exactly what was last
+ * declared, and a folder only once empty: renamed, moved, re-shared, edited
+ * or filled by members since, it stays in the library as theirs.
+ *
+ * Retire a folder's declared files and subfolders before the folder, or use
+ * `PruneMediaDeclarations`, which does it in that order. Same trusted
+ * backend context and readiness as `EnsureMediaFolder`.
+ */
+export function RetireMediaDeclaration(
+  retirement: MediaDeclarationRetirement,
+): Promise<MediaRetirementResult> {
+  return internal.RetireMediaDeclaration(retirement);
+}
+
+/**
+ * Retires, as `RetireMediaDeclaration` does, every declaration whose key
+ * starts with `prefix` and is not in `keep`: files first, then folders from
+ * the deepest. Call it after the declarations of the current code, with the
+ * keys they used, to take back what a previous version shipped and this one
+ * no longer does. Only one module should own a prefix.
+ */
+export function PruneMediaDeclarations(
+  prune: MediaDeclarationPrune,
+): Promise<MediaRetirementResult[]> {
+  return internal.PruneMediaDeclarations(prune);
 }
