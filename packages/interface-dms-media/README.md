@@ -43,13 +43,16 @@ new AssetType({
 });
 ```
 
-Ship a folder and a file from `start()`; each call is keyed, so it runs on every boot without duplicating anything:
+Ship a folder and a file for an explicitly selected tenant. This example intentionally selects the default tenant; for SaaS use the trusted tenant from your application's durable `created` consumer, not a process-global implicit fallback:
 
 ```ts
 import { EnsureMediaFolder, ImportMediaAsset } from "@antelopejs/interface-dms-media";
+import { DEFAULT_TENANT_ID } from "@antelopejs/interface-dms/constants";
 
-await EnsureMediaFolder({ key: "helio.procedures", name: "Procedures" });
+const tenantId = DEFAULT_TENANT_ID;
+await EnsureMediaFolder({ tenantId, key: "helio.procedures", name: "Procedures" });
 await ImportMediaAsset({
+  tenantId,
   key: "helio.procedures.roof",
   folder: { key: "helio.procedures" },
   name: "Roof safety checklist.pdf",
@@ -57,6 +60,8 @@ await ImportMediaAsset({
   source: { filePath: "/srv/content/roof-safety-checklist.pdf" },
 });
 ```
+
+Both declarations require `tenantId` in TypeScript and reject missing, empty or whitespace-only values at runtime before writes. Existing users of these new APIs must pass it explicitly; older media APIs are unchanged. A tenant id does not establish authorization or completed provisioning. See the [application-owned lifecycle and backfill guidance](./docs/1.index.md#new-saas-tenants-application-owned-durable-lifecycle) for at-least-once delivery, durable receipts and deployment refreshes.
 
 The interface also exports the option, declaration and ACL types: `AssetTypeOptions`, `AssetPickerComponentOptions`, `AssetBindingConfig`, `AssetPermissionMapping`, `MediaFolderDeclaration`, `MediaAssetDeclaration`, `MediaFolderTarget`, `MediaAssetSource`, `MediaDeclarationResult`, `MediaDeclarationStatus`, `AclEntry`, `AclSubject`, `AclSubjectKind` and `AclRight`.
 

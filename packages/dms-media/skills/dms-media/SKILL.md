@@ -53,19 +53,33 @@ static form = Form({
 ```typescript
 import { EnsureMediaFolder, ImportMediaAsset } from "@antelopejs/interface-dms-media";
 
-// From start() or a Hook.DATABASE_INITIALIZED handler; never awaited in construct().
-await EnsureMediaFolder({ key: "helio.procedures", name: "Procedures", visibility: "private" });
-await ImportMediaAsset({
-  key: "helio.procedures.roof",
-  folder: { key: "helio.procedures" },   // or { binding: "projects.cover" } for a field's folder
-  name: "Roof safety checklist.pdf",
-  mimetype: "application/pdf",
-  source: { filePath: "/abs/path.pdf" }, // or { bytes: buffer }
-});
+// Called by the application's lifecycle with a trusted, explicit tenant.
+export async function declareMedia(tenantId: string): Promise<void> {
+  await EnsureMediaFolder({ tenantId, key: "helio.procedures", name: "Procedures", visibility: "private" });
+  await ImportMediaAsset({
+    tenantId,
+    key: "helio.procedures.roof",
+    folder: { key: "helio.procedures" },   // or { binding: "projects.cover" } for a field's folder
+    name: "Roof safety checklist.pdf",
+    mimetype: "application/pdf",
+    source: { filePath: "/abs/path.pdf" }, // or { bytes: buffer }
+  });
+}
 ```
 
-- Idempotent per tenant + key (`tenantId` defaults to the default tenant): call on every boot. Returns
+- Required `tenantId` in types and runtime: omitted/empty/whitespace-only rejects before writes. No fallback;
+  an explicitly chosen `DEFAULT_TENANT_ID` remains valid. Idempotent per tenant + kind + key. Returns
   `{ status: "created" | "updated" | "unchanged" | "preserved" | "deleted", id? }`.
+- New SaaS tenants: the application registers `RegisterWorkspaceLifecycleConsumer` from
+  `@antelopejs/interface-dms-saas/workspace-lifecycle` for `created` before startup reconciliation.
+  Delivery follows preparation/payment and is at least once: deduplicate `operationId`, persist resource links
+  before returning a receipt, and recover incomplete attempts. Media does not register it or depend on SaaS.
+- `start()` is process-global: use it for registration or explicitly scoped global work, not implicit default content.
+  Never await declarations in `construct()`. A required tenant does not prove authorization or committed provisioning.
+  The prepayment `TENANT_BEING_PROVISIONED` hook has no automatic replay/compensation and is not durable `created`.
+- Deployment refresh/backfill is separate: enumerate trusted tenants, require `IsWorkspaceProvisioningCommitted(tenantId)`,
+  fail closed on lookup errors, and coordinate writers. Idempotent APIs do not make all effects exactly-once.
+  See the [canonical lifecycle guidance](https://dms.antelopejs.com/docs/modules/media/reference#new-saas-tenants-application-owned-durable-lifecycle).
 - Never undoes a member: a row changed since its last declaration is `preserved`, a deleted one stays `deleted`;
   only a row still exactly as declared is refreshed. Parents before children, folders before files (await each).
 - Same rules as the dashboard (names, unique sibling folders, allowed and field types, quota, decodable images); errors
