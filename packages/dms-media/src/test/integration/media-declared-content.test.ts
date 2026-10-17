@@ -15,7 +15,12 @@ import {
 import type { AxiosInstance } from "axios";
 import { expect } from "chai";
 import sharp from "sharp";
-import { MediaAssetModel, MediaEventModel, MediaFolderModel } from "../../db";
+import {
+  MediaAssetModel,
+  MediaDeclarationModel,
+  MediaEventModel,
+  MediaFolderModel,
+} from "../../db";
 import { ONE_PIXEL_PNG, PNG_MIMETYPE } from "../helpers/assets";
 import { readFolderAcl } from "../helpers/folders";
 import { authorizedClient } from "../helpers/http";
@@ -82,6 +87,63 @@ describe("[integration] media declared content — folders and files shipped as 
     await rm(tempDir, { recursive: true, force: true });
   });
 
+  it("rejects missing or blank tenants before changing the default library", async () => {
+    const declarationModel = GetModel(MediaDeclarationModel, DEFAULT_TENANT_ID);
+    const eventModel = GetModel(MediaEventModel, DEFAULT_TENANT_ID);
+    const before = {
+      folders: await folders().getAll(),
+      assets: await assets().getAll(),
+      declarations: await declarationModel.getAll(),
+      events: await eventModel.getAll(),
+    };
+    const folder = {
+      key: "declared.invalid-tenant",
+      name: "No implicit tenant",
+    };
+    const file = {
+      key: "declared.invalid-tenant-file",
+      folder: { binding: BINDING_ID },
+      name: "invalid-tenant.png",
+      mimetype: PNG_MIMETYPE,
+      source: { bytes: ONE_PIXEL_PNG },
+    };
+    // These calls also fail compilation if the public contract becomes optional.
+    // @ts-expect-error A JavaScript caller can omit the required tenantId.
+    expect((await rejectionOf(EnsureMediaFolder(folder))).message).to.contain(
+      "tenantId",
+    );
+    // @ts-expect-error A JavaScript caller can omit the required tenantId.
+    expect((await rejectionOf(ImportMediaAsset(file))).message).to.contain(
+      "tenantId",
+    );
+    for (const tenantId of ["", " \t\n "]) {
+      expect(
+        (await rejectionOf(EnsureMediaFolder({ ...folder, tenantId }))).message,
+      ).to.contain("tenantId");
+      expect(
+        (await rejectionOf(ImportMediaAsset({ ...file, tenantId }))).message,
+      ).to.contain("tenantId");
+    }
+    // Validation also precedes source reads, not only the final database write.
+    expect(
+      (
+        await rejectionOf(
+          ImportMediaAsset({
+            ...file,
+            tenantId: "",
+            source: { filePath: join(tempDir, "does-not-exist.png") },
+          }),
+        )
+      ).message,
+    ).to.contain("tenantId");
+    expect({
+      folders: await folders().getAll(),
+      assets: await assets().getAll(),
+      declarations: await declarationModel.getAll(),
+      events: await eventModel.getAll(),
+    }).to.deep.equal(before);
+  });
+
   it("isolates the same declaration keys and updates in two tenant instances", async () => {
     const tenantId = "declared-isolation";
     const schema = Schema.get(TENANT_SCHEMA_NAME);
@@ -89,11 +151,16 @@ describe("[integration] media declared content — folders and files shipped as 
     // Disposable database fixture, not a change to workspace provisioning.
     await schema.createInstance(tenantId).run();
     try {
-      const folder = { key: "declared.isolated", name: "Isolated" };
+      const folder = {
+        tenantId: DEFAULT_TENANT_ID,
+        key: "declared.isolated",
+        name: "Isolated",
+      };
       const firstFolder = await EnsureMediaFolder(folder);
       const secondFolder = await EnsureMediaFolder({ ...folder, tenantId });
       expect(firstFolder.id).to.not.equal(secondFolder.id);
       const file = {
+        tenantId: DEFAULT_TENANT_ID,
         key: folder.key,
         folder: { key: folder.key },
         name: "isolated.txt",
@@ -139,7 +206,12 @@ describe("[integration] media declared content — folders and files shipped as 
       try {
         const error = await rejectionOf(
           Promise.race([
-            EnsureMediaFolder({ key, name: "Self", parent: key }),
+            EnsureMediaFolder({
+              tenantId: DEFAULT_TENANT_ID,
+              key,
+              name: "Self",
+              parent: key,
+            }),
             new Promise((_, reject) => {
               timeout = setTimeout(
                 () => reject(new Error("Declaration did not settle")),
@@ -150,7 +222,13 @@ describe("[integration] media declared content — folders and files shipped as 
         );
         expect(error.message).to.contain("cannot be its own parent");
         expect(
-          (await EnsureMediaFolder({ key, name: "Not self" })).status,
+          (
+            await EnsureMediaFolder({
+              tenantId: DEFAULT_TENANT_ID,
+              key,
+              name: "Not self",
+            })
+          ).status,
         ).to.equal("created");
       } finally {
         clearTimeout(timeout);
@@ -158,9 +236,14 @@ describe("[integration] media declared content — folders and files shipped as 
     });
 
     it("rejects moving a declared ancestor under its descendant", async () => {
-      const root = { key: "declared.cycle-root", name: "Cycle root" };
+      const root = {
+        tenantId: DEFAULT_TENANT_ID,
+        key: "declared.cycle-root",
+        name: "Cycle root",
+      };
       const parent = await EnsureMediaFolder(root);
       const child = await EnsureMediaFolder({
+        tenantId: DEFAULT_TENANT_ID,
         key: "declared.cycle-child",
         name: "Cycle child",
         parent: root.key,
@@ -176,6 +259,7 @@ describe("[integration] media declared content — folders and files shipped as 
         parent.id,
       ]);
       const destination = await EnsureMediaFolder({
+        tenantId: DEFAULT_TENANT_ID,
         key: "declared.move-target",
         name: "Move target",
       });
@@ -198,6 +282,7 @@ describe("[integration] media declared content — folders and files shipped as 
 
     it("preserves a member rename racing a folder refresh", async () => {
       const declaration = {
+        tenantId: DEFAULT_TENANT_ID,
         key: "declared.folder-race",
         name: "Folder before race",
       };
@@ -234,7 +319,11 @@ describe("[integration] media declared content — folders and files shipped as 
     });
 
     it("creates a folder once, however often it is declared", async () => {
-      const declaration = { key: ROOT_KEY, name: "Declared procedures" };
+      const declaration = {
+        tenantId: DEFAULT_TENANT_ID,
+        key: ROOT_KEY,
+        name: "Declared procedures",
+      };
       const first = await EnsureMediaFolder(declaration);
       const second = await EnsureMediaFolder(declaration);
       expect(first.status).to.equal("created");
@@ -256,10 +345,12 @@ describe("[integration] media declared content — folders and files shipped as 
 
     it("nests a folder under a declared parent with its visibility and ACL", async () => {
       const parent = await EnsureMediaFolder({
+        tenantId: DEFAULT_TENANT_ID,
         key: ROOT_KEY,
         name: "Declared procedures",
       });
       const child = await EnsureMediaFolder({
+        tenantId: DEFAULT_TENANT_ID,
         key: CHILD_KEY,
         name: "Safety",
         parent: ROOT_KEY,
@@ -283,6 +374,7 @@ describe("[integration] media declared content — folders and files shipped as 
 
     it("refreshes a folder still as declared", async () => {
       const result = await EnsureMediaFolder({
+        tenantId: DEFAULT_TENANT_ID,
         key: CHILD_KEY,
         name: "Safety rules",
         parent: ROOT_KEY,
@@ -296,6 +388,7 @@ describe("[integration] media declared content — folders and files shipped as 
 
     it("leaves a folder a member renamed as they made it", async () => {
       const declared = await EnsureMediaFolder({
+        tenantId: DEFAULT_TENANT_ID,
         key: "declared.renamed",
         name: "Declared templates",
       });
@@ -305,6 +398,7 @@ describe("[integration] media declared content — folders and files shipped as 
       );
       expect(rename.status).to.equal(HTTP_OK);
       const result = await EnsureMediaFolder({
+        tenantId: DEFAULT_TENANT_ID,
         key: "declared.renamed",
         name: "Declared templates v2",
       });
@@ -315,12 +409,14 @@ describe("[integration] media declared content — folders and files shipped as 
 
     it("does not bring back a folder a member deleted", async () => {
       const declared = await EnsureMediaFolder({
+        tenantId: DEFAULT_TENANT_ID,
         key: "declared.deleted",
         name: "Declared archive",
       });
       const removal = await client.delete(`/api/media/folders/${declared.id}`);
       expect(removal.status).to.equal(HTTP_OK);
       const result = await EnsureMediaFolder({
+        tenantId: DEFAULT_TENANT_ID,
         key: "declared.deleted",
         name: "Declared archive",
       });
@@ -333,11 +429,16 @@ describe("[integration] media declared content — folders and files shipped as 
 
     it("refuses an invalid name, an unknown parent and a taken name", async () => {
       const badName = await rejectionOf(
-        EnsureMediaFolder({ key: "declared.bad", name: "a/b" }),
+        EnsureMediaFolder({
+          tenantId: DEFAULT_TENANT_ID,
+          key: "declared.bad",
+          name: "a/b",
+        }),
       );
       expect(badName.message).to.contain("declared.bad").and.contain("name");
       const orphan = await rejectionOf(
         EnsureMediaFolder({
+          tenantId: DEFAULT_TENANT_ID,
           key: "declared.orphan",
           name: "Orphan",
           parent: "declared.missing",
@@ -346,6 +447,7 @@ describe("[integration] media declared content — folders and files shipped as 
       expect(orphan.message).to.contain("declared.missing");
       const taken = await rejectionOf(
         EnsureMediaFolder({
+          tenantId: DEFAULT_TENANT_ID,
           key: "declared.twin",
           name: "declared PROCEDURES",
         }),
@@ -358,6 +460,7 @@ describe("[integration] media declared content — folders and files shipped as 
     for (const replaceBytes of [false, true]) {
       it(`preserves a member rename racing an asset ${replaceBytes ? "content" : "metadata"} refresh`, async () => {
         const declaration = {
+          tenantId: DEFAULT_TENANT_ID,
           key: `declared.asset-race.${replaceBytes}`,
           folder: { key: ROOT_KEY },
           name: `race-${replaceBytes}.txt`,
@@ -402,6 +505,7 @@ describe("[integration] media declared content — folders and files shipped as 
 
     it("imports bytes once, with their dimensions and an upload event", async () => {
       const declaration = {
+        tenantId: DEFAULT_TENANT_ID,
         key: "declared.logo",
         folder: { key: ROOT_KEY },
         name: "logo.png",
@@ -438,6 +542,7 @@ describe("[integration] media declared content — folders and files shipped as 
       const filePath = join(tempDir, "checklist.txt");
       await writeFile(filePath, "1. Switch the inverter off");
       const result = await ImportMediaAsset({
+        tenantId: DEFAULT_TENANT_ID,
         key: "declared.checklist",
         folder: { key: CHILD_KEY },
         name: "checklist.txt",
@@ -452,6 +557,7 @@ describe("[integration] media declared content — folders and files shipped as 
 
     it("imports into the folder bound to an asset field, with its types", async () => {
       const result = await ImportMediaAsset({
+        tenantId: DEFAULT_TENANT_ID,
         key: "declared.cover",
         folder: { binding: BINDING_ID },
         name: "cover.png",
@@ -464,6 +570,7 @@ describe("[integration] media declared content — folders and files shipped as 
       expect(asset?.folderId).to.equal(bound?._id);
       const refused = await rejectionOf(
         ImportMediaAsset({
+          tenantId: DEFAULT_TENANT_ID,
           key: "declared.cover-notes",
           folder: { binding: BINDING_ID },
           name: "notes.txt",
@@ -476,6 +583,7 @@ describe("[integration] media declared content — folders and files shipped as 
 
     it("refreshes the content of a file still as declared", async () => {
       const declaration = {
+        tenantId: DEFAULT_TENANT_ID,
         key: "declared.banner",
         folder: { key: ROOT_KEY },
         name: "banner.png",
@@ -503,6 +611,7 @@ describe("[integration] media declared content — folders and files shipped as 
 
     it("leaves a file a member renamed as they made it", async () => {
       const declaration = {
+        tenantId: DEFAULT_TENANT_ID,
         key: "declared.manual",
         folder: { key: ROOT_KEY },
         name: "manual.txt",
@@ -526,6 +635,7 @@ describe("[integration] media declared content — folders and files shipped as 
 
     it("does not bring back a file a member deleted", async () => {
       const declaration = {
+        tenantId: DEFAULT_TENANT_ID,
         key: "declared.flyer",
         folder: { key: ROOT_KEY },
         name: "flyer.txt",
@@ -542,6 +652,7 @@ describe("[integration] media declared content — folders and files shipped as 
     it("refuses an unknown folder, a refused type and an unreadable image", async () => {
       const unknown = await rejectionOf(
         ImportMediaAsset({
+          tenantId: DEFAULT_TENANT_ID,
           key: "declared.lost",
           folder: { key: "declared.nowhere" },
           name: "lost.txt",
@@ -552,6 +663,7 @@ describe("[integration] media declared content — folders and files shipped as 
       expect(unknown.message).to.contain("declared.nowhere");
       const html = await rejectionOf(
         ImportMediaAsset({
+          tenantId: DEFAULT_TENANT_ID,
           key: "declared.page",
           folder: { key: ROOT_KEY },
           name: "page.html",
@@ -562,6 +674,7 @@ describe("[integration] media declared content — folders and files shipped as 
       expect(html.message).to.contain("can't be added");
       const broken = await rejectionOf(
         ImportMediaAsset({
+          tenantId: DEFAULT_TENANT_ID,
           key: "declared.broken",
           folder: { key: ROOT_KEY },
           name: "broken.png",
@@ -572,6 +685,7 @@ describe("[integration] media declared content — folders and files shipped as 
       expect(broken.message).to.contain("not a readable image");
       const missing = await rejectionOf(
         ImportMediaAsset({
+          tenantId: DEFAULT_TENANT_ID,
           key: "declared.missing-file",
           folder: { key: ROOT_KEY },
           name: "missing.txt",

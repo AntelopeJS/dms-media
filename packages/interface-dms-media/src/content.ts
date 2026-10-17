@@ -19,8 +19,8 @@ export interface MediaFolderDeclaration {
   visibility?: MediaFolderVisibility;
   /** The folder's own ACL; absent inherits the parent's, or the root ACL at the root. */
   acl?: AclEntry[];
-  /** Workspace to declare the folder in; defaults to the DMS default tenant. */
-  tenantId?: string;
+  /** Explicit existing workspace; required and nonblank. Does not establish authorization or provisioning completion. */
+  tenantId: string;
 }
 
 /** A folder declared with `EnsureMediaFolder`, by its key. */
@@ -60,8 +60,8 @@ export interface MediaAssetDeclaration {
   mimetype: string;
   source: MediaAssetSource;
   alt?: string;
-  /** Workspace to import the file in; defaults to the DMS default tenant. */
-  tenantId?: string;
+  /** Explicit existing workspace; required and nonblank. Does not establish authorization or provisioning completion. */
+  tenantId: string;
 }
 
 /**
@@ -91,10 +91,12 @@ export interface MediaDeclarationResult {
  * what was last declared: renamed, moved, re-shared or deleted in the library
  * since, it is left as the members made it.
  *
- * Calls made before the media module is ready wait for it, so it is safe from
- * `start()` or a `Hook.DATABASE_INITIALIZED` handler. Do not await it in
- * `construct()`: the database only becomes ready once every module is
- * constructed.
+ * Requires an explicit, nonblank tenantId, validated before database or storage
+ * effects. Trusted backend callers must authorize the tenant themselves.
+ * Calls wait for media and database readiness, not SaaS provisioning completion.
+ * Applications should initialize new SaaS tenants through their durable `created`
+ * lifecycle consumer. `start()` is process-global, not per tenant. Do not await
+ * this in `construct()`: the database needs every module to be constructed.
  */
 export function EnsureMediaFolder(
   declaration: MediaFolderDeclaration,
@@ -110,7 +112,9 @@ export function EnsureMediaFolder(
  * declared: renamed, moved, edited or deleted in the library since, it is left
  * as the members made it.
  *
- * Waits for the media module like `EnsureMediaFolder`.
+ * Requires an explicit, nonblank tenantId before reading the source or writing.
+ * Uses the same trusted backend context and readiness as `EnsureMediaFolder`;
+ * it does not authorize the tenant or establish SaaS provisioning completion.
  */
 export function ImportMediaAsset(
   declaration: MediaAssetDeclaration,

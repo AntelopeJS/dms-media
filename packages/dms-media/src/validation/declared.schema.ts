@@ -1,4 +1,3 @@
-import { DEFAULT_TENANT_ID } from "@antelopejs/interface-dms/constants";
 import { z, ZodError } from "zod";
 import {
   altSchema,
@@ -21,7 +20,7 @@ const DECLARATION_ERROR_TEXTS: Record<string, string> = {
 };
 
 const keySchema = z.string().trim().min(1).max(255);
-const tenantSchema = z.string().trim().min(1).default(DEFAULT_TENANT_ID);
+const tenantSchema = z.string().trim().min(1);
 
 const aclEntrySchema = z.object({
   subject: z.object({

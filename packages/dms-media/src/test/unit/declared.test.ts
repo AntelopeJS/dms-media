@@ -60,10 +60,10 @@ describe("[unit] declared content — the refresh rule", () => {
 });
 
 describe("[unit] declared content — declarations", () => {
-  it("defaults the tenant and the visibility", () => {
+  it("keeps an explicit default tenant and defaults the visibility", () => {
     const parsed = parseDeclaration(
       "folder",
-      { key: "helio.procedures", name: " Procedures " },
+      { tenantId: "default", key: "helio.procedures", name: " Procedures " },
       declaredFolderSchema,
     );
     expect(parsed).to.deep.equal({
@@ -78,7 +78,12 @@ describe("[unit] declared content — declarations", () => {
     const parse = () =>
       parseDeclaration(
         "folder",
-        { key: "helio.bad", name: "a/b", visibility: "secret" },
+        {
+          tenantId: "default",
+          key: "helio.bad",
+          name: "a/b",
+          visibility: "secret",
+        },
         declaredFolderSchema,
       );
     expect(parse).to.throw(MediaDeclarationError, "Media folder 'helio.bad'");
