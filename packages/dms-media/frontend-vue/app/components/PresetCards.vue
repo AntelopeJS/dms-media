@@ -14,7 +14,10 @@ interface PixelSize {
 }
 
 interface ImageSize extends DeliveryPreset {
+	/** The absolute link a website copies. */
 	exampleUrl: string | null
+	/** The same file relative to the dashboard, whose origin carries the session. */
+	examplePreviewUrl: string | null
 }
 
 interface ImageSizesResponse extends PresetsResponse {
@@ -103,7 +106,7 @@ function technicalFacts(preset: DeliveryPreset): PresetFact[] {
 }
 
 function showsExample(preset: ImageSize): boolean {
-	return Boolean(preset.exampleUrl) && !brokenExamples.value.has(preset.id)
+	return Boolean(preset.examplePreviewUrl) && !brokenExamples.value.has(preset.id)
 }
 
 function markBroken(presetId: string): void {
@@ -129,7 +132,7 @@ function markBroken(presetId: string): void {
 							<div class="relative flex items-center justify-center overflow-hidden border border-dashed border-(--ui-primary) bg-(--dms-accent-tint)" :style="frame(preset)">
 								<img
 									v-if="showsExample(preset)"
-									:src="preset.exampleUrl ?? undefined"
+									:src="preset.examplePreviewUrl ?? undefined"
 									:alt="t('dms_media.presets.example_alt', { name: data.example?.name ?? '', size: preset.id })"
 									class="size-full"
 									:class="(preset.fit ?? DEFAULT_FIT) === 'cover' ? 'object-cover' : 'object-contain'"

@@ -145,6 +145,11 @@ describe("[integration] media activity and overview — figures, upload history 
     const response = await client.get("/api/media/presets");
     expect(response.data.isDefault).to.be.a("boolean");
     expect(response.data.presets[0].urlPattern).to.match(/^https?:\/\//);
+    for (const preset of response.data.presets) {
+      if (preset.examplePreviewUrl === null) continue;
+      expect(preset.examplePreviewUrl).to.match(/^\/media\//);
+      expect(preset.exampleUrl).to.match(/^https?:\/\//);
+    }
     const cache = await client.get("/api/media/presets/cache");
     expect(
       cache.data.items.map((item: { id: string }) => item.id),
