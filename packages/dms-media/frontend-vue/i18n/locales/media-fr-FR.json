@@ -661,14 +661,14 @@
 			"description": "Les nouveautés, ce qui demande votre attention et la place utilisée par la bibliothèque.",
 			"kpis": {
 				"files": "Fichiers",
-				"files_detail": "Aucun import ces 30 derniers jours | +1 importé ces 30 derniers jours | +{files} importés ces 30 derniers jours",
+				"files_detail": "Rien de neuf en 30 jours | +1 en 30 jours | +{files} en 30 jours",
 				"label": "La bibliothèque en un coup d'œil",
 				"missing_alt": "Texte alternatif manquant",
 				"public": "Fichiers publics",
 				"storage": "Stockage",
 				"storage_detail": "aucun fichier pour l'instant | utilisé par 1 fichier | utilisé par {files} fichiers",
 				"storage_quota_detail": "{percent} % de l'offre de {quota}",
-				"public_share": "{percent} % de la bibliothèque · ouverts à toute personne qui a le lien",
+				"public_share": "{percent} % de la bibliothèque",
 				"missing_alt_none": "Toutes les images sont décrites",
 				"missing_alt_public": "Aucune n'est publique | 1 est publique | {files} sont publiques"
 			},

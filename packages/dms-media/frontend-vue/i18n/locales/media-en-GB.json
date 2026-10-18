@@ -661,14 +661,14 @@
 			"description": "What's new, what needs attention and how much space the library uses.",
 			"kpis": {
 				"files": "Files",
-				"files_detail": "Nothing uploaded in the last 30 days | +1 uploaded in the last 30 days | +{files} uploaded in the last 30 days",
+				"files_detail": "Nothing new in 30 days | +1 in the last 30 days | +{files} in the last 30 days",
 				"label": "Library at a glance",
 				"missing_alt": "Missing alt text",
 				"public": "Public files",
 				"storage": "Storage",
 				"storage_detail": "no files yet | used by 1 file | used by {files} files",
 				"storage_quota_detail": "{percent}% of the {quota} plan",
-				"public_share": "{percent}% of the library · anyone with the link can open them",
+				"public_share": "{percent}% of the library",
 				"missing_alt_none": "Every image is described",
 				"missing_alt_public": "None of them is public | 1 of them is public | {files} of them are public"
 			},
