@@ -51,6 +51,9 @@ for (const name of ['useDmsFetch', 'useDmsAsyncData', 'useDmsPagedData', 'useDms
 const { useApiData, useApiPagedData } = await import('#dms-core/app/composables/auth/useApiData')
 provideGlobal('useApiData', useApiData)
 provideGlobal('useApiPagedData', useApiPagedData)
+// The DMS's own writer of composed texts, on the stubbed `useI18n` below.
+const { useComposedText } = await import('#dms-core/app/composables/translation/useComposedText')
+provideGlobal('useComposedText', useComposedText)
 provideGlobal('useAuthFetch', () => ({ $authFetch }))
 provideGlobal('useI18n', () => ({
 	t: (key: string, params?: Record<string, unknown>) => (params ? `${key} ${Object.values(params).join(' ')}` : key),
@@ -87,6 +90,7 @@ const UI_COMPONENTS = [
 	'DmsEyebrow',
 	'DmsFieldRow',
 	'DmsIconWell',
+	'DmsKeyValueList',
 	'DmsSaveStatus',
 	'DmsTextarea',
 	'UBadge',

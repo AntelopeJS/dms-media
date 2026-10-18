@@ -2,6 +2,7 @@ import { defineComponent, h } from 'vue'
 import { describe, expect, it } from 'vitest'
 import { serverRender, suspendedMount, type BackendRead } from './fixtures/serverRender'
 import AssetValue from '../app/components/field/AssetValue.vue'
+import Attention from '../app/components/Attention.vue'
 import Explorer from '../app/components/Explorer.vue'
 import FileHeader from '../app/components/FileHeader.vue'
 import FilePreview from '../app/components/FilePreview.vue'
@@ -62,6 +63,17 @@ const file = (id: string, name: string, mimetype = 'image/png'): MediaAsset => (
 
 const FILES = [file('a1', 'harbour.png'), file('a2', 'lighthouse.png'), file('a3', 'dunes.png')]
 
+const ATTENTION = [
+	{
+		id: 'missing-alt',
+		label: { key: 'dms_media.overview.attention.missing_alt_action', params: { files: { type: 'count', value: 2 } } },
+		value: 2,
+		type: 'status',
+		tone: 'warning',
+		to: '/modules/media/files?view=missing-alt',
+	},
+]
+
 function backend({ url }: BackendRead): unknown {
 	const details = url.match(/^\/api\/media\/assets\/([^/]+)\/details$/)
 	if (details) {
@@ -85,6 +97,8 @@ function backend({ url }: BackendRead): unknown {
 			}
 		case '/api/media/stats/recent':
 			return { assets: FILES }
+		case '/api/media/stats/attention':
+			return { items: ATTENTION }
 		case '/api/media/presets':
 			return {
 				presets: [{ id: 'thumb', width: 300, height: 300, fit: 'cover', cacheKey: 'thumb.1', rendered: 1, urlPattern: '', exampleUrl: null }],
@@ -222,6 +236,7 @@ describe('server render: the blocks read with the page and hand it over', () => 
 // Suspense: a client navigation shows it with its data, never a skeleton that
 // the data then pushes around.
 const PAGE_BLOCKS: [string, Parameters<typeof serverRender>[0], string[], string][] = [
+	['needs attention', Attention, ['GET /api/media/stats/attention'], 'data-stub="DmsKeyValueList"'],
 	['image sizes', PresetCards, ['GET /api/media/presets'], 'thumb'],
 	['recent files', RecentFiles, ['GET /api/media/stats/recent', 'GET /api/media/tree'], 'lighthouse.png'],
 	['upload strip', UploadStrip, ['GET /api/media/tree'], 'dms_media.upload_strip.choose'],
@@ -242,5 +257,24 @@ describe('page blocks: shown with the page, without a skeleton', () => {
 		expect(page.reads).toEqual(expect.arrayContaining(reads))
 		expect(page.html).toContain(shown)
 		expect(page.html).not.toContain('data-stub="USkeleton"')
+	})
+})
+
+describe('needs attention', () => {
+	it('says nothing needs attention when the library answers no rows, without a list', async () => {
+		const page = await serverRender(Attention, {}, { respond: ({ url }) => (url === '/api/media/stats/attention' ? { items: [] } : {}) })
+		expect(page.html).toContain('dms_media.overview.attention.empty')
+		expect(page.html).not.toContain('data-stub="DmsKeyValueList"')
+	})
+
+	it('says the list failed to load rather than that nothing needs attention', async () => {
+		const page = await serverRender(Attention, {}, {
+			respond: ({ url }) => {
+				if (url === '/api/media/stats/attention') throw Object.assign(new Error('Server Error'), { statusCode: 500 })
+				return {}
+			},
+		})
+		expect(page.html).toContain('dms_media.empty.error_title')
+		expect(page.html).not.toContain('dms_media.overview.attention.empty')
 	})
 })

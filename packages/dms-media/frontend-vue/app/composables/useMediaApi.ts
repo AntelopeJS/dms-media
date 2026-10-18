@@ -61,6 +61,7 @@ export interface ReadUrl {
 export const MEDIA_READS = {
 	tree: `${API}/tree`,
 	recent: `${API}/stats/recent`,
+	attention: `${API}/stats/attention`,
 	presets: `${API}/presets`,
 	boundFolder: (bindingId: string) => `${API}/bindings/${encodeURIComponent(bindingId)}/folder`,
 	asset: (assetId: string) => `${API}/assets/${assetId}`,
