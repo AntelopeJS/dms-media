@@ -18,7 +18,7 @@ concurrency:
 
 # Three independent jobs instead of one sequence: the pull request waits for
 # the slowest of them (verify-source) rather than for the sum of all steps.
-# No branch ruleset requires a check by name, so no aggregate job is needed.
+# The branch rulesets require the `ubuntu` check, which aggregates them.
 jobs:
   static:
     runs-on: ubuntu-latest
@@ -135,3 +135,14 @@ jobs:
       # Typechecks the frontend layer against the DMS layer from the
       # `@antelopejs/dms` devDependency: no running backend needed.
       - run: pnpm --dir packages/dms-media test:frontend
+
+  # The single check the branch rulesets require: green only when every job
+  # above succeeded.
+  ubuntu:
+    if: always()
+    needs: [static, backend, frontend]
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - if: contains(needs.*.result, 'failure') || contains(needs.*.result, 'cancelled') || contains(needs.*.result, 'skipped')
+        run: exit 1
