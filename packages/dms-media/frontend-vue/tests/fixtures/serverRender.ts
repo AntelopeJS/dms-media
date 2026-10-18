@@ -198,3 +198,72 @@ export function inBrowserApp<T>(setup: () => T, respond: Backend = () => ({})): 
 		reads: () => reads.map((read) => describeRead(read.method, read.url, read.query)),
 	}
 }
+
+/** What `suspendedMount` gives back. */
+export interface SuspendedMount {
+	/** Whether the Suspense waited for the component: it was not shown at once. */
+	waited: boolean
+	/** The backend requests made before the Suspense showed it, as `METHOD url?query`. */
+	readsBeforeShown: string[]
+}
+
+// Vue's renderer on bare objects: a browser mount and its Suspense, without a DOM.
+const blankRenderer = vue.createRenderer<object, object>({
+	createElement: () => ({}),
+	createText: () => ({}),
+	createComment: () => ({}),
+	setText: noop,
+	setElementText: noop,
+	insert: noop,
+	remove: noop,
+	parentNode: () => null,
+	nextSibling: () => null,
+	patchProp: noop,
+})
+
+/**
+ * Mounts `component` as a client navigation does, on the renderer's browser
+ * data layer with nothing read before, under the page's Suspense: whether the
+ * page waits for it, and what it read by the time it is shown. The test build
+ * compiles components for the server, so it renders nothing: the markup is
+ * `serverRender`'s to check.
+ */
+export async function suspendedMount(component: Component, options: { respond?: Backend } = {}): Promise<SuspendedMount> {
+	backend = options.respond ?? (() => ({}))
+	reads.length = 0
+	const runtime = engine.createDmsFrontendRuntime(undefined, {}, false)
+	let waited = false
+	let shown: (readsBeforeShown: string[]) => void = noop
+	const isShown = new Promise<string[]>((resolve) => {
+		shown = resolve
+	})
+	const app = blankRenderer.createApp({
+		render: () =>
+			h(
+				vue.Suspense,
+				{
+					onPending: () => {
+						waited = true
+					},
+					onResolve: () => shown(reads.map((read) => describeRead(read.method, read.url, read.query))),
+				},
+				{ default: () => h(component) },
+			),
+	})
+	engine.provideDmsFrontendRuntime(app, runtime)
+	// What the server build of a component records of itself, while it renders nowhere.
+	app.provide(vue.ssrContextKey, {})
+	for (const name of UI_COMPONENTS) app.component(name, uiStub(name))
+	Object.assign(app.config.globalProperties, autoImports)
+	app.config.warnHandler = noop
+	// The window the blocks listen on once mounted (a drop of files) and the history the library follows, for the time of the mount.
+	vi.stubGlobal('window', { addEventListener: noop, removeEventListener: noop, history: { state: null, replaceState: noop } })
+	try {
+		app.mount({})
+		const readsBeforeShown = await isShown
+		app.unmount()
+		return { waited, readsBeforeShown }
+	} finally {
+		vi.stubGlobal('window', undefined)
+	}
+}
