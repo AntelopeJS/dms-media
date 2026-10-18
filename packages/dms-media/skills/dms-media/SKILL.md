@@ -12,6 +12,8 @@ Asset library: folders with per-folder ACL, direct-to-storage uploads, stable `/
 Owner pages under `/modules/media` (overview, files, uploads, file, editor, activity, presets). Members never open them:
 they reach media through `AssetType` fields on project pages. User docs: `docs/` of this package, published at
 https://dms.antelopejs.com/docs/modules/media.
+Overview, uploads and activity are `live` pages (shared `rememberKey: "media"`) opening on the DMS `pageToolbar({ period: false })`
+(last read + Direct / Pause, block id `toolbar`); the upload history table is `liveHold`. Needs interface-dms with `base/page-toolbar`.
 
 ## Setup
 
