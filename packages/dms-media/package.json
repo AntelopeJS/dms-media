@@ -1,6 +1,6 @@
 {
   "name": "@antelopejs/dms-media",
-  "version": "0.5.0",
+  "version": "0.5.1",
   "description": "Media library for the AntelopeJS DMS: uploads, folders with per-folder permissions, image sizes and light editing, with a Finder-style explorer.",
   "keywords": [
     "antelopejs",
