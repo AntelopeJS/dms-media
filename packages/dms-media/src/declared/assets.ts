@@ -1,3 +1,4 @@
+import { WaitForTenantInstance } from "@antelopejs/interface-dms/tenant-instances";
 import { randomUUID } from "node:crypto";
 import { readFile } from "node:fs/promises";
 import { DeleteFile } from "@antelopejs/interface-file-storage";
@@ -27,7 +28,6 @@ import {
   describeDeclarationIssues,
 } from "../validation/declared.schema";
 import { findBoundFolder, findDeclaredFolder } from "./folders";
-import { waitForTenant } from "./readiness";
 import {
   DECLARED_CONTENT_AUTHOR,
   type DeclaredModels,
@@ -359,7 +359,7 @@ async function applyAssetDeclaration(
     throw new MediaDeclarationError("asset", declaration.key, reason);
   };
   const content = new DeclaredContent(declaration, fail);
-  await waitForTenant(declaration.tenantId);
+  await WaitForTenantInstance(declaration.tenantId);
   const models = declaredModels(declaration.tenantId);
   const record = await models.declarationModel.findByKey(
     "asset",

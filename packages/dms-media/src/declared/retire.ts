@@ -1,3 +1,4 @@
+import { WaitForTenantInstance } from "@antelopejs/interface-dms/tenant-instances";
 import type {
   MediaContentKind,
   MediaDeclarationPrune,
@@ -15,7 +16,6 @@ import {
 } from "../validation/declared.schema";
 import { assetStateHash } from "./assets";
 import { folderStateHash } from "./folders";
-import { waitForTenant } from "./readiness";
 import {
   DECLARED_CONTENT_AUTHOR,
   type DeclaredModels,
@@ -157,7 +157,7 @@ export async function retireDeclaration(
     input,
     declarationRetirementSchema,
   );
-  await waitForTenant(retirement.tenantId);
+  await WaitForTenantInstance(retirement.tenantId);
   return retireKey(
     declaredModels(retirement.tenantId),
     retirement.kind,
@@ -194,7 +194,7 @@ export async function pruneDeclarations(
     );
   const { prefix, tenantId } = parsed.data;
   const keep = new Set(parsed.data.keep);
-  await waitForTenant(tenantId);
+  await WaitForTenantInstance(tenantId);
   const models = declaredModels(tenantId);
   const stale = (await models.declarationModel.getAll()).filter(
     (record) => record.key.startsWith(prefix) && !keep.has(record.key),

@@ -1,3 +1,4 @@
+import { WaitForTenantInstance } from "@antelopejs/interface-dms/tenant-instances";
 import type {
   MediaDeclarationResult,
   MediaFolderDeclaration,
@@ -16,7 +17,6 @@ import {
   declaredFolderSchema,
   type DeclaredFolderInput,
 } from "../validation/declared.schema";
-import { waitForTenant } from "./readiness";
 import {
   DECLARED_CONTENT_AUTHOR,
   type DeclaredModels,
@@ -195,7 +195,7 @@ async function refreshFolder(
 async function applyFolderDeclaration(
   declaration: DeclaredFolderInput,
 ): Promise<MediaDeclarationResult> {
-  await waitForTenant(declaration.tenantId);
+  await WaitForTenantInstance(declaration.tenantId);
   const models = declaredModels(declaration.tenantId);
   const fail = (reason: string): never => {
     throw new MediaDeclarationError("folder", declaration.key, reason);
