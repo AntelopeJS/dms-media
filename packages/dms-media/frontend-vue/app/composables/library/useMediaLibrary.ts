@@ -608,13 +608,8 @@ export type MediaLibrary = LibraryCore & {
 export function provideMediaLibrary(options: MediaLibraryOptions): MediaLibrary {
 	const core = createMediaLibrary(options)
 	const library: MediaLibrary = { ...core, actions: createLibraryActions(core) }
-	shareMediaLibrary(library)
-	return library
-}
-
-/** Hands an explorer's library to a part of it rendered outside its tree, like a drawer's body. */
-export function shareMediaLibrary(library: MediaLibrary): void {
 	provide(LIBRARY_KEY, library)
+	return library
 }
 
 export function useMediaLibrary(): MediaLibrary {

@@ -1,4 +1,4 @@
-import { computed, effectScope, isRef, nextTick, ref } from 'vue'
+import { computed, effectScope, nextTick, ref } from 'vue'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import './fixtures/serverRender'
 import type { ExplorerContext } from '../app/composables/library/useExplorerCommands'
@@ -11,7 +11,7 @@ import type { DrawerRowHeader } from '#dms-ui/app/composables/containers/types'
 // turns the state off, and it follows the explorer's width and lifetime.
 
 interface OpenedDrawer {
-	options: { direction: string; componentOptions: { context: ExplorerContext }; rowHeader: DrawerRowHeader }
+	options: { direction: string; componentOptions?: unknown; rowHeader: DrawerRowHeader }
 	close: ReturnType<typeof vi.fn>
 	patch: ReturnType<typeof vi.fn>
 	settle: () => Promise<void>
@@ -73,13 +73,13 @@ beforeEach(() => {
 })
 
 describe('details drawer', () => {
-	it('opens on the right with the live library, and closes with the state', async () => {
+	it('opens on the right, and closes with the state', async () => {
 		const { layout } = setup()
 		await toggle(layout, true)
 		expect(opened).toHaveLength(1)
 		expect(opened[0]!.options.direction).toBe('right')
-		// Handed over raw: the inspector still reads the library's refs.
-		expect(isRef(opened[0]!.options.componentOptions.context.library.selection.focusedAsset)).toBe(true)
+		// Nothing handed as props: the body injects what the explorer provides.
+		expect(opened[0]!.options.componentOptions).toBeUndefined()
 		await toggle(layout, false)
 		expect(opened[0]!.close).toHaveBeenCalledOnce()
 	})

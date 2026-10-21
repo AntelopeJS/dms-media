@@ -48,9 +48,9 @@ export function useExplorerDetailsDrawer(layout: ExplorerLayout, context: Explor
 		const instance = open({
 			direction: 'right',
 			title: t('dms_media.explorer.details'),
+			// Its body injects the explorer's library and commands: call this in
+			// the setup of the component that provides them.
 			component: ExplorerDetailsDrawer,
-			// Raw: the overlay keeps its props reactive, which would unwrap the library's refs.
-			componentOptions: { context: markRaw({ ...context }) },
 			rowHeader: rowHeader.value,
 		})
 		drawer = instance
