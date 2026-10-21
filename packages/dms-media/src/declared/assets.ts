@@ -27,7 +27,7 @@ import {
   describeDeclarationIssues,
 } from "../validation/declared.schema";
 import { findBoundFolder, findDeclaredFolder } from "./folders";
-import { waitForTenant, writeWhenReachable } from "./readiness";
+import { waitForTenant } from "./readiness";
 import {
   DECLARED_CONTENT_AUTHOR,
   type DeclaredModels,
@@ -206,14 +206,12 @@ function writeFile(
   { models, declaration, folder }: AssetTarget,
   file: PreparedFile,
 ): Promise<string> {
-  return writeWhenReachable(() =>
-    uploadStorageBytes(
-      file.bytes,
-      declaration.name,
-      file.mimetype,
-      `media/${models.tenantId}/${folder._id}`,
-      getMediaConfig().storage,
-    ),
+  return uploadStorageBytes(
+    file.bytes,
+    declaration.name,
+    file.mimetype,
+    `media/${models.tenantId}/${folder._id}`,
+    getMediaConfig().storage,
   );
 }
 

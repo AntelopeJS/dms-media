@@ -8,7 +8,6 @@ import {
   parseDeclaration,
   withDeclarationLock,
 } from "../../declared/records";
-import { writeWhenReachable } from "../../declared/readiness";
 import type { MediaDeclaration } from "../../db";
 import { declaredFolderSchema } from "../../validation/declared.schema";
 
@@ -130,29 +129,5 @@ describe("[unit] declared content — declarations", () => {
     const next = withDeclarationLock("default", "asset", "k", async () => "ok");
     expect(await failing).to.equal("boom");
     expect(await next).to.equal("ok");
-  });
-});
-
-describe("[unit] declared content — storage writes at startup", () => {
-  it("retries a write while its endpoint does not answer", async function () {
-    this.timeout(10_000);
-    let attempts = 0;
-    const result = await writeWhenReachable(async () => {
-      attempts += 1;
-      if (attempts < 3) throw new TypeError("fetch failed");
-      return "stored";
-    });
-    expect(result).to.equal("stored");
-    expect(attempts).to.equal(3);
-  });
-
-  it("does not retry a refused write", async () => {
-    let attempts = 0;
-    const refusal = await writeWhenReachable(async () => {
-      attempts += 1;
-      throw new Error("Failed to upload logo.png: 413");
-    }).catch((error: Error) => error.message);
-    expect(refusal).to.contain("413");
-    expect(attempts).to.equal(1);
   });
 });
