@@ -1,6 +1,3 @@
-import type { ComposableText } from '#dms-core/app/utils/composedText'
-import type { Tone } from '#dms-ui/app/types/tone'
-
 export type AssetTypeGroup =
 	| 'image'
 	| 'video'
@@ -203,19 +200,3 @@ export interface PresetsResponse {
 }
 
 export type DeleteFilesChoice = 'delete' | 'private' | null
-
-/** A row of the overview's attention list (`/stats/attention`): what to act on, how many files, where. */
-export interface AttentionItem {
-	id: string
-	/** A `$` key or a composed text, written in the reader's language. */
-	label: ComposableText
-	value: number
-	type: 'status'
-	tone: Tone
-	detail?: ComposableText
-	to: string
-}
-
-export interface AttentionResponse {
-	items: AttentionItem[]
-}

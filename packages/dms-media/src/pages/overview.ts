@@ -2,6 +2,7 @@ import { ActivityFeed } from "@antelopejs/interface-dms/base/activity-feed";
 import { Card } from "@antelopejs/interface-dms/base/card";
 import { CustomComponent } from "@antelopejs/interface-dms/base/custom";
 import { Grid, GridRow } from "@antelopejs/interface-dms/base/grid";
+import { KeyValueList } from "@antelopejs/interface-dms/base/key-value-list";
 import { DefaultLayout } from "@antelopejs/interface-dms/base/layouts";
 import { Meter } from "@antelopejs/interface-dms/base/meter";
 import { StatGroup } from "@antelopejs/interface-dms/base/stat-group";
@@ -42,6 +43,19 @@ const storage = Card({ title: `${TEXTS}.storage.title` })
       ],
     }).meta(blockMeta("storage_types", "i-ph-chart-bar-horizontal")),
   );
+
+const attention = KeyValueList({
+  title: `${TEXTS}.attention.title`,
+  fetchUrl: "/api/media/stats/attention",
+  realtimeTopic: MEDIA_LIBRARY_TOPIC,
+  // The rows it lists, or its empty state, set its height, and it sits above
+  // every other block: a client navigation waits for it.
+  holdNavigation: true,
+  empty: {
+    title: `${TEXTS}.attention.empty`,
+    description: `${TEXTS}.attention.empty_description`,
+  },
+}).meta(blockMeta("attention", "i-ph-warning-circle"));
 
 const activity = ActivityFeed({
   title: `${TEXTS}.activity.title`,
@@ -94,11 +108,7 @@ export class MediaOverviewPage extends PageController(
     blockMeta("upload_strip", "i-ph-cloud-arrow-up"),
   );
 
-  // Read with the page (not a fetched KeyValueList): the rows it lists, or its
-  // empty state, set its height, and it sits above every other block.
-  static attention = CustomComponent("DmsMediaAttention").meta(
-    blockMeta("attention", "i-ph-warning-circle"),
-  );
+  static attention = attention;
 
   static kpis = StatGroup({
     layout: "cards",
