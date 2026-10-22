@@ -71,14 +71,25 @@ function batchDetails(summary: BatchSummary): Record<string, string | number> {
   return details;
 }
 
-interface PresetRowInput {
+export interface PresetRowInput {
   preset: MediaPresetConfig;
+  /** The public URL pattern an operator copies (API/public origin). */
   origin: string;
+  /** Where the live example <img> loads from: the dashboard's own origin,
+   * whose /media relay carries the viewer's session, so a private example
+   * loads too. */
+  exampleOrigin: string;
   renderedKeys: string[];
   example?: MediaAsset;
 }
 
-function presetRow({ preset, origin, renderedKeys, example }: PresetRowInput) {
+export function presetRow({
+  preset,
+  origin,
+  exampleOrigin,
+  renderedKeys,
+  example,
+}: PresetRowInput) {
   const cacheKey = presetCacheKey(preset);
   return {
     ...preset,
@@ -86,7 +97,7 @@ function presetRow({ preset, origin, renderedKeys, example }: PresetRowInput) {
     rendered: renderedKeys.filter((key) => key === cacheKey).length,
     urlPattern: `${origin}/media/{asset}/${preset.id}/{filename}`,
     exampleUrl: example
-      ? `${origin}/media/${example._id}/${preset.id}/${encodeURIComponent(example.name)}`
+      ? `${exampleOrigin}/media/${example._id}/${preset.id}/${encodeURIComponent(example.name)}`
       : null,
   };
 }
@@ -183,6 +194,7 @@ export class MediaManageController extends MediaApiController {
     );
     const presets = [...getMediaConfig().presets.values()];
     const origin = await this.publicOrigin();
+    const exampleOrigin = await this.dashboardOrigin();
     const sweep = getLastSweep();
     return {
       isDefault: usesDefaultPresets(presets),
@@ -198,6 +210,7 @@ export class MediaManageController extends MediaApiController {
         presetRow({
           preset,
           origin,
+          exampleOrigin,
           renderedKeys,
           example,
         }),

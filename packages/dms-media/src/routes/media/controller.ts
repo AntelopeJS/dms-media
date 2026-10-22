@@ -3,6 +3,7 @@ import {
   Controller,
   type RequestContext,
 } from "@antelopejs/interface-api";
+import { GetClientBaseUrl } from "@antelopejs/interface-dms/client-base-url";
 import { GetApiBaseUrl } from "@antelopejs/interface-dms/api-base-url";
 import { RoleModel, TenantMemberModel } from "@antelopejs/interface-dms/db";
 import { AuthTenantMember } from "@antelopejs/interface-dms/guards";
@@ -59,6 +60,19 @@ export class MediaApiController extends Controller("/api/media") {
       getMediaConfig().publicBaseUrl,
       await GetApiBaseUrl(),
     );
+  }
+
+  /**
+   * The origin the dashboard itself serves an `<img>` from: its own, where
+   * `/media/**` is relayed to the backend with the viewer's session, so a
+   * private asset loads for a signed-in member. Falls back to the public
+   * origin when the dashboard URL is not known (e.g. a direct API caller).
+   */
+  protected async dashboardOrigin(): Promise<string> {
+    const base = await GetClientBaseUrl().catch(() => undefined);
+    return base?.trim()
+      ? base.replace(TRAILING_SLASHES, "")
+      : this.publicOrigin();
   }
 
   protected resolveContext(): Promise<MediaRequestContext> {
