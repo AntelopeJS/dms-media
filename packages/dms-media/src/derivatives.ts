@@ -1,7 +1,9 @@
 import { randomUUID } from "node:crypto";
+import { buffer } from "node:stream/consumers";
 import {
-  CreateUploadUrl,
   DeleteFile,
+  ReadFile,
+  WriteFile,
 } from "@antelopejs/interface-file-storage";
 import sharp from "sharp";
 import { TECHNICAL_MUTATION, updateAssetMedia } from "./asset-lifecycle";
@@ -15,7 +17,6 @@ import {
   RASTERIZED_SVG_FORMAT,
   SVG_MIMETYPE,
 } from "./presets";
-import { signedReadUrl } from "./read-urls";
 import { parseDerivatives } from "./routes/media/storage-keys";
 
 const DERIVATIVES_PATH_PREFIX = "media-derivatives";
@@ -41,11 +42,7 @@ export async function downloadStorageBytes(
   storageKey: string,
   storage: string | undefined,
 ): Promise<Buffer> {
-  const response = await fetch(await signedReadUrl(storageKey, storage));
-  if (!response.ok) {
-    throw new Error(`Failed to download ${storageKey}: ${response.status}`);
-  }
-  return Buffer.from(await response.arrayBuffer());
+  return buffer((await ReadFile(storageKey, storage)).body);
 }
 
 export async function uploadStorageBytes(
@@ -55,7 +52,7 @@ export async function uploadStorageBytes(
   path: string,
   storage: string | undefined,
 ): Promise<string> {
-  const presigned = await CreateUploadUrl(
+  const { resourceKey } = await WriteFile(
     {
       filename,
       size: bytes.byteLength,
@@ -63,18 +60,11 @@ export async function uploadStorageBytes(
       path,
       metadata: { [ORIGINAL_FILENAME_METADATA_KEY]: filename },
     },
+    bytes,
     undefined,
     storage,
   );
-  const response = await fetch(presigned.uploadUrl, {
-    method: "PUT",
-    headers: presigned.headers,
-    body: new Uint8Array(bytes),
-  });
-  if (!response.ok) {
-    throw new Error(`Failed to upload ${filename}: ${response.status}`);
-  }
-  return presigned.resourceKey;
+  return resourceKey;
 }
 
 async function readSourceMetadata(source: Buffer): Promise<sharp.Metadata> {

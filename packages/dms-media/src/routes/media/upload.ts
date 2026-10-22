@@ -1,15 +1,16 @@
 import { MediaApiController } from "./controller";
 import { randomUUID } from "node:crypto";
+import { buffer } from "node:stream/consumers";
 import { HTTPResult, JSONBody, Post } from "@antelopejs/interface-api";
 import { assert, assertValidation } from "@antelopejs/interface-api-util";
 import {
-  CreateReadUrl,
   CreateUploadUrl,
   DeleteFile,
   type FileMetadata,
   GetFileMetadata,
   isStagedKey,
   PromoteFile,
+  ReadFile,
 } from "@antelopejs/interface-file-storage";
 import { TenantScopedModel } from "@antelopejs/interface-dms/tenant-scoped-model";
 import { feedingBinding } from "../../bindings";
@@ -63,11 +64,8 @@ function mediaUploadPath(tenantId: string, folderId: string): string {
 async function readStoredFile(
   storageKey: string,
   storage: string | undefined,
-): Promise<Buffer | undefined> {
-  const readUrl = await CreateReadUrl(storageKey, undefined, storage);
-  const response = await fetch(readUrl.url);
-  if (!response.ok) return undefined;
-  return Buffer.from(await response.arrayBuffer());
+): Promise<Buffer> {
+  return buffer((await ReadFile(storageKey, storage)).body);
 }
 
 async function readImage(
