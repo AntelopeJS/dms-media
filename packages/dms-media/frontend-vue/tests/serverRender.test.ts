@@ -62,17 +62,6 @@ const file = (id: string, name: string, mimetype = 'image/png'): MediaAsset => (
 
 const FILES = [file('a1', 'harbour.png'), file('a2', 'lighthouse.png'), file('a3', 'dunes.png')]
 
-const ATTENTION = [
-	{
-		id: 'missing-alt',
-		label: { key: 'dms_media.overview.attention.missing_alt_action', params: { files: { type: 'count', value: 2 } } },
-		value: 2,
-		type: 'status',
-		tone: 'warning',
-		to: '/modules/media/files?view=missing-alt',
-	},
-]
-
 function backend({ url }: BackendRead): unknown {
 	const details = url.match(/^\/api\/media\/assets\/([^/]+)\/details$/)
 	if (details) {
@@ -96,8 +85,6 @@ function backend({ url }: BackendRead): unknown {
 			}
 		case '/api/media/stats/recent':
 			return { assets: FILES }
-		case '/api/media/stats/attention':
-			return { items: ATTENTION }
 		case '/api/media/presets':
 			return {
 				presets: [{ id: 'thumb', width: 300, height: 300, fit: 'cover', cacheKey: 'thumb.1', rendered: 1, urlPattern: '', exampleUrl: null }],

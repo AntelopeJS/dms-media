@@ -322,10 +322,7 @@ spreadsheets, vectors, other) fetched from `/api/media/stats/storage` and a
 A `KeyValueList` fetched from `/api/media/stats/attention`: images without
 alt text, failed uploads of the last day, files over 20 MB. An empty list
 shows "Nothing needs attention". *Folders with their own rules left the list on
-2026-10-12 with the rules editor they linked to (Q10.3).* *Since 2026-10-21
-it is read with the page (`holdNavigation`): the list holds zero to three rows
-or its empty state, so no skeleton can match it, and it sits above every other
-block, which a late answer would push down on a client navigation.*
+2026-10-12 with the rules editor they linked to (Q10.3).*
 
 **Q8.4 Activity?**
 An `ActivityFeed` over a `media_events` table written by every write route

@@ -48,12 +48,7 @@ const attention = KeyValueList({
   title: `${TEXTS}.attention.title`,
   fetchUrl: "/api/media/stats/attention",
   realtimeTopic: MEDIA_LIBRARY_TOPIC,
-  // The rows it lists, or its empty state, set its height, and it sits above
-  // every other block: a client navigation waits for it.
-  holdNavigation: true,
-  // Read again on each library change, its own trigger: the page's
-  // refreshes leave it alone.
-  refreshOnPageRefresh: false,
+  skeletonCount: 2,
   empty: {
     title: `${TEXTS}.attention.empty`,
     description: `${TEXTS}.attention.empty_description`,
