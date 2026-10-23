@@ -12,10 +12,9 @@ import { MEDIA_ROUTES, viewLink } from "../library/links";
 import { libraryCategory, MEDIA_MODULE_ID } from "./module";
 import { blockMeta } from "./texts";
 import { MEDIA_LIBRARY_TOPIC } from "../constants";
+import { MEDIA_LIVE, mediaPageToolbar } from "./toolbar";
 
 const TEXTS = "$dms_media.overview";
-/** Shortest interval, in seconds, between two refetches of a block while files upload. */
-const LIVE_MAX_RATE_SECONDS = 2;
 const GAP = "1rem";
 const MIN_COLUMN_WIDTH = "320px";
 const WIDE_SPAN = 2;
@@ -83,7 +82,7 @@ export class MediaOverviewPage extends PageController(
     module: MEDIA_MODULE_ID,
     icon: "i-ph-squares-four",
     order: 0,
-    live: { maxRate: LIVE_MAX_RATE_SECONDS },
+    live: MEDIA_LIVE,
   },
   DefaultLayout({
     headerActions: [
@@ -98,6 +97,8 @@ export class MediaOverviewPage extends PageController(
     ],
   }),
 ) {
+  static toolbar = mediaPageToolbar();
+
   static firstRun = CustomComponent("DmsMediaFirstRun").meta(
     blockMeta("first_run", "i-ph-sparkle"),
   );

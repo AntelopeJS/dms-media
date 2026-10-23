@@ -1,14 +1,17 @@
 import { defineComponent, h } from 'vue'
 import { describe, expect, it } from 'vitest'
-import { serverRender, type BackendRead } from './fixtures/serverRender'
+import { serverRender, suspendedMount, type BackendRead } from './fixtures/serverRender'
 import AssetValue from '../app/components/field/AssetValue.vue'
 import Explorer from '../app/components/Explorer.vue'
 import FileHeader from '../app/components/FileHeader.vue'
 import FilePreview from '../app/components/FilePreview.vue'
 import FileProperties from '../app/components/FileProperties.vue'
+import FirstRun from '../app/components/FirstRun.vue'
 import ImageEditor from '../app/components/ImageEditor.vue'
 import PresetCards from '../app/components/PresetCards.vue'
 import RecentFiles from '../app/components/RecentFiles.vue'
+import UploadQueue from '../app/components/UploadQueue.vue'
+import UploadStrip from '../app/components/UploadStrip.vue'
 import { useFieldFolders } from '../app/composables/useFieldFolders'
 import type { MediaAsset, MediaFolder } from '../app/types/media'
 
@@ -84,7 +87,7 @@ function backend({ url }: BackendRead): unknown {
 			return { assets: FILES }
 		case '/api/media/presets':
 			return {
-				presets: [{ id: 'thumb', width: 300, height: 300, fit: 'cover', cacheKey: 'thumb.1', rendered: 1, urlPattern: '', exampleUrl: null }],
+				presets: [{ id: 'thumb', width: 300, height: 300, fit: 'cover', cacheKey: 'thumb.1', rendered: 1, urlPattern: '', exampleUrl: null, examplePreviewUrl: null }],
 				cache: { schedule: '', lastSweepAt: null, lastSweepRemoved: null, publicTtlSeconds: 0, privateTtlSeconds: 0 },
 				isDefault: true,
 				example: null,
@@ -120,6 +123,21 @@ describe('server render: the blocks read with the page and hand it over', () => 
 		expect(page.reads).toEqual(['GET /api/media/presets'])
 		expect(page.handed).toEqual(expect.arrayContaining(page.reads))
 		expect(page.html).toContain('thumb')
+	})
+
+	it('image sizes: the example loads on the dashboard origin, the copied link stays absolute', async () => {
+		const exampleUrl = 'https://api.example.com/media/a1/thumb/lighthouse.png'
+		const examplePreviewUrl = '/media/a1/thumb/lighthouse.png'
+		const presets = {
+			presets: [{ id: 'thumb', width: 300, height: 300, fit: 'cover', cacheKey: 'thumb.1', rendered: 1, urlPattern: '', exampleUrl, examplePreviewUrl }],
+			cache: { schedule: '', lastSweepAt: null, lastSweepRemoved: null, publicTtlSeconds: 0, privateTtlSeconds: 0 },
+			isDefault: false,
+			example: { id: 'a1', name: 'lighthouse.png', width: 1200, height: 800 },
+		}
+		const page = await serverRender(PresetCards, {}, { respond: (read) => (read.url === '/api/media/presets' ? presets : backend(read)) })
+		expect(page.html).toContain(`src="${examplePreviewUrl}"`)
+		expect(page.html).not.toContain(`src="${exampleUrl}"`)
+		expect(page.html).toContain(exampleUrl)
 	})
 
 	it('file page: one read of the file and its neighbours for the three blocks, and the image read URL', async () => {
@@ -212,5 +230,32 @@ describe('server render: the blocks read with the page and hand it over', () => 
 		expect(page.reads).toEqual(['GET /api/media/bindings/demo.cover/folder'])
 		expect(page.handed).toEqual(page.reads)
 		expect(page.html).toContain('Demo covers')
+	})
+})
+
+// A page block that waits for its reads in `setup` is part of the page's
+// Suspense: a client navigation shows it with its data, never a skeleton that
+// the data then pushes around.
+const PAGE_BLOCKS: [string, Parameters<typeof serverRender>[0], string[], string][] = [
+	['image sizes', PresetCards, ['GET /api/media/presets'], 'thumb'],
+	['recent files', RecentFiles, ['GET /api/media/stats/recent', 'GET /api/media/tree'], 'lighthouse.png'],
+	['upload strip', UploadStrip, ['GET /api/media/tree'], 'dms_media.upload_strip.choose'],
+	['upload queue', UploadQueue, ['GET /api/media/tree'], 'dms_media.queue.empty_description_drop'],
+	['first run', FirstRun, ['GET /api/media/tree'], ''],
+	['library', Explorer, ['GET /api/media/tree'], 'Catalog'],
+]
+
+describe('page blocks: shown with the page, without a skeleton', () => {
+	it.each(PAGE_BLOCKS)('%s: a client navigation waits for its reads', async (_, block, reads) => {
+		const mounted = await suspendedMount(block, { respond: backend })
+		expect(mounted.waited).toBe(true)
+		expect(mounted.readsBeforeShown).toEqual(expect.arrayContaining(reads))
+	})
+
+	it.each(PAGE_BLOCKS)('%s: the server render shows its data, no skeleton', async (_, block, reads, shown) => {
+		const page = await render(block)
+		expect(page.reads).toEqual(expect.arrayContaining(reads))
+		expect(page.html).toContain(shown)
+		expect(page.html).not.toContain('data-stub="USkeleton"')
 	})
 })

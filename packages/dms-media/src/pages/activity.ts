@@ -7,6 +7,7 @@ import { MEDIA_LIBRARY_TOPIC } from "../constants";
 import { ACTIVITY_FILTERS, type ActivityFilter } from "../library/activity";
 import { libraryCategory, MEDIA_MODULE_ID } from "./module";
 import { blockMeta } from "./texts";
+import { MEDIA_LIVE, mediaPageToolbar } from "./toolbar";
 
 const TEXTS = "$dms_media.activity_page";
 const FEED_LENGTH = 50;
@@ -57,9 +58,12 @@ export class MediaActivityPage extends PageController(
     icon: "i-ph-clock-counter-clockwise",
     hidden: true,
     order: 5,
+    live: MEDIA_LIVE,
   },
   DefaultLayout(),
 ) {
+  static toolbar = mediaPageToolbar();
+
   static feed = Card()
     .meta(blockMeta("activity_log", "i-ph-clock-counter-clockwise"))
     .child("filters", filteredFeeds());

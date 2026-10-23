@@ -41,6 +41,13 @@ function isCurrent<T>(read: ApiDataResult<T>): boolean {
 }
 
 const previewUrl = computed(() => (isCurrent(previewRead) ? previewRead.data.value?.url : undefined))
+/** "Image · PNG"; once when the extension is the type ("PDF"). */
+const typeLabel = computed(() => {
+	if (!asset.value) return ''
+	const type = t(`dms_media.type_single.${asset.value.typeGroup}`)
+	const extension = extensionOf(asset.value).toUpperCase()
+	return !extension || extension === type.toUpperCase() ? type : `${type} · ${extension}`
+})
 const uploadedBy = computed(() => (isCurrent(detailsRead) ? (detailsRead.data.value?.uploadedBy ?? null) : null))
 
 function saveAlt(alt: string): Promise<boolean> {
@@ -101,15 +108,15 @@ function saveAlt(alt: string): Promise<boolean> {
 			<dl class="grid grid-cols-[auto_minmax(0,1fr)] gap-x-4 gap-y-2 p-3 text-[13px]">
 				<DmsEyebrow :label="t('dms_media.explorer.details')" tone="muted" class="col-span-2 mb-1" />
 				<dt class="text-muted">{{ t('dms_media.columns.type') }}</dt>
-				<dd class="text-highlighted text-end">{{ t(`dms_media.type_single.${asset.typeGroup}`) }} · {{ extensionOf(asset).toUpperCase() }}</dd>
+				<dd class="text-highlighted">{{ typeLabel }}</dd>
 				<dt class="text-muted">{{ t('dms_media.columns.size') }}</dt>
-				<dd class="text-highlighted text-end font-mono">{{ format.formatBytes(asset.size) }}</dd>
+				<dd class="text-highlighted font-mono">{{ format.formatBytes(asset.size) }}</dd>
 				<template v-if="asset.width && asset.height">
 					<dt class="text-muted">{{ t('dms_media.columns.dimensions') }}</dt>
-					<dd class="text-highlighted text-end font-mono">{{ format.formatDimensions(asset.width, asset.height) }}</dd>
+					<dd class="text-highlighted font-mono">{{ format.formatDimensions(asset.width, asset.height) }}</dd>
 				</template>
 				<dt class="text-muted">{{ t('dms_media.columns.visibility') }}</dt>
-				<dd class="text-end">
+				<dd>
 					<UButton
 						v-if="commands.canChangeVisibility(asset)"
 						variant="link"
@@ -122,18 +129,16 @@ function saveAlt(alt: string): Promise<boolean> {
 					<span v-else class="text-highlighted">{{ t(`dms_media.visibility.${asset.effectiveVisibility}`) }}</span>
 				</dd>
 				<dt class="text-muted">{{ t('dms_media.columns.added') }}</dt>
-				<dd class="text-highlighted text-end" :title="format.formatDateTime(asset.createdAt) ?? undefined">
-					{{ format.formatDateTime(asset.createdAt) }}
-				</dd>
+				<dd class="text-highlighted">{{ format.formatDateTime(asset.createdAt) }}</dd>
 				<template v-if="uploadedBy">
 					<dt class="text-muted">{{ t('dms_media.inspector.added_by') }}</dt>
-					<dd class="text-highlighted truncate text-end" :title="uploadedBy">{{ uploadedBy }}</dd>
+					<dd class="text-highlighted truncate" :title="uploadedBy">{{ uploadedBy }}</dd>
 				</template>
 				<dt class="text-muted">{{ t('dms_media.columns.modified') }}</dt>
-				<dd class="text-highlighted text-end" :title="format.formatDateTime(asset.updatedAt) ?? undefined">{{ format.formatRelativeTime(asset.updatedAt) }}</dd>
+				<dd class="text-highlighted">{{ format.formatDateTime(asset.updatedAt) }}</dd>
 				<template v-if="asset.hasOriginal">
 					<dt class="text-muted">{{ t('dms_media.columns.original') }}</dt>
-					<dd class="text-end"><UBadge :label="t('dms_media.file.preserved')" color="neutral" variant="subtle" size="sm" /></dd>
+					<dd><UBadge :label="t('dms_media.file.preserved')" color="neutral" variant="subtle" size="sm" /></dd>
 				</template>
 			</dl>
 		</template>
@@ -153,11 +158,11 @@ function saveAlt(alt: string): Promise<boolean> {
 			</div>
 			<dl class="grid grid-cols-[auto_minmax(0,1fr)] gap-x-4 gap-y-2 text-[13px]">
 				<dt class="text-muted">{{ t('dms_media.inspector.files_with_subfolders') }}</dt>
-				<dd class="text-highlighted text-end font-mono">{{ format.formatNumber(folder.fileCount) }}</dd>
+				<dd class="text-highlighted font-mono">{{ format.formatNumber(folder.fileCount) }}</dd>
 				<dt class="text-muted">{{ t('dms_media.columns.size') }}</dt>
-				<dd class="text-highlighted text-end font-mono">{{ format.formatBytes(folder.size) }}</dd>
+				<dd class="text-highlighted font-mono">{{ format.formatBytes(folder.size) }}</dd>
 				<dt class="text-muted">{{ t('dms_media.columns.visibility') }}</dt>
-				<dd class="text-end">
+				<dd>
 					<UButton
 						v-if="isBrowse && commands.canChangeFolderVisibility?.(folder)"
 						variant="link"
@@ -170,7 +175,7 @@ function saveAlt(alt: string): Promise<boolean> {
 					<span v-else class="text-highlighted">{{ t(`dms_media.visibility.${folder.visibility}`) }}</span>
 				</dd>
 				<dt class="text-muted">{{ t('dms_media.inspector.your_rights') }}</dt>
-				<dd class="text-highlighted text-end">{{ t(`dms_media.rights.${folder.rights.manage ? 'manage' : folder.rights.write ? 'write' : folder.rights.read ? 'read' : 'none'}`) }}</dd>
+				<dd class="text-highlighted">{{ t(`dms_media.rights.${folder.rights.manage ? 'manage' : folder.rights.write ? 'write' : folder.rights.read ? 'read' : 'none'}`) }}</dd>
 			</dl>
 			<UButton
 				v-if="library.selection.focusedFolderId.value"

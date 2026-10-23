@@ -17,8 +17,10 @@ const STARTERS: StarterFolder[] = [
 const api = useMediaApi()
 const { t } = useI18n()
 const toast = useToast()
-const { tree } = useLibraryTree()
+const { tree, ready } = useLibraryTree()
 const isCreating = ref(false)
+// Read with the page: a client navigation waits for the folders, so the welcome shows with it rather than after.
+await ready()
 
 const isEmpty = computed(
 	() => tree.value !== null && tree.value.folders.every((folder) => folder.bound) && tree.value.root.fileCount === 0,
