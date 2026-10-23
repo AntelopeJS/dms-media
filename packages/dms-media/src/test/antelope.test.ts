@@ -8,6 +8,7 @@ import { MongoMemoryReplSet } from "mongodb-memory-server-core";
 const API_PORT = 5019;
 const LOCAL_BUILD_COMMAND = process.env.DMS_PREBUILT ? [] : ["pnpm build"];
 const JWT_SECRET = "test-jwt-secret";
+const HTML_RENDER_SECRET = "test-html-render-secret";
 const MONGO_BINARY_VERSION = "8.0.8";
 const SMTP_HOST = "127.0.0.1";
 const EPHEMERAL_PORT = 0;
@@ -115,6 +116,11 @@ export default defineConfig({
         auth: {
           jwtSecret: JWT_SECRET,
         },
+        // Outside development, which the test run is not, dms 0.10 refuses
+        // to start without a render secret of its own.
+        htmlRender: {
+          serviceSecret: HTML_RENDER_SECRET,
+        },
       },
     },
     mongodb: {
@@ -138,7 +144,7 @@ export default defineConfig({
       source: {
         type: "package",
         package: "@antelopejs/api",
-        version: "1.3.5",
+        version: "1.4.0",
       },
       config: {
         servers: [{ protocol: "http", host: "127.0.0.1", port: API_PORT }],

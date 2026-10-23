@@ -42,6 +42,7 @@ function findFreePort() {
 const API_PORT = await findFreePort();
 const BASE_URL = `http://127.0.0.1:${API_PORT}`;
 const JWT_SECRET = "reload-test-secret";
+const HTML_RENDER_SECRET = "test-html-render-secret";
 const MONGO_BINARY_VERSION = "8.0.8";
 const RELOAD_TIMEOUT_MS = 30_000;
 const POLL_INTERVAL_MS = 100;
@@ -116,7 +117,11 @@ function projectConfig(mongoUrl, storagePath) {
       },
       dms: {
         ...packageSource("@antelopejs/dms", ">=0.9.3 <1.0.0"),
-        config: { auth: { jwtSecret: JWT_SECRET } },
+        config: {
+          auth: { jwtSecret: JWT_SECRET },
+          // Outside development, dms 0.10 refuses to start without a render secret.
+          htmlRender: { serviceSecret: HTML_RENDER_SECRET },
+        },
       },
       mongodb: {
         ...packageSource("@antelopejs/mongodb", "1.4.3"),
@@ -127,7 +132,7 @@ function projectConfig(mongoUrl, storagePath) {
         config: { secret: JWT_SECRET },
       },
       api: {
-        ...packageSource("@antelopejs/api", "1.3.5"),
+        ...packageSource("@antelopejs/api", "1.4.0"),
         config: {
           servers: [{ protocol: "http", host: "127.0.0.1", port: API_PORT }],
           publicBaseUrl: BASE_URL,
