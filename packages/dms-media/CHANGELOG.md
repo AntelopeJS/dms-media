@@ -1,5 +1,37 @@
 # Changelog
 
+## v0.6.0
+
+[compare changes](https://github.com/AntelopeJS/dms-media/compare/v0.5.1...v0.6.0)
+
+### 🚀 Enhancements
+
+- **frontend:** The frontend registration as a pure function, declared as dmsFrontend ([#66](https://github.com/AntelopeJS/dms-media/pull/66))
+- **media:** Open the live pages on the DMS page toolbar ([#59](https://github.com/AntelopeJS/dms-media/pull/59))
+- **frontend:** Open the narrow explorer's details in the DMS drawer ([#63](https://github.com/AntelopeJS/dms-media/pull/63))
+
+### 🩹 Fixes
+
+- **media:** Load image size previews through the dashboard origin ([#58](https://github.com/AntelopeJS/dms-media/pull/58))
+- **media:** Render the media blocks with the page, no layout shift ([#60](https://github.com/AntelopeJS/dms-media/pull/60))
+
+### 📖 Documentation
+
+- **faq:** Upload through the dashboard when the backend is private ([#65](https://github.com/AntelopeJS/dms-media/pull/65))
+
+### 📦 Build
+
+- Run on @antelopejs/dms 0.10 and @antelopejs/dms-frontend 0.8 ([#71](https://github.com/AntelopeJS/dms-media/pull/71))
+
+### ✅ Tests
+
+- Render secret for dms 0.10, api 1.4.0 and core 1.17.0 in the test stack ([#70](https://github.com/AntelopeJS/dms-media/pull/70))
+
+### ❤️ Contributors
+
+- Maxime Westhoven <maxime@altab.be>
+- Antony Rizzitelli <rizzitelli.antony@pm.me>
+
 ## v0.5.1
 
 [compare changes](https://github.com/AntelopeJS/dms-media/compare/v0.5.0...v0.5.1)
