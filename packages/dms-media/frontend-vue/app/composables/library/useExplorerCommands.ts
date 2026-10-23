@@ -295,7 +295,13 @@ export function provideExplorerCommands(commands: ExplorerCommands): void {
 	provide(COMMANDS_KEY, commands)
 }
 
-export function useExplorerContext() {
+/** The library and commands the explorer's panels read. */
+export interface ExplorerContext {
+	library: MediaLibrary
+	commands: ExplorerCommands
+}
+
+export function useExplorerContext(): ExplorerContext {
 	const commands = inject(COMMANDS_KEY)
 	if (!commands) throw new Error('useExplorerContext() needs a media explorer above it')
 	return { library: useMediaLibrary(), commands }

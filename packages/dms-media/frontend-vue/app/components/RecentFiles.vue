@@ -7,8 +7,11 @@ const { t } = useI18n()
 // Read again on each library change, its own trigger: the page's refreshes leave it alone.
 const recent = useApiData<{ assets: MediaAsset[] }>(MEDIA_READS.recent, { refreshOnPageRefresh: false })
 const assets = computed(() => recent.data.value?.assets ?? [])
-const { tree } = useLibraryTree()
-const isLoading = computed(() => recent.status.value === 'pending' && !recent.data.value)
+const { tree, ready } = useLibraryTree()
+// Read with the page, with the folders the files' lines name: a client navigation waits for both.
+await Promise.all([recent, ready()])
+const isLoading = computed(() => !recent.data.value && !recent.error.value)
+const isFailed = computed(() => !recent.data.value && Boolean(recent.error.value))
 const SKELETONS = 6
 
 onLibraryChange(() => recent.refresh())
@@ -17,16 +20,19 @@ const foldersById = computed(() => new Map((tree.value?.folders ?? []).map((fold
 </script>
 
 <template>
-	<DmsCard v-if="isLoading || assets.length > 0" :title="t('dms_media.recent.title')">
+	<DmsCard v-if="isLoading || isFailed || assets.length > 0" :title="t('dms_media.recent.title')">
 		<template #actions>
 			<UButton variant="link" size="xs" trailing-icon="i-ph-arrow-right" :label="t('dms_media.recent.view_all')" :to="`${MEDIA_ROUTES.files}?view=recent`" />
 		</template>
 		<div v-if="isLoading" class="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6">
-			<div v-for="index in SKELETONS" :key="index" class="flex flex-col gap-2">
+			<!-- Sized like a tile: the 4:3 preview, the name line (13px) and the folder line (11px). -->
+			<div v-for="index in SKELETONS" :key="index" class="flex flex-col gap-1.5">
 				<USkeleton class="aspect-[4/3] w-full rounded-md" />
-				<USkeleton class="h-3 w-3/4" />
+				<USkeleton class="h-[19.5px] w-3/4" />
+				<USkeleton class="h-[16.5px] w-1/2" />
 			</div>
 		</div>
+		<DmsEmptyState v-else-if="isFailed" variant="error" :title="t('dms_media.empty.error_title')" :description="t('dms_media.empty.error_description')" />
 		<ul v-else class="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6">
 			<li v-for="asset in assets" :key="asset.id">
 				<ULink :to="fileLink(asset.id)" class="group flex flex-col gap-1.5">

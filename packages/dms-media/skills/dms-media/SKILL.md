@@ -12,6 +12,10 @@ Asset library: folders with per-folder ACL, direct-to-storage uploads, stable `/
 Owner pages under `/modules/media` (overview, files, uploads, file, editor, activity, presets). Members never open them:
 they reach media through `AssetType` fields on project pages. User docs: `docs/` of this package, published at
 https://dms.antelopejs.com/docs/modules/media.
+Overview, uploads and activity are `live` pages (shared `rememberKey: "media"`) opening on the DMS `pageToolbar({ period: false })`
+(last read + Direct / Pause, block id `toolbar`); the upload history table is `liveHold`. Needs interface-dms with `base/page-toolbar`.
+Every data block carries `realtimeTopic: MEDIA_LIBRARY_TOPIC`; custom components refresh through `onLibraryChange` (DMS
+`usePageLiveRefresh`, so Pause holds them). Announcements are coalesced and carry `payload.count` (changes they stand for).
 
 ## Setup
 
@@ -100,6 +104,8 @@ export async function declareMedia(tenantId: string): Promise<void> {
 - The module declares `/media/**` to the frontend server (`backendProxies`, `auth: "session"`): the same links work on
   the dashboard's origin, a private file opening for a signed-in member. Copied links start with `publicBaseUrl`.
 - Authenticated: `GET /api/media/assets/:id/read-url?preset=`.
+- An image the dashboard shows uses a relative `/media/...` path or a signed read URL, never a `publicBaseUrl` link:
+  the API's origin carries no session cookie, so a private file answers 401 there.
 
 ## Gotchas
 

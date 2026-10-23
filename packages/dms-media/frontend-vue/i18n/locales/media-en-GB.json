@@ -108,6 +108,10 @@
 				"description": "Files, storage, public files and missing alt text",
 				"name": "Library figures"
 			},
+			"page_toolbar": {
+				"description": "When the page last read the library, live mode and pause",
+				"name": "Toolbar"
+			},
 			"preset_cache": {
 				"description": "Clean-up schedule and link lifetimes",
 				"name": "Cache"
@@ -661,14 +665,14 @@
 			"description": "What's new, what needs attention and how much space the library uses.",
 			"kpis": {
 				"files": "Files",
-				"files_detail": "Nothing uploaded in the last 30 days | +1 uploaded in the last 30 days | +{files} uploaded in the last 30 days",
+				"files_detail": "Nothing new in 30 days | +1 in the last 30 days | +{files} in the last 30 days",
 				"label": "Library at a glance",
 				"missing_alt": "Missing alt text",
 				"public": "Public files",
 				"storage": "Storage",
 				"storage_detail": "no files yet | used by 1 file | used by {files} files",
 				"storage_quota_detail": "{percent}% of the {quota} plan",
-				"public_share": "{percent}% of the library · anyone with the link can open them",
+				"public_share": "{percent}% of the library",
 				"missing_alt_none": "Every image is described",
 				"missing_alt_public": "None of them is public | 1 of them is public | {files} of them are public"
 			},
@@ -1049,6 +1053,9 @@
 			"failed_today": "Uploads failed today",
 			"missing_alt": "Some images have no alt text",
 			"healthy": "Everything is in order"
+		},
+		"live": {
+			"missed": "{count} change | {count} changes"
 		},
 		"activity_page": {
 			"title": "Activity",
