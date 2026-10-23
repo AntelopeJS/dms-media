@@ -6,10 +6,12 @@ const uploads = useUploadQueue()
 const overlay = useOverlay()
 const destinationDialog = overlay.create(DestinationDialog)
 const { prefs, update } = useMediaPrefs()
-const { tree, refresh: reload } = useLibraryTree()
+const { tree, refresh: reload, ready } = useLibraryTree()
 const { t } = useI18n()
 const toast = useUploadToasts()
 const fileInput = useTemplateRef<HTMLInputElement>('fileInput')
+// Read with the page: a client navigation waits for the folders, so the strip shows with it rather than after.
+await ready()
 const isDragging = ref(false)
 let dragDepth = 0
 
