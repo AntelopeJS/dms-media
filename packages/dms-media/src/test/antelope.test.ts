@@ -113,6 +113,9 @@ export default defineConfig({
         version: ">=0.9.3 <1.0.0",
       },
       config: {
+        // No frontend server runs here: the dashboard URL is the API, whose
+        // paths the front proxy serves unchanged.
+        clientBaseUrl: `http://127.0.0.1:${API_PORT}`,
         auth: {
           jwtSecret: JWT_SECRET,
         },
@@ -127,7 +130,7 @@ export default defineConfig({
       source: {
         type: "package",
         package: "@antelopejs/mongodb",
-        version: "1.4.3",
+        version: "1.4.4",
       },
     },
     "auth-jwt": {
@@ -155,7 +158,7 @@ export default defineConfig({
       source: {
         type: "package",
         package: "@antelopejs/file-storage-local",
-        version: "0.1.9",
+        version: "0.1.12",
       },
     },
     nodemailer: {

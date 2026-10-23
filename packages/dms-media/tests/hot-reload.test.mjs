@@ -118,13 +118,15 @@ function projectConfig(mongoUrl, storagePath) {
       dms: {
         ...packageSource("@antelopejs/dms", ">=0.9.3 <1.0.0"),
         config: {
+          // No frontend server runs here: the dashboard URL is the API.
+          clientBaseUrl: BASE_URL,
           auth: { jwtSecret: JWT_SECRET },
           // Outside development, dms 0.10 refuses to start without a render secret.
           htmlRender: { serviceSecret: HTML_RENDER_SECRET },
         },
       },
       mongodb: {
-        ...packageSource("@antelopejs/mongodb", "1.4.3"),
+        ...packageSource("@antelopejs/mongodb", "1.4.4"),
         config: { url: mongoUrl, database: "dms-media-reload-test" },
       },
       "auth-jwt": {
@@ -139,7 +141,7 @@ function projectConfig(mongoUrl, storagePath) {
         },
       },
       "file-storage-local": {
-        ...packageSource("@antelopejs/file-storage-local", "0.1.9"),
+        ...packageSource("@antelopejs/file-storage-local", "0.1.12"),
         config: {
           storagePath,
           baseUrl: BASE_URL,
