@@ -17,7 +17,7 @@ The AntelopeJS interface to add media library fields, and the folders bound to t
 - Binds a field to a folder provisioned under the `Content` root of each tenant: `RegisterAssetBinding` and `UnregisterAssetBinding`, or `new AssetType({ binding })`.
 - Derives the folder's rights from a page (`permissionsFromPage`), a `permissionMapping` or an explicit `acl`.
 - Replays bindings to every new generation of the implementation, so either side can hot reload.
-- Ships folders and files from backend code with `EnsureMediaFolder` and `ImportMediaAsset`: idempotent per key, they never undo what members changed since. `RetireMediaDeclaration` and `PruneMediaDeclarations` take back what the code stopped declaring, unless members changed it.
+- Ships folders and files from backend code with `EnsureMediaFolder` and `ImportMediaAsset`, called once per tenant from `Hook.TENANT_BEING_PROVISIONED`: idempotent per key, the content belongs to the members once written.
 - Keeps your module independent of the implementation, [`@antelopejs/dms-media`](https://www.npmjs.com/package/@antelopejs/dms-media).
 
 ## Install
@@ -43,27 +43,28 @@ new AssetType({
 });
 ```
 
-Ship a folder and a file for an explicitly selected tenant. This example intentionally selects the default tenant; for SaaS use the trusted tenant from your application's durable `created` consumer, not a process-global implicit fallback:
+Ship a folder and a file with each new tenant, from the hook the DMS fires once when the tenant is created:
 
 ```ts
 import { EnsureMediaFolder, ImportMediaAsset } from "@antelopejs/interface-dms-media";
-import { DEFAULT_TENANT_ID } from "@antelopejs/interface-dms/constants";
+import { Hook, RegisterHook } from "@antelopejs/interface-dms/hooks";
 
-const tenantId = DEFAULT_TENANT_ID;
-await EnsureMediaFolder({ tenantId, key: "helio.procedures", name: "Procedures" });
-await ImportMediaAsset({
-  tenantId,
-  key: "helio.procedures.roof",
-  folder: { key: "helio.procedures" },
-  name: "Roof safety checklist.pdf",
-  mimetype: "application/pdf",
-  source: { filePath: "/srv/content/roof-safety-checklist.pdf" },
+RegisterHook(Hook.TENANT_BEING_PROVISIONED, async ({ tenantId }) => {
+  await EnsureMediaFolder({ tenantId, key: "helio.procedures", name: "Procedures" });
+  await ImportMediaAsset({
+    tenantId,
+    key: "helio.procedures.roof",
+    folder: { key: "helio.procedures" },
+    name: "Roof safety checklist.pdf",
+    mimetype: "application/pdf",
+    source: { filePath: "/srv/content/roof-safety-checklist.pdf" },
+  });
 });
 ```
 
-Both declarations require `tenantId` in TypeScript and reject missing, empty or whitespace-only values at runtime before writes. Existing users of these new APIs must pass it explicitly; older media APIs are unchanged. A tenant id does not establish authorization or completed provisioning. See the [application-owned lifecycle and backfill guidance](./docs/1.index.md#new-saas-tenants-application-owned-durable-lifecycle) for at-least-once delivery, durable receipts and deployment refreshes.
+Both declarations require `tenantId` in TypeScript and reject missing, empty or whitespace-only values at runtime before writes. Existing users of these new APIs must pass it explicitly; older media APIs are unchanged. Call them from a `Hook.TENANT_BEING_PROVISIONED` handler: see [When to call](./docs/1.index.md#when-to-call).
 
-The interface also exports the option, declaration and ACL types: `AssetTypeOptions`, `AssetPickerComponentOptions`, `AssetBindingConfig`, `AssetPermissionMapping`, `MediaFolderDeclaration`, `MediaAssetDeclaration`, `MediaFolderTarget`, `MediaAssetSource`, `MediaLazySource`, `MediaDeclarationResult`, `MediaDeclarationStatus`, `MediaContentKind`, `MediaDeclarationRetirement`, `MediaDeclarationPrune`, `MediaRetirementResult`, `MediaRetirementStatus`, `AclEntry`, `AclSubject`, `AclSubjectKind` and `AclRight`.
+The interface also exports the option, declaration and ACL types: `AssetTypeOptions`, `AssetPickerComponentOptions`, `AssetBindingConfig`, `AssetPermissionMapping`, `MediaFolderDeclaration`, `MediaAssetDeclaration`, `MediaFolderTarget`, `MediaAssetSource`, `MediaLazySource`, `MediaDeclarationResult`, `MediaDeclarationStatus`, `AclEntry`, `AclSubject`, `AclSubjectKind` and `AclRight`.
 
 ## Compatibility
 

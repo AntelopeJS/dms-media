@@ -1,11 +1,6 @@
 import type { AssetBindingConfig } from "@antelopejs/interface-dms-media";
 import { addAssetBinding, removeAssetBinding } from "../../bindings";
-import {
-  ensureDeclaredFolder,
-  importDeclaredAsset,
-  pruneDeclarations,
-  retireDeclaration,
-} from "../../declared";
+import { ensureDeclaredFolder, importDeclaredAsset } from "../../declared";
 
 export namespace internal {
   export const RegisterAssetBinding = {
@@ -18,6 +13,4 @@ export namespace internal {
   };
   export const EnsureMediaFolder = ensureDeclaredFolder;
   export const ImportMediaAsset = importDeclaredAsset;
-  export const RetireMediaDeclaration = retireDeclaration;
-  export const PruneMediaDeclarations = pruneDeclarations;
 }

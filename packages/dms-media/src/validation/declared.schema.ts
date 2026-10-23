@@ -64,20 +64,7 @@ export const declaredAssetSchema = z.object({
   name: fileNameSchema,
   mimetype: z.string().trim().min(1),
   source: sourceSchema,
-  version: keySchema.optional(),
   alt: altSchema.optional(),
-  tenantId: tenantSchema,
-});
-
-export const declarationRetirementSchema = z.object({
-  kind: z.enum(["folder", "asset"]),
-  key: keySchema,
-  tenantId: tenantSchema,
-});
-
-export const declarationPruneSchema = z.object({
-  prefix: keySchema,
-  keep: z.array(keySchema),
   tenantId: tenantSchema,
 });
 

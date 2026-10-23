@@ -21,6 +21,8 @@ describe("[unit] library — realtime", () => {
   let unsubscribe: () => void;
 
   beforeEach(() => {
+    // Changes the integration suites made may still be waiting to be announced.
+    cancelLibraryChange();
     messages = [];
     unsubscribe = SubscribeMessage(MEDIA_LIBRARY_TOPIC, (message) => {
       messages.push(message);
