@@ -8,6 +8,8 @@ type RouteQuery = Record<string, string>
 const route = useDmsRoute()
 const router = useDmsRouter()
 const shell = useTemplateRef<InstanceType<typeof ExplorerShell>>('shell')
+// Read with the page: a client navigation waits for the folder tree, so the sidebar and the start folder show with it.
+await useLibraryTree().ready()
 const SMART_VIEWS: SmartView[] = ['recent', 'starred', 'missing-alt', 'largest', 'public']
 const SORT_KEYS: AssetSortKey[] = ['name', 'date', 'size', 'type']
 const DIRECTIONS: SortDirection[] = ['asc', 'desc']

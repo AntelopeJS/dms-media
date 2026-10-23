@@ -14,7 +14,10 @@ interface PixelSize {
 }
 
 interface ImageSize extends DeliveryPreset {
+	/** The absolute link a website copies. */
 	exampleUrl: string | null
+	/** The same file relative to the dashboard, whose origin carries the session. */
+	examplePreviewUrl: string | null
 }
 
 interface ImageSizesResponse extends PresetsResponse {
@@ -31,9 +34,12 @@ interface PresetFact {
 
 const format = useMediaFormat()
 const { t, te } = useI18n()
-const presets = useApiData<ImageSizesResponse>(MEDIA_READS.presets)
+// Read with the page: a client navigation waits for the cards rather than swapping skeletons for them.
+const presets = await useApiData<ImageSizesResponse>(MEDIA_READS.presets)
 const data = presets.data
-const failed = computed(() => Boolean(presets.error.value) && presets.status.value !== 'pending')
+// A failed refresh keeps the cards on screen; only a first read that failed shows the error.
+const failed = computed(() => !data.value && Boolean(presets.error.value))
+const SKELETON_CARDS = 3
 const brokenExamples = ref(new Set<string>())
 const BOX_SIZE = 140
 const MIN_BOX_SIZE = 28
@@ -103,7 +109,7 @@ function technicalFacts(preset: DeliveryPreset): PresetFact[] {
 }
 
 function showsExample(preset: ImageSize): boolean {
-	return Boolean(preset.exampleUrl) && !brokenExamples.value.has(preset.id)
+	return Boolean(preset.examplePreviewUrl) && !brokenExamples.value.has(preset.id)
 }
 
 function markBroken(presetId: string): void {
@@ -129,7 +135,7 @@ function markBroken(presetId: string): void {
 							<div class="relative flex items-center justify-center overflow-hidden border border-dashed border-(--ui-primary) bg-(--dms-accent-tint)" :style="frame(preset)">
 								<img
 									v-if="showsExample(preset)"
-									:src="preset.exampleUrl ?? undefined"
+									:src="preset.examplePreviewUrl ?? undefined"
 									:alt="t('dms_media.presets.example_alt', { name: data.example?.name ?? '', size: preset.id })"
 									class="size-full"
 									:class="(preset.fit ?? DEFAULT_FIT) === 'cover' ? 'object-cover' : 'object-contain'"
@@ -192,7 +198,24 @@ function markBroken(presetId: string): void {
 					</article>
 				</template>
 				<template v-else>
-					<USkeleton v-for="index in 3" :key="index" class="h-96 rounded-lg" />
+					<!-- Shaped like a card with an example, line for line, so the cards take its place without moving. -->
+					<div v-for="index in SKELETON_CARDS" :key="index" class="dms-card flex flex-col overflow-hidden" aria-hidden="true">
+						<div class="flex h-48 items-center justify-center">
+							<USkeleton class="size-28 rounded-md" />
+						</div>
+						<div class="border-default flex flex-col gap-3 border-t p-4">
+							<USkeleton class="h-6 w-24" />
+							<USkeleton class="h-[39px] w-full" />
+							<div class="grid grid-cols-2 gap-1.5">
+								<USkeleton class="h-[48.5px] rounded-md" />
+								<USkeleton class="h-[48.5px] rounded-md" />
+							</div>
+							<USkeleton class="h-[18px] w-40" />
+							<USkeleton class="h-[62.5px] w-full rounded-md" />
+							<USkeleton class="h-[16.5px] w-32" />
+							<USkeleton class="h-8 w-full rounded-md" />
+						</div>
+					</div>
 				</template>
 			</div>
 		</template>
