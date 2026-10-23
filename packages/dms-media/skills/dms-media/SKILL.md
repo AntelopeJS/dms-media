@@ -104,6 +104,8 @@ export async function declareMedia(tenantId: string): Promise<void> {
 - The module declares `/media/**` to the frontend server (`backendProxies`, `auth: "session"`): the same links work on
   the dashboard's origin, a private file opening for a signed-in member. Copied links start with `publicBaseUrl`.
 - Authenticated: `GET /api/media/assets/:id/read-url?preset=`.
+- An image the dashboard shows uses a relative `/media/...` path or a signed read URL, never a `publicBaseUrl` link:
+  the API's origin carries no session cookie, so a private file answers 401 there.
 
 ## Gotchas
 
