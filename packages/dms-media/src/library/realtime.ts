@@ -10,12 +10,18 @@ const LIBRARY_CHANGED = "changed";
 
 let pending: ReturnType<typeof setTimeout> | undefined;
 let pendingDueAt = 0;
+let pendingChanges = 0;
 let version = 0;
 
 async function publishNow(): Promise<void> {
   pending = undefined;
+  // A paused page counts `payload.count` as that many missed changes, not one per announcement.
+  const count = pendingChanges;
+  pendingChanges = 0;
   try {
-    await PublishMessage(MEDIA_LIBRARY_TOPIC, LIBRARY_CHANGED);
+    await PublishMessage(MEDIA_LIBRARY_TOPIC, LIBRARY_CHANGED, {
+      payload: { count },
+    });
   } catch (error) {
     Logging.Error("Failed to publish a media library change", error);
   }
@@ -23,11 +29,13 @@ async function publishNow(): Promise<void> {
 
 /**
  * Tells the pages showing the library that it changed, so their blocks read
- * their routes again. The message carries nothing: each block re-reads what
- * its reader may see. An announcement already due sooner absorbs this one.
+ * their routes again. The message carries only how many changes it stands
+ * for: each block re-reads what its reader may see. An announcement already
+ * due sooner absorbs this one.
  */
 export function announceLibraryChange(delayMs = COALESCE_WINDOW_MS): void {
   version += 1;
+  pendingChanges += 1;
   const dueAt = Date.now() + delayMs;
   if (pending && pendingDueAt <= dueAt) return;
   clearTimeout(pending);
@@ -45,4 +53,5 @@ export function libraryVersion(): number {
 export function cancelLibraryChange(): void {
   clearTimeout(pending);
   pending = undefined;
+  pendingChanges = 0;
 }
