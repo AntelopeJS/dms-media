@@ -78,16 +78,29 @@ interface PresetRowInput {
   example?: MediaAsset;
 }
 
-function presetRow({ preset, origin, renderedKeys, example }: PresetRowInput) {
+/**
+ * A preset's card: `urlPattern` and `exampleUrl` are the absolute links a
+ * website copies, while `examplePreviewUrl` stays relative so the dashboard
+ * loads the preview through its own origin, which carries the member's
+ * session to a private example.
+ */
+export function presetRow({
+  preset,
+  origin,
+  renderedKeys,
+  example,
+}: PresetRowInput) {
   const cacheKey = presetCacheKey(preset);
+  const examplePath = example
+    ? `/media/${example._id}/${preset.id}/${encodeURIComponent(example.name)}`
+    : null;
   return {
     ...preset,
     cacheKey,
     rendered: renderedKeys.filter((key) => key === cacheKey).length,
     urlPattern: `${origin}/media/{asset}/${preset.id}/{filename}`,
-    exampleUrl: example
-      ? `${origin}/media/${example._id}/${preset.id}/${encodeURIComponent(example.name)}`
-      : null,
+    exampleUrl: examplePath ? `${origin}${examplePath}` : null,
+    examplePreviewUrl: examplePath,
   };
 }
 

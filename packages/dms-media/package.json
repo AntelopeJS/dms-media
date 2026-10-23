@@ -1,6 +1,6 @@
 {
   "name": "@antelopejs/dms-media",
-  "version": "0.5.0",
+  "version": "0.5.1",
   "description": "Media library for the AntelopeJS DMS: uploads, folders with per-folder permissions, image sizes and light editing, with a Finder-style explorer.",
   "keywords": [
     "antelopejs",
@@ -76,9 +76,9 @@
     "zod": "~3.24.2"
   },
   "devDependencies": {
-    "@antelopejs/core": ">=1.16.0 <2",
+    "@antelopejs/core": ">=1.17.0 <2",
     "@antelopejs/dms": ">=0.10.0 <1.0.0",
-    "@antelopejs/dms-frontend": "0.6.3",
+    "@antelopejs/dms-frontend": "0.8.0",
     "@antelopejs/tooling-configs": ">=0.0.9 <1.0.0",
     "@types/chai": "^4.3.20",
     "@types/mocha": "^10",
@@ -106,5 +106,6 @@
     "skills": [
       "./skills"
     ]
-  }
+  },
+  "dmsFrontend": "dist/frontend-module.js"
 }

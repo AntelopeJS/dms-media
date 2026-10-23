@@ -108,6 +108,10 @@
 				"description": "Fichiers, stockage, fichiers publics et textes alternatifs manquants",
 				"name": "Chiffres de la bibliothèque"
 			},
+			"page_toolbar": {
+				"description": "Dernière lecture de la bibliothèque, mode direct et pause",
+				"name": "Barre d'outils"
+			},
 			"preset_cache": {
 				"description": "Nettoyage planifié et durée des liens",
 				"name": "Cache"
@@ -1049,6 +1053,9 @@
 			"failed_today": "Des imports ont échoué aujourd'hui",
 			"missing_alt": "Des images n'ont pas de texte alternatif",
 			"healthy": "Tout est en ordre"
+		},
+		"live": {
+			"missed": "{count} modification | {count} modifications"
 		},
 		"activity_page": {
 			"title": "Activité",

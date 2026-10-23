@@ -87,7 +87,7 @@ function backend({ url }: BackendRead): unknown {
 			return { assets: FILES }
 		case '/api/media/presets':
 			return {
-				presets: [{ id: 'thumb', width: 300, height: 300, fit: 'cover', cacheKey: 'thumb.1', rendered: 1, urlPattern: '', exampleUrl: null }],
+				presets: [{ id: 'thumb', width: 300, height: 300, fit: 'cover', cacheKey: 'thumb.1', rendered: 1, urlPattern: '', exampleUrl: null, examplePreviewUrl: null }],
 				cache: { schedule: '', lastSweepAt: null, lastSweepRemoved: null, publicTtlSeconds: 0, privateTtlSeconds: 0 },
 				isDefault: true,
 				example: null,
@@ -123,6 +123,21 @@ describe('server render: the blocks read with the page and hand it over', () => 
 		expect(page.reads).toEqual(['GET /api/media/presets'])
 		expect(page.handed).toEqual(expect.arrayContaining(page.reads))
 		expect(page.html).toContain('thumb')
+	})
+
+	it('image sizes: the example loads on the dashboard origin, the copied link stays absolute', async () => {
+		const exampleUrl = 'https://api.example.com/media/a1/thumb/lighthouse.png'
+		const examplePreviewUrl = '/media/a1/thumb/lighthouse.png'
+		const presets = {
+			presets: [{ id: 'thumb', width: 300, height: 300, fit: 'cover', cacheKey: 'thumb.1', rendered: 1, urlPattern: '', exampleUrl, examplePreviewUrl }],
+			cache: { schedule: '', lastSweepAt: null, lastSweepRemoved: null, publicTtlSeconds: 0, privateTtlSeconds: 0 },
+			isDefault: false,
+			example: { id: 'a1', name: 'lighthouse.png', width: 1200, height: 800 },
+		}
+		const page = await serverRender(PresetCards, {}, { respond: (read) => (read.url === '/api/media/presets' ? presets : backend(read)) })
+		expect(page.html).toContain(`src="${examplePreviewUrl}"`)
+		expect(page.html).not.toContain(`src="${exampleUrl}"`)
+		expect(page.html).toContain(exampleUrl)
 	})
 
 	it('file page: one read of the file and its neighbours for the three blocks, and the image read URL', async () => {

@@ -10,6 +10,7 @@ import { libraryCategory, MEDIA_MODULE_ID } from "./module";
 import { blockMeta } from "./texts";
 import { uploadAvailability } from "./upload-availability";
 import { MEDIA_LIBRARY_TOPIC } from "../constants";
+import { MEDIA_LIVE, mediaPageToolbar } from "./toolbar";
 
 const TEXTS = "$dms_media.uploads";
 const HISTORY_PAGE_SIZE = 10;
@@ -19,6 +20,7 @@ const history = TableView.fromSource({
   caption: `${TEXTS}.history.title`,
   fetchUrl: "/api/media/upload/batches",
   realtimeTopic: MEDIA_LIBRARY_TOPIC,
+  liveHold: true,
   layout: "full",
   density: "compact",
   pageSize: HISTORY_PAGE_SIZE,
@@ -117,6 +119,7 @@ export class MediaUploadsPage extends PageController(
     module: MEDIA_MODULE_ID,
     icon: "i-ph-cloud-arrow-up",
     order: 2,
+    live: MEDIA_LIVE,
   },
   DefaultLayout({
     headerActions: [
@@ -132,6 +135,8 @@ export class MediaUploadsPage extends PageController(
     ],
   }),
 ) {
+  static toolbar = mediaPageToolbar();
+
   static queue = CustomComponent("DmsMediaUploadQueue").meta(
     blockMeta("upload_queue", "i-ph-cloud-arrow-up"),
   );
