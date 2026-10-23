@@ -61,6 +61,7 @@ provideGlobal('useRegionalFormat', () => ({ formatNumber: (value: number) => Str
 provideGlobal('useToast', () => ({ add: noop }))
 provideGlobal('useConfirm', () => ({ confirm: async () => false }))
 provideGlobal('useOverlay', () => ({ create: () => ({ open: async () => undefined }) }))
+provideGlobal('useDrawer', () => ({ open: noop }))
 provideGlobal('useApiError', noop)
 provideGlobal('useUnsavedChanges', noop)
 provideGlobal('usePageLiveRefresh', noop)

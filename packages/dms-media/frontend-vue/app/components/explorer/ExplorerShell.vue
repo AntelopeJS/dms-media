@@ -75,6 +75,7 @@ const commands = useExplorerCommands(library, {
 	},
 })
 provideExplorerCommands(commands)
+useExplorerDetailsDrawer(layout, { library, commands })
 const interactions = createAssetInteractions(library, commands, layout)
 provideAssetNavigation(createAssetNavigation(library, interactions.onCheck))
 const { uploads, enqueue } = useExplorerUploads(library, { accept: props.accept, pick: interactions.onCheck })
@@ -241,17 +242,6 @@ defineExpose({
 		>
 			<template #body>
 				<ExplorerSidebar class="min-w-0 flex-1" />
-			</template>
-		</USlideover>
-		<USlideover
-			v-if="!layout.hasInlineDetails.value"
-			v-model:open="layout.isDetailsDrawerOpen.value"
-			side="right"
-			:title="t('dms_media.explorer.details')"
-			:ui="{ content: 'max-w-sm', body: 'flex p-0 sm:p-0' }"
-		>
-			<template #body>
-				<ExplorerInspector class="min-w-0 flex-1" />
 			</template>
 		</USlideover>
 		<slot name="footer">
