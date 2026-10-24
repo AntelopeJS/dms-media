@@ -76,7 +76,7 @@ The 0.3 interface line requires `@antelopejs/dms-media >=0.5.0` for `EnsureMedia
 | --- | --- |
 | `@antelopejs/interface-api` | `>=0.0.15 <1.0.0` |
 | `@antelopejs/interface-core` | `>=0.2.4 <1.0.0` |
-| `@antelopejs/interface-dms` | `>=0.7.2 <1.0.0` |
+| `@antelopejs/interface-dms` | `>=0.9.0 <1.0.0` |
 
 ## Documentation
 
