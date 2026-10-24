@@ -65,7 +65,7 @@ const OWNER = {
 const CONSUMER_INTERFACES = {
   "@antelopejs/interface-api": ">=0.0.13 <1.0.0",
   "@antelopejs/interface-core": ">=0.2.3 <1.0.0",
-  "@antelopejs/interface-dms": ">=0.7.0 <1.0.0",
+  "@antelopejs/interface-dms": ">=0.9.0 <1.0.0",
 };
 const COUNTER_ID_PATTERN = /^\d+$/;
 const MEDIA_ID_PATTERN = /^(media|modules\.media|settings\.media)(\.|$)/;
@@ -116,7 +116,7 @@ function projectConfig(mongoUrl, storagePath) {
         config: {},
       },
       dms: {
-        ...packageSource("@antelopejs/dms", ">=0.9.3 <1.0.0"),
+        ...packageSource("@antelopejs/dms", ">=0.11.0 <1.0.0"),
         config: {
           // No frontend server runs here: the dashboard URL is the API.
           clientBaseUrl: BASE_URL,
@@ -126,7 +126,7 @@ function projectConfig(mongoUrl, storagePath) {
         },
       },
       mongodb: {
-        ...packageSource("@antelopejs/mongodb", "1.4.4"),
+        ...packageSource("@antelopejs/mongodb", "1.5.0"),
         config: { url: mongoUrl, database: "dms-media-reload-test" },
       },
       "auth-jwt": {
@@ -134,14 +134,14 @@ function projectConfig(mongoUrl, storagePath) {
         config: { secret: JWT_SECRET },
       },
       api: {
-        ...packageSource("@antelopejs/api", "1.4.0"),
+        ...packageSource("@antelopejs/api", "1.5.0"),
         config: {
           servers: [{ protocol: "http", host: "127.0.0.1", port: API_PORT }],
           publicBaseUrl: BASE_URL,
         },
       },
       "file-storage-local": {
-        ...packageSource("@antelopejs/file-storage-local", "0.1.12"),
+        ...packageSource("@antelopejs/file-storage-local", "0.1.13"),
         config: {
           storagePath,
           baseUrl: BASE_URL,
