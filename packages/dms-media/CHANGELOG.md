@@ -1,5 +1,29 @@
 # Changelog
 
+## v0.6.1
+
+[compare changes](https://github.com/AntelopeJS/dms-media/compare/v0.6.0...v0.6.1)
+
+### 🩹 Fixes
+
+- Read and write stored files through the storage, not its public URL ([#68](https://github.com/AntelopeJS/dms-media/pull/68))
+
+### 💅 Refactors
+
+- **declared:** Write declared content once, at tenant provisioning ([#72](https://github.com/AntelopeJS/dms-media/pull/72))
+
+### 📦 Build
+
+- Run on @antelopejs/dms 0.11, interface-dms 0.9 and dms-frontend 0.9 ([#73](https://github.com/AntelopeJS/dms-media/pull/73))
+
+### 🏡 Chore
+
+- **release:** @antelopejs/interface-dms-media v0.3.1 ([f5a56ab](https://github.com/AntelopeJS/dms-media/commit/f5a56ab))
+
+### ❤️ Contributors
+
+- Antony Rizzitelli <rizzitelli.antony@pm.me>
+
 ## v0.6.0
 
 [compare changes](https://github.com/AntelopeJS/dms-media/compare/v0.5.1...v0.6.0)
