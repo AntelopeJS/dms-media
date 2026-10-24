@@ -2,7 +2,21 @@
 
 ## v0.3.1
 
-[compare changes](https://github.com/AntelopeJS/dms-media/compare/interface-v0.3.0...v0.3.1)
+[compare changes](https://github.com/AntelopeJS/dms-media/compare/interface-v0.3.0...interface-v0.3.1)
+
+### ⚠️ Breaking changes
+
+This patch release contains breaking changes. Ranges such as `>=0.3.0 <0.4.0` or `^0.3.0` resolve to it.
+
+- `RetireMediaDeclaration` and `PruneMediaDeclarations` are removed, together with `MediaDeclarationRetirement`, `MediaDeclarationPrune`, `MediaRetirementResult`, `MediaRetirementStatus` and `MediaContentKind`. Declared content is written once and then belongs to the members: nothing takes it back ([#72](https://github.com/AntelopeJS/dms-media/pull/72)).
+- `MediaAssetDeclaration.version` is removed: a file declared before is never rewritten.
+- `MediaDeclarationStatus` is now `"created" | "kept"`, and `MediaDeclarationResult.id` is always set.
+- Call `EnsureMediaFolder` and `ImportMediaAsset` from a `Hook.TENANT_BEING_PROVISIONED` handler, which the DMS fires once per tenant when it is created.
+
+### Requirements
+
+- Implemented by `@antelopejs/dms-media` 0.6.1, which requires `@antelopejs/dms` 0.11 (`>=0.11.0 <1.0.0`) and the renderer `@antelopejs/dms-frontend` 0.9 (`>=0.9.0 <0.10.0`).
+- Peer `@antelopejs/interface-dms` `>=0.9.0 <1.0.0`.
 
 ### 🚀 Enhancements
 

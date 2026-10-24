@@ -4,6 +4,14 @@
 
 [compare changes](https://github.com/AntelopeJS/dms-media/compare/v0.6.0...v0.6.1)
 
+### ⚠️ Breaking changes
+
+This patch release contains breaking changes. Ranges such as `^0.6.0` resolve to it.
+
+- Requires `@antelopejs/dms` 0.11 (`>=0.11.0 <1.0.0`), `@antelopejs/interface-dms` `>=0.9.0 <1.0.0` and the renderer `@antelopejs/dms-frontend` 0.9 (`>=0.9.0 <0.10.0`). Projects on DMS 0.10 must stay on 0.6.0.
+- Implements `@antelopejs/interface-dms-media` 0.3.1, which is itself breaking: `RetireMediaDeclaration`, `PruneMediaDeclarations` and `MediaAssetDeclaration.version` are removed, and `MediaDeclarationStatus` becomes `"created" | "kept"`. Declared content is written once, at tenant provisioning (`Hook.TENANT_BEING_PROVISIONED`), and never replayed ([#72](https://github.com/AntelopeJS/dms-media/pull/72)).
+- Stored files are read and written with `ReadFile` / `WriteFile` from `@antelopejs/interface-file-storage` `>=0.1.6 <1.0.0`. Use a storage module implementing `ReadFile`: `@antelopejs/file-storage-local` 0.1.13 or `@antelopejs/file-storage-s3` 0.1.9 or later ([#68](https://github.com/AntelopeJS/dms-media/pull/68)).
+
 ### 🩹 Fixes
 
 - Read and write stored files through the storage, not its public URL ([#68](https://github.com/AntelopeJS/dms-media/pull/68))
