@@ -1,5 +1,57 @@
 # Changelog
 
+## v0.3.1
+
+[compare changes](https://github.com/AntelopeJS/dms-media/compare/interface-v0.3.0...v0.3.1)
+
+### 🚀 Enhancements
+
+- **frontend:** The frontend registration as a pure function, declared as dmsFrontend ([#66](https://github.com/AntelopeJS/dms-media/pull/66))
+- **media:** Open the live pages on the DMS page toolbar ([#59](https://github.com/AntelopeJS/dms-media/pull/59))
+- **frontend:** Open the narrow explorer's details in the DMS drawer ([#63](https://github.com/AntelopeJS/dms-media/pull/63))
+
+### 🩹 Fixes
+
+- **frontend:** Run on @antelopejs/dms-frontend 0.7 ([#62](https://github.com/AntelopeJS/dms-media/pull/62))
+- **media:** Load image size previews through the dashboard origin ([#58](https://github.com/AntelopeJS/dms-media/pull/58))
+- **media:** Render the media blocks with the page, no layout shift ([#60](https://github.com/AntelopeJS/dms-media/pull/60))
+- Read and write stored files through the storage, not its public URL ([#68](https://github.com/AntelopeJS/dms-media/pull/68))
+
+### 💅 Refactors
+
+- **declared:** Write declared content once, at tenant provisioning ([#72](https://github.com/AntelopeJS/dms-media/pull/72))
+
+### 📖 Documentation
+
+- **media:** Align compatibility guidance for the 0.5 release ([d35b1c2](https://github.com/AntelopeJS/dms-media/commit/d35b1c2))
+- Clarify learning paths and illustrate real outcomes ([#57](https://github.com/AntelopeJS/dms-media/pull/57))
+- **faq:** Upload through the dashboard when the backend is private ([#65](https://github.com/AntelopeJS/dms-media/pull/65))
+
+### 📦 Build
+
+- **media:** Align implemented interface with the 0.3 release ([96d4a6f](https://github.com/AntelopeJS/dms-media/commit/96d4a6f))
+- Run on @antelopejs/dms 0.10 and @antelopejs/dms-frontend 0.8 ([#71](https://github.com/AntelopeJS/dms-media/pull/71))
+- Run on @antelopejs/dms 0.11, interface-dms 0.9 and dms-frontend 0.9 ([#73](https://github.com/AntelopeJS/dms-media/pull/73))
+
+### 🏡 Chore
+
+- **release:** @antelopejs/dms-media v0.5.0 ([65194cf](https://github.com/AntelopeJS/dms-media/commit/65194cf))
+- **release:** @antelopejs/dms-media v0.5.1 ([4bbbc36](https://github.com/AntelopeJS/dms-media/commit/4bbbc36))
+- **release:** @antelopejs/dms-media v0.6.0 ([40bbfce](https://github.com/AntelopeJS/dms-media/commit/40bbfce))
+
+### ✅ Tests
+
+- Render secret for dms 0.10, api 1.4.0 and core 1.17.0 in the test stack ([#70](https://github.com/AntelopeJS/dms-media/pull/70))
+
+### 🤖 CI
+
+- Add the ubuntu job required by the branch rulesets ([#61](https://github.com/AntelopeJS/dms-media/pull/61))
+
+### ❤️ Contributors
+
+- Antony Rizzitelli <rizzitelli.antony@pm.me>
+- Maxime Westhoven ([@mwesto](http://github.com/mwesto))
+
 ## v0.3.0
 
 [compare changes](https://github.com/AntelopeJS/dms-media/compare/interface-v0.2.2...v0.3.0)
