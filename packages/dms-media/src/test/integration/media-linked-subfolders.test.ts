@@ -193,7 +193,7 @@ describe("[integration] media linked subfolders — bindings that allow them", (
       name: "Project C",
       parent: { binding: OPEN_BINDING_ID },
     });
-    expect(again).to.deep.equal({ status: "unchanged", id: project.id });
+    expect(again).to.deep.equal({ status: "kept", id: project.id });
     const nested = await EnsureMediaFolder({
       tenantId: DEFAULT_TENANT_ID,
       key: "subfolders.project-c.roof",
@@ -208,7 +208,7 @@ describe("[integration] media linked subfolders — bindings that allow them", (
       name: "Roof",
       parent: "subfolders.project-c",
     });
-    expect(sameParent).to.deep.equal({ status: "unchanged", id: nested.id });
+    expect(sameParent).to.deep.equal({ status: "kept", id: nested.id });
     const photo = await ImportMediaAsset({
       tenantId: DEFAULT_TENANT_ID,
       key: "subfolders.project-c.roof.photo",

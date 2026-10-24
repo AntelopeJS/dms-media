@@ -57,10 +57,11 @@ static form = Form({
 ## Ship content as code
 
 ```typescript
+import { Hook, RegisterHook } from "@antelopejs/interface-dms/hooks";
 import { EnsureMediaFolder, ImportMediaAsset } from "@antelopejs/interface-dms-media";
 
-// Called by the application's lifecycle with a trusted, explicit tenant.
-export async function declareMedia(tenantId: string): Promise<void> {
+// Once per tenant, when it is created (registered from construct()).
+RegisterHook(Hook.TENANT_BEING_PROVISIONED, async ({ tenantId }) => {
   await EnsureMediaFolder({ tenantId, key: "helio.procedures", name: "Procedures", visibility: "private" });
   await ImportMediaAsset({
     tenantId,
@@ -69,31 +70,17 @@ export async function declareMedia(tenantId: string): Promise<void> {
     name: "Roof safety checklist.pdf",
     mimetype: "application/pdf",
     source: { filePath: "/abs/path.pdf" }, // or { bytes: buffer }, or { load: () => bytes }
-    version: "2026-10-17",                 // optional: while unchanged, the source is not read
   });
-}
+});
 ```
 
-- Required `tenantId` in types and runtime: omitted/empty/whitespace-only rejects before writes. No fallback;
-  an explicitly chosen `DEFAULT_TENANT_ID` remains valid. Idempotent per tenant + kind + key. Returns
-  `{ status: "created" | "updated" | "unchanged" | "preserved" | "deleted", id? }`.
-- New SaaS tenants: the application registers `RegisterWorkspaceLifecycleConsumer` from
-  `@antelopejs/interface-dms-saas/workspace-lifecycle` for `created` before startup reconciliation.
-  Delivery follows preparation/payment and is at least once: deduplicate `operationId`, persist resource links
-  before returning a receipt, and recover incomplete attempts. Media does not register it or depend on SaaS.
-- `start()` is process-global: use it for registration or explicitly scoped global work, not implicit default content.
-  Never await declarations in `construct()`. A required tenant does not prove authorization or committed provisioning.
-  The prepayment `TENANT_BEING_PROVISIONED` hook has no automatic replay/compensation and is not durable `created`.
-- Deployment refresh/backfill is separate: enumerate trusted tenants, require `IsWorkspaceProvisioningCommitted(tenantId)`,
-  fail closed on lookup errors, and coordinate writers. Idempotent APIs do not make all effects exactly-once.
-  See the [canonical lifecycle guidance](https://dms.antelopejs.com/docs/modules/media/reference#new-saas-tenants-application-owned-durable-lifecycle).
-- Generated files: `source: { load }` is called only when the bytes are needed; with a `version` changed whenever the
-  bytes change, an unchanged file is not read or generated again on reload. Files a member changed or deleted are never read.
-- Dropped content: `PruneMediaDeclarations({ tenantId, prefix: "helio.", keep: declaredKeys })` after declaring retires
-  the namespace's other keys (files, then deepest folders); `RetireMediaDeclaration({ tenantId, kind, key })` one key.
-  Removed only while still as declared (folders only when empty), else `preserved` and handed to members; never a cascade.
-- Never undoes a member: a row changed since its last declaration is `preserved`, a deleted one stays `deleted`;
-  only a row still exactly as declared is refreshed. Parents before children, folders before files (await each).
+- Required `tenantId` in types and runtime: omitted/empty/whitespace-only rejects before writes. No fallback.
+  Idempotent per tenant + kind + key. Returns `{ status: "created" | "kept", id }`.
+- Call from `Hook.TENANT_BEING_PROVISIONED` (the DMS fires it for `default` on the start that creates it, after
+  `DATABASE_INITIALIZED`; dms-saas for each workspace). Never from `start()` / `DATABASE_INITIALIZED`, never awaited in `construct()`.
+- Written once: a key declared before is `kept` without reading its source. No refresh, no retirement, no `version`:
+  the content belongs to the members. Parents before children, folders before files (await each).
+- `source: { load }` is called only when the file is created. Bytes are written with `WriteFile` (no HTTP round trip).
 - Same rules as the dashboard (names, unique sibling folders, allowed and field types, quota, decodable images); errors
   name the key (`Media file 'helio.x': ...`). Never write `media_folders` / `media_assets` directly.
 
