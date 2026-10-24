@@ -1,9 +1,7 @@
 import { createHash } from "node:crypto";
-import { Readable } from "node:stream";
-import type { ReadableStream as WebReadableStream } from "node:stream/web";
 import type { HTTPResult, RequestContext } from "@antelopejs/interface-api";
 import { assert } from "@antelopejs/interface-api-util";
-import { signedReadUrl } from "../../read-urls";
+import { ReadFile } from "@antelopejs/interface-file-storage";
 import { PRIVATE_CACHE_CONTROL, PUBLIC_CACHE_CONTROL } from "./constants";
 import {
   contentDisposition,
@@ -11,6 +9,7 @@ import {
   normalizedMimetype,
 } from "./delivery-headers";
 
+const HTTP_OK = 200;
 const HTTP_NOT_MODIFIED = 304;
 const HTTP_BAD_GATEWAY = 502;
 const ETAG_HASH_LENGTH = 24;
@@ -18,11 +17,6 @@ const ANY_MATCH = "*";
 const ANY_ORIGIN = "*";
 const DENIED_ORIGIN = "false";
 const HEAD_METHOD = "HEAD";
-const FORWARDED_UPSTREAM_HEADERS = [
-  "Content-Length",
-  "Content-Range",
-  "Accept-Ranges",
-];
 
 /** One stored file as the delivery route hands it out. */
 export interface DeliveredFile {
@@ -79,24 +73,12 @@ function addRepresentationHeaders(
   if (file.isPublic) openPublicCors(response);
 }
 
-async function fetchUpstream(
-  ctx: RequestContext,
-  file: DeliveredFile,
-): Promise<Response> {
-  const range = ctx.rawRequest.headers.range;
-  const upstream = await fetch(
-    await signedReadUrl(file.storageKey, file.storage),
-    { headers: range ? { Range: range } : {} },
-  );
-  assert(upstream.ok && upstream.body, HTTP_BAD_GATEWAY, "File unavailable");
-  return upstream;
-}
-
 /**
  * Serves the bytes through the API. Only used for active content (SVG,
  * legacy HTML/XML): the storage's signed URL cannot carry the sandbox policy
  * or the attachment disposition these files need, every other file is
  * redirected to the storage so its bandwidth never goes through Node.
+ * Byte ranges are not served: these files are small and rendered whole.
  */
 export async function streamStoredFile(
   ctx: RequestContext,
@@ -110,16 +92,18 @@ export async function streamStoredFile(
     response.setBody("");
     return response;
   }
-  const upstream = await fetchUpstream(ctx, file);
-  for (const header of FORWARDED_UPSTREAM_HEADERS) {
-    const value = upstream.headers.get(header);
-    if (value) response.addHeader(header, value);
-  }
+  // Read from the storage itself: its read URL is the public origin, which
+  // the server may not reach (private network, egress policy).
+  const stored = await ReadFile(file.storageKey, file.storage).catch(
+    () => undefined,
+  );
+  assert(stored, HTTP_BAD_GATEWAY, "File unavailable");
+  response.addHeader("Content-Length", String(stored.size));
   const stream = response.getWriteStream(
     normalizedMimetype(file.mimetype),
-    upstream.status,
+    HTTP_OK,
   );
-  const body = Readable.fromWeb(upstream.body as WebReadableStream);
+  const body = stored.body;
   if (ctx.rawRequest.method === HEAD_METHOD) {
     body.destroy();
     stream.end();

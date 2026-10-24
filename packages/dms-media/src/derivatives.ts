@@ -1,5 +1,10 @@
 import { randomUUID } from "node:crypto";
-import { DeleteFile, WriteFile } from "@antelopejs/interface-file-storage";
+import { buffer } from "node:stream/consumers";
+import {
+  DeleteFile,
+  ReadFile,
+  WriteFile,
+} from "@antelopejs/interface-file-storage";
 import sharp from "sharp";
 import { TECHNICAL_MUTATION, updateAssetMedia } from "./asset-lifecycle";
 import { ORIGINAL_FILENAME_METADATA_KEY } from "./constants";
@@ -12,7 +17,6 @@ import {
   RASTERIZED_SVG_FORMAT,
   SVG_MIMETYPE,
 } from "./presets";
-import { signedReadUrl } from "./read-urls";
 import { parseDerivatives } from "./routes/media/storage-keys";
 
 const DERIVATIVES_PATH_PREFIX = "media-derivatives";
@@ -38,11 +42,7 @@ export async function downloadStorageBytes(
   storageKey: string,
   storage: string | undefined,
 ): Promise<Buffer> {
-  const response = await fetch(await signedReadUrl(storageKey, storage));
-  if (!response.ok) {
-    throw new Error(`Failed to download ${storageKey}: ${response.status}`);
-  }
-  return Buffer.from(await response.arrayBuffer());
+  return buffer((await ReadFile(storageKey, storage)).body);
 }
 
 export async function uploadStorageBytes(
