@@ -6,7 +6,7 @@
 	"main": "./dms.frontend.ts",
 	"packageManager": "pnpm@10.6.5",
 	"engines": {
-		"@antelopejs/dms-frontend": ">=0.8.0 <0.9.0"
+		"@antelopejs/dms-frontend": ">=0.9.0 <0.10.0"
 	},
 	"scripts": {
 		"dev": "pnpm --dir ../playground frontend:dev",
