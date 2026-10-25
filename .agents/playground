@@ -19,6 +19,20 @@ run_step() {
   printf '<== %s (%ss)\n' "$label" "$((SECONDS - started_at))"
 }
 
+install_node() {
+  local major
+  major="$(tr -d 'v[:space:]' < .nvmrc)"
+  if [[ "$(node -p 'process.versions.node.split(".")[0]')" != "$major" ]]; then
+    if ! command -v n >/dev/null 2>&1; then
+      sudo npm install --global n
+    fi
+    sudo n "$major"
+    hash -r
+  fi
+
+  node --version
+}
+
 install_antelope_cli() {
   local current_version=""
   if command -v ajs >/dev/null 2>&1; then
@@ -80,6 +94,7 @@ build_playground() {
   pnpm --dir packages/dms-media/playground install --frozen-lockfile --ignore-workspace
 }
 
+run_step "Install the Node.js version of .nvmrc" install_node
 run_step "Install AntelopeJS CLI $ANTELOPE_VERSION" install_antelope_cli
 run_step "Install MongoDB $MONGODB_MAJOR" install_mongodb
 run_step "Start MongoDB" start_mongodb
