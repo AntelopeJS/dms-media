@@ -19,7 +19,7 @@ Run a package script from its own directory: `pnpm --dir packages/dms-media <scr
 - The module implements the interface, so it caps the interface range below the next minor (`>=<floor> <0.<minor+1>.0`), and that range accepts the interface version in the tree. `release.yml` refuses any other shape. `antelopejs-check-interface-ranges` (part of `pnpm lint`) checks the other `@antelopejs/interface-*` ranges.
 - Release the interface (`release-interface.yml`) before the module (`release.yml`). The module release fails until the interface version in the tree is on npm.
 - `frontend-vue/package.json` pins the `@antelopejs/dms-frontend` minor it builds against in `engines`. Move it together with the `@antelopejs/dms-frontend` versions in `packages/dms-media/package.json` and `playground/package.json` and the compatibility table in `packages/dms-media/README.md`.
-- Both packages publish CommonJS from `dist`. `"type": "module"` belongs to the private root package only, for its tool configs.
+- Both published packages compile to CommonJS in `dist`. Of the root and those two, only the private root sets `"type": "module"`, for its tool configs. `frontend-vue` is ESM source and keeps its own `"type": "module"`.
 
 ## What `pnpm run checks` does not run
 
