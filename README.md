@@ -105,8 +105,10 @@ pnpm frontend:dev   # dashboard, in a second terminal
 pnpm lint
 pnpm typecheck
 pnpm knip
-pnpm test
+pnpm test           # frontend unit tests
+pnpm --dir packages/dms-media test  # backend unit and integration suites
 pnpm test:frontend  # typechecks the frontend layer against the DMS layer
+pnpm run checks     # typecheck, lint, format, knip, tests, size, ratchet and sync
 ```
 
 <details>

@@ -1,6 +1,6 @@
 services:
   dms-media-backend:
-    command: pnpm dev
+    command: .agents/playground && pnpm dev
     port: 5010
     health: /api/onboarding/informations
 
