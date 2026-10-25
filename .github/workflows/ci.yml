@@ -16,63 +16,23 @@ concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
-# Three independent jobs instead of one sequence: the pull request waits for
-# the slowest of them (verify-source) rather than for the sum of all steps.
-# The branch rulesets require the `ubuntu` check, which aggregates them.
+# The checks job runs the guardrail pack's `pnpm run checks`. The backend and
+# frontend jobs run what `checks` does not, in parallel with it. The branch
+# rulesets require the `ubuntu` check, which aggregates them.
 jobs:
-  static:
-    runs-on: ubuntu-latest
-    timeout-minutes: 15
-    steps:
-      - uses: actions/checkout@v4
-
-      # Before setup-node: its pnpm cache resolves the store by running pnpm.
-      # No version input — the root package.json `packageManager` is the pin.
-      - uses: pnpm/action-setup@v4
-
-      - uses: actions/setup-node@v4
-        with:
-          # .nvmrc is the version of record. oxlint needs at least 22.18 to
-          # read a TypeScript config, which every value there clears.
-          node-version-file: .nvmrc
-          cache: pnpm
-          # The root lockfile covers the workspace; the shipped frontend
-          # retains its own lockfile for standalone consumers.
-          cache-dependency-path: |
-            pnpm-lock.yaml
-            packages/dms-media/frontend-vue/pnpm-lock.yaml
-
-      # The whole workspace, root included: the shared oxlint, oxfmt and
-      # TypeScript configs live there and both packages extend them. The module
-      # resolves the interface to the workspace sibling through
-      # `link-workspace-packages`. The module lint also lints frontend-vue.
-      - run: pnpm install --frozen-lockfile
-
-      # Interface first: it is the contract, and the module builds against it.
-      - run: pnpm --dir packages/interface-dms-media lint
-      - run: pnpm --dir packages/interface-dms-media typecheck
-      - run: pnpm --dir packages/interface-dms-media knip
-      - run: pnpm --dir packages/interface-dms-media build
-      # Asserts the exports map still describes the built output.
-      - run: pnpm --dir packages/interface-dms-media check:exports
-
-      - uses: AntelopeJS/tooling-configs/actions/docs@310e3d861b2da2244902854379176c91e1ebc68e
-        with:
-          files: |
-            README.md
-            packages/dms-media/README.md
-            packages/dms-media/docs
-            packages/interface-dms-media/README.md
-            packages/interface-dms-media/docs
-          typescript-project: packages/interface-dms-media/docs/tsconfig.json
-
-      - run: pnpm --dir packages/dms-media lint
-      # oxlint's type-aware pass degrades to `any` on a broken tsconfig
-      # without failing, so the typecheck is what catches it.
-      - run: pnpm --dir packages/dms-media typecheck
-      # Unused dependencies only. `pnpm knip:all` also reports dead files and
-      # exports, which need a human to confirm, so they stay out of the gate.
-      - run: pnpm --dir packages/dms-media knip
+  checks:
+    uses: AntelopeJS/.github/.github/workflows/ci-node.yml@v1
+    with:
+      docs-files: |
+        README.md
+        packages/dms-media/README.md
+        packages/dms-media/docs
+        packages/interface-dms-media/README.md
+        packages/interface-dms-media/docs
+      docs-typescript-project: packages/interface-dms-media/docs/tsconfig.json
+      # `typecheck` builds the interface, so this checks the exports map
+      # against that build.
+      extra-commands: pnpm --dir packages/interface-dms-media check:exports
 
   backend:
     runs-on: ubuntu-latest
@@ -129,18 +89,16 @@ jobs:
 
       - run: pnpm install --frozen-lockfile
 
-      # The frontend layer's own unit tests: pure helpers, locales and the
-      # component registration.
-      - run: pnpm --dir packages/dms-media/frontend-vue test
       # Typechecks the frontend layer against the DMS layer from the
-      # `@antelopejs/dms` devDependency: no running backend needed.
+      # `@antelopejs/dms` devDependency: no running backend needed. The
+      # frontend unit tests run in `checks`.
       - run: pnpm --dir packages/dms-media test:frontend
 
   # The single check the branch rulesets require: green only when every job
   # above succeeded.
   ubuntu:
     if: always()
-    needs: [static, backend, frontend]
+    needs: [checks, backend, frontend]
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:

@@ -1,0 +1,21 @@
+{
+  "rules": {
+    "antelopejs/no-comments": 60,
+    "antelopejs/no-constant-value-assertion": 3,
+    "antelopejs/no-fs-read-in-tests": 1,
+    "anti-slop/no-known-value-widening": 14,
+    "anti-slop/no-runtime-typeof": 17,
+    "anti-slop/no-shape-in-symbol-names": 2,
+    "anti-slop/no-unknown-parameters": 45,
+    "anti-slop/no-unknown-returns": 1,
+    "anti-slop/no-unsafe-dictionary-type": 5,
+    "anti-slop/require-safety-comment-for-type-assertion": 86
+  },
+  "oversizeFiles": {
+    "packages/dms-media/frontend-vue/app/components/ImageEditor.vue": 24307,
+    "packages/dms-media/frontend-vue/app/composables/library/useMediaLibrary.ts": 20842,
+    "packages/dms-media/frontend-vue/i18n/locales/media-en-GB.json": 44367,
+    "packages/dms-media/frontend-vue/i18n/locales/media-fr-FR.json": 50819,
+    "packages/dms-media/src/test/integration/media-permissions.test.ts": 34197
+  }
+}
