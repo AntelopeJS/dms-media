@@ -1,0 +1,38 @@
+{
+  "version": 1,
+  "cases": [
+    {
+      "id": "media-image-field",
+      "area": "modules",
+      "style": "clean",
+      "prompt": "Add an image upload field for the product photos in the product form.",
+      "expect": {
+        "skills": ["dms-media"],
+        "acceptable": ["dms-pages", "dms", "dms-best-practices"],
+        "mustMention": ["AssetType"]
+      }
+    },
+    {
+      "id": "media-upload-refused-casual",
+      "area": "modules",
+      "style": "casual",
+      "prompt": "uploads get refused on the media folder, cors maybe?",
+      "expect": {
+        "skills": ["dms-media"],
+        "acceptable": ["dms"]
+      }
+    },
+    {
+      "id": "dms-media-avoid-form-page",
+      "area": "modules",
+      "style": "clean",
+      "prompt": "Build an articles admin page with a Form block for the title and body and a TableView listing the articles.",
+      "expect": {
+        "skills": ["dms-pages"],
+        "acceptable": ["dms-best-practices", "dms"],
+        "mustMention": ["RegisterPage", "TableView"],
+        "avoid": ["dms-media"]
+      }
+    }
+  ]
+}
