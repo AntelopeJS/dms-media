@@ -32,6 +32,7 @@ Every data block carries `realtimeTopic: MEDIA_LIBRARY_TOPIC`; custom components
 Put the field in a DMS `Form` block of a backend-declared page; no custom Vue is needed.
 
 ```typescript
+import { Form } from "@antelopejs/interface-dms/base";
 import { AssetType } from "@antelopejs/interface-dms-media"; // in the module's dependencies
 
 static form = Form({
