@@ -34,6 +34,16 @@ function buildActor(permissions: string[], roleIds: string[] = []): AclActor {
   return { permissions: new Set(permissions), roleIds };
 }
 
+/** The ids `acl` names as subjects of `kind`: an actor holding them all is matched by every entry. */
+function subjectIds(
+  acl: readonly AclEntry[],
+  kind: AclEntry["subject"]["kind"],
+): string[] {
+  return acl
+    .filter((entry) => entry.subject.kind === kind)
+    .map((entry) => entry.subject.id);
+}
+
 const EDIT_ARTICLES_PERMISSION = "articles.table.edit";
 const LIBRARY_VIEW_PERMISSION = "library.view";
 const LIBRARY_UPLOAD_PERMISSION = "library.upload";
@@ -218,6 +228,11 @@ describe("[unit] acl/resolver — resolveFolderAccess", () => {
     const folders = [buildFolder({ id: "root" })];
     const actor = buildActor([MEDIA_PAGE_PERMISSION]);
     expect(resolveRootRights(actor, DEFAULT_ROOT_ACL).size).to.equal(0);
+    const named = buildActor(
+      subjectIds(DEFAULT_ROOT_ACL, "permission"),
+      subjectIds(DEFAULT_ROOT_ACL, "role"),
+    );
+    expect(resolveRootRights(named, DEFAULT_ROOT_ACL).size).to.equal(0);
     const access = resolveFolderAccess(folders, actor, DEFAULT_ROOT_ACL);
     expect(access.readable.size).to.equal(0);
     const owner = resolveFolderAccess(

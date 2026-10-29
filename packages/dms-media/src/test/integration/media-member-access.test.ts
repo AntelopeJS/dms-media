@@ -12,7 +12,6 @@ import {
 import type { AxiosInstance } from "axios";
 import { expect } from "chai";
 import { RegisterAssetBinding } from "@antelopejs/interface-dms-media";
-import { DEFAULT_ROOT_ACL } from "../../acl/defaults";
 import { MEDIA_PAGE_PERMISSION } from "../../pages/files";
 import { type UploadedAsset, uploadTextAsset } from "../helpers/assets";
 import { readFolderAcl } from "../helpers/folders";
@@ -155,10 +154,6 @@ describe("[integration] media member access — roles, root ACL and linked folde
   });
 
   describe("library root", () => {
-    it("grants nothing at the root by default", () => {
-      expect(DEFAULT_ROOT_ACL).to.deep.equal([]);
-    });
-
     it("opens nothing to a role holding the All files page", async () => {
       const tree = await fetchTree(world.modulePageMember.client);
       expect(tree.folders).to.deep.equal([]);

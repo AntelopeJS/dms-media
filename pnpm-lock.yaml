@@ -133,6 +133,9 @@ importers:
         specifier: ^3.24.2
         version: 3.25.76
     devDependencies:
+      '@antelopejs/tooling-configs':
+        specifier: ^0.2.12
+        version: 0.2.12(knip@6.34.0)(oxfmt@0.66.0)(oxlint@1.81.0(oxlint-tsgolint@7.0.2001))
       '@nuxt/ui':
         specifier: 4.10.0
         version: 4.10.0(2fda83efc3e6f5742db8caeb2babbed7)

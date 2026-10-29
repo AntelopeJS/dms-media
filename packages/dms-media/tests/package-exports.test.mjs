@@ -2,16 +2,13 @@
 // (AntelopeJS core's `resolvePackage`): through the `exports` map, which
 // must name the built entry and its types.
 import assert from "node:assert/strict";
-import { existsSync, readFileSync } from "node:fs";
+import { existsSync } from "node:fs";
 import { createRequire } from "node:module";
 import path from "node:path";
 import { test } from "node:test";
-import { fileURLToPath } from "node:url";
+import { packageRoot as root, readManifest } from "./helpers/manifest.mjs";
 
-const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
-const manifest = JSON.parse(
-  readFileSync(path.join(root, "package.json"), "utf8"),
-);
+const manifest = readManifest();
 const require = createRequire(path.join(root, "package.json"));
 
 test("the package name resolves to the built entry", () => {

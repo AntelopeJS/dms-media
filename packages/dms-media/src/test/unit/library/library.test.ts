@@ -3,12 +3,7 @@ import { buildActivityItems } from "../../../library/activity";
 import { buildUploadBatches } from "../../../library/batches";
 import { composedBytes, composedText } from "../../../library/composed-text";
 import { computeFolderStats } from "../../../library/folder-stats";
-import {
-  fileLink,
-  folderLink,
-  MEDIA_ROUTES,
-  viewLink,
-} from "../../../library/links";
+import { fileLink, folderLink, viewLink } from "../../../library/links";
 import { countByTypeGroup, pageAssets } from "../../../library/listing";
 import { searchAssets, searchFolders } from "../../../library/search";
 import {
@@ -216,7 +211,6 @@ describe("[unit] library — composed texts", () => {
 
 describe("[unit] library — links", () => {
   it("points at the pages of the media module", () => {
-    expect(MEDIA_ROUTES.overview).to.equal("/modules/media/overview");
     expect(folderLink("f 1")).to.equal("/modules/media/files?folder=f%201");
     expect(fileLink("a1")).to.equal("/modules/media/file?asset=a1");
     expect(viewLink("missing-alt")).to.equal(

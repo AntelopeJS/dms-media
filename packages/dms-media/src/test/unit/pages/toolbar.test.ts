@@ -1,9 +1,11 @@
 import { expect } from "chai";
+import { GetMetadata } from "@antelopejs/interface-core";
 import type { ComponentBuilder } from "@antelopejs/interface-dms/component";
+import { PageMetadata } from "@antelopejs/interface-dms/page";
 import { MEDIA_LIBRARY_TOPIC } from "../../../constants";
 import { MediaActivityPage } from "../../../pages/activity";
 import { MediaOverviewPage } from "../../../pages/overview";
-import { MEDIA_LIVE, mediaPageToolbar } from "../../../pages/toolbar";
+import { mediaPageToolbar } from "../../../pages/toolbar";
 import { MediaUploadsPage } from "../../../pages/uploads";
 
 const TOOLBAR_COMPONENT = "dms-page-toolbar-block";
@@ -58,8 +60,17 @@ describe("[unit] pages — toolbar", () => {
   });
 
   it("shares one Direct / Pause choice between the media pages", () => {
-    expect(MEDIA_LIVE.rememberKey).to.equal("media");
-    expect(MEDIA_LIVE.maxRate).to.be.greaterThan(0);
+    const lives = Object.values(LIVE_PAGES).map(
+      (page) => GetMetadata(page, PageMetadata).pageInfo?.live,
+    );
+    const rememberKeys = new Set(lives.map((live) => live?.rememberKey));
+    const [rememberKey] = rememberKeys;
+    expect([...rememberKeys]).to.have.length(1);
+    expect(rememberKey).to.be.a("string");
+    expect(rememberKey).to.not.equal("");
+    for (const live of lives) {
+      expect(live?.maxRate).to.be.greaterThan(0);
+    }
   });
 
   for (const [name, page] of Object.entries(LIVE_PAGES)) {
