@@ -21,12 +21,13 @@ import {
   settlePendingDeclaration,
   withDeclarationLock,
 } from "./records";
+import { isString } from "../guards";
 
 type ParentTarget = NonNullable<DeclaredFolderInput["parent"]>;
 
 /** The declared folder key a parent names, written as a string or as `{ key }`. */
 function parentKeyOf(parent: ParentTarget | undefined): string | undefined {
-  if (typeof parent === "string") return parent;
+  if (isString(parent)) return parent;
   return parent && "key" in parent ? parent.key : undefined;
 }
 
@@ -70,8 +71,7 @@ async function findParentFolder(
   parent: ParentTarget,
   fail: (reason: string) => never,
 ): Promise<MediaFolder> {
-  if (typeof parent === "string")
-    return findDeclaredFolder(models, parent, fail);
+  if (isString(parent)) return findDeclaredFolder(models, parent, fail);
   if ("key" in parent) return findDeclaredFolder(models, parent.key, fail);
   const { binding } = parent;
   const folder = await findBoundFolder(models, binding, fail);

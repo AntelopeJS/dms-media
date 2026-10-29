@@ -3,7 +3,6 @@ import { GetModel } from "@antelopejs/interface-database-decorators";
 import { expect } from "chai";
 import { MediaFolder, MediaFolderModel } from "../../db";
 
-type RunQuery = (this: Query<unknown>) => Promise<unknown>;
 const TENANT = "folder-query-a";
 const OTHER = "folder-query-b";
 
@@ -72,7 +71,7 @@ describe("[integration] folder query pushdown", () => {
   it("limits a binding lookup before transfer and keeps the existing first match", async () => {
     const expected = (await model.getBy("binding", "shared"))[0];
     const original = Object.getOwnPropertyDescriptor(Query.prototype, "run")!;
-    const run = original.value as RunQuery;
+    const run = original.value as Query<unknown>["run"];
     const stages: string[][] = [];
     Object.defineProperty(Query.prototype, "run", {
       ...original,

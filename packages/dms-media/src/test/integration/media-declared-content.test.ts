@@ -13,7 +13,7 @@ import {
   RegisterAssetBinding,
 } from "@antelopejs/interface-dms-media";
 import type { AxiosInstance } from "axios";
-import { expect } from "chai";
+import { assert, expect } from "chai";
 import {
   MediaAssetModel,
   MediaDeclarationModel,
@@ -48,7 +48,8 @@ async function rejectionOf(promise: Promise<unknown>): Promise<Error> {
   try {
     await promise;
   } catch (error) {
-    return error as Error;
+    assert.instanceOf(error, Error);
+    return error;
   }
   throw new Error("Expected the declaration to be refused");
 }
@@ -157,9 +158,9 @@ describe("[integration] media declared content — folders and files shipped as 
       expect((await EnsureMediaFolder(folder)).status).to.equal("kept");
       expect((await ImportMediaAsset(file)).status).to.equal("kept");
       expect(
-        await GetModel(MediaAssetModel, tenantId).get(firstFile.id as string),
+        await GetModel(MediaAssetModel, tenantId).get(firstFile.id),
       ).to.equal(undefined);
-      expect(await assets().get(secondFile.id as string)).to.equal(undefined);
+      expect(await assets().get(secondFile.id)).to.equal(undefined);
     } finally {
       await schema.destroyInstance(tenantId).run();
     }
@@ -211,7 +212,7 @@ describe("[integration] media declared content — folders and files shipped as 
       const second = await EnsureMediaFolder(declaration);
       expect(first.status).to.equal("created");
       expect(second).to.deep.equal({ status: "kept", id: first.id });
-      const folder = await folders().get(first.id as string);
+      const folder = await folders().get(first.id);
       expect(folder?.name).to.equal("Declared procedures");
       expect(folder?.parentId ?? undefined).to.equal(undefined);
       expect(folder?.visibility).to.equal("private");
@@ -220,7 +221,7 @@ describe("[integration] media declared content — folders and files shipped as 
         "folder.create",
       );
       const created = events.filter((event) =>
-        event.json_details?.includes(first.id as string),
+        event.json_details?.includes(first.id),
       );
       expect(created).to.have.length(1);
       expect(created[0]?.actorName).to.equal("System");
@@ -241,11 +242,11 @@ describe("[integration] media declared content — folders and files shipped as 
         acl: ACL,
       });
       expect(child.status).to.equal("created");
-      const folder = await folders().get(child.id as string);
+      const folder = await folders().get(child.id);
       expect(folder?.parentId).to.equal(parent.id);
       expect(folder?.path).to.deep.equal([parent.id]);
       expect(folder?.visibility).to.equal("public");
-      expect(await readFolderAcl(child.id as string)).to.deep.equal(ACL);
+      expect(await readFolderAcl(child.id)).to.deep.equal(ACL);
       const tree = await client.get("/api/media/tree");
       expect(tree.status).to.equal(HTTP_OK);
       expect(
@@ -272,7 +273,7 @@ describe("[integration] media declared content — folders and files shipped as 
         name: "Declared templates v2",
       });
       expect(result).to.deep.equal({ status: "kept", id: declared.id });
-      const folder = await folders().get(declared.id as string);
+      const folder = await folders().get(declared.id);
       expect(folder?.name).to.equal("Our templates");
     });
 
@@ -320,7 +321,7 @@ describe("[integration] media declared content — folders and files shipped as 
       const second = await ImportMediaAsset(declaration);
       expect(first.status).to.equal("created");
       expect(second).to.deep.equal({ status: "kept", id: first.id });
-      const asset = await assets().get(first.id as string);
+      const asset = await assets().get(first.id);
       expect(asset?.name).to.equal("logo.png");
       expect(asset?.alt).to.equal("Helio logo");
       expect(asset?.width).to.equal(1);
@@ -329,7 +330,7 @@ describe("[integration] media declared content — folders and files shipped as 
       const events = await GetModel(
         MediaEventModel,
         DEFAULT_TENANT_ID,
-      ).listByAsset(first.id as string);
+      ).listByAsset(first.id);
       expect(events.map((event) => event.kind)).to.deep.equal(["asset.upload"]);
       const readUrl = await client.get(
         `/api/media/assets/${first.id}/read-url`,
@@ -353,7 +354,7 @@ describe("[integration] media declared content — folders and files shipped as 
         source: { filePath },
       });
       expect(result.status).to.equal("created");
-      const asset = await assets().get(result.id as string);
+      const asset = await assets().get(result.id);
       expect(asset?.mimetype).to.equal("text/plain");
       expect(asset?.width ?? undefined).to.equal(undefined);
     });
@@ -368,7 +369,7 @@ describe("[integration] media declared content — folders and files shipped as 
         source: { bytes: ONE_PIXEL_PNG },
       });
       expect(result.status).to.equal("created");
-      const asset = await assets().get(result.id as string);
+      const asset = await assets().get(result.id);
       const bound = await folders().getByBinding(BINDING_ID);
       expect(asset?.folderId).to.equal(bound?._id);
       const refused = await rejectionOf(
@@ -444,7 +445,7 @@ describe("[integration] media declared content — folders and files shipped as 
       });
       expect(result).to.deep.equal({ status: "kept", id: first.id });
       expect(loads, "the source of a kept file is not read").to.equal(0);
-      const asset = await assets().get(first.id as string);
+      const asset = await assets().get(first.id);
       expect(asset?.name).to.equal("our-manual.txt");
       expect(asset?.size).to.equal("Manual v1".length);
     });

@@ -4,6 +4,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { defineConfig } from "@antelopejs/interface-core/config";
 import { MongoMemoryReplSet } from "mongodb-memory-server-core";
+import { isString } from "../guards";
 
 const API_PORT = 5019;
 const LOCAL_BUILD_COMMAND = process.env.DMS_PREBUILT ? [] : ["pnpm build"];
@@ -13,16 +14,16 @@ const MONGO_BINARY_VERSION = "8.0.8";
 const SMTP_HOST = "127.0.0.1";
 const EPHEMERAL_PORT = 0;
 const TEST_SENDER = "dms-media@test.local";
-const SMTP_RESPONSES: Record<string, string> = {
-  EHLO: "250-dms-media.test\r\n250 PIPELINING\r\n",
-  HELO: "250 dms-media.test\r\n",
-  MAIL: "250 OK\r\n",
-  RCPT: "250 OK\r\n",
-  DATA: "354 End data with <CR><LF>.<CR><LF>\r\n",
-  RSET: "250 OK\r\n",
-  NOOP: "250 OK\r\n",
-  QUIT: "221 Bye\r\n",
-};
+const SMTP_RESPONSES = new Map([
+  ["EHLO", "250-dms-media.test\r\n250 PIPELINING\r\n"],
+  ["HELO", "250 dms-media.test\r\n"],
+  ["MAIL", "250 OK\r\n"],
+  ["RCPT", "250 OK\r\n"],
+  ["DATA", "354 End data with <CR><LF>.<CR><LF>\r\n"],
+  ["RSET", "250 OK\r\n"],
+  ["NOOP", "250 OK\r\n"],
+  ["QUIT", "221 Bye\r\n"],
+]);
 
 interface SmtpConnectionState {
   pending: string;
@@ -47,7 +48,7 @@ function processSmtpLine(
   }
   const command = line.split(" ", 1)[0]?.toUpperCase() ?? "";
   state.isReadingData = command === "DATA";
-  const response = SMTP_RESPONSES[command] ?? "250 OK\r\n";
+  const response = SMTP_RESPONSES.get(command) ?? "250 OK\r\n";
   if (command === "QUIT") socket.end(response);
   else socket.write(response);
 }
@@ -77,8 +78,7 @@ async function startSmtpFixture(): Promise<number> {
     });
   });
   const address = smtpServer.address();
-  if (!address || typeof address === "string")
-    throw new Error("Invalid SMTP address");
+  if (!address || isString(address)) throw new Error("Invalid SMTP address");
   return address.port;
 }
 

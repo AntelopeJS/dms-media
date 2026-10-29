@@ -15,7 +15,7 @@ export function folder(
     visibility: "private",
     createdAt: EPOCH,
     updatedAt: EPOCH,
-  } as MediaFolder;
+  };
 }
 
 export function asset(
@@ -48,5 +48,5 @@ export function event(
     folderId: "root",
     createdAt: EPOCH,
     ...overrides,
-  } as MediaEvent;
+  };
 }

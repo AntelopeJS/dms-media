@@ -1,6 +1,6 @@
 import { randomUUID } from "node:crypto";
 import type { AxiosInstance } from "axios";
-import { expect } from "chai";
+import { assert, expect } from "chai";
 import { GetModel } from "@antelopejs/interface-database-decorators";
 import { DEFAULT_TENANT_ID } from "@antelopejs/interface-dms/constants";
 import sharp from "sharp";
@@ -61,7 +61,9 @@ async function follow(
 ): Promise<Delivery> {
   const redirect = await deliver(path, headers);
   expect(redirect.status, path).to.equal(HTTP_FOUND);
-  const response = await fetch(redirect.headers.get("location") as string);
+  const location = redirect.headers.get("location");
+  assert.isNotNull(location, path);
+  const response = await fetch(location);
   return {
     status: response.status,
     headers: response.headers,
@@ -301,9 +303,11 @@ describe("[integration] media delivery and editing — cache, orientation, activ
     const original = await deliver(assetPath(svg), auth);
     expect(original.status).to.equal(HTTP_OK);
     expect(original.headers.get("content-security-policy")).to.equal("sandbox");
+    const etag = original.headers.get("etag");
+    assert.isNotNull(etag, "etag");
     const revalidated = await deliver(assetPath(svg), {
       ...auth,
-      "If-None-Match": original.headers.get("etag") as string,
+      "If-None-Match": etag,
     });
     expect(revalidated.status).to.equal(HTTP_NOT_MODIFIED);
   });

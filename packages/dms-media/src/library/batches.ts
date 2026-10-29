@@ -8,6 +8,7 @@ import {
   readEventDetails,
   UPLOAD_KIND,
 } from "./events";
+import { isString } from "../guards";
 
 export interface UploadBatchRow {
   _id: string;
@@ -73,7 +74,7 @@ function newBatch(key: string, event: MediaEvent): BatchAccumulator {
 /** The files a batch report names as failed, with their reasons. */
 function readBatchFailures(event: MediaEvent): UploadFailure[] {
   const raw = readEventDetails(event).failures;
-  if (typeof raw !== "string") return [];
+  if (!isString(raw)) return [];
   try {
     const parsed: unknown = JSON.parse(raw);
     return Array.isArray(parsed) ? (parsed as UploadFailure[]) : [];

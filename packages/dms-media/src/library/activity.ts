@@ -1,11 +1,11 @@
 import type { ActivityFeedItem } from "@antelopejs/interface-dms/base/activity-feed";
-import type { ComposedTextParam } from "@antelopejs/interface-dms/base/types";
 import type { Tone } from "@antelopejs/interface-dms/base/types/tone";
 import type { MediaEvent, MediaFolder } from "../db";
 import { countParam } from "./composed-text";
 import {
   BATCH_REPORT_KIND,
   batchIdOf,
+  isMediaEventKind,
   latestBatchReports,
   type MediaEventDetails,
   type MediaEventKind,
@@ -163,9 +163,12 @@ function visibleDetails(details: MediaEventDetails): MediaEventDetails {
   );
 }
 
-function toParams(entry: ActivityEntry): Record<string, ComposedTextParam> {
+/** The parameters of a feed item's title and meta texts. */
+type FeedParams = NonNullable<ActivityFeedItem["params"]>;
+
+function toParams(entry: ActivityEntry): FeedParams {
   const details = visibleDetails(readEventDetails(entry.event));
-  const params: Record<string, ComposedTextParam> = {
+  const params: FeedParams = {
     actor: entry.event.actorName,
     name: entry.event.targetName,
     count: countParam(entry.count),
@@ -186,7 +189,7 @@ function titleSuffix(event: MediaEvent): string {
   return `_${visibility.replace(VISIBILITY_KEY_PREFIX, "")}`;
 }
 
-function batchParams(event: MediaEvent): Record<string, ComposedTextParam> {
+function batchParams(event: MediaEvent): FeedParams {
   const details = readEventDetails(event);
   return {
     uploaded: countParam(event.count ?? 0),
@@ -200,11 +203,12 @@ function presentEntry(
   context: ActivityContext,
 ): ActivityFeedItem {
   const { event } = entry;
-  const kind = event.kind as MediaEventKind;
+  const { kind } = event;
+  const known = isMediaEventKind(kind) ? kind : undefined;
   const isReport = kind === BATCH_REPORT_KIND;
   const presentation = isReport
     ? BATCH_PRESENTATIONS[batchOutcome(event)]
-    : (EVENT_PRESENTATIONS[kind] ?? NEUTRAL_PRESENTATION);
+    : ((known && EVENT_PRESENTATIONS[known]) ?? NEUTRAL_PRESENTATION);
   const path = folderPath(subjectFolderId(event), context.foldersById);
   const isGone = Boolean(
     event.assetId && context.deletedAssetIds.has(event.assetId),
@@ -300,9 +304,9 @@ function foldBulkActions(entries: ActivityEntry[]): ActivityEntry[] {
 
 function deletedAssets(events: MediaEvent[]): Set<string> {
   return new Set(
-    events
-      .filter((event) => event.kind === "asset.delete" && event.assetId)
-      .map((event) => event.assetId as string),
+    events.flatMap((event) =>
+      event.kind === "asset.delete" && event.assetId ? [event.assetId] : [],
+    ),
   );
 }
 

@@ -67,13 +67,13 @@ export function describeValidationError(error: unknown): string {
 }
 
 /** Parses a request body, answering 400 with a translatable message. */
-export function parseBody<Schema extends z.ZodTypeAny>(
+export function parseBody<Output>(
   body: unknown,
-  schema: Schema,
-): z.output<Schema> {
+  schema: z.ZodType<Output, z.ZodTypeDef, unknown>,
+): Output {
   return assertValidation(
     body,
-    (value) => schema.parse(value) as z.output<Schema>,
+    (value) => schema.parse(value),
     describeValidationError,
   );
 }
@@ -154,7 +154,7 @@ export const transformSchema = z
     rotate: z
       .number()
       .refine((value) =>
-        ALLOWED_ROTATIONS.includes(value as (typeof ALLOWED_ROTATIONS)[number]),
+        ALLOWED_ROTATIONS.some((rotation) => rotation === value),
       )
       .optional(),
   })

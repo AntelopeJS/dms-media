@@ -19,6 +19,7 @@ import os from "node:os";
 import path from "node:path";
 import { after, before, describe, it } from "node:test";
 import { fileURLToPath } from "node:url";
+import { isString } from "../dist/guards.js";
 
 const require = createRequire(import.meta.url);
 const { launch } = require("@antelopejs/core");
@@ -180,7 +181,7 @@ function findEntry(id) {
 
 /** A page topic registers under its [page, topic] pair, serialized. */
 function pageTopicPair(id) {
-  if (typeof id !== "string" || !id.startsWith("[")) return undefined;
+  if (!isString(id) || !id.startsWith("[")) return undefined;
   return JSON.parse(id);
 }
 
@@ -200,7 +201,7 @@ function ownedBy(module) {
  * page topic counts by its page, the topic itself being what the test edits.
  */
 function stableId(id) {
-  if (typeof id !== "string") return typeof id;
+  if (!isString(id)) return typeof id;
   const topicPair = pageTopicPair(id);
   if (topicPair) return `topic of ${topicPair[0]}`;
   return COUNTER_ID_PATTERN.test(id) ? "counter" : id;
@@ -214,7 +215,7 @@ function registrationKeys(entries) {
 
 function isMediaId(id) {
   const key = pageTopicPair(id)?.[0] ?? id;
-  return typeof key === "string" && MEDIA_ID_PATTERN.test(key);
+  return isString(key) && MEDIA_ID_PATTERN.test(key);
 }
 
 function ownersOf(entries) {

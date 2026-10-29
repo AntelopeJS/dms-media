@@ -1,5 +1,5 @@
 import type { AxiosInstance } from "axios";
-import { expect } from "chai";
+import { assert, expect } from "chai";
 import { RegisterAssetBinding } from "@antelopejs/interface-dms-media";
 import {
   configureMediaModule,
@@ -128,6 +128,13 @@ function findById(tree: TreeResponse, id: string): TreeFolderNode | undefined {
   return tree.folders.find((folder) => folder.id === id);
 }
 
+/** The folder `id` of the tree, failing the test when the tree does not show it. */
+function requireById(tree: TreeResponse, id: string): TreeFolderNode {
+  const folder = findById(tree, id);
+  assert.isDefined(folder, `folder ${id}`);
+  return folder;
+}
+
 async function createFolder(
   owner: AxiosInstance,
   name: string,
@@ -243,8 +250,8 @@ async function buildWorldFolders(
   const tree = await fetchTree(owner);
   const stock = findByName(tree, STOCK_FOLDER_NAME);
   const contentRoot = findByName(tree, CONTENT_ROOT_NAME);
-  expect(stock, "provisioned stock folder").to.not.equal(undefined);
-  expect(contentRoot, "provisioned content root").to.not.equal(undefined);
+  assert.isDefined(stock, "provisioned stock folder");
+  assert.isDefined(contentRoot, "provisioned content root");
   return {
     library,
     restricted,
@@ -255,8 +262,8 @@ async function buildWorldFolders(
     readOnlyCorner,
     depot,
     curtain,
-    stock: (stock as TreeFolderNode).id,
-    contentRoot: (contentRoot as TreeFolderNode).id,
+    stock: stock.id,
+    contentRoot: contentRoot.id,
   };
 }
 
@@ -330,13 +337,13 @@ describe("[integration] media permissions — multi-actor ACL enforcement", () =
     it("shows only root-inherited folders to a holder of a root read grant", async () => {
       const tree = await fetchTree(sessions.viewer.client);
       const library = findById(tree, folders.library);
-      expect(library, "library").to.not.equal(undefined);
-      expect((library as TreeFolderNode).rights).to.deep.equal({
+      assert.isDefined(library, "library");
+      expect(library.rights).to.deep.equal({
         read: true,
         write: false,
         manage: false,
       });
-      expect((library as TreeFolderNode).shell).to.equal(false);
+      expect(library.shell).to.equal(false);
       for (const hiddenId of [
         folders.restricted,
         folders.deep,
@@ -353,19 +360,19 @@ describe("[integration] media permissions — multi-actor ACL enforcement", () =
 
     it("grants folder access through a role subject alone", async () => {
       const tree = await fetchTree(sessions.secretMember.client);
-      expect(
-        (findById(tree, folders.restricted) as TreeFolderNode).rights,
-      ).to.deep.equal({ read: true, write: true, manage: false });
-      expect(
-        (findById(tree, folders.deep) as TreeFolderNode).rights.write,
-      ).to.equal(true);
-      const pocket = findById(tree, folders.pocket) as TreeFolderNode;
+      expect(requireById(tree, folders.restricted).rights).to.deep.equal({
+        read: true,
+        write: true,
+        manage: false,
+      });
+      expect(requireById(tree, folders.deep).rights.write).to.equal(true);
+      const pocket = requireById(tree, folders.pocket);
       expect(pocket.rights).to.deep.equal({
         read: true,
         write: false,
         manage: false,
       });
-      const vault = findById(tree, folders.vault) as TreeFolderNode;
+      const vault = requireById(tree, folders.vault);
       expect(vault.shell, "vault is a traverse-only shell").to.equal(true);
       expect(vault.rights.read).to.equal(false);
       expect(findById(tree, folders.library)).to.equal(undefined);
@@ -374,14 +381,14 @@ describe("[integration] media permissions — multi-actor ACL enforcement", () =
 
     it("auto-grants the linked folder to consumer permission holders", async () => {
       const tree = await fetchTree(sessions.clerk.client);
-      const stock = findById(tree, folders.stock) as TreeFolderNode;
-      expect(stock, "linked stock folder").to.not.equal(undefined);
+      const stock = findById(tree, folders.stock);
+      assert.isDefined(stock, "linked stock folder");
       expect(stock.rights).to.deep.equal({
         read: true,
         write: true,
         manage: false,
       });
-      const contentRoot = findById(tree, folders.contentRoot) as TreeFolderNode;
+      const contentRoot = requireById(tree, folders.contentRoot);
       expect(contentRoot.shell, "content root is a shell").to.equal(true);
       expect(findById(tree, folders.library)).to.equal(undefined);
     });
@@ -389,27 +396,29 @@ describe("[integration] media permissions — multi-actor ACL enforcement", () =
     it("unions permission and role subjects across multiple roles", async () => {
       const tree = await fetchTree(sessions.hybrid.client);
       const library = findById(tree, folders.library);
-      expect(library, "library via the root read grant").to.not.equal(
-        undefined,
-      );
-      expect((library as TreeFolderNode).rights.read).to.equal(true);
+      assert.isDefined(library, "library via the root read grant");
+      expect(library.rights.read).to.equal(true);
       const restricted = findById(tree, folders.restricted);
-      expect(restricted, "restricted via secret-team").to.not.equal(undefined);
-      expect((restricted as TreeFolderNode).rights.write).to.equal(true);
+      assert.isDefined(restricted, "restricted via secret-team");
+      expect(restricted.rights.write).to.equal(true);
     });
 
     it("expands implied rights for uploader and folder manager", async () => {
       const uploaderTree = await fetchTree(sessions.uploader.client);
       expect(uploaderTree.root).to.include({ write: true, manage: false });
-      expect(
-        (findById(uploaderTree, folders.library) as TreeFolderNode).rights,
-      ).to.deep.equal({ read: true, write: true, manage: false });
+      expect(requireById(uploaderTree, folders.library).rights).to.deep.equal({
+        read: true,
+        write: true,
+        manage: false,
+      });
 
       const managerTree = await fetchTree(sessions.folderManager.client);
       expect(managerTree.root).to.include({ write: true, manage: true });
-      expect(
-        (findById(managerTree, folders.library) as TreeFolderNode).rights,
-      ).to.deep.equal({ read: true, write: true, manage: true });
+      expect(requireById(managerTree, folders.library).rights).to.deep.equal({
+        read: true,
+        write: true,
+        manage: true,
+      });
       expect(
         findById(managerTree, folders.stock),
         "linked folders stay with the owner and their consumers",
@@ -942,7 +951,7 @@ describe("[integration] media permissions — multi-actor ACL enforcement", () =
       );
       const tree = await fetchTree(sessions.clerk.client);
       expect(
-        (findById(tree, folders.stock) as TreeFolderNode).rights.write,
+        requireById(tree, folders.stock).rights.write,
         "clerk keeps write after resync",
       ).to.equal(true);
     });

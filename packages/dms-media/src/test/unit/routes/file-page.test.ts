@@ -1,4 +1,4 @@
-import { expect } from "chai";
+import { assert, expect } from "chai";
 import type { KeyValueListItem } from "@antelopejs/interface-dms/base/key-value-list";
 import type { MediaAsset, MediaFolder } from "../../../db";
 import { buildDeliveryPath } from "../../../routes/media/dto";
@@ -30,8 +30,8 @@ function folder(visibility: MediaFolder["visibility"]): MediaFolder {
 
 function row(items: KeyValueListItem[], id: string): KeyValueListItem {
   const found = items.find((item) => item.id === id);
-  expect(found, id).to.not.equal(undefined);
-  return found as KeyValueListItem;
+  assert.isDefined(found, id);
+  return found;
 }
 
 describe("[unit] routes/file — delivery links", () => {

@@ -1,5 +1,5 @@
 import type { AxiosInstance } from "axios";
-import { expect } from "chai";
+import { assert, expect } from "chai";
 import sharp from "sharp";
 import { rawGet, uploadAsset } from "../helpers/assets";
 import { authorizedClient, getBaseUrl } from "../helpers/http";
@@ -81,7 +81,8 @@ describe("[integration] media when the server cannot reach the storage's public 
 
     const thumb = await rawGet(`/media/${asset.id}/thumb/${PHOTO_NAME}`, token);
     expect(thumb.status).to.equal(HTTP_FOUND);
-    const stored = await serverFetch(thumb.location as string);
+    assert.isNotNull(thumb.location);
+    const stored = await serverFetch(thumb.location);
     expect(stored.status).to.equal(HTTP_OK);
     const metadata = await sharp(
       Buffer.from(await stored.arrayBuffer()),

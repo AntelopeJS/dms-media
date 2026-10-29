@@ -27,7 +27,7 @@ function buildFolder(seed: FolderSeed): MediaFolder {
     visibility: "private",
     createdAt: new Date(),
     updatedAt: new Date(),
-  } as MediaFolder;
+  };
 }
 
 function buildActor(permissions: string[], roleIds: string[] = []): AclActor {

@@ -77,7 +77,7 @@ describe("[unit] library/search — accent-free, multi-word search", () => {
 });
 
 describe("[unit] library — listing facets and folder counts", () => {
-  const shapes = [
+  const candidates = [
     asset("wide", { width: 400, height: 200 }),
     asset("tall", { width: 200, height: 400 }),
     asset("even", { width: 300, height: 300 }),
@@ -85,7 +85,7 @@ describe("[unit] library — listing facets and folder counts", () => {
   ];
 
   function keep(orientation: AssetFilterQuery["orientation"]): string[] {
-    return filterAssets(shapes, {
+    return filterAssets(candidates, {
       query: { ...ANY_FILTER, orientation },
       now: NOW,
       visibilityOf: () => "private",
