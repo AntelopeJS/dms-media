@@ -8,7 +8,6 @@
   },
   "oversizeFiles": {
     "packages/dms-media/frontend-vue/app/components/ImageEditor.vue": 24307,
-    "packages/dms-media/frontend-vue/app/composables/library/useMediaLibrary.ts": 20842,
-    "packages/dms-media/src/test/integration/media-permissions.test.ts": 34118
+    "packages/dms-media/frontend-vue/app/composables/library/useMediaLibrary.ts": 20842
   }
 }
