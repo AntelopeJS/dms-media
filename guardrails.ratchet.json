@@ -3,8 +3,8 @@
     "anti-slop/no-known-value-widening": 2,
     "anti-slop/no-runtime-typeof": 1,
     "anti-slop/no-unknown-parameters": 45,
-    "anti-slop/no-unsafe-dictionary-type": 3,
-    "anti-slop/require-safety-comment-for-type-assertion": 27
+    "anti-slop/no-unsafe-dictionary-type": 2,
+    "anti-slop/require-safety-comment-for-type-assertion": 26
   },
   "oversizeFiles": {
     "packages/dms-media/frontend-vue/app/components/ImageEditor.vue": 24307,
