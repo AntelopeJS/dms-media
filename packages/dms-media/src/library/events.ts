@@ -3,6 +3,7 @@ import { Logging } from "@antelopejs/interface-core/logging";
 import type { User } from "@antelopejs/interface-dms/auth/db";
 import { type MediaEvent, MediaEventModel } from "../db";
 import { announceLibraryChange, UPLOAD_ANNOUNCE_WINDOW_MS } from "./realtime";
+import { isObject } from "../guards";
 
 const MEDIA_EVENT_KINDS = [
   "asset.upload",
@@ -78,9 +79,7 @@ export function readEventDetails(event: MediaEvent): MediaEventDetails {
   if (!event.json_details) return {};
   try {
     const parsed: unknown = JSON.parse(event.json_details);
-    return parsed && typeof parsed === "object"
-      ? (parsed as MediaEventDetails)
-      : {};
+    return isObject(parsed) ? (parsed as MediaEventDetails) : {};
   } catch {
     return {};
   }

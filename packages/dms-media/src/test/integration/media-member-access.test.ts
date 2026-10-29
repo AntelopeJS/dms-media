@@ -10,9 +10,8 @@ import {
   type PermissionTree,
 } from "@antelopejs/interface-dms/permissions";
 import type { AxiosInstance } from "axios";
-import { expect } from "chai";
+import { assert, expect } from "chai";
 import { RegisterAssetBinding } from "@antelopejs/interface-dms-media";
-import { DEFAULT_ROOT_ACL } from "../../acl/defaults";
 import { MEDIA_PAGE_PERMISSION } from "../../pages/files";
 import { type UploadedAsset, uploadTextAsset } from "../helpers/assets";
 import { readFolderAcl } from "../helpers/folders";
@@ -106,7 +105,8 @@ function presignInto(client: AxiosInstance, folderId: string) {
 async function buildWorld(): Promise<MemberAccessWorld> {
   const session = await ensureOwnerSession();
   const owner = authorizedClient(session.accessToken);
-  const pagePermission = GetPermissionId(MemberAccessProbePage) as string;
+  const pagePermission = GetPermissionId(MemberAccessProbePage);
+  assert.isDefined(pagePermission, "probe page permission");
   const [pageRole, modulePageRole] = await Promise.all([
     createRole("member-access-page", [pagePermission]),
     createRole("member-access-module-page", [MEDIA_PAGE_PERMISSION]),
@@ -116,8 +116,8 @@ async function buildWorld(): Promise<MemberAccessWorld> {
   });
   expect(shelf.status, "create shelf").to.equal(HTTP_OK);
   const linked = findFolder(await fetchTree(owner), LINKED_FOLDER_NAME);
-  expect(linked, "provisioned linked folder").to.not.equal(undefined);
-  const linkedFolderId = (linked as TreeFolder).id;
+  assert.isDefined(linked, "provisioned linked folder");
+  const linkedFolderId = linked.id;
   return {
     owner,
     pageMember: await registerMember("PageMember", [pageRole]),
@@ -155,10 +155,6 @@ describe("[integration] media member access — roles, root ACL and linked folde
   });
 
   describe("library root", () => {
-    it("grants nothing at the root by default", () => {
-      expect(DEFAULT_ROOT_ACL).to.deep.equal([]);
-    });
-
     it("opens nothing to a role holding the All files page", async () => {
       const tree = await fetchTree(world.modulePageMember.client);
       expect(tree.folders).to.deep.equal([]);

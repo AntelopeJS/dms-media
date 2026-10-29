@@ -1,5 +1,6 @@
 import { GetModel } from "@antelopejs/interface-database-decorators";
-import type { ZodError, ZodType } from "zod";
+import type { ZodType, ZodTypeDef } from "zod";
+import { isObjectLike, isString } from "../guards";
 import {
   MediaAssetModel,
   type MediaDeclarationKind,
@@ -45,18 +46,18 @@ export function declaredModels(tenantId: string): DeclaredModels {
 }
 
 /** Validates a declaration, naming every refused field. */
-export function parseDeclaration<Schema extends ZodType>(
+export function parseDeclaration<Output>(
   kind: MediaDeclarationKind,
   input: unknown,
-  schema: Schema,
-): ReturnType<Schema["parse"]> {
+  schema: ZodType<Output, ZodTypeDef, unknown>,
+): Output {
   const parsed = schema.safeParse(input);
-  if (parsed.success) return parsed.data as ReturnType<Schema["parse"]>;
-  const key = (input as { key?: unknown } | undefined)?.key;
+  if (parsed.success) return parsed.data;
+  const key = isObjectLike(input) && "key" in input ? input.key : undefined;
   throw new MediaDeclarationError(
     kind,
-    typeof key === "string" ? key : "?",
-    describeDeclarationIssues(parsed.error as ZodError),
+    isString(key) ? key : "?",
+    describeDeclarationIssues(parsed.error),
   );
 }
 

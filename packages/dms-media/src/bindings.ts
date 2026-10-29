@@ -149,9 +149,9 @@ async function provisionTenant(
   if (registeredBindings.size > 0) {
     const folders = await folderModel.getAll();
     const foldersByBinding = new Map(
-      folders
-        .filter((folder) => folder.binding)
-        .map((folder) => [folder.binding as string, folder]),
+      folders.flatMap((folder): [string, MediaFolder][] =>
+        folder.binding ? [[folder.binding, folder]] : [],
+      ),
     );
     const contentRootId = await ensureContentRoot(
       folderModel,

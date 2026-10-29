@@ -12,13 +12,13 @@ type Disposition = "inline" | "attachment";
  * Types a browser would run as a page from the API origin. SVG stays inline
  * (it is an image) but sandboxed; documents are only ever downloaded.
  */
-const ACTIVE_CONTENT_DISPOSITIONS: Record<string, Disposition> = {
-  "image/svg+xml": "inline",
-  "text/html": "attachment",
-  "application/xhtml+xml": "attachment",
-  "text/xml": "attachment",
-  "application/xml": "attachment",
-};
+const ACTIVE_CONTENT_DISPOSITIONS = new Map<string, Disposition>([
+  ["image/svg+xml", "inline"],
+  ["text/html", "attachment"],
+  ["application/xhtml+xml", "attachment"],
+  ["text/xml", "attachment"],
+  ["application/xml", "attachment"],
+]);
 
 export function normalizedMimetype(mimetype: string): string {
   const essence = mimetype
@@ -29,10 +29,7 @@ export function normalizedMimetype(mimetype: string): string {
 }
 
 export function isActiveContent(mimetype: string): boolean {
-  return Object.hasOwn(
-    ACTIVE_CONTENT_DISPOSITIONS,
-    normalizedMimetype(mimetype),
-  );
+  return ACTIVE_CONTENT_DISPOSITIONS.has(normalizedMimetype(mimetype));
 }
 
 function asciiFilename(filename: string): string {
@@ -47,7 +44,7 @@ function asciiFilename(filename: string): string {
 
 export function contentDisposition(mimetype: string, filename: string): string {
   const disposition =
-    ACTIVE_CONTENT_DISPOSITIONS[normalizedMimetype(mimetype)] ?? "inline";
+    ACTIVE_CONTENT_DISPOSITIONS.get(normalizedMimetype(mimetype)) ?? "inline";
   const extended = encodeURIComponent(filename).replace(
     /['()*]/g,
     (character) => `%${character.charCodeAt(0).toString(16).toUpperCase()}`,

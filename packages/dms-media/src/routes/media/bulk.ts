@@ -23,6 +23,7 @@ import {
   type MediaRequestContext,
   requireFolderRight,
 } from "./context";
+import { isString } from "../../guards";
 
 const HTTP_OK = 200;
 const HTTP_INTERNAL_ERROR = 500;
@@ -58,7 +59,7 @@ export interface BulkOutcome {
 function describeFailure(id: string, error: unknown): BulkRefusal {
   if (error instanceof HTTPResult) {
     const body: unknown = error.getBody();
-    const message = typeof body === "string" ? body : JSON.stringify(body);
+    const message = isString(body) ? body : JSON.stringify(body);
     return { id, status: error.getStatus(), message: message ?? "" };
   }
   return {

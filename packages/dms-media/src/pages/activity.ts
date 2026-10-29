@@ -4,7 +4,11 @@ import { DefaultLayout } from "@antelopejs/interface-dms/base/layouts";
 import { Tab } from "@antelopejs/interface-dms/base/tab";
 import { PageController, RegisterPage } from "@antelopejs/interface-dms/page";
 import { MEDIA_LIBRARY_TOPIC } from "../constants";
-import { ACTIVITY_FILTERS, type ActivityFilter } from "../library/activity";
+import {
+  ACTIVITY_FILTERS,
+  type ActivityFilter,
+  isActivityFilter,
+} from "../library/activity";
 import { libraryCategory, MEDIA_MODULE_ID } from "./module";
 import { blockMeta } from "./texts";
 import { MEDIA_LIVE, mediaPageToolbar } from "./toolbar";
@@ -14,7 +18,7 @@ const FEED_LENGTH = 50;
 const SKELETON_ROWS = 8;
 const ALL_SLOT = "all";
 
-const FILTERS = Object.keys(ACTIVITY_FILTERS) as ActivityFilter[];
+const FILTERS = Object.keys(ACTIVITY_FILTERS).filter(isActivityFilter);
 
 function feed(filter?: ActivityFilter) {
   const query = filter ? `&type=${filter}` : "";

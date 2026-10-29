@@ -79,6 +79,9 @@ function addRepresentationHeaders(
  * or the attachment disposition these files need, every other file is
  * redirected to the storage so its bandwidth never goes through Node.
  * Byte ranges are not served: these files are small and rendered whole.
+ * The bytes are read from the storage itself, not through its read URL: that
+ * URL is the public origin, which the server may not reach (private network,
+ * egress policy).
  */
 export async function streamStoredFile(
   ctx: RequestContext,
@@ -92,8 +95,6 @@ export async function streamStoredFile(
     response.setBody("");
     return response;
   }
-  // Read from the storage itself: its read URL is the public origin, which
-  // the server may not reach (private network, egress policy).
   const stored = await ReadFile(file.storageKey, file.storage).catch(
     () => undefined,
   );

@@ -13,8 +13,10 @@ const HTTP_PAYLOAD_TOO_LARGE = 413;
 const HTTP_UNSUPPORTED_MEDIA_TYPE = 415;
 const HTTP_UNPROCESSABLE_ENTITY = 422;
 const FIRST_SWAPPED_ORIENTATION = 5;
-// Dimension probing buffers the file in memory, so skip files too large to
-// hold in the heap; they simply stay without width/height metadata.
+/**
+ * Dimension probing buffers the file in memory, so files too large to hold in
+ * the heap are skipped; they simply stay without width/height metadata.
+ */
 const MAX_PROBE_SIZE_BYTES = 32 * 1024 * 1024;
 
 /** Why an upload is refused, for the queue to explain it in the member's language. */

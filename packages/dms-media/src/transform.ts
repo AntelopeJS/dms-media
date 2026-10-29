@@ -28,11 +28,11 @@ type EditOutputOptions =
   | sharp.WebpOptions
   | sharp.AvifOptions;
 
-const EDIT_OUTPUT_OPTIONS: Record<string, EditOutputOptions> = {
-  jpeg: { quality: 92, mozjpeg: true },
-  webp: { quality: 92 },
-  avif: { quality: 80 },
-};
+const EDIT_OUTPUT_OPTIONS = new Map<keyof sharp.FormatEnum, EditOutputOptions>([
+  ["jpeg", { quality: 92, mozjpeg: true }],
+  ["webp", { quality: 92 }],
+  ["avif", { quality: 80 }],
+]);
 
 export class AnimatedImageTransformError extends Error {}
 /** Someone else changed the image while this edit was being rendered. */
@@ -123,7 +123,7 @@ function encodeLikeSource(
   metadata: sharp.Metadata,
 ): sharp.Sharp {
   const kept = pipeline.keepMetadata();
-  const options = metadata.format && EDIT_OUTPUT_OPTIONS[metadata.format];
+  const options = metadata.format && EDIT_OUTPUT_OPTIONS.get(metadata.format);
   if (!options || !metadata.format) return kept;
   return kept.toFormat(metadata.format, options);
 }

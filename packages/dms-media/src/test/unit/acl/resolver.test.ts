@@ -27,11 +27,21 @@ function buildFolder(seed: FolderSeed): MediaFolder {
     visibility: "private",
     createdAt: new Date(),
     updatedAt: new Date(),
-  } as MediaFolder;
+  };
 }
 
 function buildActor(permissions: string[], roleIds: string[] = []): AclActor {
   return { permissions: new Set(permissions), roleIds };
+}
+
+/** The ids `acl` names as subjects of `kind`: an actor holding them all is matched by every entry. */
+function subjectIds(
+  acl: readonly AclEntry[],
+  kind: AclEntry["subject"]["kind"],
+): string[] {
+  return acl
+    .filter((entry) => entry.subject.kind === kind)
+    .map((entry) => entry.subject.id);
 }
 
 const EDIT_ARTICLES_PERMISSION = "articles.table.edit";
@@ -218,6 +228,11 @@ describe("[unit] acl/resolver — resolveFolderAccess", () => {
     const folders = [buildFolder({ id: "root" })];
     const actor = buildActor([MEDIA_PAGE_PERMISSION]);
     expect(resolveRootRights(actor, DEFAULT_ROOT_ACL).size).to.equal(0);
+    const named = buildActor(
+      subjectIds(DEFAULT_ROOT_ACL, "permission"),
+      subjectIds(DEFAULT_ROOT_ACL, "role"),
+    );
+    expect(resolveRootRights(named, DEFAULT_ROOT_ACL).size).to.equal(0);
     const access = resolveFolderAccess(folders, actor, DEFAULT_ROOT_ACL);
     expect(access.readable.size).to.equal(0);
     const owner = resolveFolderAccess(
@@ -282,9 +297,7 @@ describe("[unit] acl/resolver — resolveFolderAccess", () => {
   });
 
   it("ignores unknown rights and unknown subject kinds", () => {
-    // The fixture is deliberately not an AclEntry -- an unknown right
-    // and an unknown subject kind are what this test feeds the resolver.
-    // oxlint-disable-next-line anti-slop/no-chained-type-assertions
+    // oxlint-disable-next-line anti-slop/no-chained-type-assertions -- the fixture is deliberately not an AclEntry: an unknown right and an unknown subject kind are what this test feeds the resolver.
     const exoticAcl = [
       { subject: { kind: "role", id: "editors" }, rights: ["teleport"] },
       { subject: { kind: "group", id: "editors" }, rights: ["manage"] },

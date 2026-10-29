@@ -1,13 +1,15 @@
-// Hot reload ownership (AntelopeJS/dms-media#26).
-//
-// Runs a real project with `@antelopejs/core`'s `launch` in watch mode: two
-// consumer modules declared BEFORE dms-media declare an AssetType field at load
-// time through `@antelopejs/interface-dms-media`. Then it reloads the consumer
-// and dms-media itself, and checks that dms-media's routes, pages and page
-// topics stay owned by dms-media, survive the consumer's reload, and are
-// evaluated again from the edited file when dms-media reloads.
-//
-// Expects `pnpm run build` to have run: it loads the module from `dist`.
+/**
+ * Hot reload ownership (AntelopeJS/dms-media#26).
+ *
+ * Runs a real project with `@antelopejs/core`'s `launch` in watch mode: two
+ * consumer modules declared BEFORE dms-media declare an AssetType field at load
+ * time through `@antelopejs/interface-dms-media`. Then it reloads the consumer
+ * and dms-media itself, and checks that dms-media's routes, pages and page
+ * topics stay owned by dms-media, survive the consumer's reload, and are
+ * evaluated again from the edited file when dms-media reloads.
+ *
+ * Expects `pnpm run build` to have run: it loads the module from `dist`.
+ */
 
 import assert from "node:assert/strict";
 import { createRequire } from "node:module";
@@ -17,6 +19,7 @@ import os from "node:os";
 import path from "node:path";
 import { after, before, describe, it } from "node:test";
 import { fileURLToPath } from "node:url";
+import { isString } from "../dist/guards.js";
 
 const require = createRequire(import.meta.url);
 const { launch } = require("@antelopejs/core");
@@ -27,7 +30,6 @@ const PACKAGE_ROOT = path.resolve(
   "..",
 );
 const CONSTANTS_FILE = path.join(PACKAGE_ROOT, "dist", "constants.js");
-// Required once the project runs: a copy loaded before `launch` is refused.
 function findFreePort() {
   return new Promise((resolve, reject) => {
     const server = net.createServer();
@@ -61,7 +63,7 @@ const OWNER = {
   email: "reload-owner@test.local",
   password: "TestPassw0rd!",
 };
-// What a module declaring DMS pages depends on anyway, as template-dms-demo does.
+/** What a module declaring DMS pages depends on anyway, as template-dms-demo does. */
 const CONSUMER_INTERFACES = {
   "@antelopejs/interface-api": ">=0.0.13 <1.0.0",
   "@antelopejs/interface-core": ">=0.2.3 <1.0.0",
@@ -96,8 +98,10 @@ async function writeConsumer(folder, manifest, source) {
   await fs.writeFile(path.join(folder, "index.js"), source);
 }
 
-// Stands in for the npm copy a consumer installs: the manifest and the
-// `exports` target, nothing of the module itself.
+/**
+ * Stands in for the npm copy a consumer installs: the manifest and the
+ * `exports` target, nothing of the module itself.
+ */
 function packageSource(name, version) {
   return { source: { type: "package", package: name, version } };
 }
@@ -118,10 +122,10 @@ function projectConfig(mongoUrl, storagePath) {
       dms: {
         ...packageSource("@antelopejs/dms", ">=0.11.0 <1.0.0"),
         config: {
-          // No frontend server runs here: the dashboard URL is the API.
+          /** No frontend server runs here: the dashboard URL is the API. */
           clientBaseUrl: BASE_URL,
           auth: { jwtSecret: JWT_SECRET },
-          // Outside development, dms 0.10 refuses to start without a render secret.
+          /** Outside development, dms 0.10 refuses to start without a render secret. */
           htmlRender: { serviceSecret: HTML_RENDER_SECRET },
         },
       },
@@ -156,9 +160,12 @@ function projectConfig(mongoUrl, storagePath) {
   };
 }
 
+/**
+ * The entries of every registering proxy: interface-core 0.2 keeps each
+ * registering proxy's entries on the proxy.
+ */
 function registeringEntries() {
   const entries = [];
-  // interface-core 0.2 keeps each registering proxy's entries on the proxy.
   for (const proxy of globalThis[RUNTIME].registeringProxies) {
     const { identity } = proxy[PROXY_BRAND];
     for (const [id, entry] of proxy.registered) {
@@ -172,9 +179,9 @@ function findEntry(id) {
   return registeringEntries().find((entry) => entry.id === id);
 }
 
-// A page topic registers under its [page, topic] pair, serialized.
+/** A page topic registers under its [page, topic] pair, serialized. */
 function pageTopicPair(id) {
-  if (typeof id !== "string" || !id.startsWith("[")) return undefined;
+  if (!isString(id) || !id.startsWith("[")) return undefined;
   return JSON.parse(id);
 }
 
@@ -188,11 +195,13 @@ function ownedBy(module) {
   return registeringEntries().filter((entry) => entry.module === module);
 }
 
-// Routes register under a running counter and pages under their class, so
-// only named ids are stable across generations: the others count by kind. A
-// page topic counts by its page, the topic itself being what the test edits.
+/**
+ * Routes register under a running counter and pages under their class, so
+ * only named ids are stable across generations: the others count by kind. A
+ * page topic counts by its page, the topic itself being what the test edits.
+ */
 function stableId(id) {
-  if (typeof id !== "string") return typeof id;
+  if (!isString(id)) return typeof id;
   const topicPair = pageTopicPair(id);
   if (topicPair) return `topic of ${topicPair[0]}`;
   return COUNTER_ID_PATTERN.test(id) ? "counter" : id;
@@ -206,7 +215,7 @@ function registrationKeys(entries) {
 
 function isMediaId(id) {
   const key = pageTopicPair(id)?.[0] ?? id;
-  return typeof key === "string" && MEDIA_ID_PATTERN.test(key);
+  return isString(key) && MEDIA_ID_PATTERN.test(key);
 }
 
 function ownersOf(entries) {
@@ -237,12 +246,15 @@ async function mediaTreeStatus() {
   return (await request("/api/media/tree")).status;
 }
 
+/**
+ * Registers the owner, then logs in. Onboarding answers 400 once the owner
+ * exists, since it only runs on an empty instance.
+ */
 async function ownerToken() {
   const registration = await request("/api/onboarding/register", {
     method: "POST",
     body: JSON.stringify(OWNER),
   });
-  // 400 once the owner exists: onboarding only runs on an empty instance.
   assert.ok(
     registration.status <= HTTP_BAD_REQUEST,
     `onboarding answered ${registration.status}`,

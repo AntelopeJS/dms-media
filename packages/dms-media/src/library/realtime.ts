@@ -13,9 +13,13 @@ let pendingDueAt = 0;
 let pendingChanges = 0;
 let version = 0;
 
+/**
+ * Publishes the changes waiting to be announced as one message whose
+ * `payload.count` says how many it stands for: a paused page counts that many
+ * missed changes, not one per announcement.
+ */
 async function publishNow(): Promise<void> {
   pending = undefined;
-  // A paused page counts `payload.count` as that many missed changes, not one per announcement.
   const count = pendingChanges;
   pendingChanges = 0;
   try {

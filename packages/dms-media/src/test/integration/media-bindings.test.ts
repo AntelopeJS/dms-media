@@ -6,7 +6,7 @@ import {
 } from "@antelopejs/interface-dms/page";
 import { CustomComponent } from "@antelopejs/interface-dms/base/custom";
 import type { AxiosInstance } from "axios";
-import { expect } from "chai";
+import { assert, expect } from "chai";
 import { RegisterAssetBinding } from "@antelopejs/interface-dms-media";
 import { readFolderAcl } from "../helpers/folders";
 import { authorizedClient } from "../helpers/http";
@@ -66,13 +66,13 @@ describe("[integration] media bindings — linked folder provisioning", () => {
     const contentRoot = folders.find(
       (folder) => folder.name === "Content" && folder.parentId === null,
     );
-    expect(contentRoot, "content root").to.not.equal(undefined);
-    contentRootId = (contentRoot as FolderNode).id;
+    assert.isDefined(contentRoot, "content root");
+    contentRootId = contentRoot.id;
     const linked = folders.find((folder) => folder.name === "Article covers");
-    expect(linked, "linked folder").to.not.equal(undefined);
-    expect((linked as FolderNode).parentId).to.equal(contentRootId);
-    expect((linked as FolderNode).bound).to.equal(true);
-    linkedFolderId = (linked as FolderNode).id;
+    assert.isDefined(linked, "linked folder");
+    expect(linked.parentId).to.equal(contentRootId);
+    expect(linked.bound).to.equal(true);
+    linkedFolderId = linked.id;
   });
 
   it("does not duplicate provisioned folders on later requests", async () => {

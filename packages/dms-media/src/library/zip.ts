@@ -23,7 +23,7 @@ interface CentralEntry {
 
 export type ZipChunkWriter = (chunk: Buffer) => void;
 
-function dosDateTime(date: Date): { time: number; date: number } {
+function dosDateTime(date: Date): Pick<CentralEntry, "time" | "date"> {
   const year = Math.max(date.getFullYear(), DOS_EPOCH_YEAR);
   return {
     time:

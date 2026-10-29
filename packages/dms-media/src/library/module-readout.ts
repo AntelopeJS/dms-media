@@ -13,6 +13,7 @@ import { loadAssetsInFolders } from "./listing";
 import { storedSize } from "./overview";
 import { isDescribableImage } from "./type-groups";
 import { loadUploadHistoryEvents } from "./upload-history";
+import { isObject, isString } from "../guards";
 
 const TEXTS = "$dms_media.readout";
 const DEFAULT_LANGUAGE = "en";
@@ -38,8 +39,11 @@ export function readModuleVersion(): string | undefined {
     const manifest: unknown = JSON.parse(
       readFileSync(PACKAGE_MANIFEST, "utf8"),
     );
-    const version = (manifest as Record<string, unknown>).version;
-    return typeof version === "string" ? version : undefined;
+    const version =
+      isObject(manifest) && "version" in manifest
+        ? manifest.version
+        : undefined;
+    return isString(version) ? version : undefined;
   } catch {
     return undefined;
   }

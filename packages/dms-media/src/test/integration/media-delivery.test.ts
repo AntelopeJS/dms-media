@@ -1,5 +1,5 @@
 import type { AxiosInstance } from "axios";
-import { expect } from "chai";
+import { assert, expect } from "chai";
 import {
   ONE_PIXEL_PNG,
   PNG_NAME,
@@ -56,12 +56,19 @@ describe("[integration] media delivery — visibility and derivatives", () => {
     expect(response.status).to.equal(HTTP_UNAUTHORIZED);
   });
 
+  it("refuses an anonymous caller before telling whether a preset exists", async () => {
+    const known = await rawGet(`/media/${assetId}/thumb/${PNG_NAME}`);
+    const unknown = await rawGet(`/media/${assetId}/nosuchpreset/${PNG_NAME}`);
+    expect(known.status).to.equal(HTTP_UNAUTHORIZED);
+    expect(unknown.status).to.equal(HTTP_UNAUTHORIZED);
+  });
+
   it("redirects an authorized user to a short-lived signed URL", async () => {
     const response = await rawGet(`/media/${assetId}/${PNG_NAME}`, token);
     expect(response.status).to.equal(HTTP_FOUND);
-    expect(response.location).to.be.a("string");
+    assert.isNotNull(response.location);
     expect(response.cacheControl).to.equal("no-store");
-    const bytes = await fetchBytes(response.location as string);
+    const bytes = await fetchBytes(response.location);
     expect(bytes.equals(ONE_PIXEL_PNG)).to.equal(true);
   });
 
@@ -81,7 +88,8 @@ describe("[integration] media delivery — visibility and derivatives", () => {
   it("generates a derivative lazily and serves it through the preset route", async () => {
     const response = await rawGet(`/media/${assetId}/thumb/${PNG_NAME}`);
     expect(response.status).to.equal(HTTP_FOUND);
-    const bytes = await fetchBytes(response.location as string);
+    assert.isNotNull(response.location);
+    const bytes = await fetchBytes(response.location);
     expect(bytes.byteLength).to.be.greaterThan(0);
     expect(bytes.equals(ONE_PIXEL_PNG)).to.equal(false);
 

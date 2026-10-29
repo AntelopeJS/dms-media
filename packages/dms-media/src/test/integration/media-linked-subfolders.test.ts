@@ -1,5 +1,5 @@
 import type { AxiosInstance } from "axios";
-import { expect } from "chai";
+import { assert, expect } from "chai";
 import { GetModel } from "@antelopejs/interface-database-decorators";
 import { DEFAULT_TENANT_ID } from "@antelopejs/interface-dms/constants";
 import {
@@ -43,7 +43,8 @@ async function rejectionOf(promise: Promise<unknown>): Promise<Error> {
   try {
     await promise;
   } catch (error) {
-    return error as Error;
+    assert.instanceOf(error, Error);
+    return error;
   }
   throw new Error("Expected the declaration to be refused");
 }
@@ -184,9 +185,7 @@ describe("[integration] media linked subfolders — bindings that allow them", (
       parent: { binding: OPEN_BINDING_ID },
     });
     expect(project.status).to.equal("created");
-    expect((await folders().get(project.id as string))?.parentId).to.equal(
-      linked.id,
-    );
+    expect((await folders().get(project.id))?.parentId).to.equal(linked.id);
     const again = await EnsureMediaFolder({
       tenantId: DEFAULT_TENANT_ID,
       key: "subfolders.project-c",
@@ -201,14 +200,16 @@ describe("[integration] media linked subfolders — bindings that allow them", (
       parent: { key: "subfolders.project-c" },
     });
     expect(nested.status).to.equal("created");
-    // A declared parent named by its key alone is the same declaration.
     const sameParent = await EnsureMediaFolder({
       tenantId: DEFAULT_TENANT_ID,
       key: "subfolders.project-c.roof",
       name: "Roof",
       parent: "subfolders.project-c",
     });
-    expect(sameParent).to.deep.equal({ status: "kept", id: nested.id });
+    expect(
+      sameParent,
+      "a declared parent named by its key alone is the same declaration",
+    ).to.deep.equal({ status: "kept", id: nested.id });
     const photo = await ImportMediaAsset({
       tenantId: DEFAULT_TENANT_ID,
       key: "subfolders.project-c.roof.photo",

@@ -4,6 +4,7 @@ import { getMediaConfig } from "../../config";
 import { getLastSweep, SWEEP_DERIVATIVES_SCHEDULE } from "../../crons";
 import type { MediaAsset } from "../../db";
 import { buildUploadBatches, type UploadBatchRow } from "../../library/batches";
+import type { MediaEventDetails } from "../../library/events";
 import { loadUploadHistoryEvents } from "../../library/upload-history";
 import { presetsConfigSnippet } from "../../library/snippets";
 import { loadAssetsInFolders } from "../../library/listing";
@@ -60,8 +61,8 @@ function matchesFilters(
   );
 }
 
-function batchDetails(summary: BatchSummary): Record<string, string | number> {
-  const details: Record<string, string | number> = {
+function batchDetails(summary: BatchSummary): MediaEventDetails {
+  const details: MediaEventDetails = {
     batchId: summary.batchId,
     total: summary.total,
     failed: summary.failed,
@@ -110,10 +111,7 @@ function readSourcePage(query: Record<string, string>): SourcePage {
   return { offset, limit };
 }
 
-function pageRows<T>(
-  rows: T[],
-  page: SourcePage,
-): { results: T[]; total: number } {
+function pageRows<T>(rows: T[], page: SourcePage) {
   const results = page.limit
     ? rows.slice(page.offset, page.offset + page.limit)
     : rows.slice(page.offset);

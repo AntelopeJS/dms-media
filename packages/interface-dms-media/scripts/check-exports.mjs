@@ -1,7 +1,11 @@
-// The exports map has to describe the built package. Node does not fall back
-// to a directory index inside an exports map and a `./*` pattern only matches
-// files, so every directory index needs its own entry — today `dist/` is flat
-// and this is a tripwire for the first subdirectory someone adds.
+/**
+ * The exports map has to describe the built package: one explicit entry per
+ * directory index, and every explicit entry pointing at something that
+ * exists. Node does not fall back to a directory index inside an exports map
+ * and a `./*` pattern only matches files, so every directory index needs its
+ * own entry — today `dist/` is flat and this is a tripwire for the first
+ * subdirectory someone adds.
+ */
 import { createRequire } from "node:module";
 import fs from "node:fs";
 import path from "node:path";
@@ -49,7 +53,6 @@ const explicit = new Set(
   Object.keys(exportsMap).filter((subpath) => !subpath.includes("*")),
 );
 
-// 1. One explicit entry per directory index.
 const jsFiles = listFiles(distRoot).filter((file) => file.endsWith(".js"));
 const directoryIndexes = jsFiles
   .filter((file) => path.basename(file) === "index.js")
@@ -61,7 +64,6 @@ for (const subpath of directoryIndexes) {
   );
 }
 
-// 2. Every explicit entry points at something that exists.
 const scopedRequire = createRequire(path.join(packageRoot, "package.json"));
 for (const subpath of explicit) {
   if (subpath === "./package.json") continue;

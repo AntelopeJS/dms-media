@@ -24,14 +24,20 @@ const JSON_INDENT = 2;
 export type MediaDemoValue = string | string[] | null;
 export type MediaDemoValues = Record<string, MediaDemoValue>;
 
+function isId(value: unknown): value is string {
+  return typeof value === "string";
+}
+
 function isIdList(value: unknown): value is string[] {
-  return (
-    Array.isArray(value) && value.every((entry) => typeof entry === "string")
-  );
+  return Array.isArray(value) && value.every(isId);
 }
 
 function isDemoValue(value: unknown): value is MediaDemoValue {
-  return value === null || typeof value === "string" || isIdList(value);
+  return value === null || isId(value) || isIdList(value);
+}
+
+function isBody(value: unknown): value is object {
+  return typeof value === "object" && value !== null;
 }
 
 /** Keeps the fields the form declares, each holding an id, ids or nothing. */
@@ -39,13 +45,12 @@ export function pickDemoValues(
   body: unknown,
   fieldIds: readonly string[],
 ): MediaDemoValues {
-  if (!body || typeof body !== "object") return {};
-  const entries = Object.entries(body as Record<string, unknown>);
+  if (!isBody(body)) return {};
   return Object.fromEntries(
-    entries.filter(
-      ([id, value]) => fieldIds.includes(id) && isDemoValue(value),
+    Object.entries(body).flatMap(([id, value]): [string, MediaDemoValue][] =>
+      fieldIds.includes(id) && isDemoValue(value) ? [[id, value]] : [],
     ),
-  ) as MediaDemoValues;
+  );
 }
 
 function valuesFile(tenantId: string): string {

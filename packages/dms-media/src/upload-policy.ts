@@ -46,13 +46,13 @@ const DECODABLE_IMAGE_MIMETYPES: Record<string, string> = {
 };
 
 /** Mimetype of what sharp actually read, to store instead of the claim. */
-const MIMETYPES_BY_FORMAT: Record<string, string> = {
-  jpeg: "image/jpeg",
-  png: "image/png",
-  webp: "image/webp",
-  gif: "image/gif",
-  tiff: "image/tiff",
-};
+const MIMETYPES_BY_FORMAT = new Map([
+  ["jpeg", "image/jpeg"],
+  ["png", "image/png"],
+  ["webp", "image/webp"],
+  ["gif", "image/gif"],
+  ["tiff", "image/tiff"],
+]);
 
 function normalizeMimetype(mimetype: string): string {
   return (mimetype.split(PARAMETER_SEPARATOR)[0] ?? "").trim().toLowerCase();
@@ -96,5 +96,5 @@ export function expectedImageFormat(mimetype: string): string | undefined {
 export function mimetypeOfFormat(
   format: string | undefined,
 ): string | undefined {
-  return format ? MIMETYPES_BY_FORMAT[format] : undefined;
+  return format ? MIMETYPES_BY_FORMAT.get(format) : undefined;
 }

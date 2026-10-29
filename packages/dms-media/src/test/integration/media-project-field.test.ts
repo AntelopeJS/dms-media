@@ -1,5 +1,5 @@
 import type { AxiosInstance } from "axios";
-import { expect } from "chai";
+import { assert, expect } from "chai";
 import { CustomComponent } from "@antelopejs/interface-dms/base/custom";
 import {
   GetPermissionId,
@@ -64,16 +64,14 @@ describe("[integration] media project field — a member uses media from a proje
     });
     owner = authorizedClient((await ensureOwnerSession()).accessToken);
     const pagePermission = GetPermissionId(EditorialArticlesPage);
-    expect(pagePermission, "project page permission").to.be.a("string");
-    const roleId = await createRole("editorial-editor", [
-      pagePermission as string,
-    ]);
+    assert.isDefined(pagePermission, "project page permission");
+    const roleId = await createRole("editorial-editor", [pagePermission]);
     editor = await registerMember("EditorialEditor", [roleId]);
     const linked = (await fetchFolders(owner)).find(
       (folder) => folder.name === FOLDER_NAME,
     );
-    expect(linked, "linked folder").to.not.equal(undefined);
-    linkedFolderId = (linked as TreeFolderNode).id;
+    assert.isDefined(linked, "linked folder");
+    linkedFolderId = linked.id;
   });
 
   it("opens the linked folder of the page, and only it, to the picker", async () => {

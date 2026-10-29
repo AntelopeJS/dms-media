@@ -1,9 +1,15 @@
 import { expect } from "chai";
-import type { ComponentBuilder } from "@antelopejs/interface-dms/component";
+import { GetMetadata } from "@antelopejs/interface-core";
+import type {
+  ComponentBuilder,
+  ComponentInfoSerialized,
+} from "@antelopejs/interface-dms/component";
+import { PageMetadata } from "@antelopejs/interface-dms/page";
 import { MEDIA_LIBRARY_TOPIC } from "../../../constants";
+import { isObject } from "../../../guards";
 import { MediaActivityPage } from "../../../pages/activity";
 import { MediaOverviewPage } from "../../../pages/overview";
-import { MEDIA_LIVE, mediaPageToolbar } from "../../../pages/toolbar";
+import { mediaPageToolbar } from "../../../pages/toolbar";
 import { MediaUploadsPage } from "../../../pages/uploads";
 
 const TOOLBAR_COMPONENT = "dms-page-toolbar-block";
@@ -20,26 +26,33 @@ function pageBlocks(page: LivePage): ComponentBuilder<unknown>[] {
   return Object.values(page) as ComponentBuilder<unknown>[];
 }
 
-/** What a block serializes to, as far as reading its data goes. */
-interface SerializedBlock {
+/** What a block reads, as its serialized options say. */
+interface BlockReads {
   componentName: string;
-  options?: Record<string, unknown>;
-  children?: { id: string; component: SerializedBlock }[];
+  fetchUrl?: unknown;
+  realtimeTopic?: unknown;
 }
 
 /**
  * The blocks under `block` that read data, `block` included: a `fetchUrl`, or
  * a table, which reads through a route of its own and only says its topic.
  */
-function fetchingBlocks(block: SerializedBlock): SerializedBlock[] {
+function fetchingBlocks(block: ComponentInfoSerialized): BlockReads[] {
+  const { options } = block;
   const own =
-    block.options &&
-    ("fetchUrl" in block.options || "realtimeTopic" in block.options)
-      ? [block]
+    isObject(options) && ("fetchUrl" in options || "realtimeTopic" in options)
+      ? [
+          {
+            componentName: block.componentName,
+            fetchUrl: "fetchUrl" in options ? options.fetchUrl : undefined,
+            realtimeTopic:
+              "realtimeTopic" in options ? options.realtimeTopic : undefined,
+          },
+        ]
       : [];
   return [
     ...own,
-    ...(block.children ?? []).flatMap((child: { component: SerializedBlock }) =>
+    ...(block.children ?? []).flatMap((child) =>
       fetchingBlocks(child.component),
     ),
   ];
@@ -58,8 +71,17 @@ describe("[unit] pages — toolbar", () => {
   });
 
   it("shares one Direct / Pause choice between the media pages", () => {
-    expect(MEDIA_LIVE.rememberKey).to.equal("media");
-    expect(MEDIA_LIVE.maxRate).to.be.greaterThan(0);
+    const lives = Object.values(LIVE_PAGES).map(
+      (page) => GetMetadata(page, PageMetadata).pageInfo?.live,
+    );
+    const rememberKeys = new Set(lives.map((live) => live?.rememberKey));
+    const [rememberKey] = rememberKeys;
+    expect([...rememberKeys]).to.have.length(1);
+    expect(rememberKey).to.be.a("string");
+    expect(rememberKey).to.not.equal("");
+    for (const live of lives) {
+      expect(live?.maxRate).to.be.greaterThan(0);
+    }
   });
 
   for (const [name, page] of Object.entries(LIVE_PAGES)) {
@@ -72,13 +94,13 @@ describe("[unit] pages — toolbar", () => {
   for (const [name, page] of Object.entries(LIVE_PAGES)) {
     it(`reads every block of the ${name} page again on library changes`, () => {
       const blocks = pageBlocks(page).flatMap((block) =>
-        fetchingBlocks(block.serializeSync() as SerializedBlock),
+        fetchingBlocks(block.serializeSync()),
       );
       expect(blocks).to.have.length.greaterThan(0);
       for (const block of blocks) {
         expect(
-          block.options?.realtimeTopic,
-          `${block.componentName} ${JSON.stringify(block.options?.fetchUrl)}`,
+          block.realtimeTopic,
+          `${block.componentName} ${JSON.stringify(block.fetchUrl)}`,
         ).to.equal(MEDIA_LIBRARY_TOPIC);
       }
     });
