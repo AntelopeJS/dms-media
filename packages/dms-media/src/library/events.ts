@@ -24,11 +24,6 @@ const MEDIA_EVENT_KINDS = [
 
 export type MediaEventKind = (typeof MEDIA_EVENT_KINDS)[number];
 
-/** Whether a stored event kind is one this release records. */
-export function isMediaEventKind(kind: string): kind is MediaEventKind {
-  return MEDIA_EVENT_KINDS.some((known) => known === kind);
-}
-
 export type MediaEventDetails = Record<string, string | number>;
 
 export interface MediaEventInput {

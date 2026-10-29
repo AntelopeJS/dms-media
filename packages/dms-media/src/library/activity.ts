@@ -5,7 +5,6 @@ import { countParam } from "./composed-text";
 import {
   BATCH_REPORT_KIND,
   batchIdOf,
-  isMediaEventKind,
   latestBatchReports,
   type MediaEventDetails,
   type MediaEventKind,
@@ -66,6 +65,11 @@ const EVENT_PRESENTATIONS: Record<MediaEventKind, EventPresentation> = {
   "folder.move": { icon: "i-ph-arrows-out-cardinal", tone: "neutral" },
   "folder.visibility": { icon: "i-ph-globe", tone: "success" },
 };
+
+/** Whether a stored event kind is one this release records and presents. */
+function isMediaEventKind(kind: string): kind is MediaEventKind {
+  return Object.hasOwn(EVENT_PRESENTATIONS, kind);
+}
 
 const NEUTRAL_PRESENTATION: EventPresentation = {
   icon: "i-ph-clock-counter-clockwise",
