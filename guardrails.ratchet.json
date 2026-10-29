@@ -7,7 +7,6 @@
     "anti-slop/require-safety-comment-for-type-assertion": 26
   },
   "oversizeFiles": {
-    "packages/dms-media/frontend-vue/app/components/ImageEditor.vue": 24307,
-    "packages/dms-media/frontend-vue/app/composables/library/useMediaLibrary.ts": 20842
+    "packages/dms-media/frontend-vue/app/components/ImageEditor.vue": 24307
   }
 }
