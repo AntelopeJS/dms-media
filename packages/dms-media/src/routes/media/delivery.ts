@@ -312,6 +312,10 @@ export class MediaDeliveryController extends Controller("/media") {
     return deliverAsset(ctx, resolved);
   }
 
+  /**
+   * Resolves (and authorizes) the asset before it touches the preset, so an
+   * unauthenticated caller cannot probe which preset IDs are configured.
+   */
   @Get("/:assetId/:presetId/:filename")
   async deliverDerivative(
     @Context() ctx: RequestContext,
@@ -320,8 +324,6 @@ export class MediaDeliveryController extends Controller("/media") {
     @IfAuthUser() user?: User,
   ) {
     assertNamedSegment(ctx);
-    // Resolve (and authorize) the asset before touching the preset so an
-    // unauthenticated caller cannot probe which preset IDs are configured.
     const resolved = await guardSignIn(
       ctx,
       resolveDeliverableAsset(ctx, assetId, user),

@@ -20,8 +20,8 @@ describe("[unit] library — realtime", () => {
   let messages: RealtimeMessage[];
   let unsubscribe: () => void;
 
+  /** Changes the integration suites made may still be waiting to be announced: drop them first. */
   beforeEach(() => {
-    // Changes the integration suites made may still be waiting to be announced.
     cancelLibraryChange();
     messages = [];
     unsubscribe = SubscribeMessage(MEDIA_LIBRARY_TOPIC, (message) => {

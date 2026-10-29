@@ -297,9 +297,7 @@ describe("[unit] acl/resolver — resolveFolderAccess", () => {
   });
 
   it("ignores unknown rights and unknown subject kinds", () => {
-    // The fixture is deliberately not an AclEntry -- an unknown right
-    // and an unknown subject kind are what this test feeds the resolver.
-    // oxlint-disable-next-line anti-slop/no-chained-type-assertions
+    // oxlint-disable-next-line anti-slop/no-chained-type-assertions -- the fixture is deliberately not an AclEntry: an unknown right and an unknown subject kind are what this test feeds the resolver.
     const exoticAcl = [
       { subject: { kind: "role", id: "editors" }, rights: ["teleport"] },
       { subject: { kind: "group", id: "editors" }, rights: ["manage"] },

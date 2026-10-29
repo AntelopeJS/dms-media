@@ -44,10 +44,13 @@ export const declaredFolderSchema = z.object({
   tenantId: tenantSchema,
 });
 
+/**
+ * Where a declared file's bytes come from. `load` is checked as a function
+ * only: wrapping it in `z.function()` would replace the caller's loader.
+ */
 const sourceSchema = z.union([
   z.object({ bytes: z.instanceof(Uint8Array) }).strict(),
   z.object({ filePath: z.string().min(1) }).strict(),
-  // Checked as a function only: wrapping it in z.function() would replace the caller's loader.
   z
     .object({
       load: z.custom<() => Uint8Array | Promise<Uint8Array>>(

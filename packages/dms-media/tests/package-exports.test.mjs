@@ -1,6 +1,3 @@
-// The package's entry, as a runtime embedding the module resolves it
-// (AntelopeJS core's `resolvePackage`): through the `exports` map, which
-// must name the built entry and its types.
 import assert from "node:assert/strict";
 import { existsSync } from "node:fs";
 import { createRequire } from "node:module";
@@ -9,6 +6,11 @@ import { test } from "node:test";
 import { packageRoot as root, readManifest } from "./helpers/manifest.mjs";
 
 const manifest = readManifest();
+/**
+ * Resolves the package's entry as a runtime embedding the module does
+ * (AntelopeJS core's `resolvePackage`): through the `exports` map, which must
+ * name the built entry and its types.
+ */
 const require = createRequire(path.join(root, "package.json"));
 
 test("the package name resolves to the built entry", () => {

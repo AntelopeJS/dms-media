@@ -323,7 +323,7 @@ describe("[integration] media delivery and editing — cache, orientation, activ
       "image/png",
       await sharp({
         create: {
-          // Larger than the thumb both ways, so its square crop shows.
+          /** Larger than the thumb both ways, so its square crop shows. */
           width: WIDE_SVG_WIDTH * 2,
           height: WIDE_SVG_HEIGHT * 2,
           channels: 3,

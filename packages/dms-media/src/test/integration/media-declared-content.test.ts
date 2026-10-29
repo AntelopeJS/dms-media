@@ -93,12 +93,11 @@ describe("[integration] media declared content — folders and files shipped as 
       mimetype: PNG_MIMETYPE,
       source: { bytes: ONE_PIXEL_PNG },
     };
-    // These calls also fail compilation if the public contract becomes optional.
-    // @ts-expect-error A JavaScript caller can omit the required tenantId.
+    // @ts-expect-error A JavaScript caller can omit the required tenantId; this call stops compiling if the public contract makes it optional.
     expect((await rejectionOf(EnsureMediaFolder(folder))).message).to.contain(
       "tenantId",
     );
-    // @ts-expect-error A JavaScript caller can omit the required tenantId.
+    // @ts-expect-error A JavaScript caller can omit the required tenantId; this call stops compiling if the public contract makes it optional.
     expect((await rejectionOf(ImportMediaAsset(file))).message).to.contain(
       "tenantId",
     );
@@ -134,7 +133,6 @@ describe("[integration] media declared content — folders and files shipped as 
     const tenantId = "declared-isolation";
     const schema = Schema.get(TENANT_SCHEMA_NAME);
     if (!schema) throw new Error("Tenant schema is missing");
-    // Disposable database fixture, not a change to workspace provisioning.
     await schema.createInstance(tenantId).run();
     try {
       const folder = {
