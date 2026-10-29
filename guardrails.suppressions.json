@@ -1,0 +1,8 @@
+{
+  "rules": {
+    "anti-slop/no-chained-type-assertions": 1
+  },
+  "tsExpectError": 3,
+  "tsIgnore": 0,
+  "safety": 0
+}

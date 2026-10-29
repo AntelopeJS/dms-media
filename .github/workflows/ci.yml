@@ -9,6 +9,7 @@ on:
   # secret scanner ran.
   pull_request:
 
+  workflow_dispatch: null
 permissions:
   contents: read
 
@@ -20,7 +21,7 @@ concurrency:
 # frontend jobs run what `checks` does not, in parallel with it. The branch
 # rulesets require the `ubuntu` check, which aggregates them.
 jobs:
-  checks:
+  ci:
     uses: AntelopeJS/.github/.github/workflows/ci-node.yml@v1
     with:
       docs-files: |
@@ -33,6 +34,9 @@ jobs:
       # `typecheck` builds the interface, so this checks the exports map
       # against that build.
       extra-commands: pnpm --dir packages/interface-dms-media check:exports
+    permissions:
+      contents: write
+      actions: write
 
   backend:
     runs-on: ubuntu-latest
@@ -98,7 +102,7 @@ jobs:
   # above succeeded.
   ubuntu:
     if: always()
-    needs: [checks, backend, frontend]
+    needs: [ci, backend, frontend]
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:
