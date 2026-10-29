@@ -5,83 +5,26 @@ import 'vue-advanced-cropper/dist/style.css'
 import type { AssetDetails, DeliveryPreset, MediaAsset, PresetsResponse } from '../types/media'
 import type { TransformOperations } from '../composables/useMediaApi'
 import { type AspectOption, aspectOptions, FREE_ASPECT_ID, ORIGINAL_ASPECT_ID, type PixelSize, rotatedSize as turnSize } from '../utils/editorAspects'
-
-interface CropCoordinates {
-	left: number
-	top: number
-	width: number
-	height: number
-}
-
-interface CropperImage {
-	src: string
-	width: number
-	height: number
-	transforms: { rotate: number; flip: { horizontal: boolean; vertical: boolean } }
-}
-
-interface CropperChange {
-	coordinates: CropCoordinates
-	image: CropperImage
-}
-
-interface ImageSize {
-	imageSize: PixelSize
-}
-
-interface RotateOptions {
-	transitions?: boolean
-}
-
-interface CropperHandle {
-	rotate: (angle: number, options?: RotateOptions) => void
-	zoom: (factor: number) => void
-	reset: () => void
-	refresh: () => void
-	setCoordinates: (coordinates: Partial<CropCoordinates> | ((size: ImageSize) => Partial<CropCoordinates>)) => void
-}
-
-interface PendingChange {
-	icon: string
-	label: string
-	detail: string
-}
-
-interface CropField {
-	key: keyof CropCoordinates
-	label: string
-}
-
-interface KeyStep {
-	x: number
-	y: number
-}
-
-interface PresetPreview {
-	id: string
-	label: string
-	width: number
-	height: number
-	coordinates: CropCoordinates
-}
-
-type LoadState = 'loading' | 'ready' | 'error' | 'missing'
-
-const FULL_TURN = 360
-const QUARTER_TURN = 90
-const ZOOM_STEP = 1.2
-const PRESET_PREVIEW_SIZE = 128
-const EDITING_PRESET = 'preview'
-const EDITING_MAX_SIDE = 2048
-const SAME_SHAPE_TOLERANCE = 0.02
-const NUDGE_RATIO = 0.01
-const VECTOR_MIMETYPE = 'image/svg+xml'
-const KEY_STEPS: Record<string, KeyStep> = {
-	ArrowLeft: { x: -1, y: 0 },
-	ArrowRight: { x: 1, y: 0 },
-	ArrowUp: { x: 0, y: -1 },
-	ArrowDown: { x: 0, y: 1 },
-}
+import {
+	centeredRegion,
+	type CropCoordinates,
+	type CropField,
+	type CropperChange,
+	type CropperHandle,
+	editingSource,
+	FULL_TURN,
+	fullImage,
+	KEY_STEPS,
+	type LoadState,
+	NUDGE_RATIO,
+	type PendingChange,
+	PRESET_PREVIEW_SIZE,
+	type PresetPreview,
+	QUARTER_TURN,
+	VECTOR_MIMETYPE,
+	ZOOM_STEP,
+} from '../build/imageEditor/editorShapes'
+import { useEditorSaving } from '../build/imageEditor/useEditorSaving'
 
 const route = useDmsRoute()
 const api = useMediaApi()
@@ -175,12 +118,6 @@ const cropFields = computed<CropField[]>(() => [
 	{ key: 'height', label: t('dms_media.editor.crop_fields.height') },
 ])
 
-function centeredRegion(coordinates: CropCoordinates, ratio: number): CropCoordinates {
-	const width = Math.min(coordinates.width, coordinates.height * ratio)
-	const height = width / ratio
-	return { left: coordinates.left + (coordinates.width - width) / 2, top: coordinates.top + (coordinates.height - height) / 2, width, height }
-}
-
 function presetLabel(preset: DeliveryPreset): string {
 	const size = preset.width && preset.height ? format.formatDimensions(preset.width, preset.height) : String(preset.width ?? preset.height ?? '')
 	return `${preset.id} · ${size}`
@@ -203,35 +140,6 @@ const presetPreviews = computed<PresetPreview[]>(() => {
 	})
 })
 
-function naturalSize(url: string): Promise<PixelSize> {
-	return new Promise((resolve, reject) => {
-		const image = new Image()
-		image.onload = () => resolve({ width: image.naturalWidth, height: image.naturalHeight })
-		image.onerror = reject
-		image.src = url
-	})
-}
-
-function hasSameShape(size: PixelSize, target: MediaAsset): boolean {
-	if (!target.width || !target.height) return false
-	const ratio = size.width / size.height
-	const targetRatio = target.width / target.height
-	return [targetRatio, 1 / targetRatio].some((candidate) => Math.abs(ratio - candidate) / candidate < SAME_SHAPE_TOLERANCE)
-}
-
-/** A large image is edited on its preview size: the crop is relative, the server applies it to the full file. */
-async function editingSource(target: MediaAsset): Promise<string> {
-	const isLarge = Math.max(target.width ?? 0, target.height ?? 0) > EDITING_MAX_SIDE
-	if (isLarge) {
-		const preview = await api
-			.readUrl(target.id, EDITING_PRESET)
-			.then(async ({ url }) => ((hasSameShape(await naturalSize(url), target)) ? url : undefined))
-			.catch(() => undefined)
-		if (preview) return preview
-	}
-	return (await api.readUrl(target.id)).url
-}
-
 function resetEdits(): void {
 	rotation.value = 0
 	aspect.value = FREE_ASPECT_ID
@@ -241,7 +149,7 @@ function resetEdits(): void {
 
 /** The image the cropper edits, loaded by the browser once the file is known to be editable. */
 async function loadSource(target: MediaAsset): Promise<void> {
-	const url = await editingSource(target).catch(() => null)
+	const url = await editingSource(api, target).catch(() => null)
 	if (asset.value?.id !== target.id) return
 	if (url) source.value = url
 	else sourceFailed.value = true
@@ -257,10 +165,6 @@ function onCropperReady(): void {
 	isCropperReady.value = true
 	const description = asset.value?.alt || asset.value?.name || ''
 	stage.value?.querySelectorAll('img').forEach((image) => (image.alt = description))
-}
-
-function fullImage({ imageSize: size }: ImageSize): CropCoordinates {
-	return { left: 0, top: 0, width: size.width, height: size.height }
 }
 
 async function rotate(angle: number): Promise<void> {
@@ -332,68 +236,7 @@ function normalizedCrop() {
 
 const operations = (): TransformOperations => ({ crop: normalizedCrop(), rotate: rotation.value || undefined })
 
-const isLeavingSaved = ref(false)
-
-useUnsavedChanges({ dirty: () => hasChanges() && !isLeavingSaved.value })
-
-async function leaveTo(path: string): Promise<void> {
-	isLeavingSaved.value = true
-	await navigateDms(path)
-}
-
-async function saveWith(run: () => Promise<void>): Promise<void> {
-	if (!asset.value || !hasChanges() || isSaving.value) return
-	isSaving.value = true
-	try {
-		await run()
-	} catch (error) {
-		useApiError(error, { title: t('dms_media.editor.save_failed') })
-	} finally {
-		isSaving.value = false
-	}
-}
-
-function save(): Promise<void> {
-	return saveWith(async () => {
-		const current = asset.value!
-		await api.transform(current.id, operations())
-		toast.add({
-			title: t('dms_media.editor.saved'),
-			description: t('dms_media.editor.saved_description'),
-			color: 'success',
-			icon: 'i-ph-check-circle',
-			actions: [{ label: t('dms_media.editor.revert_to_original'), onClick: () => void revert(true) }],
-		})
-		await leaveTo(fileLink(current.id))
-	})
-}
-
-function saveCopy(): Promise<void> {
-	return saveWith(async () => {
-		const { asset: copy } = await api.transformCopy(asset.value!.id, operations())
-		toast.add({ title: t('dms_media.editor.copy_saved', { name: copy.name }), color: 'success', icon: 'i-ph-copy' })
-		await leaveTo(fileLink(copy.id))
-	})
-}
-
-async function revert(skipConfirm = false): Promise<void> {
-	const current = asset.value
-	if (!current) return
-	const run = async () => {
-		await api.revert(current.id)
-		toast.add({ title: t('dms_media.editor.reverted'), color: 'success', icon: 'i-ph-arrow-counter-clockwise' })
-		await leaveTo(fileLink(current.id))
-	}
-	if (skipConfirm) return run().catch((error) => useApiError(error, { title: t('dms_media.editor.revert_failed') }))
-	await confirm({
-		title: t('dms_media.editor.revert_title'),
-		description: t('dms_media.editor.revert_description'),
-		icon: 'i-ph-arrow-counter-clockwise',
-		color: 'warning',
-		confirmLabel: t('dms_media.editor.revert_to_original'),
-		onConfirm: run,
-	})
-}
+const { save, saveCopy, revert } = useEditorSaving({ asset, isSaving, hasChanges, operations, api, toast, t, confirm })
 
 function leave(): void {
 	void navigateDms(assetId.value && asset.value ? fileLink(assetId.value) : MEDIA_ROUTES.files)

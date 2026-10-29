@@ -6,7 +6,5 @@
     "anti-slop/no-unsafe-dictionary-type": 2,
     "anti-slop/require-safety-comment-for-type-assertion": 26
   },
-  "oversizeFiles": {
-    "packages/dms-media/frontend-vue/app/components/ImageEditor.vue": 24307
-  }
+  "oversizeFiles": {}
 }
