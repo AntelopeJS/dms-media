@@ -201,14 +201,16 @@ describe("[integration] media linked subfolders — bindings that allow them", (
       parent: { key: "subfolders.project-c" },
     });
     expect(nested.status).to.equal("created");
-    // A declared parent named by its key alone is the same declaration.
     const sameParent = await EnsureMediaFolder({
       tenantId: DEFAULT_TENANT_ID,
       key: "subfolders.project-c.roof",
       name: "Roof",
       parent: "subfolders.project-c",
     });
-    expect(sameParent).to.deep.equal({ status: "kept", id: nested.id });
+    expect(
+      sameParent,
+      "a declared parent named by its key alone is the same declaration",
+    ).to.deep.equal({ status: "kept", id: nested.id });
     const photo = await ImportMediaAsset({
       tenantId: DEFAULT_TENANT_ID,
       key: "subfolders.project-c.roof.photo",

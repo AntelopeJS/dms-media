@@ -56,6 +56,13 @@ describe("[integration] media delivery — visibility and derivatives", () => {
     expect(response.status).to.equal(HTTP_UNAUTHORIZED);
   });
 
+  it("refuses an anonymous caller before telling whether a preset exists", async () => {
+    const known = await rawGet(`/media/${assetId}/thumb/${PNG_NAME}`);
+    const unknown = await rawGet(`/media/${assetId}/nosuchpreset/${PNG_NAME}`);
+    expect(known.status).to.equal(HTTP_UNAUTHORIZED);
+    expect(unknown.status).to.equal(HTTP_UNAUTHORIZED);
+  });
+
   it("redirects an authorized user to a short-lived signed URL", async () => {
     const response = await rawGet(`/media/${assetId}/${PNG_NAME}`, token);
     expect(response.status).to.equal(HTTP_FOUND);

@@ -110,7 +110,6 @@ describe("[integration] media declared content — folders and files shipped as 
         (await rejectionOf(ImportMediaAsset({ ...file, tenantId }))).message,
       ).to.contain("tenantId");
     }
-    // Validation also precedes source reads, not only the final database write.
     expect(
       (
         await rejectionOf(
@@ -121,6 +120,7 @@ describe("[integration] media declared content — folders and files shipped as 
           }),
         )
       ).message,
+      "validation precedes source reads, not only the final database write",
     ).to.contain("tenantId");
     expect({
       folders: await folders().getAll(),
