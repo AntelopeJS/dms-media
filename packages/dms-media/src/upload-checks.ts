@@ -26,6 +26,13 @@ export type UploadRefusal =
   | "quota"
   | "invalid_image";
 
+/** What a refusal tells the member besides its reason: the accepted types of the field, or the quota left. */
+interface UploadRefusalDetails {
+  accepted?: string[];
+  remaining?: number;
+  quota?: number;
+}
+
 /**
  * A file the library refuses, whoever adds it: the upload routes answer it as
  * an HTTP error, declared content throws it to the calling module.
@@ -35,7 +42,7 @@ export class UploadRefusedError extends Error {
     readonly status: number,
     readonly reason: UploadRefusal,
     message: string,
-    readonly details: Record<string, unknown> = {},
+    readonly details: UploadRefusalDetails = {},
   ) {
     super(message);
   }

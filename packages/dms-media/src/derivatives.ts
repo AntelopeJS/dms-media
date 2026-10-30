@@ -32,7 +32,8 @@ export class UnreadableImageError extends Error {}
 
 interface GenerationFailure {
   failedAt: number;
-  error: unknown;
+  /** Set when the stored bytes could not be decoded: that error is rethrown while the failure is remembered. */
+  unreadable?: UnreadableImageError;
 }
 
 const generationLocks = new Map<string, Promise<string>>();
@@ -241,15 +242,15 @@ export function partitionDerivatives(
   return { fresh, stale };
 }
 
-function failureRetryDelay(error: unknown): number {
-  return error instanceof UnreadableImageError
+function failureRetryDelay(failure: GenerationFailure): number {
+  return failure.unreadable
     ? UNREADABLE_IMAGE_RETRY_MS
     : GENERATION_FAILURE_RETRY_MS;
 }
 
 function pruneExpiredGenerationFailures(now: number): void {
   for (const [lockKey, failure] of generationFailures) {
-    if (now - failure.failedAt >= failureRetryDelay(failure.error)) {
+    if (now - failure.failedAt >= failureRetryDelay(failure)) {
       generationFailures.delete(lockKey);
     }
   }
@@ -259,7 +260,7 @@ function assertNoRecentGenerationFailure(lockKey: string): void {
   pruneExpiredGenerationFailures(Date.now());
   const failure = generationFailures.get(lockKey);
   if (!failure) return;
-  if (failure.error instanceof UnreadableImageError) throw failure.error;
+  if (failure.unreadable) throw failure.unreadable;
   throw new Error("Derivative generation recently failed");
 }
 
@@ -284,7 +285,10 @@ export async function ensureDerivative(
       return storageKey;
     })
     .catch((error: unknown) => {
-      generationFailures.set(lockKey, { failedAt: Date.now(), error });
+      generationFailures.set(lockKey, {
+        failedAt: Date.now(),
+        unreadable: error instanceof UnreadableImageError ? error : undefined,
+      });
       throw error;
     })
     .finally(() => generationLocks.delete(lockKey));
