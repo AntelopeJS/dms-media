@@ -62,6 +62,21 @@ new AssetType({
 
 ## Compatibility
 
+<!-- antelopejs-docs-compat:start -->
+
+| Package                                     | Supported         | Tested with |
+| ------------------------------------------- | ----------------- | ----------- |
+| `@antelopejs/interface-api`                 | `>=0.0.15 <1.0.0` | `0.0.15`    |
+| `@antelopejs/interface-api-util`            | `>=0.1.3 <1.0.0`  | `0.1.3`     |
+| `@antelopejs/interface-core`                | `>=0.2.4 <1.0.0`  | `0.2.4`     |
+| `@antelopejs/interface-database`            | `>=0.1.11 <1.0.0` | `0.1.11`    |
+| `@antelopejs/interface-database-decorators` | `>=0.1.10 <1.0.0` | `0.1.10`    |
+| `@antelopejs/interface-dms`                 | `>=0.9.0 <1.0.0`  | `0.9.0`     |
+| `@antelopejs/interface-dms-media`           | `>=0.3.0 <0.4.0`  | `0.3.1`     |
+| `@antelopejs/interface-file-storage`        | `>=0.1.6 <1.0.0`  | `0.1.6`     |
+
+<!-- antelopejs-docs-compat:end -->
+
 | Package | Version |
 | --- | --- |
 | `@antelopejs/dms` | `>=0.11.0 <1.0.0` |

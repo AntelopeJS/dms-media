@@ -70,13 +70,15 @@ The interface also exports the option, declaration and ACL types: `AssetTypeOpti
 
 The 0.3 interface line requires `@antelopejs/dms-media >=0.5.0` for `EnsureMediaFolder` and `ImportMediaAsset`. Media 0.4 uses the 0.2 interface line. The interface declares these peer dependencies:
 
-<!-- docs-compat: ./package.json#peerDependencies -->
+<!-- antelopejs-docs-compat:start -->
 
-| Package | Range |
-| --- | --- |
-| `@antelopejs/interface-api` | `>=0.0.15 <1.0.0` |
-| `@antelopejs/interface-core` | `>=0.2.4 <1.0.0` |
-| `@antelopejs/interface-dms` | `>=0.9.0 <1.0.0` |
+| Package                      | Supported         | Tested with |
+| ---------------------------- | ----------------- | ----------- |
+| `@antelopejs/interface-api`  | `>=0.0.15 <1.0.0` | `0.0.15`    |
+| `@antelopejs/interface-core` | `>=0.2.4 <1.0.0`  | `0.2.4`     |
+| `@antelopejs/interface-dms`  | `>=0.9.0 <1.0.0`  | `0.9.0`     |
+
+<!-- antelopejs-docs-compat:end -->
 
 ## Documentation
 
