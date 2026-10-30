@@ -1,5 +1,6 @@
 import { pageRoutePath } from "@antelopejs/interface-dms/page";
 import type { AxiosInstance } from "axios";
+import { z } from "zod";
 
 const HTTP_OK = 200;
 const PAGE_LAYOUT_ROUTE = "/pagelayout";
@@ -15,10 +16,16 @@ export interface PageAccess {
   servedBlocks: number;
 }
 
-function countBlocks(components: unknown): number {
-  if (Array.isArray(components)) return components.length;
-  return Object.keys(components ?? {}).length;
-}
+const layoutSchema = z.object({
+  components: z
+    .union([z.array(z.unknown()), z.record(z.unknown())])
+    .nullish()
+    .transform((components) =>
+      Array.isArray(components)
+        ? components.length
+        : Object.keys(components ?? {}).length,
+    ),
+});
 
 /** Reads a page through its guarded route, its page entry and its by-slug layout. */
 export async function readPageAccess(
@@ -40,6 +47,6 @@ export async function readPageAccess(
   return {
     ownRouteStatus: ownRoute.status,
     hasAccess: page.data.route?.hasAccess === true,
-    servedBlocks: countBlocks(layout.data.components),
+    servedBlocks: layoutSchema.parse(layout.data).components,
   };
 }

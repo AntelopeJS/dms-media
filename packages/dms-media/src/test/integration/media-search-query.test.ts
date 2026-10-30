@@ -3,6 +3,7 @@ import { GetModel } from "@antelopejs/interface-database-decorators";
 import { expect } from "chai";
 import { type MediaAsset, MediaAssetModel } from "../../db";
 import { MediaAssetsController } from "../../routes/media/assets";
+import { patchMethod } from "../helpers/prototype";
 
 const TENANT = "stream-search-a";
 const OTHER_TENANT = "stream-search-b";
@@ -11,7 +12,6 @@ const HIDDEN = "hidden";
 const SKIPPED = 150;
 const MATCHING = 120;
 const LIMIT = 100;
-type CursorFactory = (this: Query<unknown>) => AsyncIterable<unknown>;
 
 function asset(
   id: string,
@@ -76,27 +76,23 @@ describe("[integration] streaming asset search", () => {
     const expected = candidates
       .filter((row) => row.name.toLowerCase().includes("İ".toLowerCase()))
       .slice(0, LIMIT);
-    const original = Object.getOwnPropertyDescriptor(
-      Query.prototype,
-      "cursor",
-    )!;
-    const readCursor = original.value as CursorFactory;
     let consumed = 0;
     let closed = false;
-    Object.defineProperty(Query.prototype, "cursor", {
-      ...original,
-      value: async function* (this: Query<unknown>) {
-        try {
-          const cursor = readCursor.call(this);
-          for await (const row of cursor) {
-            consumed++;
-            yield row;
+    const restore = patchMethod<Query<unknown>, "cursor">(
+      Query.prototype,
+      "cursor",
+      (readCursor) =>
+        async function* (this: Query<unknown>) {
+          try {
+            for await (const row of readCursor.call(this)) {
+              consumed++;
+              yield row;
+            }
+          } finally {
+            closed = true;
           }
-        } finally {
-          closed = true;
-        }
-      },
-    });
+        },
+    );
     try {
       const result = await controller(model).search(" İ ", " IMAGE/ ");
       expect(result.assets.map((row) => row.id)).to.deep.equal(
@@ -106,7 +102,7 @@ describe("[integration] streaming asset search", () => {
       expect(consumed).to.be.lessThan(candidates.length);
       expect(closed).to.equal(true);
     } finally {
-      Object.defineProperty(Query.prototype, "cursor", original);
+      restore();
     }
   });
 
