@@ -2,6 +2,7 @@ import { Query } from "@antelopejs/interface-database";
 import { GetModel } from "@antelopejs/interface-database-decorators";
 import { expect } from "chai";
 import { MediaFolder, MediaFolderModel } from "../../db";
+import { patchMethod } from "../helpers/prototype";
 
 const TENANT = "folder-query-a";
 const OTHER = "folder-query-b";
@@ -70,16 +71,16 @@ describe("[integration] folder query pushdown", () => {
 
   it("limits a binding lookup before transfer and keeps the existing first match", async () => {
     const expected = (await model.getBy("binding", "shared"))[0];
-    const original = Object.getOwnPropertyDescriptor(Query.prototype, "run")!;
-    const run = original.value as Query<unknown>["run"];
     const stages: string[][] = [];
-    Object.defineProperty(Query.prototype, "run", {
-      ...original,
-      value: function (this: Query<unknown>) {
-        stages.push(this.stages.slice(3).map((stage) => stage.stage));
-        return run.call(this);
-      },
-    });
+    const restore = patchMethod<Query<unknown>, "run">(
+      Query.prototype,
+      "run",
+      (run) =>
+        function (this: Query<unknown>) {
+          stages.push(this.stages.slice(3).map((stage) => stage.stage));
+          return run.call(this);
+        },
+    );
     try {
       expect(await model.getByBinding("shared")).to.deep.equal(expected);
       expect(await model.getByBinding("missing")).to.equal(undefined);
@@ -88,7 +89,7 @@ describe("[integration] folder query pushdown", () => {
         ["getAll", "slice"],
       ]);
     } finally {
-      Object.defineProperty(Query.prototype, "run", original);
+      restore();
     }
   });
 });

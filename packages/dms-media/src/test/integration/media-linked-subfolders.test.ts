@@ -15,6 +15,7 @@ import {
   MediaFolderModel,
 } from "../../db";
 import { ONE_PIXEL_PNG, PNG_MIMETYPE } from "../helpers/assets";
+import { type FolderNode, fetchFolderNodes } from "../helpers/folders";
 import { authorizedClient } from "../helpers/http";
 import { ensureOwnerSession } from "../helpers/owner";
 
@@ -25,15 +26,6 @@ const OPEN_BINDING_ID = "subfolders.photos";
 const LOCKED_BINDING_ID = "subfolders.locked";
 const KEY_PREFIX = "subfolders.";
 const ERRORS = "$dms_media.errors";
-
-interface FolderNode {
-  id: string;
-  name: string;
-  parentId: string | null;
-  binding: string | null;
-  acceptsSubfolders: boolean;
-  accepts: string[] | null;
-}
 
 function folders() {
   return GetModel(MediaFolderModel, DEFAULT_TENANT_ID);
@@ -90,8 +82,7 @@ describe("[integration] media linked subfolders — bindings that allow them", (
   let client: AxiosInstance;
 
   async function treeFolder(binding: string): Promise<FolderNode> {
-    const tree = await client.get("/api/media/tree");
-    const folder = (tree.data.folders as FolderNode[]).find(
+    const folder = (await fetchFolderNodes(client)).find(
       (entry) => entry.binding === binding,
     );
     if (!folder) throw new Error(`No folder linked to ${binding}`);
@@ -145,8 +136,7 @@ describe("[integration] media linked subfolders — bindings that allow them", (
       name: "Renamed",
     });
     expect(rename.status).to.equal(HTTP_FORBIDDEN);
-    const tree = await client.get("/api/media/tree");
-    const subfolder = (tree.data.folders as FolderNode[]).find(
+    const subfolder = (await fetchFolderNodes(client)).find(
       (folder) => folder.id === created.data.id,
     );
     expect(subfolder?.acceptsSubfolders).to.equal(true);

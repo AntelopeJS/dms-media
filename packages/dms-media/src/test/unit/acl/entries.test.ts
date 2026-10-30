@@ -2,6 +2,7 @@ import { expect } from "chai";
 import { parseFolderAcl, serializeAcl } from "../../../acl/entries";
 import type { MediaFolder } from "../../../db/tables";
 import type { AclEntry } from "../../../types";
+import { folder } from "../library/fixtures";
 
 const READ_ENTRY: AclEntry = {
   subject: { kind: "role", id: "editors" },
@@ -9,7 +10,7 @@ const READ_ENTRY: AclEntry = {
 };
 
 function folderWithAcl(json_acl: string | undefined): MediaFolder {
-  return { json_acl } as MediaFolder;
+  return folder("folder", undefined, [], { json_acl });
 }
 
 describe("[unit] acl/entries — parseFolderAcl", () => {

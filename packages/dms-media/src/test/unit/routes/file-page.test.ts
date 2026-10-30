@@ -7,25 +7,26 @@ import {
   buildDeliveryNotice,
   buildFileInformation,
 } from "../../../routes/media/file";
+import {
+  asset as buildAsset,
+  folder as buildFolder,
+} from "../library/fixtures";
 
 const ORIGIN = "https://api.example.com";
 const ASSET_ID = "7554eb0a-c6fb-4518-a8b9-65c6e8a3e6a9";
 
 function jpeg(overrides: Partial<MediaAsset> = {}): MediaAsset {
-  return {
-    _id: ASSET_ID,
+  return buildAsset(ASSET_ID, {
     name: "Été à Liège.jpg",
-    mimetype: "image/jpeg",
-    visibility: "inherit",
     folderId: "folder",
     createdAt: new Date("2026-10-01T10:00:00Z"),
     updatedAt: new Date("2026-10-02T10:00:00Z"),
     ...overrides,
-  } as MediaAsset;
+  });
 }
 
 function folder(visibility: MediaFolder["visibility"]): MediaFolder {
-  return { visibility } as MediaFolder;
+  return buildFolder("folder", undefined, [], { visibility });
 }
 
 function row(items: KeyValueListItem[], id: string): KeyValueListItem {

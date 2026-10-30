@@ -9,6 +9,7 @@ import {
 import { CONTENT_ROOT_BINDING } from "../../bindings";
 import { MediaEventModel, MediaFolderModel } from "../../db";
 import { uploadPixelPng, uploadTextAsset } from "../helpers/assets";
+import { fetchFolderNodes } from "../helpers/folders";
 import { authorizedClient } from "../helpers/http";
 import { ensureOwnerSession } from "../helpers/owner";
 
@@ -25,11 +26,6 @@ const CENTRAL_EXTRA_LENGTH_OFFSET = 30;
 const CENTRAL_COMMENT_LENGTH_OFFSET = 32;
 const CENTRAL_HEADER_SIZE = 46;
 const ALT_LIMIT = 255;
-
-interface FolderNode {
-  id: string;
-  binding: string | null;
-}
 
 /** The entry names of a zip, read from its central directory. */
 function zipEntryNames(zip: Buffer): string[] {
@@ -125,8 +121,7 @@ describe("[integration] media explorer writes — names, linked folders, zips", 
   });
 
   it("puts no subfolder inside a linked folder, by creation or by move", async () => {
-    const tree = await client.get("/api/media/tree");
-    const linked = (tree.data.folders as FolderNode[]).find(
+    const linked = (await fetchFolderNodes(client)).find(
       (folder) => folder.binding === BINDING_ID,
     );
     expect(linked, "linked folder").to.not.equal(undefined);

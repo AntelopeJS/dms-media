@@ -24,23 +24,27 @@ const HTTP_BAD_REQUEST = 400;
 const HTTP_CONFLICT = 409;
 const HTTP_UNPROCESSABLE_ENTITY = 422;
 
-function translateTransformError(error: unknown): never {
-  assert(
-    !(error instanceof AnimatedImageTransformError),
-    HTTP_UNPROCESSABLE_ENTITY,
-    "Animated images cannot be edited",
-  );
-  assert(
-    !(error instanceof OversizedImageTransformError),
-    HTTP_UNPROCESSABLE_ENTITY,
-    "This image is too large to be edited",
-  );
-  assert(
-    !(error instanceof MediaAssetChangedError),
-    HTTP_CONFLICT,
-    "This image was changed by someone else in the meantime. Reload the page to see the latest version.",
-  );
-  throw error;
+async function translatingTransformErrors<T>(work: Promise<T>): Promise<T> {
+  try {
+    return await work;
+  } catch (error) {
+    assert(
+      !(error instanceof AnimatedImageTransformError),
+      HTTP_UNPROCESSABLE_ENTITY,
+      "Animated images cannot be edited",
+    );
+    assert(
+      !(error instanceof OversizedImageTransformError),
+      HTTP_UNPROCESSABLE_ENTITY,
+      "This image is too large to be edited",
+    );
+    assert(
+      !(error instanceof MediaAssetChangedError),
+      HTTP_CONFLICT,
+      "This image was changed by someone else in the meantime. Reload the page to see the latest version.",
+    );
+    throw error;
+  }
 }
 
 async function requireEditableAsset(
@@ -106,8 +110,8 @@ export class MediaTransformController extends MediaApiController {
     const ops = assertValidation(body, (v) => transformSchema.parse(v));
     const context = await this.resolveContext();
     const asset = await requireEditableAsset(context, assetId);
-    await applyImageTransform(context.assetModel, asset, ops).catch(
-      translateTransformError,
+    await translatingTransformErrors(
+      applyImageTransform(context.assetModel, asset, ops),
     );
     const updated = await context.assetModel.get(assetId);
     assert(updated, HTTP_CONFLICT, "Asset disappeared during transform");
@@ -132,8 +136,8 @@ export class MediaTransformController extends MediaApiController {
     const ops = assertValidation(body, (v) => transformSchema.parse(v));
     const context = await this.resolveContext();
     const asset = await requireEditableAsset(context, assetId);
-    const copy = await createEditedCopy(context, asset, ops).catch(
-      translateTransformError,
+    const copy = await translatingTransformErrors(
+      createEditedCopy(context, asset, ops),
     );
     await this.record(context, {
       kind: "asset.upload",
@@ -156,8 +160,8 @@ export class MediaTransformController extends MediaApiController {
       HTTP_CONFLICT,
       "Asset has no original to revert to",
     );
-    await revertImageTransform(context.assetModel, asset).catch(
-      translateTransformError,
+    await translatingTransformErrors(
+      revertImageTransform(context.assetModel, asset),
     );
     const updated = await context.assetModel.get(assetId);
     assert(updated, HTTP_CONFLICT, "Asset disappeared during revert");

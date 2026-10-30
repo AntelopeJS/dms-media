@@ -5,13 +5,14 @@ import {
   resolveEffectiveVisibility,
 } from "../../../routes/media/dto";
 import type { AssetVisibility, FolderVisibility } from "../../../types";
+import { asset, folder } from "../library/fixtures";
 
 function assetWithVisibility(visibility: AssetVisibility): MediaAsset {
-  return { visibility } as MediaAsset;
+  return asset("asset", { visibility });
 }
 
 function folderWithVisibility(visibility: FolderVisibility): MediaFolder {
-  return { visibility } as MediaFolder;
+  return folder("folder", undefined, [], { visibility });
 }
 
 describe("[unit] routes/dto — resolveEffectiveVisibility", () => {
@@ -54,12 +55,12 @@ describe("[unit] routes/dto — resolveEffectiveVisibility", () => {
 
 describe("[unit] routes/dto — buildDeliveryPath", () => {
   it("builds the stable delivery URL from id and name", () => {
-    const asset = { _id: "a1", name: "photo.png" } as MediaAsset;
-    expect(buildDeliveryPath(asset)).to.equal("/media/a1/photo.png");
+    const photo = asset("a1", { name: "photo.png" });
+    expect(buildDeliveryPath(photo)).to.equal("/media/a1/photo.png");
   });
 
   it("escapes unsafe characters in the filename", () => {
-    const asset = { _id: "a1", name: "my file#1.png" } as MediaAsset;
-    expect(buildDeliveryPath(asset)).to.equal("/media/a1/my%20file%231.png");
+    const spaced = asset("a1", { name: "my file#1.png" });
+    expect(buildDeliveryPath(spaced)).to.equal("/media/a1/my%20file%231.png");
   });
 });

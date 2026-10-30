@@ -8,6 +8,7 @@ import {
   readEventDetails,
   UPLOAD_KIND,
 } from "./events";
+import { z } from "zod";
 import { isString } from "../guards";
 
 export interface UploadBatchRow {
@@ -34,10 +35,11 @@ type BatchAttention = "yes" | "no";
 /** How long a failed upload keeps asking for attention. */
 export const FAILURE_WINDOW_MS = 24 * 60 * 60 * 1000;
 
-interface UploadFailure {
-  name: string;
-  reason?: string;
-}
+const uploadFailuresSchema = z.array(
+  z.object({ name: z.string(), reason: z.string().optional() }),
+);
+
+type UploadFailures = z.infer<typeof uploadFailuresSchema>;
 
 const HISTORY_TEXTS = "dms_media.uploads.history";
 const FAILURES_SHOWN = 3;
@@ -52,7 +54,7 @@ interface BatchAccumulator {
   by: string;
   files: number;
   failed: number;
-  failures: UploadFailure[];
+  failures: UploadFailures;
   size: number;
   finishedAt: Date;
   reportedAt?: Date;
@@ -72,12 +74,12 @@ function newBatch(key: string, event: MediaEvent): BatchAccumulator {
 }
 
 /** The files a batch report names as failed, with their reasons. */
-function readBatchFailures(event: MediaEvent): UploadFailure[] {
+function readBatchFailures(event: MediaEvent): UploadFailures {
   const raw = readEventDetails(event).failures;
   if (!isString(raw)) return [];
   try {
-    const parsed: unknown = JSON.parse(raw);
-    return Array.isArray(parsed) ? (parsed as UploadFailure[]) : [];
+    const parsed = uploadFailuresSchema.safeParse(JSON.parse(raw));
+    return parsed.success ? parsed.data : [];
   } catch {
     return [];
   }

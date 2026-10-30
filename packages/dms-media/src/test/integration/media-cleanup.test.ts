@@ -1,10 +1,5 @@
 import { randomUUID } from "node:crypto";
-import {
-  type AtomicMutation,
-  type AtomicMutationOutcome,
-  Query,
-  Table,
-} from "@antelopejs/interface-database";
+import { type AtomicMutation, Table } from "@antelopejs/interface-database";
 import { GetModel } from "@antelopejs/interface-database-decorators";
 import * as storage from "@antelopejs/interface-file-storage";
 import { expect } from "chai";
@@ -22,15 +17,10 @@ import { commitDerivative, uploadStorageBytes } from "../../derivatives";
 import { presetCacheKey } from "../../presets";
 import { parseDerivatives } from "../../routes/media/storage-keys";
 import { applyImageTransform } from "../../transform";
+import { patchMethod } from "../helpers/prototype";
 
 const TENANT = "media-cleanup-concurrency";
 const OLD_DATE = new Date("2020-01-01T00:00:00Z");
-type AtomicMediaMutation = (
-  this: Table<MediaAsset>,
-  key: string,
-  request: AtomicMutation<MediaAsset>,
-) => Query<AtomicMutationOutcome>;
-
 function upload(): Promise<string> {
   return uploadStorageBytes(
     Buffer.from("cleanup"),
@@ -78,21 +68,18 @@ describe("[integration] replayable media cleanup", () => {
   let model: MediaAssetModel;
   let asset: MediaAsset;
   let compare: MediaAssetModel["compareMedia"];
-  let atomicMutation: PropertyDescriptor;
+  let restoreMutation: () => void = () => undefined;
 
   beforeEach(async () => {
     model = GetModel(MediaAssetModel, TENANT);
     asset = await insertAsset(model);
     compare = model.compareMedia.bind(model);
-    atomicMutation = Object.getOwnPropertyDescriptor(
-      Table.prototype,
-      "atomicMutation",
-    )!;
+    restoreMutation = () => undefined;
   });
 
   afterEach(async () => {
     model.compareMedia = compare;
-    Object.defineProperty(Table.prototype, "atomicMutation", atomicMutation);
+    restoreMutation();
     await deleteMediaAsset(model, asset._id);
   });
 
@@ -160,24 +147,25 @@ describe("[integration] replayable media cleanup", () => {
     const key = await upload();
     await commitDerivative(model, asset, "obsolete", key);
     let calls = 0;
-    const original = atomicMutation.value as AtomicMediaMutation;
-    Object.defineProperty(Table.prototype, "atomicMutation", {
-      ...atomicMutation,
-      value: function (
-        this: Table<MediaAsset>,
-        id: string,
-        request: AtomicMutation<MediaAsset>,
-      ) {
-        const query = original.call(this, id, request);
-        const run = query.run.bind(query);
-        query.run = async () => {
-          calls++;
-          await run();
-          return "unknown";
-        };
-        return query;
-      },
-    });
+    restoreMutation = patchMethod<Table<unknown>, "atomicMutation">(
+      Table.prototype,
+      "atomicMutation",
+      (original) =>
+        function (
+          this: Table<unknown>,
+          id: string,
+          request: AtomicMutation<unknown>,
+        ) {
+          const query = original.call(this, id, request);
+          const run = query.run.bind(query);
+          query.run = async () => {
+            calls++;
+            await run();
+            return "unknown";
+          };
+          return query;
+        },
+    );
     const error = await sweepAssetDerivatives(model, asset).catch(
       (failure: unknown) => failure,
     );
@@ -185,7 +173,7 @@ describe("[integration] replayable media cleanup", () => {
     expect(calls).to.equal(1);
     expect(await storage.FileExists(key)).to.equal(true);
     expect(retiredFiles((await model.get(asset._id))!)).to.deep.equal([key]);
-    Object.defineProperty(Table.prototype, "atomicMutation", atomicMutation);
+    restoreMutation();
     await sweepAssetDerivatives(model, asset);
     expect(await storage.FileExists(key)).to.equal(false);
   });

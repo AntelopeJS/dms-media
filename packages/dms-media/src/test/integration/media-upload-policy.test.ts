@@ -17,6 +17,7 @@ import {
 import { runPurgeStaging } from "../../crons/purge-staging";
 import { MediaFolderModel } from "../../db";
 import { uploadAsset, uploadPixelPng } from "../helpers/assets";
+import { fetchFolderNodes } from "../helpers/folders";
 import { authorizedClient } from "../helpers/http";
 import { ensureOwnerSession } from "../helpers/owner";
 
@@ -29,12 +30,6 @@ const PDF_BINDING_ID = "upload-policy.pdf-only";
 const PDF_FOLDER_NAME = "PDF only uploads";
 const PURGE_HORIZON_MS = 25 * 60 * 60 * 1000;
 const EXIF_ROTATED_RIGHT = 6;
-
-interface FolderNode {
-  id: string;
-  name: string;
-  binding: string | null;
-}
 
 interface StagedUpload {
   resourceKey: string;
@@ -173,8 +168,7 @@ describe("[integration] media upload policy — types, quota, real content and s
   });
 
   it("refuses a file the linked field does not accept", async () => {
-    const tree = await client.get("/api/media/tree");
-    const linked = (tree.data.folders as FolderNode[]).find(
+    const linked = (await fetchFolderNodes(client)).find(
       (folder) => folder.binding === PDF_BINDING_ID,
     );
     expect(linked, "linked folder").to.not.equal(undefined);

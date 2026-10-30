@@ -1,8 +1,8 @@
 import { expect } from "chai";
 import { GetMetadata } from "@antelopejs/interface-core";
-import type {
+import {
   ComponentBuilder,
-  ComponentInfoSerialized,
+  type ComponentInfoSerialized,
 } from "@antelopejs/interface-dms/component";
 import { PageMetadata } from "@antelopejs/interface-dms/page";
 import { MEDIA_LIBRARY_TOPIC } from "../../../constants";
@@ -23,7 +23,10 @@ type LivePage = (typeof LIVE_PAGES)[keyof typeof LIVE_PAGES];
 
 /** The blocks a page declares, in the order it renders them. */
 function pageBlocks(page: LivePage): ComponentBuilder<unknown>[] {
-  return Object.values(page) as ComponentBuilder<unknown>[];
+  return Object.values(page).filter(
+    (value): value is ComponentBuilder<unknown> =>
+      value instanceof ComponentBuilder,
+  );
 }
 
 /** What a block reads, as its serialized options say. */

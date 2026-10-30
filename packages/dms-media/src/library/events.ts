@@ -2,8 +2,8 @@ import { GetModel } from "@antelopejs/interface-database-decorators";
 import { Logging } from "@antelopejs/interface-core/logging";
 import type { User } from "@antelopejs/interface-dms/auth/db";
 import { type MediaEvent, MediaEventModel } from "../db";
+import { z } from "zod";
 import { announceLibraryChange, UPLOAD_ANNOUNCE_WINDOW_MS } from "./realtime";
-import { isObject } from "../guards";
 
 const MEDIA_EVENT_KINDS = [
   "asset.upload",
@@ -25,6 +25,10 @@ const MEDIA_EVENT_KINDS = [
 export type MediaEventKind = (typeof MEDIA_EVENT_KINDS)[number];
 
 export type MediaEventDetails = Record<string, string | number>;
+
+const eventDetailsSchema: z.ZodType<MediaEventDetails> = z.record(
+  z.union([z.string(), z.number()]),
+);
 
 export interface MediaEventInput {
   kind: MediaEventKind;
@@ -78,8 +82,8 @@ export async function recordMediaEvent(
 export function readEventDetails(event: MediaEvent): MediaEventDetails {
   if (!event.json_details) return {};
   try {
-    const parsed: unknown = JSON.parse(event.json_details);
-    return isObject(parsed) ? (parsed as MediaEventDetails) : {};
+    const parsed = eventDetailsSchema.safeParse(JSON.parse(event.json_details));
+    return parsed.success ? parsed.data : {};
   } catch {
     return {};
   }

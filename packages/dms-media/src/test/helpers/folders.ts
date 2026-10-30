@@ -1,5 +1,7 @@
 import { GetModel } from "@antelopejs/interface-database-decorators";
 import { DEFAULT_TENANT_ID } from "@antelopejs/interface-dms/constants";
+import type { AxiosInstance } from "axios";
+import { z } from "zod";
 import { parseFolderAcl, serializeAcl } from "../../acl";
 import { MediaFolderModel } from "../../db";
 import type { AclEntry } from "../../types";
@@ -22,4 +24,24 @@ export async function writeFolderAcl(
   await GetModel(MediaFolderModel, DEFAULT_TENANT_ID).update(folderId, {
     json_acl: serializeAcl(entries ?? undefined) ?? "",
   });
+}
+
+const folderNodeSchema = z.object({
+  id: z.string(),
+  name: z.string(),
+  parentId: z.string().nullable(),
+  binding: z.string().nullable(),
+  acceptsSubfolders: z.boolean(),
+  accepts: z.array(z.string()).nullable(),
+});
+
+export type FolderNode = z.infer<typeof folderNodeSchema>;
+
+/** The folders `/api/media/tree` answers, checked against the fields the suites read. */
+export async function fetchFolderNodes(
+  client: AxiosInstance,
+): Promise<FolderNode[]> {
+  const response = await client.get("/api/media/tree");
+  return z.object({ folders: z.array(folderNodeSchema) }).parse(response.data)
+    .folders;
 }
