@@ -6,6 +6,7 @@ export function folder(
   id: string,
   parentId?: string,
   path: string[] = [],
+  overrides: Partial<MediaFolder> = {},
 ): MediaFolder {
   return {
     _id: id,
@@ -15,6 +16,7 @@ export function folder(
     visibility: "private",
     createdAt: EPOCH,
     updatedAt: EPOCH,
+    ...overrides,
   };
 }
 
@@ -28,11 +30,15 @@ export function asset(
     name: `${id}.jpg`,
     mimetype: "image/jpeg",
     size: 100,
+    storageKey: `${id}.jpg`,
     visibility: "inherit",
+    mediaRevision: "revision",
+    json_retiredFiles: "[]",
+    createdBy: "user",
     createdAt: EPOCH,
     updatedAt: EPOCH,
     ...overrides,
-  } as MediaAsset;
+  };
 }
 
 export function event(
