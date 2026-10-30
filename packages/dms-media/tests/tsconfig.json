@@ -1,0 +1,12 @@
+{
+  "compilerOptions": {
+    "types": ["node", "mocha"],
+    "target": "esnext",
+    "module": "nodenext",
+    "allowJs": true,
+    "strict": true,
+    "noEmit": true,
+    "lib": ["esnext", "dom"]
+  },
+  "include": ["./**/*.mjs"]
+}
