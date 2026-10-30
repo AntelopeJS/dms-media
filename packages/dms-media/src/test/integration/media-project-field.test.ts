@@ -1,5 +1,6 @@
 import type { AxiosInstance } from "axios";
 import { assert, expect } from "chai";
+import { z } from "zod";
 import { CustomComponent } from "@antelopejs/interface-dms/base/custom";
 import {
   GetPermissionId,
@@ -10,6 +11,7 @@ import {
 import { RegisterAssetBinding } from "@antelopejs/interface-dms-media";
 import { MEDIA_ROUTES } from "../../library/links";
 import { uploadTextAsset } from "../helpers/assets";
+import { createdBody, readBody } from "../helpers/bodies";
 import { authorizedClient } from "../helpers/http";
 import { readPageAccess } from "../helpers/pages";
 import {
@@ -26,13 +28,23 @@ const BINDING_ID = "editorial.article-pictures";
 const FOLDER_NAME = "Article pictures";
 const CONTENT_ROOT_NAME = "Content";
 
-interface TreeFolderNode {
-  id: string;
-  name: string;
-  parentId: string | null;
-  shell: boolean;
-  rights: { read: boolean; write: boolean; manage: boolean };
-}
+const treeBody = z.object({
+  folders: z.array(
+    z.object({
+      id: z.string(),
+      name: z.string(),
+      parentId: z.string().nullable(),
+      shell: z.boolean(),
+      rights: z.object({
+        read: z.boolean(),
+        write: z.boolean(),
+        manage: z.boolean(),
+      }),
+    }),
+  ),
+});
+
+type TreeFolderNode = z.infer<typeof treeBody>["folders"][number];
 
 @RegisterPage()
 class EditorialArticlesPage extends PageController("editorial-articles", {
@@ -47,7 +59,7 @@ class EditorialArticlesPage extends PageController("editorial-articles", {
 async function fetchFolders(client: AxiosInstance): Promise<TreeFolderNode[]> {
   const response = await client.get("/api/media/tree");
   expect(response.status, "tree").to.equal(HTTP_OK);
-  return response.data.folders;
+  return readBody(response, treeBody).folders;
 }
 
 describe("[integration] media project field — a member uses media from a project page", () => {
@@ -127,7 +139,7 @@ describe("[integration] media project field — a member uses media from a proje
     });
     expect(created.status).to.equal(HTTP_OK);
     const denied = await editor.client.post("/api/media/upload/presign", {
-      folderId: created.data.id,
+      folderId: readBody(created, createdBody).id,
       filename: "nope.txt",
       size: 1,
       mimetype: "text/plain",

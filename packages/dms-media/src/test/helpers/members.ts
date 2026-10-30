@@ -3,6 +3,8 @@ import { GetModel } from "@antelopejs/interface-database-decorators";
 import { DEFAULT_TENANT_ID } from "@antelopejs/interface-dms/constants";
 import { RoleModel, UserInviteModel } from "@antelopejs/interface-dms/db";
 import type { AxiosInstance } from "axios";
+import { z } from "zod";
+import { readBody } from "./bodies";
 import { authorizedClient, createClient } from "./http";
 import { withPermissionAncestors } from "./permission-ancestors";
 
@@ -10,6 +12,11 @@ const MEMBER_PASSWORD = "TestPassw0rd!";
 const MEMBER_LANGUAGE = "en";
 const INVITE_LIFETIME_MS = 3_600_000;
 const HTTP_BAD_REQUEST = 400;
+
+const signupBody = z.object({
+  access_token: z.string(),
+  user: z.object({ _id: z.string() }),
+});
 
 export interface MemberSession {
   client: AxiosInstance;
@@ -74,10 +81,11 @@ export async function registerMember(
       `Member signup failed [${signup.status}]: ${JSON.stringify(signup.data)}`,
     );
   }
+  const session = readBody(signup, signupBody);
   return {
-    client: authorizedClient(signup.data.access_token),
-    accessToken: signup.data.access_token,
-    userId: signup.data.user?._id,
+    client: authorizedClient(session.access_token),
+    accessToken: session.access_token,
+    userId: session.user._id,
     email,
   };
 }

@@ -16,7 +16,8 @@ import {
 } from "../../config";
 import { runPurgeStaging } from "../../crons/purge-staging";
 import { MediaFolderModel } from "../../db";
-import { uploadAsset, uploadPixelPng } from "../helpers/assets";
+import { putPresigned, uploadAsset, uploadPixelPng } from "../helpers/assets";
+import { createdBody, presignBody, readBody } from "../helpers/bodies";
 import { fetchFolderNodes } from "../helpers/folders";
 import { authorizedClient } from "../helpers/http";
 import { ensureOwnerSession } from "../helpers/owner";
@@ -92,13 +93,10 @@ describe("[integration] media upload policy — types, quota, real content and s
       body.byteLength,
     );
     expect(presigned.status, "presign").to.equal(HTTP_OK);
-    const put = await axios.put(presigned.data.uploadUrl, body, {
-      headers: presigned.data.headers,
-      validateStatus: () => true,
-      transformRequest: [(data) => data],
-    });
+    const target = readBody(presigned, presignBody);
+    const put = await putPresigned(target, body);
     expect(put.status, "storage PUT").to.be.lessThan(HTTP_REDIRECT_BOUNDARY);
-    return { resourceKey: presigned.data.resourceKey };
+    return { resourceKey: target.resourceKey };
   }
 
   before(async function () {
@@ -114,7 +112,7 @@ describe("[integration] media upload policy — types, quota, real content and s
       name: "Upload policy",
     });
     expect(folder.status).to.equal(HTTP_OK);
-    folderId = folder.data.id;
+    folderId = readBody(folder, createdBody).id;
   });
 
   after(async () => {
@@ -233,24 +231,23 @@ describe("[integration] media upload policy — types, quota, real content and s
       name: "Doomed upload target",
     });
     const body = Buffer.from("bytes");
-    const presigned = await presign(
-      doomed.data.id,
-      "x.txt",
-      "text/plain",
-      body.byteLength,
+    const doomedId = readBody(doomed, createdBody).id;
+    const presigned = readBody(
+      await presign(doomedId, "x.txt", "text/plain", body.byteLength),
+      presignBody,
     );
-    await axios.put(presigned.data.uploadUrl, body, {
-      headers: presigned.data.headers,
-      transformRequest: [(data) => data],
+    await axios.put(presigned.uploadUrl, body, {
+      headers: presigned.headers,
+      transformRequest: [(data: Buffer) => data],
     });
-    await client.delete(`/api/media/folders/${doomed.data.id}`);
+    await client.delete(`/api/media/folders/${doomedId}`);
     const confirm = await client.post("/api/media/upload/confirm", {
-      folderId: doomed.data.id,
-      resourceKey: presigned.data.resourceKey,
+      folderId: doomedId,
+      resourceKey: presigned.resourceKey,
       filename: "x.txt",
     });
     expect(confirm.status).to.be.greaterThanOrEqual(400);
-    expect(await FileExists(presigned.data.resourceKey)).to.equal(false);
+    expect(await FileExists(presigned.resourceKey)).to.equal(false);
   });
 
   it("deletes a staged file on abort", async () => {

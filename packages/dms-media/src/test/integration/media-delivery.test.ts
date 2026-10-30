@@ -1,11 +1,13 @@
 import type { AxiosInstance } from "axios";
 import { assert, expect } from "chai";
+import { z } from "zod";
 import {
   ONE_PIXEL_PNG,
   PNG_NAME,
   rawGet,
   uploadPixelPng,
 } from "../helpers/assets";
+import { createdBody, readBody, urlBody } from "../helpers/bodies";
 import { authorizedClient } from "../helpers/http";
 import { ensureOwnerSession } from "../helpers/owner";
 
@@ -35,7 +37,7 @@ describe("[integration] media delivery — visibility and derivatives", () => {
       name: "Delivery",
     });
     expect(folder.status).to.equal(HTTP_OK);
-    folderId = folder.data.id;
+    folderId = readBody(folder, createdBody).id;
     const asset = await uploadPixelPng(client, folderId);
     assetId = asset.id;
   });
@@ -111,7 +113,7 @@ describe("[integration] media delivery — visibility and derivatives", () => {
       `/api/media/assets/${assetId}/read-url?preset=thumb`,
     );
     expect(derived.status).to.equal(HTTP_OK);
-    const bytes = await fetchBytes(derived.data.url);
+    const bytes = await fetchBytes(readBody(derived, urlBody).url);
     expect(bytes.byteLength).to.be.greaterThan(0);
   });
 
@@ -119,7 +121,10 @@ describe("[integration] media delivery — visibility and derivatives", () => {
     const listing = await client.get("/api/media/assets");
     expect(listing.status).to.equal(HTTP_OK);
     expect(listing.data.truncated).to.equal(false);
-    const ids = listing.data.assets.map((asset: { id: string }) => asset.id);
+    const ids = readBody(
+      listing,
+      z.object({ assets: z.array(createdBody) }),
+    ).assets.map((asset) => asset.id);
     expect(ids).to.include(assetId);
 
     const previews = await client.post("/api/media/previews", {

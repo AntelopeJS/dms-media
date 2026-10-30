@@ -1,11 +1,13 @@
 import type { AxiosInstance } from "axios";
 import { expect } from "chai";
+import { z } from "zod";
 import {
   ONE_PIXEL_PNG,
   PNG_MIMETYPE,
   uploadAssetInBatch,
   uploadTextAsset,
 } from "../helpers/assets";
+import { createdBody, readBody } from "../helpers/bodies";
 import { authorizedClient } from "../helpers/http";
 import { ensureOwnerSession } from "../helpers/owner";
 
@@ -20,20 +22,62 @@ const ZIP_ENTRY_COUNT_OFFSET = 10;
 const BATCH_ID = "batch-library-test";
 const BATCH_FILES = 3;
 
-interface CountParam {
-  type: string;
-  value: number;
-}
+const assetRowSchema = z.object({
+  id: z.string(),
+  name: z.string(),
+  folderId: z.string(),
+  alt: z.string().nullish(),
+  starred: z.boolean(),
+  typeGroup: z.string(),
+  matchedOn: z.string().nullish(),
+});
 
-interface AssetRow {
-  id: string;
-  name: string;
-  folderId: string;
-  alt?: string;
-  starred: boolean;
-  typeGroup: string;
-  matchedOn?: string;
-}
+type AssetRow = z.infer<typeof assetRowSchema>;
+
+const assetsBody = z.object({ assets: z.array(assetRowSchema) });
+const treeBody = z.object({
+  folders: z.array(
+    z.object({ id: z.string(), fileCount: z.number(), size: z.number() }),
+  ),
+});
+const deliveryBody = z.object({
+  items: z.array(
+    z.object({
+      id: z.string(),
+      value: z.string().optional(),
+      copyValue: z.string().optional(),
+    }),
+  ),
+});
+const activityBody = z.object({
+  items: z.array(
+    z.object({
+      title: z.string(),
+      params: z
+        .object({ count: z.object({ value: z.unknown() }).optional() })
+        .passthrough(),
+    }),
+  ),
+});
+const historyBody = z.object({
+  items: z.array(z.object({ title: z.string() })),
+});
+const batchesBody = z.object({
+  results: z.array(
+    z.object({
+      _id: z.string(),
+      files: z.number(),
+      failed: z.number(),
+      result: z.string(),
+      folder: z.string(),
+    }),
+  ),
+});
+const presetsBody = z.object({
+  presets: z.array(
+    z.object({ id: z.string(), cacheKey: z.string(), rendered: z.number() }),
+  ),
+});
 
 describe("[integration] media library — listings, search, bulk and overview", () => {
   let client: AxiosInstance;
@@ -46,20 +90,24 @@ describe("[integration] media library — listings, search, bulk and overview", 
     this.timeout(30_000);
     const session = await ensureOwnerSession();
     client = authorizedClient(session.accessToken);
-    rootId = (await client.post("/api/media/folders", { name: "Library spec" }))
-      .data.id;
-    childId = (
+    rootId = readBody(
+      await client.post("/api/media/folders", { name: "Library spec" }),
+      createdBody,
+    ).id;
+    childId = readBody(
       await client.post("/api/media/folders", {
         name: "Oak shots",
         parentId: rootId,
-      })
-    ).data.id;
-    otherId = (
+      }),
+      createdBody,
+    ).id;
+    otherId = readBody(
       await client.post("/api/media/folders", {
         name: "Other spec",
         parentId: rootId,
-      })
-    ).data.id;
+      }),
+      createdBody,
+    ).id;
     for (const name of ["oak-b.png", "oak-a.png", "walnut.png"]) {
       const asset = await uploadAssetInBatch(client, childId, {
         filename: name,
@@ -79,11 +127,11 @@ describe("[integration] media library — listings, search, bulk and overview", 
   it("returns recursive counts, view counts and the upload limit with the tree", async () => {
     const response = await client.get("/api/media/tree");
     expect(response.status).to.equal(HTTP_OK);
-    const root = response.data.folders.find(
-      (folder: { id: string }) => folder.id === rootId,
+    const root = readBody(response, treeBody).folders.find(
+      (folder) => folder.id === rootId,
     );
-    expect(root.fileCount).to.equal(4);
-    expect(root.size).to.be.greaterThan(0);
+    expect(root?.fileCount).to.equal(4);
+    expect(root?.size).to.be.greaterThan(0);
     expect(response.data.views.missingAlt).to.be.at.least(3);
     expect(response.data.maxUploadBytes).to.equal(500 * 1024 * 1024);
     expect(response.data.isOwner).to.equal(true);
@@ -149,7 +197,9 @@ describe("[integration] media library — listings, search, bulk and overview", 
       alt: "Oak desk in a bright studio",
     });
     const missing = await client.get("/api/media/views/missing-alt");
-    const names = missing.data.assets.map((asset: AssetRow) => asset.name);
+    const names = readBody(missing, assetsBody).assets.map(
+      (asset) => asset.name,
+    );
     expect(names).to.include("oak-b.png");
     expect(names).not.to.include("oak-a.png");
     expect(names).not.to.include("notes.txt");
@@ -210,16 +260,20 @@ describe("[integration] media library — listings, search, bulk and overview", 
     const assetId = ids["oak-a.png"];
     const links = await client.get(`/api/media/assets/${assetId}/delivery`);
     expect(links.status).to.equal(HTTP_OK);
-    expect(
-      links.data.items.map((item: { id: string }) => item.id),
-    ).to.deep.equal(["stable", "thumb", "preview", "asset-id", "presets"]);
-    const [stable] = links.data.items;
-    expect(
-      links.data.items.find((item: { id: string }) => item.id === "asset-id")
-        .value,
-    ).to.equal(assetId);
-    expect(stable.value).to.equal(`/media/${assetId}/oak-a.png`);
-    expect(stable.copyValue).to.match(
+    const { items } = readBody(links, deliveryBody);
+    expect(items.map((item) => item.id)).to.deep.equal([
+      "stable",
+      "thumb",
+      "preview",
+      "asset-id",
+      "presets",
+    ]);
+    const [stable] = items;
+    expect(items.find((item) => item.id === "asset-id")?.value).to.equal(
+      assetId,
+    );
+    expect(stable?.value).to.equal(`/media/${assetId}/oak-a.png`);
+    expect(stable?.copyValue).to.match(
       new RegExp(`^https?://[^/]+/media/${assetId}/oak-a\\.png$`),
     );
     const notice = await client.get(
@@ -307,8 +361,8 @@ describe("[integration] media library — listings, search, bulk and overview", 
       params: { limit: 50 },
     });
     expect(response.status).to.equal(HTTP_OK);
-    const batch = response.data.items.find(
-      (item: { title: string; params: Record<string, CountParam> }) =>
+    const batch = readBody(response, activityBody).items.find(
+      (item) =>
         item.title === "$dms_media.activity.asset_upload" &&
         item.params.count?.value === BATCH_FILES,
     );
@@ -316,8 +370,8 @@ describe("[integration] media library — listings, search, bulk and overview", 
     const history = await client.get(
       `/api/media/assets/${ids["oak-b.png"]}/history`,
     );
-    const titles = history.data.items.map(
-      (item: { title: string }) => item.title,
+    const titles = readBody(history, historyBody).items.map(
+      (item) => item.title,
     );
     expect(titles).to.include("$dms_media.activity.asset_move");
     expect(titles).to.include("$dms_media.activity.asset_visibility_public");
@@ -335,22 +389,22 @@ describe("[integration] media library — listings, search, bulk and overview", 
     });
     expect(report.status).to.equal(HTTP_OK);
     const batches = await client.get("/api/media/upload/batches");
-    const row = batches.data.results.find(
-      (entry: { _id: string }) => entry._id === BATCH_ID,
+    const row = readBody(batches, batchesBody).results.find(
+      (entry) => entry._id === BATCH_ID,
     );
     expect(row).to.include({ files: 3, failed: 1, result: "partial" });
-    expect(row.folder).to.equal("Library spec › Oak shots");
+    expect(row?.folder).to.equal("Library spec › Oak shots");
   });
 
   it("lists delivery presets with their cache keys", async () => {
     await client.post("/api/media/previews", { ids: [ids["oak-a.png"]] });
     const response = await client.get("/api/media/presets");
     expect(response.status).to.equal(HTTP_OK);
-    const thumb = response.data.presets.find(
-      (preset: { id: string }) => preset.id === "thumb",
+    const thumb = readBody(response, presetsBody).presets.find(
+      (preset) => preset.id === "thumb",
     );
-    expect(thumb.cacheKey).to.match(/^thumb\./);
-    expect(thumb.rendered).to.be.at.least(1);
+    expect(thumb?.cacheKey).to.match(/^thumb\./);
+    expect(thumb?.rendered).to.be.at.least(1);
     expect(response.data.cache.schedule).to.equal("0 4 * * *");
   });
 

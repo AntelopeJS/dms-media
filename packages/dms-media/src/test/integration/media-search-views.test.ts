@@ -1,6 +1,8 @@
 import type { AxiosInstance } from "axios";
 import { expect } from "chai";
+import { z } from "zod";
 import { uploadAsset } from "../helpers/assets";
+import { createdBody, readBody } from "../helpers/bodies";
 import { authorizedClient } from "../helpers/http";
 import { ensureOwnerSession } from "../helpers/owner";
 
@@ -9,19 +11,20 @@ const SMALL_BODY = Buffer.alloc(10, 1);
 const LARGE_BODY = Buffer.alloc(5000, 1);
 const MEDIUM_BODY = Buffer.alloc(800, 1);
 
-interface AssetRow {
-  id: string;
-  name: string;
-  size: number;
-}
+const folderRowSchema = z.object({
+  id: z.string(),
+  name: z.string(),
+  fileCount: z.number(),
+  link: z.object({ isContentRoot: z.boolean() }).nullable(),
+  accepts: z.array(z.string()).nullable(),
+});
 
-interface FolderRow {
-  id: string;
-  name: string;
-  fileCount: number;
-  link: { isContentRoot: boolean } | null;
-  accepts: string[] | null;
-}
+const foldersBody = z.object({ folders: z.array(folderRowSchema) });
+const assetsBody = z.object({
+  assets: z.array(
+    z.object({ id: z.string(), name: z.string(), size: z.number() }),
+  ),
+});
 
 describe("[integration] media search views — search, smart views and folder counts", () => {
   let client: AxiosInstance;
@@ -32,15 +35,17 @@ describe("[integration] media search views — search, smart views and folder co
     this.timeout(30_000);
     const session = await ensureOwnerSession();
     client = authorizedClient(session.accessToken);
-    rootId = (
-      await client.post("/api/media/folders", { name: "Facets Été 2026" })
-    ).data.id;
-    childId = (
+    rootId = readBody(
+      await client.post("/api/media/folders", { name: "Facets Été 2026" }),
+      createdBody,
+    ).id;
+    childId = readBody(
       await client.post("/api/media/folders", {
         name: "Facets Produits",
         parentId: rootId,
-      })
-    ).data.id;
+      }),
+      createdBody,
+    ).id;
     await uploadAsset(
       client,
       rootId,
@@ -74,7 +79,7 @@ describe("[integration] media search views — search, smart views and folder co
         params: { q, folderId: rootId },
       });
       expect(
-        response.data.assets.map((asset: AssetRow) => asset.name),
+        readBody(response, assetsBody).assets.map((asset) => asset.name),
         q,
       ).to.deep.equal(["Été à Liège – vacances (1).txt"]);
     }
@@ -82,7 +87,7 @@ describe("[integration] media search views — search, smart views and folder co
       params: { q: "facets photo 14", folderId: rootId },
     });
     expect(
-      twoWords.data.assets.map((asset: AssetRow) => asset.name),
+      readBody(twoWords, assetsBody).assets.map((asset) => asset.name),
     ).to.deep.equal(["facets-photo-14.txt"]);
   });
 
@@ -100,8 +105,8 @@ describe("[integration] media search views — search, smart views and folder co
     const response = await client.get("/api/media/search", {
       params: { q: "facets ete" },
     });
-    const found = response.data.folders.find(
-      (folder: FolderRow) => folder.id === rootId,
+    const found = readBody(response, foldersBody).folders.find(
+      (folder) => folder.id === rootId,
     );
     expect(found?.fileCount).to.equal(3);
   });
@@ -113,8 +118,8 @@ describe("[integration] media search views — search, smart views and folder co
       starred: true,
     });
     const response = await client.get("/api/media/views/starred");
-    const starred = response.data.folders.find(
-      (folder: FolderRow) => folder.id === childId,
+    const starred = readBody(response, foldersBody).folders.find(
+      (folder) => folder.id === childId,
     );
     expect(starred?.fileCount).to.equal(2);
   });
@@ -124,7 +129,9 @@ describe("[integration] media search views — search, smart views and folder co
       params: { folderId: rootId },
     });
     expect(response.data.total).to.equal(3);
-    const sizes = response.data.assets.map((asset: AssetRow) => asset.size);
+    const sizes = readBody(response, assetsBody).assets.map(
+      (asset) => asset.size,
+    );
     expect(sizes).to.deep.equal([...sizes].sort((a, b) => b - a));
     const scoped = await client.get("/api/media/views/recent", {
       params: { folderId: childId },
@@ -148,13 +155,10 @@ describe("[integration] media search views — search, smart views and folder co
 
   it("describes the Content root link without its technical id", async () => {
     const tree = await client.get("/api/media/tree");
-    const content = tree.data.folders.find(
-      (folder: FolderRow) => folder.link?.isContentRoot,
-    );
+    const { folders } = readBody(tree, foldersBody);
+    const content = folders.find((folder) => folder.link?.isContentRoot);
     if (content) expect(content.name).to.equal("Content");
-    const plain = tree.data.folders.find(
-      (folder: FolderRow) => folder.id === rootId,
-    );
+    const plain = folders.find((folder) => folder.id === rootId);
     expect(plain?.link).to.equal(null);
     expect(plain?.accepts).to.equal(null);
     expect(tree.data.allowedMimetypes)

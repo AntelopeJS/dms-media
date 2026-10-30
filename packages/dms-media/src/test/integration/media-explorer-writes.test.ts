@@ -1,5 +1,6 @@
 import type { AxiosInstance } from "axios";
 import { expect } from "chai";
+import { z } from "zod";
 import { GetModel } from "@antelopejs/interface-database-decorators";
 import { DEFAULT_TENANT_ID } from "@antelopejs/interface-dms/constants";
 import {
@@ -9,6 +10,7 @@ import {
 import { CONTENT_ROOT_BINDING } from "../../bindings";
 import { MediaEventModel, MediaFolderModel } from "../../db";
 import { uploadPixelPng, uploadTextAsset } from "../helpers/assets";
+import { createdBody, readBody } from "../helpers/bodies";
 import { fetchFolderNodes } from "../helpers/folders";
 import { authorizedClient } from "../helpers/http";
 import { ensureOwnerSession } from "../helpers/owner";
@@ -72,12 +74,12 @@ describe("[integration] media explorer writes — names, linked folders, zips", 
       name: "Explorer writes",
     });
     expect(root.status).to.equal(HTTP_OK);
-    rootId = root.data.id;
+    rootId = readBody(root, createdBody).id;
     const other = await client.post("/api/media/folders", {
       name: "Other",
       parentId: rootId,
     });
-    otherId = other.data.id;
+    otherId = readBody(other, createdBody).id;
   });
 
   after(async () => {
@@ -116,7 +118,7 @@ describe("[integration] media explorer writes — names, linked folders, zips", 
     const event = events.find((entry) => entry.targetName === "Traced");
     expect(event?.folderId).to.equal(rootId);
     expect(JSON.parse(event?.json_details ?? "{}")).to.deep.equal({
-      targetId: created.data.id,
+      targetId: readBody(created, createdBody).id,
     });
   });
 
@@ -190,7 +192,7 @@ describe("[integration] media explorer writes — names, linked folders, zips", 
     expect(zipped.headers["content-disposition"]).to.contain(
       "Explorer writes.zip",
     );
-    const names = zipEntryNames(Buffer.from(zipped.data));
+    const names = zipEntryNames(readBody(zipped, z.instanceof(Buffer)));
     expect(names).to.include.members([
       "Notes.txt",
       "other.txt",
