@@ -24,9 +24,11 @@ const MEDIA_EVENT_KINDS = [
 
 export type MediaEventKind = (typeof MEDIA_EVENT_KINDS)[number];
 
-const eventDetailsSchema = z.record(z.union([z.string(), z.number()]));
+export type MediaEventDetails = Record<string, string | number>;
 
-export type MediaEventDetails = z.infer<typeof eventDetailsSchema>;
+const eventDetailsSchema: z.ZodType<MediaEventDetails> = z.record(
+  z.union([z.string(), z.number()]),
+);
 
 export interface MediaEventInput {
   kind: MediaEventKind;
