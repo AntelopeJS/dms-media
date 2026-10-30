@@ -60,7 +60,7 @@ function valuesFile(tenantId: string): string {
 
 async function readValues(tenantId: string): Promise<MediaDemoValues> {
   const raw = await readFile(valuesFile(tenantId), "utf8").catch(() => "{}");
-  return JSON.parse(raw) as MediaDemoValues;
+  return pickDemoValues(JSON.parse(raw), MEDIA_DEMO_FIELD_IDS);
 }
 
 async function writeValues(
