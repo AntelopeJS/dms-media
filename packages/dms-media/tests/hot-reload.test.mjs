@@ -11,32 +11,43 @@
  * Expects `pnpm run build` to have run: it loads the module from `dist`.
  */
 
+import { launch } from "@antelopejs/core";
+import { MongoMemoryReplSet } from "mongodb-memory-server-core";
 import assert from "node:assert/strict";
-import { createRequire } from "node:module";
 import fs from "node:fs/promises";
 import net from "node:net";
 import os from "node:os";
 import path from "node:path";
 import { after, before, describe, it } from "node:test";
 import { fileURLToPath } from "node:url";
-import { isString } from "../dist/guards.js";
-
-const require = createRequire(import.meta.url);
-const { launch } = require("@antelopejs/core");
-const { MongoMemoryReplSet } = require("mongodb-memory-server-core");
+import { z } from "zod";
 
 const PACKAGE_ROOT = path.resolve(
   path.dirname(fileURLToPath(import.meta.url)),
   "..",
 );
 const CONSTANTS_FILE = path.join(PACKAGE_ROOT, "dist", "constants.js");
+
+/**
+ * @param {unknown} value
+ * @returns {value is string}
+ */
+function isString(value) {
+  return typeof value === "string";
+}
+
+/** @returns {Promise<number>} */
 function findFreePort() {
   return new Promise((resolve, reject) => {
     const server = net.createServer();
     server.once("error", reject);
     server.listen(0, "127.0.0.1", () => {
-      const { port } = server.address();
-      server.close(() => resolve(port));
+      const address = server.address();
+      if (address === null || isString(address)) {
+        reject(new Error("The server did not bind a TCP port"));
+        return;
+      }
+      server.close(() => resolve(address.port));
     });
   });
 }
@@ -74,6 +85,12 @@ const MEDIA_ID_PATTERN = /^(media|modules\.media|settings\.media)(\.|$)/;
 const RUNTIME = Symbol.for("@antelopejs/interface-core/runtime");
 const PROXY_BRAND = Symbol.for("@antelopejs/interface-core/proxy");
 
+/**
+ * @param {string} specifier
+ * @param {string} bindingId
+ * @param {string} folderName
+ * @param {number} revision
+ */
 function consumerSource(specifier, bindingId, folderName, revision) {
   return `const { AssetType } = require("${specifier}");
 
@@ -89,6 +106,11 @@ exports.destroy = () => {};
 `;
 }
 
+/**
+ * @param {string} folder
+ * @param {Record<string, unknown>} manifest
+ * @param {string} source
+ */
 async function writeConsumer(folder, manifest, source) {
   await fs.mkdir(folder, { recursive: true });
   await fs.writeFile(
@@ -101,11 +123,18 @@ async function writeConsumer(folder, manifest, source) {
 /**
  * Stands in for the npm copy a consumer installs: the manifest and the
  * `exports` target, nothing of the module itself.
+ *
+ * @param {string} name
+ * @param {string} version
  */
 function packageSource(name, version) {
   return { source: { type: "package", package: name, version } };
 }
 
+/**
+ * @param {string} mongoUrl
+ * @param {string} storagePath
+ */
 function projectConfig(mongoUrl, storagePath) {
   return {
     name: "dms-media-reload-test",
@@ -160,37 +189,84 @@ function projectConfig(mongoUrl, storagePath) {
   };
 }
 
+/** A registration id: a name, or a counter, a class or an options object known by its kind. */
+const registrationIdSchema = z.union([
+  z.string(),
+  z.number().transform(() => ({ kind: "number" })),
+  z.instanceof(Function).transform(() => ({ kind: "function" })),
+  z
+    .object({})
+    .passthrough()
+    .transform(() => ({ kind: "object" })),
+]);
+const registeredSchema = z.map(
+  registrationIdSchema,
+  z.object({ module: z.string().optional(), owner: z.string().optional() }),
+);
+const brandSchema = z.object({ identity: z.string() });
+const proxySchema = z.object({ registered: registeredSchema });
+const runtimeSchema = z.object({ registeringProxies: z.set(z.unknown()) });
+const topicPairSchema = z.tuple([z.string(), z.string()]);
+const loginAnswerSchema = z.object({ access_token: z.string() });
+const treeAnswerSchema = z.object({
+  folders: z.array(z.object({ name: z.string() })),
+});
+
+/**
+ * @typedef {object} Registration
+ * @property {string} identity
+ * @property {z.infer<typeof registrationIdSchema>} id
+ * @property {string | undefined} module
+ * @property {string | undefined} owner
+ */
+
 /**
  * The entries of every registering proxy: interface-core 0.2 keeps each
  * registering proxy's entries on the proxy.
+ *
+ * @returns {Registration[]}
  */
 function registeringEntries() {
+  const { registeringProxies } = runtimeSchema.parse(
+    Object.getOwnPropertyDescriptor(globalThis, RUNTIME)?.value,
+  );
+  /** @type {Registration[]} */
   const entries = [];
-  for (const proxy of globalThis[RUNTIME].registeringProxies) {
-    const { identity } = proxy[PROXY_BRAND];
-    for (const [id, entry] of proxy.registered) {
-      entries.push({ identity, id, ...entry });
+  for (const proxy of registeringProxies) {
+    const { identity } = brandSchema.parse(
+      Object.getOwnPropertyDescriptor(proxy, PROXY_BRAND)?.value,
+    );
+    for (const [id, entry] of proxySchema.parse(proxy).registered) {
+      entries.push({ identity, id, module: entry.module, owner: entry.owner });
     }
   }
   return entries;
 }
 
+/** @param {Registration["id"]} id */
 function findEntry(id) {
   return registeringEntries().find((entry) => entry.id === id);
 }
 
-/** A page topic registers under its [page, topic] pair, serialized. */
+/**
+ * A page topic registers under its [page, topic] pair, serialized.
+ *
+ * @param {Registration["id"] | undefined} id
+ * @returns {[string, string] | undefined}
+ */
 function pageTopicPair(id) {
   if (!isString(id) || !id.startsWith("[")) return undefined;
-  return JSON.parse(id);
+  return topicPairSchema.parse(JSON.parse(id));
 }
 
+/** @returns {Registration | undefined} */
 function findFilesPageTopic() {
   return registeringEntries().find(
     (entry) => pageTopicPair(entry.id)?.[0] === FILES_PAGE_PERMISSION,
   );
 }
 
+/** @param {string} module */
 function ownedBy(module) {
   return registeringEntries().filter((entry) => entry.module === module);
 }
@@ -199,29 +275,38 @@ function ownedBy(module) {
  * Routes register under a running counter and pages under their class, so
  * only named ids are stable across generations: the others count by kind. A
  * page topic counts by its page, the topic itself being what the test edits.
+ *
+ * @param {Registration["id"]} id
  */
 function stableId(id) {
-  if (!isString(id)) return typeof id;
+  if (!isString(id)) return id.kind;
   const topicPair = pageTopicPair(id);
   if (topicPair) return `topic of ${topicPair[0]}`;
   return COUNTER_ID_PATTERN.test(id) ? "counter" : id;
 }
 
+/** @param {Registration[]} entries */
 function registrationKeys(entries) {
   return entries
     .map((entry) => `${entry.identity} ${stableId(entry.id)}`)
     .sort();
 }
 
+/** @param {Registration["id"]} id */
 function isMediaId(id) {
   const key = pageTopicPair(id)?.[0] ?? id;
   return isString(key) && MEDIA_ID_PATTERN.test(key);
 }
 
+/** @param {Registration[]} entries */
 function ownersOf(entries) {
   return new Set(entries.map((entry) => entry.owner));
 }
 
+/**
+ * @param {string} description
+ * @param {() => boolean | Promise<boolean>} predicate
+ */
 async function waitFor(description, predicate) {
   const deadline = Date.now() + RELOAD_TIMEOUT_MS;
   while (Date.now() < deadline) {
@@ -231,6 +316,10 @@ async function waitFor(description, predicate) {
   throw new Error(`Timed out waiting for ${description}`);
 }
 
+/**
+ * @param {string} pathname
+ * @param {{ method?: string, body?: string, headers?: Record<string, string> }} [init]
+ */
 function request(pathname, init = {}) {
   return fetch(`${BASE_URL}${pathname}`, {
     ...init,
@@ -264,16 +353,20 @@ async function ownerToken() {
     body: JSON.stringify({ email: OWNER.email, password: OWNER.password }),
   });
   assert.ok(login.status < HTTP_BAD_REQUEST, `login answered ${login.status}`);
-  return (await login.json()).access_token;
+  return loginAnswerSchema.parse(await login.json()).access_token;
 }
 
-describe("hot reload keeps dms-media's registrations with dms-media", () => {
+void describe("hot reload keeps dms-media's registrations with dms-media", () => {
+  /** @type {MongoMemoryReplSet | undefined} */
   let mongo;
+  /** @type {string | undefined} */
   let projectFolder;
+  /** @type {Awaited<ReturnType<typeof launch>> | undefined} */
   let manager;
-  let originalConstants;
-  let consumerIndex;
-  let initialMediaKeys;
+  let originalConstants = "";
+  let consumerIndex = "";
+  /** @type {string[]} */
+  let initialMediaKeys = [];
 
   before(async () => {
     originalConstants = await fs.readFile(CONSTANTS_FILE, "utf8");
@@ -328,7 +421,7 @@ describe("hot reload keeps dms-media's registrations with dms-media", () => {
     }
   });
 
-  it("owns its registrations even when consumers load first", async () => {
+  void it("owns its registrations even when consumers load first", async () => {
     assert.equal(await mediaTreeStatus(), HTTP_UNAUTHORIZED);
     const topic = findFilesPageTopic();
     assert.equal(topic?.module, MEDIA_MODULE);
@@ -349,7 +442,7 @@ describe("hot reload keeps dms-media's registrations with dms-media", () => {
     assert.equal(findEntry(CONSUMER_BINDING)?.module, CONSUMER_MODULE);
   });
 
-  it("keeps routes, pages and topics through a consumer reload", async () => {
+  void it("keeps routes, pages and topics through a consumer reload", async () => {
     const consumerOwner = findEntry(CONSUMER_BINDING).owner;
     const mediaOwners = ownersOf(ownedBy(MEDIA_MODULE));
     await fs.writeFile(
@@ -371,7 +464,7 @@ describe("hot reload keeps dms-media's registrations with dms-media", () => {
     assert.deepEqual(ownersOf(ownedBy(MEDIA_MODULE)), mediaOwners);
   });
 
-  it("re-registers everything from the edited files on its own reload", async () => {
+  void it("re-registers everything from the edited files on its own reload", async () => {
     const mediaOwners = ownersOf(ownedBy(MEDIA_MODULE));
     await fs.writeFile(
       CONSTANTS_FILE,
@@ -390,13 +483,13 @@ describe("hot reload keeps dms-media's registrations with dms-media", () => {
     assert.ok(!mediaOwners.has([...reloadedOwners][0]), "a new generation");
   });
 
-  it("replays the consumer's binding to the reloaded generation", async () => {
+  void it("replays the consumer's binding to the reloaded generation", async () => {
     const token = await ownerToken();
     const tree = await request("/api/media/tree", {
       headers: { authorization: `Bearer ${token}` },
     });
     assert.ok(tree.ok, `tree answered ${tree.status}`);
-    const { folders } = await tree.json();
+    const { folders } = treeAnswerSchema.parse(await tree.json());
     const names = folders.map((folder) => folder.name);
     assert.ok(names.includes(CONSUMER_FOLDER), names.join(", "));
   });

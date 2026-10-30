@@ -11,9 +11,11 @@ import {
 } from "@antelopejs/interface-dms/permissions";
 import type { AxiosInstance } from "axios";
 import { assert, expect } from "chai";
+import { z } from "zod";
 import { RegisterAssetBinding } from "@antelopejs/interface-dms-media";
 import { MEDIA_PAGE_PERMISSION } from "../../pages/files";
 import { type UploadedAsset, uploadTextAsset } from "../helpers/assets";
+import { createdBody, readBody } from "../helpers/bodies";
 import { readFolderAcl } from "../helpers/folders";
 import { authorizedClient } from "../helpers/http";
 import {
@@ -43,29 +45,25 @@ class MemberAccessProbePage extends PageController("member-access-probe", {
   static content = CustomComponent("dms-media-member-access-probe");
 }
 
-interface FolderRights {
-  read: boolean;
-  write: boolean;
-  manage: boolean;
-}
+const treeBody = z.object({
+  folders: z.array(
+    z.object({
+      id: z.string(),
+      name: z.string(),
+      shell: z.boolean(),
+      rights: z.object({
+        read: z.boolean(),
+        write: z.boolean(),
+        manage: z.boolean(),
+      }),
+    }),
+  ),
+  root: z.object({ write: z.boolean(), manage: z.boolean() }),
+  isOwner: z.boolean(),
+});
 
-interface TreeFolder {
-  id: string;
-  name: string;
-  shell: boolean;
-  rights: FolderRights;
-}
-
-interface RootRights {
-  write: boolean;
-  manage: boolean;
-}
-
-interface TreeResponse {
-  folders: TreeFolder[];
-  root: RootRights;
-  isOwner: boolean;
-}
+type TreeResponse = z.infer<typeof treeBody>;
+type TreeFolder = TreeResponse["folders"][number];
 
 interface MemberAccessWorld {
   owner: AxiosInstance;
@@ -79,7 +77,7 @@ interface MemberAccessWorld {
 async function fetchTree(client: AxiosInstance): Promise<TreeResponse> {
   const response = await client.get("/api/media/tree");
   expect(response.status, "tree").to.equal(HTTP_OK);
-  return response.data;
+  return readBody(response, treeBody);
 }
 
 function findFolder(tree: TreeResponse, name: string): TreeFolder | undefined {
@@ -125,7 +123,7 @@ async function buildWorld(): Promise<MemberAccessWorld> {
       modulePageRole,
     ]),
     linkedFolderId,
-    shelfFolderId: shelf.data.id,
+    shelfFolderId: readBody(shelf, createdBody).id,
     ownerAsset: await uploadTextAsset(owner, linkedFolderId, "owner-file.txt"),
   };
 }

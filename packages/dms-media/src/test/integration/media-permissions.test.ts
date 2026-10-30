@@ -1,5 +1,7 @@
 import { assert, expect } from "chai";
-import { rawGet, type UploadedAsset, uploadTextAsset } from "../helpers/assets";
+import { z } from "zod";
+import { rawGet, uploadTextAsset } from "../helpers/assets";
+import { readBody } from "../helpers/bodies";
 
 import {
   assets,
@@ -23,6 +25,10 @@ import {
 } from "./permissions-management";
 
 const SETUP_TIMEOUT_MS = 120_000;
+
+const namedAssetsBody = z.object({
+  assets: z.array(z.object({ name: z.string() })),
+});
 
 describe("[integration] media permissions — multi-actor ACL enforcement", () => {
   let stockAssetId: string;
@@ -165,8 +171,8 @@ describe("[integration] media permissions — multi-actor ACL enforcement", () =
         `/api/media/folders/${folders.restricted}/assets`,
       );
       expect(listing.status).to.equal(HTTP_OK);
-      const names = listing.data.assets.map(
-        (asset: UploadedAsset) => asset.name,
+      const names = readBody(listing, namedAssetsBody).assets.map(
+        (asset) => asset.name,
       );
       expect(names).to.include("secret.txt");
     });
@@ -196,8 +202,8 @@ describe("[integration] media permissions — multi-actor ACL enforcement", () =
         "/api/media/assets/search?q=secret",
       );
       expect(sighted.status).to.equal(HTTP_OK);
-      const names = sighted.data.assets.map(
-        (asset: UploadedAsset) => asset.name,
+      const names = readBody(sighted, namedAssetsBody).assets.map(
+        (asset) => asset.name,
       );
       expect(names).to.include("secret.txt");
     });

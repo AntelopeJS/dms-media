@@ -10,7 +10,7 @@ import type { AclEntry } from "../types";
 export function parseFolderAcl(folder: MediaFolder): AclEntry[] | undefined {
   if (!folder.json_acl) return undefined;
   try {
-    const parsed = JSON.parse(folder.json_acl);
+    const parsed: unknown = JSON.parse(folder.json_acl);
     if (Array.isArray(parsed)) return parsed as AclEntry[];
   } catch {}
   Logging.Warn(

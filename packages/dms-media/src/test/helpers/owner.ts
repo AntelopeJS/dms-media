@@ -1,3 +1,5 @@
+import { z } from "zod";
+import { readBody } from "./bodies";
 import { createClient } from "./http";
 
 const OWNER_EMAIL = "owner@test.local";
@@ -38,5 +40,6 @@ export async function ensureOwnerSession(): Promise<OwnerSession> {
       `Login failed [${login.status}]: ${JSON.stringify(login.data)}`,
     );
   }
-  return { accessToken: login.data.access_token, email: OWNER_EMAIL };
+  const session = readBody(login, z.object({ access_token: z.string() }));
+  return { accessToken: session.access_token, email: OWNER_EMAIL };
 }

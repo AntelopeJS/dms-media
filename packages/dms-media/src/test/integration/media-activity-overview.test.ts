@@ -1,6 +1,8 @@
 import type { AxiosInstance } from "axios";
 import { expect } from "chai";
+import { z } from "zod";
 import { uploadAsset } from "../helpers/assets";
+import { createdBody, readBody } from "../helpers/bodies";
 import { authorizedClient } from "../helpers/http";
 import { createRole, registerMember } from "../helpers/members";
 import { ensureOwnerSession } from "../helpers/owner";
@@ -11,25 +13,35 @@ const TEXT_MIMETYPE = "text/plain";
 const BODY = Buffer.alloc(10, 1);
 const BATCH_ID = "overview-retried-batch";
 
-interface ModuleEntry {
-  id: string;
-  landingSlug: string;
-  readout?: Array<{ text: string; tone?: string }>;
-  status?: string;
-}
+const moduleEntrySchema = z.object({
+  id: z.string(),
+  landingSlug: z.string(),
+  readout: z
+    .array(z.object({ text: z.string(), tone: z.string().optional() }))
+    .optional(),
+  status: z.string().optional(),
+});
 
-interface BatchRow {
-  _id: string;
-  files: number;
-  failed: number;
-  result: string;
-  attention: string;
-}
+const modulesBody = z.union([
+  z.array(moduleEntrySchema),
+  z.object({ modules: z.array(moduleEntrySchema) }),
+]);
 
-interface ActivityRow {
-  title: string;
-  to?: string;
-}
+const batchRowSchema = z.object({
+  _id: z.string(),
+  files: z.number(),
+  failed: z.number(),
+  result: z.string(),
+  attention: z.string(),
+});
+
+const batchesBody = z.object({ results: z.array(batchRowSchema) });
+const attentionBody = z.object({
+  items: z.array(z.object({ id: z.string(), value: z.number().optional() })),
+});
+const activityBody = z.object({
+  items: z.array(z.object({ title: z.string(), to: z.string().optional() })),
+});
 
 describe("[integration] media activity and overview — figures, upload history and module catalog", () => {
   let client: AxiosInstance;
@@ -39,9 +51,10 @@ describe("[integration] media activity and overview — figures, upload history 
     this.timeout(30_000);
     const session = await ensureOwnerSession();
     client = authorizedClient(session.accessToken);
-    folderId = (
-      await client.post("/api/media/folders", { name: "Overview figures" })
-    ).data.id;
+    folderId = readBody(
+      await client.post("/api/media/folders", { name: "Overview figures" }),
+      createdBody,
+    ).id;
   });
 
   after(async () => {
@@ -51,9 +64,8 @@ describe("[integration] media activity and overview — figures, upload history 
   it("lands the catalog tile on the overview, with a readout", async () => {
     const response = await client.get("/dms/modules-listing");
     expect(response.status).to.equal(HTTP_OK);
-    const entries: ModuleEntry[] = Array.isArray(response.data)
-      ? response.data
-      : response.data.modules;
+    const listing = readBody(response, modulesBody);
+    const entries = Array.isArray(listing) ? listing : listing.modules;
     const media = entries.find((entry) => entry.id === "media");
     expect(media?.landingSlug).to.equal("/modules/media/overview");
     expect(media?.readout).to.have.length(2);
@@ -77,29 +89,30 @@ describe("[integration] media activity and overview — figures, upload history 
     const failedOnly = await client.get("/api/media/upload/batches", {
       params: { filter_result: "is:partial,failed" },
     });
-    expect(failedOnly.data.results.map((row: BatchRow) => row._id)).to.include(
-      BATCH_ID,
-    );
+    expect(
+      readBody(failedOnly, batchesBody).results.map((row) => row._id),
+    ).to.include(BATCH_ID);
     expect((await report(2, 0)).status).to.equal(HTTP_OK);
     const all = await client.get("/api/media/upload/batches");
-    const row = all.data.results.find(
-      (entry: BatchRow) => entry._id === BATCH_ID,
+    const row = readBody(all, batchesBody).results.find(
+      (entry) => entry._id === BATCH_ID,
     );
     expect(row).to.include({ failed: 0, result: "complete" });
     const stillFailed = await client.get("/api/media/upload/batches", {
       params: { filter_result: "is:partial,failed" },
     });
     expect(
-      stillFailed.data.results.map((entry: BatchRow) => entry._id),
+      readBody(stillFailed, batchesBody).results.map((entry) => entry._id),
     ).to.not.include(BATCH_ID);
   });
 
   it("counts on the overview exactly the failures the history flags", async () => {
-    const failingFolder = (
+    const failingFolder = readBody(
       await client.post("/api/media/folders", {
         name: "Overview failing uploads",
-      })
-    ).data.id;
+      }),
+      createdBody,
+    ).id;
     await client.post("/api/media/upload/batches", {
       batchId: "overview-failing-batch",
       folderId: failingFolder,
@@ -112,15 +125,15 @@ describe("[integration] media activity and overview — figures, upload history 
       const rows = await client.get("/api/media/upload/batches", {
         params: { filter_attention: "is:yes" },
       });
-      return rows.data.results.reduce(
-        (total: number, row: BatchRow) => total + row.failed,
+      return readBody(rows, batchesBody).results.reduce(
+        (total, row) => total + row.failed,
         0,
       );
     };
     const counted = async () => {
       const attention = await client.get("/api/media/stats/attention");
-      const item = attention.data.items.find(
-        (entry: { id: string }) => entry.id === "failed-uploads",
+      const item = readBody(attention, attentionBody).items.find(
+        (entry) => entry.id === "failed-uploads",
       );
       return item?.value ?? 0;
     };
@@ -136,7 +149,9 @@ describe("[integration] media activity and overview — figures, upload history 
     const response = await client.get("/api/media/activity", {
       params: { limit: 50 },
     });
-    const titles = response.data.items.map((item: ActivityRow) => item.title);
+    const titles = readBody(response, activityBody).items.map(
+      (item) => item.title,
+    );
     expect(titles).to.not.include("$dms_media.activity.upload_batch");
     expect(titles).to.not.include("$dms_media.activity.upload_batch_partial");
   });

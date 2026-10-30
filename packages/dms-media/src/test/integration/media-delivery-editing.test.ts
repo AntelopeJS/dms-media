@@ -4,6 +4,7 @@ import { assert, expect } from "chai";
 import { GetModel } from "@antelopejs/interface-database-decorators";
 import { DEFAULT_TENANT_ID } from "@antelopejs/interface-dms/constants";
 import sharp from "sharp";
+import { z } from "zod";
 import { MediaAssetModel } from "../../db";
 import { uploadStorageBytes } from "../../derivatives";
 import {
@@ -12,8 +13,15 @@ import {
   MediaAssetChangedError,
 } from "../../transform";
 import { type UploadedAsset, uploadAsset } from "../helpers/assets";
+import { createdBody, readBody } from "../helpers/bodies";
 import { authorizedClient, getBaseUrl } from "../helpers/http";
 import { ensureOwnerSession } from "../helpers/owner";
+
+const previewsBody = z.object({
+  previews: z
+    .record(z.string())
+    .transform((urls) => new Map(Object.entries(urls))),
+});
 
 const HTTP_OK = 200;
 const HTTP_FOUND = 302;
@@ -153,7 +161,7 @@ describe("[integration] media delivery and editing — cache, orientation, activ
       name: "Delivery and editing",
     });
     expect(folder.status).to.equal(HTTP_OK);
-    folderId = folder.data.id;
+    folderId = readBody(folder, createdBody).id;
     jpeg = await uploadAsset(
       client,
       folderId,
@@ -341,9 +349,12 @@ describe("[integration] media delivery and editing — cache, orientation, activ
       ids: [logo.id, banner.id],
     });
     expect(answer.status).to.equal(HTTP_OK);
+    const { previews } = readBody(answer, previewsBody);
     const [vector, raster] = await Promise.all(
       [logo.id, banner.id].map(async (id) => {
-        const response = await fetch(answer.data.previews[id]);
+        const preview = previews.get(id);
+        assert.isDefined(preview, `preview of ${id}`);
+        const response = await fetch(preview);
         return sharp(Buffer.from(await response.arrayBuffer())).metadata();
       }),
     );

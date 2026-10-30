@@ -1,5 +1,7 @@
-import axios, { type AxiosInstance } from "axios";
+import type { AxiosInstance } from "axios";
 import { expect } from "chai";
+import { putPresigned } from "../helpers/assets";
+import { createdBody, presignBody, readBody } from "../helpers/bodies";
 import { authorizedClient, createClient } from "../helpers/http";
 import { ensureOwnerSession } from "../helpers/owner";
 
@@ -85,12 +87,14 @@ describe("[integration] media guards — every endpoint requires auth and rights
     });
     expect(folder.status).to.equal(HTTP_OK);
     const confirm = await owner.post("/api/media/upload/confirm", {
-      folderId: folder.data.id,
+      folderId: readBody(folder, createdBody).id,
       resourceKey: "media/whatever/not-staged.txt",
       filename: "not-staged.txt",
     });
     expect(confirm.status).to.equal(HTTP_BAD_REQUEST);
-    await owner.delete(`/api/media/folders/${folder.data.id}`);
+    await owner.delete(
+      `/api/media/folders/${readBody(folder, createdBody).id}`,
+    );
   });
 
   it("filters unreadable assets out of previews instead of failing", async () => {
@@ -106,25 +110,26 @@ describe("[integration] media guards — every endpoint requires auth and rights
     const folderB = await owner.post("/api/media/folders", { name: "KeyB" });
     const body = Buffer.from("cross-folder");
     const presign = await owner.post("/api/media/upload/presign", {
-      folderId: folderA.data.id,
+      folderId: readBody(folderA, createdBody).id,
       filename: "x.txt",
       size: body.byteLength,
       mimetype: "text/plain",
     });
     expect(presign.status).to.equal(HTTP_OK);
-    const put = await axios.put(presign.data.uploadUrl, body, {
-      headers: presign.data.headers,
-      validateStatus: () => true,
-      transformRequest: [(data) => data],
-    });
+    const presigned = readBody(presign, presignBody);
+    const put = await putPresigned(presigned, body);
     expect(put.status).to.be.lessThan(300);
     const confirm = await owner.post("/api/media/upload/confirm", {
-      folderId: folderB.data.id,
-      resourceKey: presign.data.resourceKey,
+      folderId: readBody(folderB, createdBody).id,
+      resourceKey: presigned.resourceKey,
       filename: "x.txt",
     });
     expect(confirm.status).to.equal(HTTP_BAD_REQUEST);
-    await owner.delete(`/api/media/folders/${folderA.data.id}`);
-    await owner.delete(`/api/media/folders/${folderB.data.id}`);
+    await owner.delete(
+      `/api/media/folders/${readBody(folderA, createdBody).id}`,
+    );
+    await owner.delete(
+      `/api/media/folders/${readBody(folderB, createdBody).id}`,
+    );
   });
 });
