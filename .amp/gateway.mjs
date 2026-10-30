@@ -22,6 +22,12 @@ function selectTarget(requestUrl = "/") {
   };
 }
 
+/**
+ * @param {import("node:http").IncomingMessage} request
+ * @param {URL} target
+ * @param {boolean} [upgrade]
+ * @returns {import("node:http").OutgoingHttpHeaders}
+ */
 function upstreamHeaders(request, target, upgrade = false) {
   const headers = { ...request.headers, host: target.host };
 
@@ -41,6 +47,11 @@ function isString(value) {
   return typeof value === "string";
 }
 
+/**
+ * @param {import("node:http").IncomingHttpHeaders} headers
+ * @param {URL} target
+ * @returns {import("node:http").OutgoingHttpHeaders}
+ */
 function responseHeaders(headers, target) {
   const forwarded = { ...headers };
   const location = forwarded.location;
