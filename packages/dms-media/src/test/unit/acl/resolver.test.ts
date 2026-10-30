@@ -297,12 +297,11 @@ describe("[unit] acl/resolver — resolveFolderAccess", () => {
   });
 
   it("ignores unknown rights and unknown subject kinds", () => {
-    // oxlint-disable-next-line anti-slop/no-chained-type-assertions -- the fixture is deliberately not an AclEntry: an unknown right and an unknown subject kind are what this test feeds the resolver.
-    const exoticAcl = [
+    const exoticAcl = JSON.stringify([
       { subject: { kind: "role", id: "editors" }, rights: ["teleport"] },
       { subject: { kind: "group", id: "editors" }, rights: ["manage"] },
-    ] as unknown as AclEntry[];
-    const folders = [buildFolder({ id: "root", acl: exoticAcl })];
+    ]);
+    const folders = [buildFolder({ id: "root", rawAcl: exoticAcl })];
     const editor = resolveFolderAccess(
       folders,
       buildActor([], ["editors"]),
