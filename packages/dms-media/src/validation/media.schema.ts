@@ -60,13 +60,10 @@ export function comparableName(name: string): string {
   return name.trim().normalize("NFC").toLocaleLowerCase();
 }
 
-/** The first validation message when it is an i18n key, a generic one otherwise. */
-export function describeValidationError(error: unknown): string {
-  const message = error instanceof ZodError ? error.issues[0]?.message : "";
-  return message?.startsWith("$") ? message : MEDIA_ERRORS.invalidRequest;
-}
-
-/** Parses a request body, answering 400 with a translatable message. */
+/**
+ * Parses a request body, answering 400 with the first validation message when
+ * it is an i18n key and a generic one otherwise.
+ */
 export function parseBody<Output>(
   body: unknown,
   schema: z.ZodType<Output, z.ZodTypeDef, unknown>,
@@ -74,7 +71,10 @@ export function parseBody<Output>(
   return assertValidation(
     body,
     (value) => schema.parse(value),
-    describeValidationError,
+    (error) => {
+      const message = error instanceof ZodError ? error.issues[0]?.message : "";
+      return message?.startsWith("$") ? message : MEDIA_ERRORS.invalidRequest;
+    },
   );
 }
 
