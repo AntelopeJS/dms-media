@@ -56,19 +56,6 @@ export interface BulkOutcome {
   refused: BulkRefusal[];
 }
 
-function describeFailure(id: string, error: unknown): BulkRefusal {
-  if (error instanceof HTTPResult) {
-    const body: unknown = error.getBody();
-    const message = isString(body) ? body : JSON.stringify(body);
-    return { id, status: error.getStatus(), message: message ?? "" };
-  }
-  return {
-    id,
-    status: HTTP_INTERNAL_ERROR,
-    message: error instanceof Error ? error.message : String(error),
-  };
-}
-
 /** Runs one operation per asset in order, keeping going past the ones refused. */
 async function applyToEach(
   context: MediaRequestContext,
@@ -82,7 +69,21 @@ async function applyToEach(
       await operation(context, asset);
       outcome.done.push(id);
     } catch (error) {
-      outcome.refused.push(describeFailure(id, error));
+      if (error instanceof HTTPResult) {
+        const body: unknown = error.getBody();
+        const message = isString(body) ? body : JSON.stringify(body);
+        outcome.refused.push({
+          id,
+          status: error.getStatus(),
+          message: message ?? "",
+        });
+      } else {
+        outcome.refused.push({
+          id,
+          status: HTTP_INTERNAL_ERROR,
+          message: error instanceof Error ? error.message : String(error),
+        });
+      }
     }
   }
   return outcome;
