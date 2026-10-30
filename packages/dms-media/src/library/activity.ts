@@ -101,6 +101,8 @@ export const ACTIVITY_FILTERS = {
 
 export type ActivityFilter = keyof typeof ACTIVITY_FILTERS;
 
+const ACTIVITY_FILTER_KINDS = new Map(Object.entries(ACTIVITY_FILTERS));
+
 export function isActivityFilter(value: unknown): value is ActivityFilter {
   return typeof value === "string" && Object.hasOwn(ACTIVITY_FILTERS, value);
 }
@@ -324,7 +326,7 @@ export function buildActivityItems(
     deletedAssetIds: deletedAssets(source.events),
   };
   const kinds: ReadonlySet<string> | undefined = source.filter
-    ? new Set(ACTIVITY_FILTERS[source.filter])
+    ? new Set(ACTIVITY_FILTER_KINDS.get(source.filter))
     : undefined;
   const events = kinds
     ? source.events.filter((event) => kinds.has(event.kind))
