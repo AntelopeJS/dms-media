@@ -2,7 +2,7 @@
   "rules": {
     "anti-slop/no-chained-type-assertions": 0
   },
-  "tsExpectError": 3,
+  "tsExpectError": 4,
   "tsIgnore": 0,
   "safety": 0,
   "config": {

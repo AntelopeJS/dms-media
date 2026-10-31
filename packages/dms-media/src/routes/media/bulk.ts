@@ -4,7 +4,7 @@ import {
   Parameter,
   Post,
 } from "@antelopejs/interface-api";
-import { assert } from "@antelopejs/interface-api-util";
+import { assert, assertValidation } from "@antelopejs/interface-api-util";
 import { Logging } from "@antelopejs/interface-core/logging";
 import type { MediaAsset, MediaFolder } from "../../db";
 import { downloadStorageBytes } from "../../derivatives";
@@ -14,7 +14,7 @@ import {
   bulkMoveSchema,
   bulkVisibilitySchema,
 } from "../../validation/library.schema";
-import { parseBody } from "../../validation/media.schema";
+import { refuseInvalidBody } from "../../validation/media.schema";
 import { moveAsset, removeAsset, setAssetVisibility } from "./asset-actions";
 import { requireReadableAsset } from "./assets";
 import { MediaApiController } from "./controller";
@@ -195,7 +195,11 @@ function zipResponse(entries: ZipEntry[], filename: string): HTTPResult {
 export class MediaBulkController extends MediaApiController {
   @Post("/assets/bulk/move")
   async bulkMove(@JSONBody() body: unknown) {
-    const { ids, folderId } = parseBody(body, bulkMoveSchema);
+    const { ids, folderId } = assertValidation(
+      body,
+      (value) => bulkMoveSchema.parse(value),
+      refuseInvalidBody,
+    );
     const context = await this.resolveContext();
     return applyToEach(context, ids, (ctx, asset) =>
       moveAsset(ctx, asset, folderId),
@@ -204,7 +208,11 @@ export class MediaBulkController extends MediaApiController {
 
   @Post("/assets/bulk/visibility")
   async bulkVisibility(@JSONBody() body: unknown) {
-    const { ids, visibility } = parseBody(body, bulkVisibilitySchema);
+    const { ids, visibility } = assertValidation(
+      body,
+      (value) => bulkVisibilitySchema.parse(value),
+      refuseInvalidBody,
+    );
     const context = await this.resolveContext();
     return applyToEach(context, ids, (ctx, asset) =>
       setAssetVisibility(ctx, asset, visibility),
@@ -213,14 +221,22 @@ export class MediaBulkController extends MediaApiController {
 
   @Post("/assets/bulk/delete")
   async bulkDelete(@JSONBody() body: unknown) {
-    const { ids } = parseBody(body, bulkIdsSchema);
+    const { ids } = assertValidation(
+      body,
+      (value) => bulkIdsSchema.parse(value),
+      refuseInvalidBody,
+    );
     const context = await this.resolveContext();
     return applyToEach(context, ids, removeAsset);
   }
 
   @Post("/assets/zip")
   async zip(@JSONBody() body: unknown) {
-    const { ids } = parseBody(body, bulkIdsSchema);
+    const { ids } = assertValidation(
+      body,
+      (value) => bulkIdsSchema.parse(value),
+      refuseInvalidBody,
+    );
     const context = await this.resolveContext();
     return zipResponse(await loadZipAssets(context, ids), ZIP_FILENAME);
   }

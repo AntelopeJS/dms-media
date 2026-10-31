@@ -61,22 +61,16 @@ export function comparableName(name: string): string {
 }
 
 /**
- * Parses a request body, answering 400 with the first validation message when
- * it is an i18n key and a generic one otherwise.
+ * The error handler for `assertValidation` on a request body: answers 400 with
+ * the first validation message when it is an i18n key and a generic one
+ * otherwise.
  */
-export function parseBody<Output>(
-  body: unknown,
-  schema: z.ZodType<Output, z.ZodTypeDef, unknown>,
-): Output {
-  return assertValidation(
-    body,
-    (value) => schema.parse(value),
-    (error) => {
-      const message = error instanceof ZodError ? error.issues[0]?.message : "";
-      return message?.startsWith("$") ? message : MEDIA_ERRORS.invalidRequest;
-    },
-  );
-}
+export const refuseInvalidBody: NonNullable<
+  Parameters<typeof assertValidation>[2]
+> = (error) => {
+  const message = error instanceof ZodError ? error.issues[0]?.message : "";
+  return message?.startsWith("$") ? message : MEDIA_ERRORS.invalidRequest;
+};
 
 export const createFolderSchema = z.object({
   name: nameSchema,

@@ -1,6 +1,6 @@
 import { MediaApiController } from "./controller";
 import { Delete, JSONBody, Parameter, Post } from "@antelopejs/interface-api";
-import { assert } from "@antelopejs/interface-api-util";
+import { assert, assertValidation } from "@antelopejs/interface-api-util";
 import { deleteMediaAsset } from "../../asset-lifecycle";
 import { holdsSubfolders } from "../../bindings";
 import { forgetFavorites } from "../../library/favorites";
@@ -11,7 +11,7 @@ import {
   folderVisibilitySchema,
   MEDIA_ERRORS,
   moveFolderSchema,
-  parseBody,
+  refuseInvalidBody,
   renameFolderSchema,
 } from "../../validation/media.schema";
 import {
@@ -156,7 +156,11 @@ export function isMoveInsideSubtree(
 export class MediaFoldersController extends MediaApiController {
   @Post("/folders")
   async createFolder(@JSONBody() body: unknown) {
-    const { name, parentId } = parseBody(body, createFolderSchema);
+    const { name, parentId } = assertValidation(
+      body,
+      (value) => createFolderSchema.parse(value),
+      refuseInvalidBody,
+    );
     const context = await this.resolveContext();
     const parent = assertCanPlaceUnder(context, parentId);
     assertUniqueSiblingName(context, name, parentId);
@@ -180,7 +184,11 @@ export class MediaFoldersController extends MediaApiController {
     @Parameter("folderId", "param") folderId: string,
     @JSONBody() body: unknown,
   ) {
-    const { name } = parseBody(body, renameFolderSchema);
+    const { name } = assertValidation(
+      body,
+      (value) => renameFolderSchema.parse(value),
+      refuseInvalidBody,
+    );
     const context = await this.resolveContext();
     const folder = requireFolderRight(context, folderId, "manage");
     assertNotBound(folder);
@@ -205,7 +213,11 @@ export class MediaFoldersController extends MediaApiController {
     @Parameter("folderId", "param") folderId: string,
     @JSONBody() body: unknown,
   ) {
-    const { parentId } = parseBody(body, moveFolderSchema);
+    const { parentId } = assertValidation(
+      body,
+      (value) => moveFolderSchema.parse(value),
+      refuseInvalidBody,
+    );
     const context = await this.resolveContext();
     const folder = requireFolderRight(context, folderId, "manage");
     assertNotBound(folder);
@@ -232,7 +244,11 @@ export class MediaFoldersController extends MediaApiController {
     @Parameter("folderId", "param") folderId: string,
     @JSONBody() body: unknown,
   ) {
-    const { visibility } = parseBody(body, folderVisibilitySchema);
+    const { visibility } = assertValidation(
+      body,
+      (value) => folderVisibilitySchema.parse(value),
+      refuseInvalidBody,
+    );
     const context = await this.resolveContext();
     const folder = requireFolderRight(context, folderId, "manage");
     assertMediaOwner(context);
