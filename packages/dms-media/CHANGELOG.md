@@ -1,5 +1,44 @@
 # Changelog
 
+## v0.6.2
+
+[compare changes](https://github.com/AntelopeJS/dms-media/compare/v0.6.1...v0.6.2)
+
+### 🚀 Enhancements
+
+- **frontend:** Enforce the backend boundary in production builds ([#81](https://github.com/AntelopeJS/dms-media/pull/81))
+
+### 🩹 Fixes
+
+- Read media previews with GET in bounded batches ([#95](https://github.com/AntelopeJS/dms-media/pull/95))
+
+### 💅 Refactors
+
+- Clean up the tests, comments, types and oversize files ([#79](https://github.com/AntelopeJS/dms-media/pull/79))
+- **amp:** Narrow the forwarded location header with a JSDoc type guard ([#82](https://github.com/AntelopeJS/dms-media/pull/82))
+- Clear the residual ratchet findings ([#84](https://github.com/AntelopeJS/dms-media/pull/84))
+
+### 📖 Documentation
+
+- **changelog:** Breaking changes of interface-dms-media 0.3.1 and dms-media 0.6.1 ([#74](https://github.com/AntelopeJS/dms-media/pull/74))
+
+### 📦 Build
+
+- **deps:** Bump @antelopejs/tooling-configs to 0.2.17 ([#83](https://github.com/AntelopeJS/dms-media/pull/83))
+
+### 🏡 Chore
+
+- Adopt the guardrail pack from tooling-configs 0.2.0 ([#76](https://github.com/AntelopeJS/dms-media/pull/76))
+- Configure Renovate with the shared preset ([#77](https://github.com/AntelopeJS/dms-media/pull/77))
+
+### ✅ Tests
+
+- **skills:** Add eval cases for the dms-media skills ([#78](https://github.com/AntelopeJS/dms-media/pull/78))
+
+### ❤️ Contributors
+
+- Antony Rizzitelli ([@Upd4ting](http://github.com/Upd4ting))
+
 ## v0.6.1
 
 [compare changes](https://github.com/AntelopeJS/dms-media/compare/v0.6.0...v0.6.1)
