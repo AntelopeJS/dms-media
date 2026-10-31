@@ -26,7 +26,7 @@
 		"zod": "^3.24.2"
 	},
 	"devDependencies": {
-		"@antelopejs/tooling-configs": "^0.2.12",
+		"@antelopejs/tooling-configs": "file:../../../.campaign/tgz/antelopejs-tooling-configs-a423d41.tgz",
 		"@nuxt/ui": "4.10.0",
 		"@typescript-eslint/parser": "^8.0.0",
 		"@vitejs/plugin-vue": "^6.0.10",
