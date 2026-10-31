@@ -34,7 +34,7 @@ ajs project modules add @antelopejs/dms-media
 
 Point the module's links at the API's public URL, and allow the dashboard's origin, since the browser uploads straight to the storage:
 
-```ts
+```ts fragment
 // antelope.config.ts
 "dms-media": {
   source: { type: "package", package: "@antelopejs/dms-media", version: "^0.4.0" },
@@ -51,7 +51,7 @@ api: {
 
 Restart the backend, then the frontend, and open **Modules › Media** (`/modules/media/overview`). To let members pick files from your own pages, add an asset field:
 
-```ts
+```ts fragment
 import { AssetType } from "@antelopejs/interface-dms-media";
 
 new AssetType({
@@ -62,15 +62,9 @@ new AssetType({
 
 ## Compatibility
 
-| Package | Version |
-| --- | --- |
-| `@antelopejs/dms` | `>=0.11.0 <1.0.0` |
-| `@antelopejs/interface-dms` | `>=0.9.0 <1.0.0` |
-| `@antelopejs/dms-frontend` (renderer) | `>=0.9.1 <0.10.0` |
-| `@antelopejs/interface-dms-media` | `>=0.2.1 <0.3.0` |
-| File storage | an `@antelopejs/interface-file-storage` implementation, such as `@antelopejs/file-storage-local` |
+The module also needs a DMS backend in a release that implements the `@antelopejs/interface-dms` range in the [module README compatibility block](packages/dms-media/README.md#compatibility), and the `@antelopejs/dms-frontend` renderer in the range its frontend module declares in `engines["@antelopejs/dms-frontend"]` of `packages/dms-media/frontend-vue/package.json`; the `ajs dms` CLI refuses to build it with a renderer outside that range.
 
-On DMS 0.8, use `@antelopejs/dms-media` 0.3.
+- File storage: an `@antelopejs/interface-file-storage` implementation, such as `@antelopejs/file-storage-local`.
 
 ## Packages
 

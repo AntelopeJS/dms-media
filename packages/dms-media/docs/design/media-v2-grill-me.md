@@ -1,7 +1,7 @@
 # dms-media v2 redesign: grill session
 
-Self-answered design review of the dms-media migration to `@antelopejs/dms` 0.6 /
-`@antelopejs/interface-dms` 0.4 / `@antelopejs/dms-frontend` 0.5 and of the v2
+Self-answered design review of the dms-media migration to `dms` 0.6 /
+`interface-dms` 0.4 / `dms-frontend` 0.5 and of the v2
 design (`dms-design-mockup/modules/media`). Every question was asked against the
 code, the mockup, its UX review (`modules/media/review.html`, findings M01 to
 M19) and the DMS migration guide (`docs/02.building/13.migration-0-3-to-0-4.md`
@@ -11,13 +11,13 @@ request implements exactly these answers.
 ## 1. Dependencies and platform
 
 **Q1.1 Which versions does the module move to?**
-`@antelopejs/interface-dms` `>=0.4.0 <1.0.0` (module and interface package),
-`@antelopejs/dms` `>=0.6.0 <0.7.0` (dev, test harness, playground),
-`@antelopejs/dms-frontend` 0.5.0 (dev) with the frontend `engines` range
-`>=0.5.0 <0.6.0`, `@antelopejs/core` `>=1.13.5 <2`. The test harness, the
-hot-reload test and the playground also move to `@antelopejs/mongodb` 1.4.2
+`interface-dms` from 0.4.0 up to the next major (module and interface package),
+`dms` in the 0.6 line (dev, test harness, playground),
+`dms-frontend` 0.5.0 (dev) with the frontend `engines` range set to the 0.5
+line, `core` from 1.13.5 up to the next major. The test harness, the
+hot-reload test and the playground also move to `mongodb` 1.4.2
 (required by the DMS 0.6: it stores a `$`-prefixed string as a string),
-`@antelopejs/api` 1.3.3 and `@antelopejs/file-storage-local` 0.1.6.
+`api` 1.3.3 and `file-storage-local` 0.1.6.
 
 **Q1.2 Why `<1.0.0` and not `<0.5.0` on the interface?**
 `antelopejs-check-interface-ranges` (run by `pnpm lint`) refuses an interface

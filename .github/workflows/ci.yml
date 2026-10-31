@@ -22,7 +22,7 @@ concurrency:
 # rulesets require the `ubuntu` check, which aggregates them.
 jobs:
   ci:
-    uses: AntelopeJS/.github/.github/workflows/ci-node.yml@v1
+    uses: AntelopeJS/.github/.github/workflows/ci-node.yml@v1-campaign
     with:
       docs-files: |
         README.md
