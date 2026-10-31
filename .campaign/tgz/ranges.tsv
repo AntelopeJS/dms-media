@@ -1,0 +1,6 @@
+@antelopejs/tooling-configs	package.json	devDependencies	^0.2.17
+@antelopejs/tooling-configs	packages/dms-media/frontend-vue/package.json	devDependencies	^0.2.12
+@antelopejs/tooling-configs	packages/dms-media/package.json	devDependencies	^0.2.12
+@antelopejs/tooling-configs	packages/interface-dms-media/package.json	devDependencies	^0.2.12
+@antelopejs/tooling-configs	package.json	pnpm.overrides	
+@antelopejs/tooling-configs	pnpm-workspace.yaml	overrides	

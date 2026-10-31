@@ -11,7 +11,10 @@ export function parseFolderAcl(folder: MediaFolder): AclEntry[] | undefined {
   if (!folder.json_acl) return undefined;
   try {
     const parsed: unknown = JSON.parse(folder.json_acl);
-    if (Array.isArray(parsed)) return parsed as AclEntry[];
+    if (Array.isArray(parsed)) {
+      // SAFETY: json_acl is written only as serializeAcl of an AclEntry[] (bindings.ts, declared/folders.ts) or as the literal "[]" (bindings.ts EMPTY_ACL), so an array read back holds AclEntry values; a schema parse of a stored row on read is excluded by ruling.
+      return parsed as AclEntry[];
+    }
   } catch {}
   Logging.Warn(
     `Media folder '${folder._id}' has an unreadable ACL; treating it as empty.`,

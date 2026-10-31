@@ -75,5 +75,6 @@ export function composeTransforms(
 
 export function parseTransform(json: string | undefined): ImageTransformOps {
   if (!json) return {};
+  // SAFETY: json_transform is written only as "" or the JSON.stringify of the cumulative ImageTransformOps (transform.ts), so a non-empty value is that object; a schema parse of a stored row on read is excluded by ruling.
   return JSON.parse(json) as ImageTransformOps;
 }

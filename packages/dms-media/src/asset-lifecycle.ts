@@ -11,7 +11,8 @@ export const TECHNICAL_MUTATION: MediaMutationOptions = { touchesAsset: false };
 
 /** Reads the durable, retryable file deletion queue for an asset. */
 export function retiredFiles(asset: MediaAsset): string[] {
-  return JSON.parse(asset.json_retiredFiles);
+  // SAFETY: json_retiredFiles is written only as "[]" at creation (upload.ts, declared/assets.ts, routes/media/transform.ts) or the JSON.stringify of storage-key strings (this file), so it parses to a string[]; a schema parse of a stored row on read is excluded by ruling.
+  return JSON.parse(asset.json_retiredFiles) as string[];
 }
 
 /** Detaches references and records their cleanup in the same media transition. */

@@ -2,3 +2,5 @@ packages:
   - packages/dms-media
   - packages/interface-dms-media
   - packages/dms-media/frontend-vue
+overrides:
+  "@antelopejs/tooling-configs": "file:.campaign/tgz/antelopejs-tooling-configs-a423d41.tgz"
