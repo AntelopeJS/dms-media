@@ -34,16 +34,16 @@ const REFUSED_EXTENSIONS = new Set([
 ]);
 
 /** Image formats sharp decodes: a file declared as one of them must decode. */
-const DECODABLE_IMAGE_MIMETYPES: Record<string, string> = {
-  "image/jpeg": "jpeg",
-  "image/jpg": "jpeg",
-  "image/pjpeg": "jpeg",
-  "image/png": "png",
-  "image/webp": "webp",
-  "image/gif": "gif",
-  "image/avif": "heif",
-  "image/tiff": "tiff",
-};
+const DECODABLE_IMAGE_MIMETYPES = new Map([
+  ["image/jpeg", "jpeg"],
+  ["image/jpg", "jpeg"],
+  ["image/pjpeg", "jpeg"],
+  ["image/png", "png"],
+  ["image/webp", "webp"],
+  ["image/gif", "gif"],
+  ["image/avif", "heif"],
+  ["image/tiff", "tiff"],
+]);
 
 /** Mimetype of what sharp actually read, to store instead of the claim. */
 const MIMETYPES_BY_FORMAT = new Map([
@@ -90,7 +90,7 @@ export function isUploadTypeAllowed(
 
 /** sharp's format name for a declared image type it must be able to decode. */
 export function expectedImageFormat(mimetype: string): string | undefined {
-  return DECODABLE_IMAGE_MIMETYPES[normalizeMimetype(mimetype)];
+  return DECODABLE_IMAGE_MIMETYPES.get(normalizeMimetype(mimetype));
 }
 
 export function mimetypeOfFormat(

@@ -226,6 +226,28 @@ describe("[integration] media upload policy — types, quota, real content and s
     expect(await FileExists(staged.resourceKey)).to.equal(false);
   });
 
+  it("confirms a text file declared with the name of an Object.prototype member", async () => {
+    configureMediaModule({ ...initialConfig, allowedMimetypes: ["*"] });
+    try {
+      for (const mimetype of ["constructor", "__proto__"]) {
+        const filename = `${mimetype.replaceAll("_", "")}.txt`;
+        const staged = await stage(
+          filename,
+          mimetype,
+          Buffer.from("plain text"),
+        );
+        const confirm = await client.post("/api/media/upload/confirm", {
+          folderId,
+          resourceKey: staged.resourceKey,
+          filename,
+        });
+        expect(confirm.status, mimetype).to.equal(HTTP_OK);
+      }
+    } finally {
+      configureMediaModule(initialConfig);
+    }
+  });
+
   it("deletes the staged file when the folder disappeared before confirm", async () => {
     const doomed = await client.post("/api/media/folders", {
       name: "Doomed upload target",
