@@ -7,7 +7,7 @@
 <a href="https://discord.gg/sjK28QHrA7"><img alt="Discord" src="https://img.shields.io/badge/Discord-18181B?logo=discord&style=for-the-badge&color=000000"></a>
 <a href="https://dms.antelopejs.com/docs/modules/media"><img alt="Documentation" src="https://img.shields.io/badge/Docs-18181B?style=for-the-badge&color=000000"></a>
 
-A media library for the AntelopeJS DMS: uploads, folders, image sizes and light editing.
+A media library for the [AntelopeJS DMS](https://github.com/AntelopeJS/dms): uploads, folders, image sizes and light editing.
 
 </div>
 
