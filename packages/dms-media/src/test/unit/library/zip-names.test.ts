@@ -1,11 +1,14 @@
+import { HTTPResult } from "@antelopejs/interface-api";
 import { expect } from "chai";
+import { z } from "zod";
 import { portableName, uniqueEntryName } from "../../../library/zip";
 import {
   comparableName,
-  describeValidationError,
+  parseBody,
   updateAssetSchema,
 } from "../../../validation/media.schema";
 
+const HTTP_BAD_REQUEST = 400;
 const LONG_NAME_LENGTH = 255;
 const PORTABLE_LIMIT = 150;
 
@@ -43,13 +46,29 @@ describe("[unit] library/zip — entry names and name rules", () => {
   });
 
   it("turns validation failures into i18n keys", () => {
-    const failure = updateAssetSchema.safeParse({ name: "a|b.png" });
-    expect(failure.success).to.equal(false);
-    expect(describeValidationError(failure.error)).to.equal(
-      "$dms_media.errors.name_forbidden",
+    const refused = (parse: () => void): HTTPResult => {
+      try {
+        parse();
+      } catch (error) {
+        if (error instanceof HTTPResult) return error;
+        throw error;
+      }
+      throw new Error("expected the body to be refused");
+    };
+    const forbidden = refused(() =>
+      parseBody({ name: "a|b.png" }, updateAssetSchema),
     );
-    expect(describeValidationError(new Error("boom"))).to.equal(
-      "$dms_media.errors.invalid_request",
+    expect(forbidden.getStatus()).to.equal(HTTP_BAD_REQUEST);
+    expect(forbidden.getBody()).to.equal("$dms_media.errors.name_forbidden");
+    const crashed = refused(() =>
+      parseBody(
+        {},
+        z.unknown().transform(() => {
+          throw new Error("boom");
+        }),
+      ),
     );
+    expect(crashed.getStatus()).to.equal(HTTP_BAD_REQUEST);
+    expect(crashed.getBody()).to.equal("$dms_media.errors.invalid_request");
   });
 });

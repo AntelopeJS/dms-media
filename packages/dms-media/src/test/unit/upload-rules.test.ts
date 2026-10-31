@@ -69,4 +69,15 @@ describe("[unit] upload rules — free names and accepted types", () => {
     expect(expectedImageFormat("image/svg+xml")).to.equal(undefined);
     expect(expectedImageFormat("image/x-icon")).to.equal(undefined);
   });
+
+  it("expects no decodable format for a type named like an Object.prototype member", () => {
+    for (const mimetype of [
+      "constructor",
+      "toString",
+      "__proto__",
+      "Constructor; x=y",
+    ]) {
+      expect(expectedImageFormat(mimetype), mimetype).to.equal(undefined);
+    }
+  });
 });
