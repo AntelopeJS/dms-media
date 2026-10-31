@@ -218,9 +218,8 @@ describe("[integration] media permissions — multi-actor ACL enforcement", () =
     });
 
     it("filters unreadable assets out of preview batches", async () => {
-      const previews = await sessions.viewer.client.post(
-        "/api/media/previews",
-        { ids: [assets.libraryPng.id, assets.secretPng.id] },
+      const previews = await sessions.viewer.client.get(
+        `/api/media/previews?ids=${assets.libraryPng.id}&ids=${assets.secretPng.id}`,
       );
       expect(previews.status).to.equal(HTTP_OK);
       expect(previews.data.previews[assets.libraryPng.id]).to.be.a("string");

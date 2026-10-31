@@ -9,6 +9,7 @@ import {
   Delete,
   Get,
   JSONBody,
+  MultiParameter,
   Parameter,
   Post,
 } from "@antelopejs/interface-api";
@@ -131,9 +132,9 @@ export class MediaAssetsController extends MediaApiController {
     return { assets, truncated };
   }
 
-  @Post("/previews")
-  async previews(@JSONBody() body: unknown) {
-    const { ids } = parseBody(body, previewIdsSchema);
+  @Get("/previews")
+  async previews(@MultiParameter("ids", "query") queryIds: string[]) {
+    const { ids } = parseBody({ ids: queryIds }, previewIdsSchema);
     const context = await this.resolveContext();
     const { presets } = getMediaConfig();
     const thumb = presets.get(THUMB_PRESET_ID);
