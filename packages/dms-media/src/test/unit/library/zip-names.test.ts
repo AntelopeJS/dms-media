@@ -1,11 +1,10 @@
 import { HTTPResult } from "@antelopejs/interface-api";
-import { assertValidation } from "@antelopejs/interface-api-util";
 import { expect } from "chai";
 import { z } from "zod";
 import { portableName, uniqueEntryName } from "../../../library/zip";
 import {
   comparableName,
-  refuseInvalidBody,
+  parseBody,
   updateAssetSchema,
 } from "../../../validation/media.schema";
 
@@ -57,25 +56,16 @@ describe("[unit] library/zip — entry names and name rules", () => {
       throw new Error("expected the body to be refused");
     };
     const forbidden = refused(() =>
-      assertValidation(
-        { name: "a|b.png" },
-        (value) => updateAssetSchema.parse(value),
-        refuseInvalidBody,
-      ),
+      parseBody({ name: "a|b.png" }, updateAssetSchema),
     );
     expect(forbidden.getStatus()).to.equal(HTTP_BAD_REQUEST);
     expect(forbidden.getBody()).to.equal("$dms_media.errors.name_forbidden");
     const crashed = refused(() =>
-      assertValidation(
+      parseBody(
         {},
-        (value) =>
-          z
-            .unknown()
-            .transform(() => {
-              throw new Error("boom");
-            })
-            .parse(value),
-        refuseInvalidBody,
+        z.unknown().transform(() => {
+          throw new Error("boom");
+        }),
       ),
     );
     expect(crashed.getStatus()).to.equal(HTTP_BAD_REQUEST);
