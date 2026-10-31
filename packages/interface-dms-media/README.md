@@ -72,11 +72,11 @@ The 0.3 interface line needs a `@antelopejs/dms-media` release that implements i
 
 <!-- antelopejs-docs-compat:start -->
 
-| Package                      | Supported         | Tested with |
-| ---------------------------- | ----------------- | ----------- |
-| `@antelopejs/interface-api`  | `>=0.0.15 <1.0.0` | `0.0.15`    |
-| `@antelopejs/interface-core` | `>=0.2.4 <1.0.0`  | `0.2.4`     |
-| `@antelopejs/interface-dms`  | `>=0.9.0 <1.0.0`  | `0.9.0`     |
+| Package                      | Supported         | Tested with                                               |
+| ---------------------------- | ----------------- | --------------------------------------------------------- |
+| `@antelopejs/interface-api`  | `>=0.0.15 <1.0.0` | `file:.campaign/tgz/antelopejs-interface-api-f206be7.tgz` |
+| `@antelopejs/interface-core` | `>=0.2.4 <1.0.0`  | `0.2.4`                                                   |
+| `@antelopejs/interface-dms`  | `>=0.9.0 <1.0.0`  | `file:.campaign/tgz/antelopejs-interface-dms-50e3adc.tgz` |
 
 <!-- antelopejs-docs-compat:end -->
 
