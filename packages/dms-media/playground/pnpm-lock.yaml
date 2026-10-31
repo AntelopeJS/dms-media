@@ -23,6 +23,9 @@ importers:
       '@antelopejs/interface-dms-media':
         specifier: link:../../interface-dms-media
         version: link:../../interface-dms-media
+      zod:
+        specifier: ~3.24.2
+        version: 3.24.4
     devDependencies:
       '@antelopejs/core':
         specifier: 1.17.1

@@ -30,6 +30,7 @@ describe("[unit] declared content — declarations", () => {
           tenantId: "default",
           key: "helio.bad",
           name: "a/b",
+          // @ts-expect-error "secret" is outside MediaFolderVisibility, and parseDeclaration must refuse it naming the visibility field
           visibility: "secret",
         },
         declaredFolderSchema,
