@@ -30,7 +30,7 @@ pnpm add @antelopejs/interface-dms-media
 
 ## Quick start
 
-```ts
+```ts fragment
 import { AssetType } from "@antelopejs/interface-dms-media";
 
 new AssetType({
@@ -68,7 +68,7 @@ The interface also exports the option, declaration and ACL types: `AssetTypeOpti
 
 ## Compatibility
 
-The 0.3 interface line requires `@antelopejs/dms-media >=0.5.0` for `EnsureMediaFolder` and `ImportMediaAsset`. Media 0.4 uses the 0.2 interface line. The interface declares these peer dependencies:
+The 0.3 interface line needs a `@antelopejs/dms-media` release that implements it for `EnsureMediaFolder` and `ImportMediaAsset`; the compatibility block of the [module README](../dms-media/README.md#compatibility) lists the interface range that module release supports. Media 0.4 uses the 0.2 interface line. The interface declares these peer dependencies:
 
 <!-- antelopejs-docs-compat:start -->
 
