@@ -11,5 +11,6 @@
     "eslint/max-lines-per-function for packages/dms-media/src/test/**/*.test.ts": 1,
     "eslint/max-lines-per-function for packages/dms-media/tests/**/*.test.mjs": 1,
     "vue/multi-word-component-names for packages/dms-media/frontend-vue/**/*.vue": 1
-  }
+  },
+  "agentFiles": true
 }
