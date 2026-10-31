@@ -8,7 +8,7 @@
     "dev": "pnpm --filter @antelopejs/dms-media dev",
     "frontend:dev": "pnpm --filter @antelopejs/dms-media frontend:dev",
     "typecheck": "pnpm --dir packages/interface-dms-media typecheck && pnpm --dir packages/dms-media typecheck",
-    "lint": "oxlint && pnpm --dir packages/dms-media/frontend-vue lint && node packages/dms-media/scripts/check-locales.mts && node packages/dms-media/scripts/check-renderer-range.mts && pnpm --dir packages/dms-media exec antelopejs-check-interface-ranges",
+    "lint": "oxlint && pnpm --dir packages/dms-media/frontend-vue lint && node packages/dms-media/scripts/check-locales.mts && node packages/dms-media/scripts/check-renderer-range.mts && node packages/dms-media/scripts/check-docs-module-version.mts && pnpm --dir packages/dms-media exec antelopejs-check-interface-ranges",
     "lint:fix": "oxlint --fix && pnpm --dir packages/dms-media/frontend-vue lint:fix",
     "format": "oxfmt . && pnpm --dir packages/dms-media/frontend-vue format",
     "knip": "pnpm --dir packages/interface-dms-media knip && pnpm --dir packages/dms-media knip",
