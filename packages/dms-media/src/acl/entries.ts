@@ -12,7 +12,7 @@ export function parseFolderAcl(folder: MediaFolder): AclEntry[] | undefined {
   try {
     const parsed: unknown = JSON.parse(folder.json_acl);
     if (Array.isArray(parsed)) {
-      // SAFETY: json_acl is written only by serializeAcl, which stringifies an AclEntry[] (bindings.ts, declared/folders.ts), so an array read back holds AclEntry values; a schema parse of a stored row on read is excluded by ruling.
+      // SAFETY: json_acl is written only as serializeAcl of an AclEntry[] (bindings.ts, declared/folders.ts) or as the literal "[]" (bindings.ts EMPTY_ACL), so an array read back holds AclEntry values; a schema parse of a stored row on read is excluded by ruling.
       return parsed as AclEntry[];
     }
   } catch {}
