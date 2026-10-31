@@ -14,6 +14,10 @@ const HTTP_FOUND = 302;
 const HTTP_UNAUTHORIZED = 401;
 const HTTP_NOT_FOUND = 404;
 
+interface PreviewResponse {
+  previews: Record<string, string>;
+}
+
 async function fetchBytes(url: string): Promise<Buffer> {
   const response = await fetch(url);
   expect(response.status).to.equal(HTTP_OK);
@@ -122,12 +126,21 @@ describe("[integration] media delivery — visibility and derivatives", () => {
     const ids = listing.data.assets.map((asset: { id: string }) => asset.id);
     expect(ids).to.include(assetId);
 
-    const previews = await client.post("/api/media/previews", {
-      ids: [assetId, "unknown-asset"],
-    });
+    const secondAsset = await uploadPixelPng(client, folderId);
+    const previews = await client.get<PreviewResponse>(
+      `/api/media/previews?ids=${assetId}&ids=${secondAsset.id}`,
+    );
     expect(previews.status).to.equal(HTTP_OK);
+    expect(Object.keys(previews.data.previews)).to.have.members([
+      assetId,
+      secondAsset.id,
+    ]);
     expect(previews.data.previews[assetId]).to.be.a("string");
-    expect(previews.data.previews["unknown-asset"]).to.equal(undefined);
+    expect(previews.data.previews[secondAsset.id]).to.be.a("string");
+    const legacy = await client.post("/api/media/previews", {
+      ids: [assetId, secondAsset.id],
+    });
+    expect(legacy.status).to.equal(HTTP_NOT_FOUND);
   });
 
   it("returns to private after flipping the folder back", async () => {

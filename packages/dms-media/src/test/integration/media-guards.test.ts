@@ -1,3 +1,4 @@
+import { randomUUID } from "node:crypto";
 import axios, { type AxiosInstance } from "axios";
 import { expect } from "chai";
 import { authorizedClient, createClient } from "../helpers/http";
@@ -52,7 +53,7 @@ describe("[integration] media guards — every endpoint requires auth and rights
         resourceKey: "media/any/key.txt",
         filename: "x.txt",
       }),
-      anonymous.post("/api/media/previews", { ids: ["any"] }),
+      anonymous.get(`/api/media/previews?ids=${randomUUID()}`),
     ];
     const responses = await Promise.all(attempts);
     for (const [index, response] of responses.entries()) {
@@ -60,10 +61,23 @@ describe("[integration] media guards — every endpoint requires auth and rights
     }
   });
 
-  it("rejects oversized preview batches", async () => {
-    const ids = Array.from({ length: 201 }, (_, index) => `ghost-${index}`);
-    const previews = await owner.post("/api/media/previews", { ids });
+  it("accepts 200 preview IDs and rejects 201", async () => {
+    const ids = Array.from({ length: 201 }, () => randomUUID());
+    const query = new URLSearchParams(ids.map((id) => ["ids", id]));
+    const previews = await owner.get(`/api/media/previews?${query}`);
     expect(previews.status).to.equal(HTTP_BAD_REQUEST);
+    ids.pop();
+    const allowedQuery = new URLSearchParams(ids.map((id) => ["ids", id]));
+    const allowed = await owner.get(`/api/media/previews?${allowedQuery}`);
+    expect(allowed.status).to.equal(HTTP_OK);
+    expect(allowed.data.previews).to.deep.equal({});
+  });
+
+  it("requires a nonempty list of UUIDs for previews", async () => {
+    for (const query of ["", "?ids=not-a-uuid"]) {
+      const response = await owner.get(`/api/media/previews${query}`);
+      expect(response.status).to.equal(HTTP_BAD_REQUEST);
+    }
   });
 
   it("hides unknown folders behind 404 for authorized users", async () => {
@@ -94,9 +108,9 @@ describe("[integration] media guards — every endpoint requires auth and rights
   });
 
   it("filters unreadable assets out of previews instead of failing", async () => {
-    const previews = await owner.post("/api/media/previews", {
-      ids: ["ghost-1", "ghost-2"],
-    });
+    const previews = await owner.get(
+      `/api/media/previews?ids=${randomUUID()}&ids=${randomUUID()}`,
+    );
     expect(previews.status).to.equal(HTTP_OK);
     expect(previews.data.previews).to.deep.equal({});
   });

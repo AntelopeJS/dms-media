@@ -343,7 +343,7 @@ describe("[integration] media library — listings, search, bulk and overview", 
   });
 
   it("lists delivery presets with their cache keys", async () => {
-    await client.post("/api/media/previews", { ids: [ids["oak-a.png"]] });
+    await client.get(`/api/media/previews?ids=${ids["oak-a.png"]}`);
     const response = await client.get("/api/media/presets");
     expect(response.status).to.equal(HTTP_OK);
     const thumb = response.data.presets.find(
