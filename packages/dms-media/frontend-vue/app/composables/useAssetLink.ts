@@ -49,13 +49,16 @@ export function useAssetLink() {
 	const { t } = useI18n()
 	const toast = useToast()
 	const { confirm } = useConfirm()
+	const { presentError } = useApiErrorPresenter()
 
 	async function linkOf(asset: Pick<MediaAsset, 'url'>): Promise<string> {
 		return `${await resolveLinksOrigin(() => $authFetch<LinksOrigin>(LINKS_ORIGIN_API))}${asset.url}`
 	}
 
 	/** Asks before a file becomes reachable by anyone holding its link. */
-	function confirmMakePublic(asset: Pick<MediaAsset, 'name'>): Promise<boolean> {
+	function confirmMakePublic(
+		asset: Pick<MediaAsset, 'name'>,
+	): Promise<boolean> {
 		return confirm({
 			title: t('dms_media.asset_link.make_public_title', { name: asset.name }),
 			description: t('dms_media.asset_link.make_public_description'),
@@ -68,11 +71,16 @@ export function useAssetLink() {
 		})
 	}
 
-	function warnPrivate(asset: LinkedAsset, options: CopyAssetLinkOptions): void {
+	function warnPrivate(
+		asset: LinkedAsset,
+		options: CopyAssetLinkOptions,
+	): void {
 		const makePublic = options.makePublic
 		toast.add({
 			title: t('dms_media.toasts.link_copied'),
-			description: t('dms_media.asset_link.private_warning', { name: asset.name }),
+			description: t('dms_media.asset_link.private_warning', {
+				name: asset.name,
+			}),
 			color: 'warning',
 			icon: 'i-ph-lock-simple',
 			actions: makePublic
@@ -88,23 +96,33 @@ export function useAssetLink() {
 		})
 	}
 
-	async function copyLink(asset: LinkedAsset, options: CopyAssetLinkOptions = {}): Promise<void> {
+	async function copyLink(
+		asset: LinkedAsset,
+		options: CopyAssetLinkOptions = {},
+	): Promise<void> {
 		const link = await linkOf(asset).catch(() => asset.url)
-		try {
-			await navigator.clipboard.writeText(link)
-		} catch {
+		const copied = await navigator.clipboard.writeText(link).then(
+			() => true,
+			() => false,
+		)
+		if (!copied) {
 			toast.add({
 				title: t('dms_media.asset_link.copy_failed'),
 				description: link,
-				color: 'error',
+				color: 'warning',
 				icon: 'i-ph-warning',
 				duration: MANUAL_COPY_TOAST_MS,
 				ui: { description: 'select-all break-all font-mono' },
 			})
 			return
 		}
-		if (asset.effectiveVisibility === 'private') return warnPrivate(asset, options)
-		toast.add({ title: t('dms_media.toasts.link_copied'), color: 'success', icon: 'i-ph-link' })
+		if (asset.effectiveVisibility === 'private')
+			return warnPrivate(asset, options)
+		toast.add({
+			title: t('dms_media.toasts.link_copied'),
+			color: 'success',
+			icon: 'i-ph-link',
+		})
 	}
 
 	/**
@@ -112,7 +130,9 @@ export function useAssetLink() {
 	 * the storage's origin, where the browser ignores a link's `download`, so the
 	 * file is fetched and saved from memory.
 	 */
-	async function download(asset: Pick<MediaAsset, 'id' | 'name'>): Promise<boolean> {
+	async function download(
+		asset: Pick<MediaAsset, 'id' | 'name'>,
+	): Promise<boolean> {
 		try {
 			const { url } = await api.readUrl(asset.id)
 			const response = await fetch(url)
@@ -122,7 +142,7 @@ export function useAssetLink() {
 			setTimeout(() => URL.revokeObjectURL(objectUrl), OBJECT_URL_LIFETIME_MS)
 			return true
 		} catch (cause) {
-			useApiError(cause, { title: t('dms_media.toasts.download_failed') })
+			presentError(cause, { fallbackKey: 'dms_media.toasts.download_failed' })
 			return false
 		}
 	}
@@ -137,7 +157,7 @@ export function useAssetLink() {
 			opened.location.href = url
 		} catch (cause) {
 			opened?.close()
-			useApiError(cause, { title: t('dms_media.asset_link.open_failed') })
+			presentError(cause, { fallbackKey: 'dms_media.asset_link.open_failed' })
 		}
 	}
 

@@ -48,6 +48,7 @@ export function useFileDetails(assetId: Ref<string | undefined>, order: Ref<File
 	const api = useMediaApi()
 	const { t } = useI18n()
 	const toast = useToast()
+	const { presentError } = useApiErrorPresenter()
 	const { tree, refresh: refreshTree } = useLibraryTree()
 
 	async function readSiblings(fetch: ApiDataContext['$authFetch'], signal: AbortSignal, folderId: string, id: string): Promise<SiblingsWindow> {
@@ -153,7 +154,7 @@ export function useFileDetails(assetId: Ref<string | undefined>, order: Ref<File
 			return true
 		} catch (cause) {
 			patch({ name: current.name })
-			useApiError(cause, { title: t('dms_media.toasts.rename_failed') })
+			presentError(cause, { fallbackKey: 'dms_media.toasts.rename_failed' })
 			return false
 		}
 	}
@@ -166,7 +167,7 @@ export function useFileDetails(assetId: Ref<string | undefined>, order: Ref<File
 			patch({ alt })
 			return true
 		} catch (cause) {
-			useApiError(cause, { title: t('dms_media.toasts.alt_failed') })
+			presentError(cause, { fallbackKey: 'dms_media.toasts.alt_failed' })
 			return false
 		}
 	}
@@ -178,7 +179,7 @@ export function useFileDetails(assetId: Ref<string | undefined>, order: Ref<File
 			await load()
 			return true
 		} catch (cause) {
-			useApiError(cause, { title: t('dms_media.toasts.visibility_failed') })
+			presentError(cause, { fallbackKey: 'dms_media.toasts.visibility_failed' })
 			return false
 		}
 	}
@@ -204,7 +205,7 @@ export function useFileDetails(assetId: Ref<string | undefined>, order: Ref<File
 			await load()
 			toast.add({ title: t('dms_media.toasts.moved', { count: 1 }, 1), color: 'success' })
 		} catch (cause) {
-			useApiError(cause, { title: t('dms_media.toasts.move_failed') })
+			presentError(cause, { fallbackKey: 'dms_media.toasts.move_failed' })
 		}
 	}
 
@@ -217,7 +218,7 @@ export function useFileDetails(assetId: Ref<string | undefined>, order: Ref<File
 			toast.add({ title: t('dms_media.toasts.deleted', { count: 1 }, 1), color: 'success', icon: 'i-ph-trash' })
 			return true
 		} catch (cause) {
-			useApiError(cause, { title: t('dms_media.toasts.delete_failed') })
+			presentError(cause, { fallbackKey: 'dms_media.toasts.delete_failed' })
 			return false
 		}
 	}
