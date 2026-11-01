@@ -111,7 +111,7 @@ packages:
     resolution: {integrity: sha512-PJp58D1snKLVEmpfn9Yj2htuohZhUxHqyyec3xtkPPy61mtACs0YznnhcgbYQNhIy/q8J+lSwDICPZIsKjhAIA==}
 
   '@antelopejs/interface-data-api@file:../../../.campaign/tgz/antelopejs-interface-data-api-e070b68.tgz':
-    resolution: {integrity: sha512-O16lePAHrLN2nxHGEzvegkaybhrLIiGKTOXWyYkeEZv5QeWoa0hlvEoCpLJ5jto3B8PN4v0RrORIV/VPdNDl1g==, tarball: file:../../../.campaign/tgz/antelopejs-interface-data-api-e070b68.tgz}
+    resolution: {integrity: sha512-eJBRRL5W3A37TBjNe5D4bqkH85rAP6XaiMEHO0/pygnSWb96R4g8Wt5Ec+stbiT8JcsPuSW7JTI6sTIHg0SJvg==, tarball: file:../../../.campaign/tgz/antelopejs-interface-data-api-e070b68.tgz}
     version: 0.6.0
     peerDependencies:
       '@antelopejs/interface-api': '>=0.0.15 <1.0.0'
@@ -121,7 +121,7 @@ packages:
       '@antelopejs/interface-database-decorators': '>=0.1.10 <1.0.0'
 
   '@antelopejs/interface-database-decorators@file:../../../.campaign/tgz/antelopejs-interface-database-decorators-e79a62b.tgz':
-    resolution: {integrity: sha512-We30gHUprK8OMccecBNp4MH81KNLa4MnXqwWCbLw6VPR1qwjER6nqhsV9unwEoBauxgtFXtVSSXX2HHhPk2vOg==, tarball: file:../../../.campaign/tgz/antelopejs-interface-database-decorators-e79a62b.tgz}
+    resolution: {integrity: sha512-IO3ovOrBj5yWA39lNFqgr8+oJhjy8bzBTbgFvx369afjGO2J1i3J0+riEbZZzQ5fTx1qYV5gYuyx+BdoQBf+BQ==, tarball: file:../../../.campaign/tgz/antelopejs-interface-database-decorators-e79a62b.tgz}
     version: 0.2.0
     peerDependencies:
       '@antelopejs/interface-api': '>=0.0.15 <1.0.0'
@@ -129,7 +129,7 @@ packages:
       '@antelopejs/interface-database': '>=0.1.11 <1.0.0'
 
   '@antelopejs/interface-database@file:../../../.campaign/tgz/antelopejs-interface-database-02e0360.tgz':
-    resolution: {integrity: sha512-qacJWfgVlDlmRgkAZ9iQJtu1ZD0eZXxisQ8bIvp/ZTayiJUjNMEoyt9tH3o5n2fa4j2xOPnok6ZnhNGlaho6Uw==, tarball: file:../../../.campaign/tgz/antelopejs-interface-database-02e0360.tgz}
+    resolution: {integrity: sha512-rn+0+nTMBje0Wo4Ysg5/HGm/gqreLSyMkuXrsKF+2kAxrNx+5WEzmJHqy3CwJ1SOZr65lb3Yhb/M3CrmXCVYqQ==, tarball: file:../../../.campaign/tgz/antelopejs-interface-database-02e0360.tgz}
     version: 0.3.0
     peerDependencies:
       '@antelopejs/interface-core': '>=0.2.4 <1.0.0'
