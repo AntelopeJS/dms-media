@@ -6,6 +6,7 @@ type Translate = ReturnType<typeof useI18n>['t']
 
 interface Announcer {
 	toast: ToastApi
+	presentError: ReturnType<typeof useApiErrorPresenter>['presentError']
 	t: Translate
 	failureText: (item: UploadFailureSource) => string
 	failedItems: (batchId: string) => readonly UploadItem[]
@@ -32,11 +33,19 @@ function toastId(batchId: string): string {
 
 function uploadsLink(announcer: Announcer, labelKey: string) {
 	if (!announcer.showUploadsLink) return undefined
-	return [{ label: announcer.t(labelKey), onClick: () => void navigateDms(MEDIA_ROUTES.uploads) }]
+	return [
+		{
+			label: announcer.t(labelKey),
+			onClick: () => void navigateDms(MEDIA_ROUTES.uploads),
+		},
+	]
 }
 
 /** The reason most of the failed files share, or "various reasons" on a tie. */
-function sharedReason(announcer: Announcer, failed: readonly UploadItem[]): string {
+function sharedReason(
+	announcer: Announcer,
+	failed: readonly UploadItem[],
+): string {
 	const counts = new Map<string, number>()
 	for (const item of failed) {
 		const reason = announcer.failureText(item)
@@ -44,22 +53,36 @@ function sharedReason(announcer: Announcer, failed: readonly UploadItem[]): stri
 	}
 	const ranked = [...counts].sort((left, right) => right[1] - left[1])
 	const [top, runnerUp] = ranked
-	if (!top || (runnerUp && runnerUp[1] === top[1])) return announcer.t('dms_media.toasts.upload_failed_mixed')
+	if (!top || (runnerUp && runnerUp[1] === top[1]))
+		return announcer.t('dms_media.toasts.upload_failed_mixed')
 	return top[0]
 }
 
 function failureToast(announcer: Announcer, outcome: UploadBatchOutcome) {
 	const { t } = announcer
-	const failed = announcer.failedItems(outcome.batchId)
+	const failed = announcer
+		.failedItems(outcome.batchId)
+		.filter((item) => item.requestError === undefined)
 	const [only] = failed
 	const added = outcome.uploaded
-		? t('dms_media.toasts.upload_added', { count: outcome.uploaded, name: outcome.folderName }, outcome.uploaded)
+		? t(
+				'dms_media.toasts.upload_added',
+				{ count: outcome.uploaded, name: outcome.folderName },
+				outcome.uploaded,
+			)
 		: ''
 	const title =
 		failed.length === 1 && only
 			? t('dms_media.toasts.upload_failed_one', { name: only.name })
-			: t('dms_media.toasts.upload_failed', { count: outcome.failed, name: outcome.folderName }, outcome.failed)
-	const reason = failed.length === 1 && only ? announcer.failureText(only) : sharedReason(announcer, failed)
+			: t(
+					'dms_media.toasts.upload_failed',
+					{ count: failed.length, name: outcome.folderName },
+					failed.length,
+				)
+	const reason =
+		failed.length === 1 && only
+			? announcer.failureText(only)
+			: sharedReason(announcer, failed)
 	return { title, description: [reason, added].filter(Boolean).join(' · ') }
 }
 
@@ -69,7 +92,23 @@ function settle(outcome: UploadBatchOutcome): void {
 	announcers.delete(outcome.batchId)
 	const { toast, t } = announcer
 	toast.remove(toastId(outcome.batchId))
-	if (outcome.failed)
+	const failed = announcer.failedItems(outcome.batchId)
+	for (const item of failed) {
+		if (item.requestError === undefined) continue
+		announcer.presentError(item.requestError, {
+			fallbackKey: 'dms_media.toasts.upload_failed_one',
+			params: { name: item.name },
+			actions: announcer.showUploadsLink
+				? [
+						{
+							labelKey: 'dms_media.upload_strip.see_details',
+							onSelect: () => navigateDms(MEDIA_ROUTES.uploads),
+						},
+					]
+				: undefined,
+		})
+	}
+	if (failed.some((item) => item.requestError === undefined))
 		return void toast.add({
 			...failureToast(announcer, outcome),
 			icon: 'i-ph-cloud-slash',
@@ -78,19 +117,24 @@ function settle(outcome: UploadBatchOutcome): void {
 		})
 	if (!outcome.uploaded) return
 	toast.add({
-		title: t('dms_media.toasts.upload_added', { count: outcome.uploaded, name: outcome.folderName }, outcome.uploaded),
+		title: t(
+			'dms_media.toasts.upload_added',
+			{ count: outcome.uploaded, name: outcome.folderName },
+			outcome.uploaded,
+		),
 		icon: 'i-ph-check-circle',
 		color: 'success',
 	})
 }
 
 /**
- * One toast per upload batch: "Uploading…" when it starts, replaced by what
- * happened once every file is settled, even after the page that started it
- * was left.
+ * Shows batch progress, then request failures through the API presenter and
+ * local validation or success notices once every file settles, even after
+ * the page that started the batch was left.
  */
 export function useUploadToasts() {
 	const toast = useToast()
+	const { presentError } = useApiErrorPresenter()
 	const { t } = useI18n()
 	const uploads = useUploadQueue()
 	const failureText = useUploadFailureText()
@@ -99,18 +143,31 @@ export function useUploadToasts() {
 		uploads.onBatchSettled(settle)
 	}
 
-	function announce(batchId: string, count: number, folderName: string, options: UploadToastOptions = {}): void {
+	function announce(
+		batchId: string,
+		count: number,
+		folderName: string,
+		options: UploadToastOptions = {},
+	): void {
 		const announcer: Announcer = {
 			toast,
+			presentError,
 			t,
 			failureText,
-			failedItems: (id) => uploads.items.value.filter((item) => item.batchId === id && FAILED_STATUSES.has(item.status)),
+			failedItems: (id) =>
+				uploads.items.value.filter(
+					(item) => item.batchId === id && FAILED_STATUSES.has(item.status),
+				),
 			showUploadsLink: options.showUploadsLink ?? true,
 		}
 		announcers.set(batchId, announcer)
 		toast.add({
 			id: toastId(batchId),
-			title: t('dms_media.toasts.uploading', { count, name: folderName }, count),
+			title: t(
+				'dms_media.toasts.uploading',
+				{ count, name: folderName },
+				count,
+			),
 			icon: 'i-ph-cloud-arrow-up',
 			color: 'neutral',
 			actions: uploadsLink(announcer, 'dms_media.upload_strip.see_progress'),
@@ -118,7 +175,10 @@ export function useUploadToasts() {
 	}
 
 	/** Names the files a field refused for their type, and says what it takes. */
-	function announceRefusedTypes(refused: readonly File[], accept: readonly string[]): void {
+	function announceRefusedTypes(
+		refused: readonly File[],
+		accept: readonly string[],
+	): void {
 		if (refused.length === 0) return
 		const types = fieldTypesLabel(accept, t)
 		toast.add({
@@ -127,7 +187,9 @@ export function useUploadToasts() {
 				{ names: refused.map((file) => file.name).join(NAMES_SEPARATOR) },
 				refused.length,
 			),
-			description: types ? t('dms_media.field_widget.upload.accepts', { types }) : undefined,
+			description: types
+				? t('dms_media.field_widget.upload.accepts', { types })
+				: undefined,
 			color: 'warning',
 			icon: 'i-ph-file-x',
 		})

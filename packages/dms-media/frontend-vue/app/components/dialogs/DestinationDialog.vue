@@ -16,7 +16,7 @@ const props = defineProps<{
 const emit = defineEmits<{ close: [string | null] }>()
 const { t } = useI18n()
 const api = useMediaApi()
-const toast = useToast()
+const { presentError } = useApiErrorPresenter()
 const format = useMediaFormat()
 const nameDialog = useOverlay().create(NameDialog)
 const { tree, refresh: reload } = useLibraryTree()
@@ -70,8 +70,8 @@ async function createFolder(): Promise<void> {
 		const { id } = await api.createFolder(name, parent?.id)
 		await reload()
 		target.value = id
-	} catch {
-		toast.add({ title: t('dms_media.toasts.folder_create_failed'), color: 'error', icon: 'i-ph-warning-circle' })
+	} catch (error) {
+		presentError(error, { fallbackKey: 'dms_media.toasts.folder_create_failed' })
 	} finally {
 		isCreating.value = false
 	}

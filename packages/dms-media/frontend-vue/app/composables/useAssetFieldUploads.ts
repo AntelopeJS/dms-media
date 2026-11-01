@@ -30,6 +30,7 @@ export function useAssetFieldUploads(options: AssetFieldUploadOptions) {
 	const uploadToasts = useUploadToasts()
 	const toast = useToast()
 	const { t } = useI18n()
+	const { presentError } = useApiErrorPresenter()
 	const batchIds = ref<string[]>([])
 	const reportedFailures = new Set<string>()
 
@@ -96,6 +97,13 @@ export function useAssetFieldUploads(options: AssetFieldUploadOptions) {
 				FAILED_STATUSES.has(entry.status) && !reportedFailures.has(entry.id),
 		)) {
 			reportedFailures.add(item.id)
+			if (item.requestError !== undefined) {
+				presentError(item.requestError, {
+					fallbackKey: 'dms_media.field_widget.upload.failed',
+					params: { name: item.name },
+				})
+				continue
+			}
 			toast.add({
 				title: t('dms_media.field_widget.upload.failed', { name: item.name }),
 				description: failureText(item),

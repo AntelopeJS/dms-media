@@ -49,6 +49,7 @@ export function useAssetLink() {
 	const { t } = useI18n()
 	const toast = useToast()
 	const { confirm } = useConfirm()
+	const { presentError } = useApiErrorPresenter()
 
 	async function linkOf(asset: Pick<MediaAsset, 'url'>): Promise<string> {
 		return `${await resolveLinksOrigin(() => $authFetch<LinksOrigin>(LINKS_ORIGIN_API))}${asset.url}`
@@ -122,7 +123,7 @@ export function useAssetLink() {
 			setTimeout(() => URL.revokeObjectURL(objectUrl), OBJECT_URL_LIFETIME_MS)
 			return true
 		} catch (cause) {
-			useApiError(cause, { title: t('dms_media.toasts.download_failed') })
+			presentError(cause, { fallbackKey: 'dms_media.toasts.download_failed' })
 			return false
 		}
 	}
@@ -137,7 +138,7 @@ export function useAssetLink() {
 			opened.location.href = url
 		} catch (cause) {
 			opened?.close()
-			useApiError(cause, { title: t('dms_media.asset_link.open_failed') })
+			presentError(cause, { fallbackKey: 'dms_media.asset_link.open_failed' })
 		}
 	}
 

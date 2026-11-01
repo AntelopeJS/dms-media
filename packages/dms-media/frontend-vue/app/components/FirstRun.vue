@@ -17,6 +17,7 @@ const STARTERS: StarterFolder[] = [
 const api = useMediaApi()
 const { t } = useI18n()
 const toast = useToast()
+const { presentError } = useApiErrorPresenter()
 const { tree, ready } = useLibraryTree()
 const isCreating = ref(false)
 // Read with the page: a client navigation waits for the folders, so the welcome shows with it rather than after.
@@ -36,7 +37,7 @@ async function createStarters(): Promise<void> {
 		toast.add({ title: t('dms_media.first_run.created'), color: 'success', icon: 'i-ph-folders' })
 		await navigateDms(MEDIA_ROUTES.files)
 	} catch (error) {
-		useApiError(error, { title: t('dms_media.toasts.folder_create_failed') })
+		presentError(error, { fallbackKey: 'dms_media.toasts.folder_create_failed' })
 	} finally {
 		isCreating.value = false
 	}

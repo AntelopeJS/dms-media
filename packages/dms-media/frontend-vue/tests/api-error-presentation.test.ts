@@ -7,7 +7,7 @@ afterEach(() => {
 	vi.unstubAllEnvs()
 })
 
-it.each(['names', 'presign', 'confirm'])(
+it.each(['names', 'presign', 'confirm', 'field'])(
 	'presents one translated warning for a JSON 403 from upload %s',
 	async (stage) => {
 		vi.resetModules()
@@ -42,6 +42,7 @@ it.each(['names', 'presign', 'confirm'])(
 		vi.stubGlobal('useApiErrorPresenter', useApiErrorPresenter)
 		vi.stubGlobal('useI18n', () => ({ t: (key: string) => key }))
 		vi.stubGlobal('useConfirm', () => ({ confirm: async () => false }))
+		vi.stubGlobal('onBeforeUnmount', () => undefined)
 		vi.stubGlobal('useUploadFailureText', () => () => 'Upload failed')
 		vi.stubGlobal('apiErrorStatus', () => 403)
 		vi.stubGlobal(
@@ -64,7 +65,7 @@ it.each(['names', 'presign', 'confirm'])(
 		)
 		vi.stubGlobal('useUploadApi', () => ({
 			freeNames: async () => {
-				if (stage === 'names') throw error
+				if (stage === 'names' || stage === 'field') throw error
 				return { names: [null, null] }
 			},
 			presign: async () => {
@@ -81,17 +82,32 @@ it.each(['names', 'presign', 'confirm'])(
 		vi.stubGlobal('useUploadQueue', useUploadQueue)
 		const { useUploadToasts } =
 			await import('../app/composables/useUploadToasts')
+		vi.stubGlobal('useUploadToasts', useUploadToasts)
 		const queue = useUploadQueue()
 		const toasts = useUploadToasts()
 		const settled = new Promise<void>((resolve) =>
 			queue.onBatchSettled(() => resolve()),
 		)
-		const batchId = queue.enqueue(
-			[new File(['hello'], 'hello.txt'), new File(['world'], 'world.txt')],
-			{ folderId: 'folder-1', folderName: 'Docs' },
-		)
-		toasts.announce(batchId, 2, 'Docs')
+		const files = [
+			new File(['hello'], 'hello.txt'),
+			new File(['world'], 'world.txt'),
+		]
+		const destination = { folderId: 'folder-1', folderName: 'Docs' }
+		if (stage === 'field') {
+			const { useAssetFieldUploads } =
+				await import('../app/composables/useAssetFieldUploads')
+			await useAssetFieldUploads({
+				accept: () => undefined,
+				destination: () => destination,
+				room: () => undefined,
+				onUploaded: () => undefined,
+			}).upload(files)
+		} else {
+			const batchId = queue.enqueue(files, destination)
+			toasts.announce(batchId, 2, 'Docs')
+		}
 		await settled
+		await vue.nextTick()
 		expect(
 			[...notices.values()].map(({ title, color }) => ({ title, color })),
 		).toEqual([{ title: 'This demo is read-only', color: 'warning' }])
