@@ -34,8 +34,6 @@
 @antelopejs/dms	packages/dms-media/playground/package.json	dependencies	>=0.11.0 <1.0.0
 @antelopejs/dms	package.json	pnpm.overrides	
 @antelopejs/dms	pnpm-workspace.yaml	overrides	
-@antelopejs/dms>@antelopejs/interface-core	package.json	pnpm.overrides	
-@antelopejs/dms>@antelopejs/interface-core	pnpm-workspace.yaml	overrides	
 @antelopejs/dms>@antelopejs/interface-file-storage	package.json	pnpm.overrides	
 @antelopejs/dms>@antelopejs/interface-file-storage	pnpm-workspace.yaml	overrides	
 @antelopejs/interface-api-util	packages/dms-media/playground/package.json	dependencies	>=0.1.3 <1.0.0
@@ -54,4 +52,14 @@
 @antelopejs/dms-frontend	package.json	pnpm.overrides	
 @antelopejs/dms-frontend	pnpm-workspace.yaml	overrides	
 @antelopejs/dms-frontend	packages/dms-media/playground/package.json	pnpm.overrides	
-@antelopejs/dms>@antelopejs/interface-core	packages/dms-media/playground/package.json	pnpm.overrides	
+@antelopejs/interface-core	packages/dms-media/package.json	dependencies	>=0.2.4 <1.0.0
+@antelopejs/interface-core	packages/dms-media/playground/package.json	dependencies	>=0.2.4 <1.0.0
+@antelopejs/interface-core	packages/interface-dms-media/package.json	devDependencies	>=0.2.4 <1.0.0
+@antelopejs/interface-core	package.json	pnpm.overrides	
+@antelopejs/interface-core	pnpm-workspace.yaml	overrides	
+@antelopejs/interface-core	packages/dms-media/playground/package.json	pnpm.overrides	
+@antelopejs/core	packages/dms-media/package.json	devDependencies	>=1.17.1 <2
+@antelopejs/core	packages/dms-media/playground/package.json	devDependencies	1.17.1
+@antelopejs/core	package.json	pnpm.overrides	
+@antelopejs/core	pnpm-workspace.yaml	overrides	
+@antelopejs/core	packages/dms-media/playground/package.json	pnpm.overrides	
