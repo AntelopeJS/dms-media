@@ -31,8 +31,8 @@ interface RequestOptions {
 /** The upload routes the queue drives: presign, confirm, abort, names and batch reports. */
 export function useUploadApi() {
 	const { $authFetch } = useAuthFetch()
-	const post = <T>(path: string, body: object, options: RequestOptions = {}) =>
-		$authFetch<T>(`${API}${path}`, { method: 'POST', body, ...options })
+	const post = <T>(path: string, body: object) =>
+		$authFetch<T>(`${API}${path}`, { method: 'POST', body })
 
 	return {
 		presign: (folderId: string, file: File) =>
@@ -43,9 +43,11 @@ export function useUploadApi() {
 				mimetype: file.type || 'application/octet-stream',
 			}),
 		confirm: (request: ConfirmRequest) => post<{ asset: MediaAsset }>('/confirm', request),
-		abort: (folderId: string, resourceKey: string) => post('/abort', { folderId, resourceKey }),
+		abort: (folderId: string, resourceKey: string) =>
+			$authFetch(`${API}/abort`, { method: 'POST', body: { folderId, resourceKey }, onResponseError: () => undefined }),
 		freeNames: (folderId: string, filenames: string[]) =>
 			post<{ names: (string | null)[] }>('/names', { folderId, filenames }),
-		reportBatch: (report: UploadBatchReport, options?: RequestOptions) => post('/batches', report, options),
+		reportBatch: (report: UploadBatchReport, options?: RequestOptions) =>
+			$authFetch(`${API}/batches`, { method: 'POST', body: report, ...options, onResponseError: () => undefined }),
 	}
 }

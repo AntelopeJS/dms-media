@@ -69,7 +69,7 @@ function settle(outcome: UploadBatchOutcome): void {
 	announcers.delete(outcome.batchId)
 	const { toast, t } = announcer
 	toast.remove(toastId(outcome.batchId))
-	if (outcome.failed)
+	if (outcome.failed && announcer.failedItems(outcome.batchId).length)
 		return void toast.add({
 			...failureToast(announcer, outcome),
 			icon: 'i-ph-cloud-slash',

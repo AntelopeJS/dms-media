@@ -48,6 +48,7 @@ export interface UploadItem {
 	status: UploadStatus
 	loaded: number
 	failure?: UploadFailure
+	failureCause?: unknown
 	message?: string
 	details?: UploadRefusalDetails
 	resourceKey?: string
@@ -263,7 +264,7 @@ async function run(item: UploadItem): Promise<void> {
 		const current = findItem(item.id)
 		if (!current || current.status === 'cancelled') return
 		if (current.status === 'uploading') discardStaged(current)
-		patch(item.id, { ...describeFailure(error), resourceKey: undefined })
+		patch(item.id, { ...describeFailure(error), failureCause: error, resourceKey: undefined })
 	}
 }
 
@@ -436,7 +437,7 @@ function createKeepBothPrompt(): KeepBothPrompt {
 function rejectBatch(waiting: UploadItem[], error: unknown): void {
 	const outcome = describeFailure(error)
 	if (outcome.status !== 'rejected') return
-	waiting.forEach((item) => patch(item.id, outcome))
+	waiting.forEach((item) => patch(item.id, { ...outcome, failureCause: error }))
 }
 
 /** "Keep both" renames the copies `name (2).ext`; "Cancel" leaves them out. */
@@ -480,7 +481,7 @@ function retry(id: string): void {
 	const item = findItem(id)
 	if (!item || item.status !== 'failed' || !files.has(id)) return
 	reportedBatches.delete(item.batchId)
-	patch(id, { status: 'waiting', failure: undefined, message: undefined, details: undefined })
+	patch(id, { status: 'waiting', failure: undefined, failureCause: undefined, message: undefined, details: undefined })
 	pump()
 }
 
@@ -548,6 +549,7 @@ const activeCount = computed(() => items.value.filter((item) => !isFinal(item) &
  * once every file of it is settled.
  */
 export function useUploadQueue() {
+	const consumeRefusal = useReadOnlyRefusal()
 	uploadApi ??= useUploadApi()
 	if (!isKeepBothReady) {
 		askKeepBoth = createKeepBothPrompt()
@@ -555,7 +557,7 @@ export function useUploadQueue() {
 	}
 
 	return {
-		items: readonly(items),
+		items: computed(() => readonly(items.value.filter((item) => !consumeRefusal(item.failureCause)))),
 		isPaused: readonly(isPaused),
 		activeCount,
 		maxUploadBytes: computed(() => uploadLimits.value.maxUploadBytes),

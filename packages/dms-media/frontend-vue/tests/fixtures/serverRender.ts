@@ -59,6 +59,7 @@ provideGlobal('useI18n', () => ({
 }))
 provideGlobal('useRegionalFormat', () => ({ formatNumber: (value: number) => String(value) }))
 provideGlobal('useToast', () => ({ add: noop }))
+provideGlobal('useReadOnlyRefusal', () => () => false)
 provideGlobal('useConfirm', () => ({ confirm: async () => false }))
 provideGlobal('useOverlay', () => ({ create: () => ({ open: async () => undefined }) }))
 provideGlobal('useDrawer', () => ({ open: noop }))
