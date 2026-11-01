@@ -13,7 +13,7 @@
 		"build": "pnpm --dir ../playground exec ajs dms build",
 		"typecheck": "pnpm --dir \"${DMS_FRONTEND_WORKSPACE:?Set DMS_FRONTEND_WORKSPACE to the generated Inertia workspace}\" typecheck",
 		"format": "prettier --write .",
-		"lint": "eslint . && node scripts/check-api-error-presentation.mjs",
+		"lint": "eslint . && node ../node_modules/@antelopejs/dms/frontend-vue/scripts/check-api-error-presentation.mjs app",
 		"lint:fix": "eslint . --fix",
 		"test": "vitest run"
 	},

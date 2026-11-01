@@ -112,7 +112,7 @@ function settle(outcome: UploadBatchOutcome): void {
 		return void toast.add({
 			...failureToast(announcer, outcome),
 			icon: 'i-ph-cloud-slash',
-			color: 'error',
+			color: 'warning',
 			actions: uploadsLink(announcer, 'dms_media.upload_strip.see_details'),
 		})
 	if (outcome.failed || !outcome.uploaded) return

@@ -107,7 +107,7 @@ export function useAssetFieldUploads(options: AssetFieldUploadOptions) {
 			toast.add({
 				title: t('dms_media.field_widget.upload.failed', { name: item.name }),
 				description: failureText(item),
-				color: 'error',
+				color: 'warning',
 				icon: 'i-ph-warning-circle',
 			})
 		}

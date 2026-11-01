@@ -7,7 +7,16 @@ afterEach(() => {
 	vi.unstubAllEnvs()
 })
 
-it.each(['names', 'presign', 'confirm', 'field', 'partial', 'success'])(
+it.each([
+	'names',
+	'presign',
+	'confirm',
+	'field',
+	'partial',
+	'success',
+	'local-field',
+	'local-batch',
+])(
 	'presents the upload %s outcome without duplicate notices',
 	async (stage) => {
 		vi.resetModules()
@@ -94,12 +103,11 @@ it.each(['names', 'presign', 'confirm', 'field', 'partial', 'success'])(
 		const settled = new Promise<void>((resolve) =>
 			queue.onBatchSettled(() => resolve()),
 		)
-		const files = [
-			new File(['hello'], 'hello.txt'),
-			new File(['world'], 'world.txt'),
-		]
+		const files = stage.startsWith('local-')
+			? [new File([], 'empty.txt')]
+			: [new File(['hello'], 'hello.txt'), new File(['world'], 'world.txt')]
 		const destination = { folderId: 'folder-1', folderName: 'Docs' }
-		if (stage === 'field') {
+		if (stage === 'field' || stage === 'local-field') {
 			const { useAssetFieldUploads } =
 				await import('../app/composables/useAssetFieldUploads')
 			await useAssetFieldUploads({
@@ -110,7 +118,7 @@ it.each(['names', 'presign', 'confirm', 'field', 'partial', 'success'])(
 			}).upload(files)
 		} else {
 			const batchId = queue.enqueue(files, destination)
-			toasts.announce(batchId, 2, 'Docs')
+			toasts.announce(batchId, files.length, 'Docs')
 		}
 		await settled
 		await vue.nextTick()
@@ -119,7 +127,57 @@ it.each(['names', 'presign', 'confirm', 'field', 'partial', 'success'])(
 		).toEqual([
 			stage === 'success'
 				? { title: 'dms_media.toasts.upload_added', color: 'success' }
-				: { title: 'This demo is read-only', color: 'warning' },
+				: stage === 'local-field'
+					? { title: 'dms_media.field_widget.upload.failed', color: 'warning' }
+					: stage === 'local-batch'
+						? { title: 'dms_media.toasts.upload_failed_one', color: 'warning' }
+						: { title: 'This demo is read-only', color: 'warning' },
 		])
+	},
+)
+
+it.each([true, false])(
+	'presents the clipboard outcome when copied is %s',
+	async (copied) => {
+		vi.resetModules()
+		const notices: { title: string; color: string; description?: string }[] = []
+		vi.stubGlobal('useMediaApi', () => ({}))
+		vi.stubGlobal('useAuthFetch', () => ({
+			$authFetch: async () => ({ origin: 'https://media.example.test/' }),
+		}))
+		vi.stubGlobal('useI18n', () => ({ t: (key: string) => key }))
+		vi.stubGlobal('useToast', () => ({
+			add: (notice: (typeof notices)[number]) => notices.push(notice),
+		}))
+		vi.stubGlobal('useConfirm', () => ({ confirm: async () => false }))
+		vi.stubGlobal('useApiErrorPresenter', useApiErrorPresenter)
+		vi.stubGlobal('getPluginI18n', () => ({ i18n: {} }))
+		vi.stubGlobal('useDmsState', () => vue.ref(new WeakMap()))
+		vi.stubGlobal('navigator', {
+			clipboard: {
+				writeText: async () => {
+					if (!copied) throw new Error('Clipboard denied')
+				},
+			},
+		})
+		const { useAssetLink } = await import('../app/composables/useAssetLink')
+		await useAssetLink().copyLink({
+			name: 'hello.txt',
+			url: '/media/hello.txt',
+			effectiveVisibility: 'public',
+		})
+		expect(notices).toHaveLength(1)
+		expect(notices[0]).toMatchObject(
+			copied
+				? {
+						title: 'dms_media.toasts.link_copied',
+						color: 'success',
+					}
+				: {
+						title: 'dms_media.asset_link.copy_failed',
+						description: 'https://media.example.test/media/hello.txt',
+						color: 'warning',
+					},
+		)
 	},
 )
