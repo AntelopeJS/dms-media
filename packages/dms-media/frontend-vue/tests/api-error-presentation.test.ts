@@ -7,8 +7,8 @@ afterEach(() => {
 	vi.unstubAllEnvs()
 })
 
-it.each(['names', 'presign', 'confirm', 'field'])(
-	'presents one translated warning for a JSON 403 from upload %s',
+it.each(['names', 'presign', 'confirm', 'field', 'partial', 'success'])(
+	'presents the upload %s outcome without duplicate notices',
 	async (stage) => {
 		vi.resetModules()
 		vi.stubEnv('SSR', false)
@@ -68,11 +68,17 @@ it.each(['names', 'presign', 'confirm', 'field'])(
 				if (stage === 'names' || stage === 'field') throw error
 				return { names: [null, null] }
 			},
-			presign: async () => {
-				if (stage === 'presign') throw error
+			presign: async (_folderId: string, file: File) => {
+				if (
+					stage === 'presign' ||
+					(stage === 'partial' && file.name === 'world.txt')
+				)
+					throw error
 				return { resourceKey: 'key', uploadUrl: '/storage', headers: {} }
 			},
 			confirm: async () => {
+				if (stage === 'partial' || stage === 'success')
+					return { asset: { id: 'asset-1' } }
 				throw error
 			},
 			abort: async () => undefined,
@@ -110,6 +116,10 @@ it.each(['names', 'presign', 'confirm', 'field'])(
 		await vue.nextTick()
 		expect(
 			[...notices.values()].map(({ title, color }) => ({ title, color })),
-		).toEqual([{ title: 'This demo is read-only', color: 'warning' }])
+		).toEqual([
+			stage === 'success'
+				? { title: 'dms_media.toasts.upload_added', color: 'success' }
+				: { title: 'This demo is read-only', color: 'warning' },
+		])
 	},
 )

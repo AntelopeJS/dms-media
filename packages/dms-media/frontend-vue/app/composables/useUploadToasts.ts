@@ -115,7 +115,7 @@ function settle(outcome: UploadBatchOutcome): void {
 			color: 'error',
 			actions: uploadsLink(announcer, 'dms_media.upload_strip.see_details'),
 		})
-	if (!outcome.uploaded) return
+	if (outcome.failed || !outcome.uploaded) return
 	toast.add({
 		title: t(
 			'dms_media.toasts.upload_added',
