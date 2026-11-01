@@ -49,3 +49,9 @@
 @antelopejs/interface-data-api	packages/dms-media/playground/package.json	pnpm.overrides	
 @antelopejs/interface-dms	packages/dms-media/playground/package.json	pnpm.overrides	
 @antelopejs/dms	packages/dms-media/playground/package.json	pnpm.overrides	
+@antelopejs/dms-frontend	packages/dms-media/package.json	devDependencies	0.9.1
+@antelopejs/dms-frontend	packages/dms-media/playground/package.json	devDependencies	0.9.1
+@antelopejs/dms-frontend	package.json	pnpm.overrides	
+@antelopejs/dms-frontend	pnpm-workspace.yaml	overrides	
+@antelopejs/dms-frontend	packages/dms-media/playground/package.json	pnpm.overrides	
+@antelopejs/dms>@antelopejs/interface-core	packages/dms-media/playground/package.json	pnpm.overrides	
