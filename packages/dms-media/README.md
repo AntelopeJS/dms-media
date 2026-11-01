@@ -69,8 +69,8 @@ new AssetType({
 | `@antelopejs/interface-api`                 | `file:../../.campaign/tgz/antelopejs-interface-api-f206be7.tgz`                 | `file:.campaign/tgz/antelopejs-interface-api-f206be7.tgz`                 |
 | `@antelopejs/interface-api-util`            | `file:../../.campaign/tgz/antelopejs-interface-api-util-cc740f8.tgz`            | `file:.campaign/tgz/antelopejs-interface-api-util-cc740f8.tgz`            |
 | `@antelopejs/interface-core`                | `>=0.2.4 <1.0.0`                                                                | `0.2.4`                                                                   |
-| `@antelopejs/interface-database`            | `file:../../.campaign/tgz/antelopejs-interface-database-8261536.tgz`            | `file:.campaign/tgz/antelopejs-interface-database-8261536.tgz`            |
-| `@antelopejs/interface-database-decorators` | `file:../../.campaign/tgz/antelopejs-interface-database-decorators-fcb0a29.tgz` | `file:.campaign/tgz/antelopejs-interface-database-decorators-fcb0a29.tgz` |
+| `@antelopejs/interface-database`            | `file:../../.campaign/tgz/antelopejs-interface-database-02e0360.tgz`            | `file:.campaign/tgz/antelopejs-interface-database-02e0360.tgz`            |
+| `@antelopejs/interface-database-decorators` | `file:../../.campaign/tgz/antelopejs-interface-database-decorators-e79a62b.tgz` | `file:.campaign/tgz/antelopejs-interface-database-decorators-e79a62b.tgz` |
 | `@antelopejs/interface-dms`                 | `file:../../.campaign/tgz/antelopejs-interface-dms-50e3adc.tgz`                 | `file:.campaign/tgz/antelopejs-interface-dms-50e3adc.tgz`                 |
 | `@antelopejs/interface-dms-media`           | `>=0.3.0 <0.4.0`                                                                | `0.3.1`                                                                   |
 | `@antelopejs/interface-file-storage`        | `>=0.1.6 <1.0.0`                                                                | `0.1.6`                                                                   |
