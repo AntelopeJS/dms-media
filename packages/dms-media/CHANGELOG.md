@@ -1,5 +1,24 @@
 # Changelog
 
+## v0.7.0
+
+[compare changes](https://github.com/AntelopeJS/dms-media/compare/v0.6.2...v0.7.0)
+
+### 🩹 Fixes
+
+- **playground:** Declare the frontend, and build against one file-storage interface ([#75](https://github.com/AntelopeJS/dms-media/pull/75))
+- **media:** Use the core API error presenter ([#104](https://github.com/AntelopeJS/dms-media/pull/104))
+
+### 📖 Documentation
+
+- **readme:** Link the DMS in the opening line ([#98](https://github.com/AntelopeJS/dms-media/pull/98))
+- **readme:** Use one Discord invite ([#96](https://github.com/AntelopeJS/dms-media/pull/96))
+
+### ❤️ Contributors
+
+- Antony Rizzitelli ([@Upd4ting](http://github.com/Upd4ting))
+- Alessandro Aloisio ([@alessaloisio](http://github.com/alessaloisio))
+
 ## v0.6.2
 
 [compare changes](https://github.com/AntelopeJS/dms-media/compare/v0.6.1...v0.6.2)
