@@ -1,11 +1,11 @@
 <div align="center">
 
-# @antelopejs/interface-dms-media
+# `@antelopejs/interface-dms-media`
 
-<a href="https://www.npmjs.com/package/@antelopejs/interface-dms-media"><img alt="npm" src="https://img.shields.io/npm/v/@antelopejs/interface-dms-media?style=for-the-badge&labelColor=000000&color=000000"></a>
-<a href="./LICENSE"><img alt="License" src="https://img.shields.io/npm/l/@antelopejs/interface-dms-media?style=for-the-badge&labelColor=000000&color=000000"></a>
-<a href="https://discord.gg/sjK28QHrA7"><img alt="Discord" src="https://img.shields.io/badge/Discord-18181B?logo=discord&style=for-the-badge&color=000000"></a>
-<a href="https://dms.antelopejs.com/docs/modules/media/extending"><img alt="Documentation" src="https://img.shields.io/badge/Docs-18181B?style=for-the-badge&color=000000"></a>
+<a href="https://www.npmjs.com/package/@antelopejs/interface-dms-media"><img data-illustration alt="npm" src="https://img.shields.io/npm/v/@antelopejs/interface-dms-media?style=for-the-badge&labelColor=000000&color=000000"></a>
+<a href="./LICENSE"><img data-illustration alt="License" src="https://img.shields.io/npm/l/@antelopejs/interface-dms-media?style=for-the-badge&labelColor=000000&color=000000"></a>
+<a href="https://discord.gg/sjK28QHrA7"><img data-illustration alt="Discord" src="https://img.shields.io/badge/Discord-18181B?logo=discord&style=for-the-badge&color=000000"></a>
+<a href="https://dms.antelopejs.com/docs/modules/media/extending"><img data-illustration alt="Documentation" src="https://img.shields.io/badge/Docs-18181B?style=for-the-badge&color=000000"></a>
 
 The AntelopeJS interface to add media library fields, and the folders bound to them, to DMS pages, and to ship library folders and files as code.
 
@@ -17,7 +17,7 @@ The AntelopeJS interface to add media library fields, and the folders bound to t
 - Binds a field to a folder provisioned under the `Content` root of each tenant: `RegisterAssetBinding` and `UnregisterAssetBinding`, or `new AssetType({ binding })`.
 - Derives the folder's rights from a page (`permissionsFromPage`), a `permissionMapping` or an explicit `acl`.
 - Replays bindings to every new generation of the implementation, so either side can hot reload.
-- Ships folders and files from backend code with `EnsureMediaFolder` and `ImportMediaAsset`, called once per tenant from `Hook.TENANT_BEING_PROVISIONED`: idempotent per key, the content belongs to the members once written.
+- Ships folders and files from backend code with `EnsureMediaFolder` and `ImportMediaAsset`, called once per tenant from `Hook.TENANT_BEING_PROVISIONED`. Each declaration writes once per key and tenant, and the content belongs to the members from then on.
 - Keeps your module independent of the implementation, [`@antelopejs/dms-media`](https://www.npmjs.com/package/@antelopejs/dms-media).
 
 ## Install
@@ -62,13 +62,13 @@ RegisterHook(Hook.TENANT_BEING_PROVISIONED, async ({ tenantId }) => {
 });
 ```
 
-Both declarations require `tenantId` in TypeScript and reject missing, empty or whitespace-only values at runtime before writes. Existing users of these new APIs must pass it explicitly; older media APIs are unchanged. Call them from a `Hook.TENANT_BEING_PROVISIONED` handler: see [When to call](./docs/1.index.md#when-to-call).
+Both declarations require `tenantId` in TypeScript, and reject a missing, empty or whitespace-only value at runtime before any write. They do not check that the caller may act on that tenant. Call them from a `Hook.TENANT_BEING_PROVISIONED` handler, as [When to call](./docs/1.index.md#when-to-call) explains.
 
-The interface also exports the option, declaration and ACL types: `AssetTypeOptions`, `AssetPickerComponentOptions`, `AssetBindingConfig`, `AssetPermissionMapping`, `MediaFolderDeclaration`, `MediaAssetDeclaration`, `MediaFolderTarget`, `MediaAssetSource`, `MediaLazySource`, `MediaDeclarationResult`, `MediaDeclarationStatus`, `AclEntry`, `AclSubject`, `AclSubjectKind` and `AclRight`.
+The interface also exports the option, declaration and ACL types: `AssetTypeOptions`, `AssetPickerComponentOptions`, `AssetBindingConfig`, `AssetBindingField`, `AssetPermissionMapping`, `MediaFolderDeclaration`, `MediaFolderVisibility`, `MediaAssetDeclaration`, `MediaFolderTarget`, `DeclaredFolderTarget`, `BoundFolderTarget`, `MediaAssetSource`, `MediaBytesSource`, `MediaFileSource`, `MediaLazySource`, `MediaDeclarationResult`, `MediaDeclarationStatus`, `AclEntry`, `AclSubject`, `AclSubjectKind` and `AclRight`. It exports the constants `ASSET_DATA_TYPE_ID` and `ASSET_PICKER_COMPONENT` too, and an `internal` namespace that only the implementation uses.
 
 ## Compatibility
 
-The 0.3 interface line needs a `@antelopejs/dms-media` release that implements it for `EnsureMediaFolder` and `ImportMediaAsset`; the compatibility block of the [module README](../dms-media/README.md#compatibility) lists the interface range that module release supports. Media 0.4 uses the 0.2 interface line. The interface declares these peer dependencies:
+The interface needs a `@antelopejs/dms-media` release that implements this version of it. The compatibility block of the [module README](../dms-media/README.md#compatibility) lists the interface range that each module release supports. The interface declares these peer dependencies:
 
 <!-- antelopejs-docs-compat:start -->
 
@@ -84,12 +84,12 @@ The 0.3 interface line needs a `@antelopejs/dms-media` release that implements i
 
 - [Consumer reference](./docs/1.index.md): field types, bindings, lifecycle, declared content and permission precedence
 - [Extending the media module](https://dms.antelopejs.com/docs/modules/media/extending): asset fields, folder bindings, the HTTP API and delivery URLs
-- [The asset field](https://dms.antelopejs.com/docs/modules/media/usage/asset-field)
+- [The asset field](https://dms.antelopejs.com/docs/modules/media/usage/library#asset-field)
 - [Media module guide](https://dms.antelopejs.com/docs/modules/media)
 
 ## Contributing
 
-This package lives in the [`AntelopeJS/dms-media`](https://github.com/AntelopeJS/dms-media) pnpm workspace, next to the module that implements it. Read [CONTRIBUTING.md](https://github.com/AntelopeJS/dms-media/blob/main/CONTRIBUTING.md) and the [repository README](https://github.com/AntelopeJS/dms-media#contributing) for the development commands; `pnpm check:exports` checks, after a build, that the exports map matches `dist`. Release this package before the module that implements it.
+This package lives in the [`AntelopeJS/dms-media`](https://github.com/AntelopeJS/dms-media) pnpm workspace, next to the module that implements it. Read [CONTRIBUTING.md](https://github.com/AntelopeJS/dms-media/blob/main/CONTRIBUTING.md) and the [repository README](https://github.com/AntelopeJS/dms-media#contributing) for the development commands. After a build, `pnpm check:exports` checks that the exports map matches `dist`. Release this package before the module that implements it.
 
 ## License
 
