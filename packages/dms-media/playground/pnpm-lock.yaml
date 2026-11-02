@@ -11,7 +11,6 @@ overrides:
   '@antelopejs/interface-database-decorators': file:../../../.campaign/tgz/antelopejs-interface-database-decorators-e79a62b.tgz
   '@antelopejs/interface-data-api': file:../../../.campaign/tgz/antelopejs-interface-data-api-d8a868f.tgz
   '@antelopejs/interface-dms': file:../../../.campaign/tgz/antelopejs-interface-dms-e0787e6.tgz
-  '@antelopejs/dms': file:../../../.campaign/tgz/antelopejs-dms-80e4dc1.tgz
   '@antelopejs/dms-frontend': file:../../../.campaign/tgz/antelopejs-dms-frontend-ee4e931.tgz
   '@antelopejs/interface-core': file:../../../.campaign/tgz/antelopejs-interface-core-f7df541.tgz
   '@antelopejs/core': file:../../../.campaign/tgz/antelopejs-core-184eb90.tgz
@@ -21,8 +20,8 @@ importers:
   .:
     dependencies:
       '@antelopejs/dms':
-        specifier: file:../../../.campaign/tgz/antelopejs-dms-80e4dc1.tgz
-        version: file:../../../.campaign/tgz/antelopejs-dms-80e4dc1.tgz(@antelopejs/core@file:../../../.campaign/tgz/antelopejs-core-184eb90.tgz)
+        specifier: '>=0.13.1 <1.0.0'
+        version: 0.14.0(@antelopejs/core@file:../../../.campaign/tgz/antelopejs-core-184eb90.tgz)
       '@antelopejs/interface-api':
         specifier: file:../../../.campaign/tgz/antelopejs-interface-api-f2a99b5.tgz
         version: file:../../../.campaign/tgz/antelopejs-interface-api-f2a99b5.tgz(@antelopejs/interface-core@file:../../../.campaign/tgz/antelopejs-interface-core-f7df541.tgz)
@@ -86,8 +85,8 @@ packages:
     peerDependencies:
       '@antelopejs/core': '>=1.16.0 <2'
 
-  '@antelopejs/dms@file:../../../.campaign/tgz/antelopejs-dms-80e4dc1.tgz':
-    resolution: {integrity: sha512-HQEL/vWPOeK2N9M53Mf26z6b6nUTgTH+e7uOrNIaYMUx8P/k8Q0U/aiBwO0M15VrejxFak23Fib0b35BfyeSrg==, tarball: file:../../../.campaign/tgz/antelopejs-dms-80e4dc1.tgz}
+  '@antelopejs/dms@0.14.0':
+    resolution: {integrity: sha512-XbJHl3hqRjRR56yKO28Sxf/Htl2Qb6fDShyD+P9TBRM8dSK3BGzWznOH+7oIEzO0V6fwOw081rgQZsh3eQEBQA==}
     version: 0.14.0
     hasBin: true
     peerDependencies:
@@ -1108,7 +1107,7 @@ snapshots:
       '@oxc-parser/binding-linux-x64-gnu': 0.95.0
       '@oxc-parser/binding-win32-x64-msvc': 0.95.0
 
-  '@antelopejs/dms@file:../../../.campaign/tgz/antelopejs-dms-80e4dc1.tgz(@antelopejs/core@file:../../../.campaign/tgz/antelopejs-core-184eb90.tgz)':
+  '@antelopejs/dms@0.14.0(@antelopejs/core@file:../../../.campaign/tgz/antelopejs-core-184eb90.tgz)':
     dependencies:
       2fa: 0.1.2
       '@antelopejs/interface-api': file:../../../.campaign/tgz/antelopejs-interface-api-f2a99b5.tgz(@antelopejs/interface-core@file:../../../.campaign/tgz/antelopejs-interface-core-f7df541.tgz)
