@@ -11,7 +11,7 @@ A media library for the AntelopeJS DMS: uploads, folders, image sizes and light 
 
 </div>
 
-![The Media library explorer: views and folders on the left, the files of a folder in the middle, the selected file's details on the right](./packages/dms-media/docs/images/library.png)
+![The Media library of the Helio demo: views and folders on the left, the six top-level folders in the middle](./packages/dms-media/docs/images/captures/library.webp)
 
 ## What it does
 
