@@ -47,9 +47,10 @@
       "@antelopejs/interface-data-api": "file:.campaign/tgz/antelopejs-interface-data-api-d8a868f.tgz",
       "@antelopejs/interface-dms": "file:.campaign/tgz/antelopejs-interface-dms-e0787e6.tgz",
       "@antelopejs/dms": "file:.campaign/tgz/antelopejs-dms-80e4dc1.tgz",
-      "@antelopejs/dms>@antelopejs/interface-core": "0.2.4",
       "@antelopejs/dms>@antelopejs/interface-file-storage": "0.1.6",
-      "@antelopejs/dms-frontend": "file:.campaign/tgz/antelopejs-dms-frontend-ee4e931.tgz"
+      "@antelopejs/dms-frontend": "file:.campaign/tgz/antelopejs-dms-frontend-ee4e931.tgz",
+      "@antelopejs/interface-core": "file:.campaign/tgz/antelopejs-interface-core-f7df541.tgz",
+      "@antelopejs/core": "file:.campaign/tgz/antelopejs-core-184eb90.tgz"
     }
   }
 }
