@@ -20,6 +20,7 @@ export interface EditorSaving {
  */
 export function useEditorSaving({ asset, isSaving, hasChanges, operations, api, toast, t, confirm }: EditorSaving) {
 	const isLeavingSaved = ref(false)
+	const { presentError } = useApiErrorPresenter()
 
 	useUnsavedChanges({ dirty: () => hasChanges() && !isLeavingSaved.value })
 
@@ -34,7 +35,7 @@ export function useEditorSaving({ asset, isSaving, hasChanges, operations, api, 
 		try {
 			await run()
 		} catch (error) {
-			useApiError(error, { title: t('dms_media.editor.save_failed') })
+			presentError(error, { fallbackKey: 'dms_media.editor.save_failed' })
 		} finally {
 			isSaving.value = false
 		}
@@ -71,7 +72,7 @@ export function useEditorSaving({ asset, isSaving, hasChanges, operations, api, 
 			toast.add({ title: t('dms_media.editor.reverted'), color: 'success', icon: 'i-ph-arrow-counter-clockwise' })
 			await leaveTo(fileLink(current.id))
 		}
-		if (skipConfirm) return run().catch((error) => useApiError(error, { title: t('dms_media.editor.revert_failed') }))
+		if (skipConfirm) return run().catch((error) => presentError(error, { fallbackKey: 'dms_media.editor.revert_failed' }))
 		await confirm({
 			title: t('dms_media.editor.revert_title'),
 			description: t('dms_media.editor.revert_description'),

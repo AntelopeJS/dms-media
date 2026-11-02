@@ -11,11 +11,12 @@ import type {
 const API = '/api/media'
 /** Most ids one bulk request carries, as the API validates it. */
 const BULK_CHUNK_SIZE = 500
+const PREVIEW_CHUNK_SIZE = 100
 
-function chunkIds(ids: string[]): string[][] {
+function chunkIds(ids: string[], size = BULK_CHUNK_SIZE): string[][] {
 	const chunks: string[][] = []
-	for (let start = 0; start < ids.length; start += BULK_CHUNK_SIZE)
-		chunks.push(ids.slice(start, start + BULK_CHUNK_SIZE))
+	for (let start = 0; start < ids.length; start += size)
+		chunks.push(ids.slice(start, start + size))
 	return chunks
 }
 
@@ -57,6 +58,10 @@ export interface ReadUrl {
 	expiresAt: number
 }
 
+interface MediaPreviews {
+	previews: Record<string, string>
+}
+
 /** The URLs of the reads the pages render, which `useApiData` reads and shares by URL. */
 export const MEDIA_READS = {
 	tree: `${API}/tree`,
@@ -77,11 +82,22 @@ export function useMediaApi() {
 	const post = <T>(path: string, body?: object) =>
 		$authFetch<T>(`${API}${path}`, { method: 'POST', body })
 
+	async function previews(ids: string[]): Promise<MediaPreviews> {
+		const merged: MediaPreviews = { previews: {} }
+		for (const chunk of chunkIds(ids, PREVIEW_CHUNK_SIZE)) {
+			const result = await $authFetch<MediaPreviews>(`${API}/previews`, {
+				method: 'GET',
+				query: { ids: chunk },
+			})
+			Object.assign(merged.previews, result.previews)
+		}
+		return merged
+	}
+
 	return {
 		asset: (assetId: string) => $authFetch<{ asset: MediaAsset }>(MEDIA_READS.asset(assetId)),
 		details: (assetId: string) => $authFetch<AssetDetails>(MEDIA_READS.details(assetId)),
-		previews: (ids: string[]) =>
-			post<{ previews: Record<string, string> }>('/previews', { ids }),
+		previews,
 		readUrl: (assetId: string, preset?: string) =>
 			$authFetch<ReadUrl>(MEDIA_READS.readUrl(assetId), {
 				query: preset ? { preset } : {},
