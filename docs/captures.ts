@@ -59,6 +59,8 @@ export default [
   {
     id: "presets",
     route: "/modules/media/presets",
+    steps: [{ action: "wait", selector: 'text="antelope.config.ts"' }],
+    crop: 'text="antelope.config.ts" >> xpath=ancestor::div[contains(., "Change a size here")][1]',
     output: "packages/dms-media/docs/images/captures/presets.webp",
   },
   {
