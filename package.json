@@ -52,5 +52,10 @@
       "@antelopejs/interface-core": "file:.campaign/tgz/antelopejs-interface-core-f7df541.tgz",
       "@antelopejs/core": "file:.campaign/tgz/antelopejs-core-184eb90.tgz"
     }
+  },
+  "antelopeJs": {
+    "docs": {
+      "standard": true
+    }
   }
 }
