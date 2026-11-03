@@ -158,6 +158,10 @@ const theCropFrameFollowsTheArrowKeys = {
     await frame.press("ArrowRight").catch(() => undefined);
     await tab.page.waitForTimeout(500);
     const moved = { x: await field(tab, "X"), w: await field(tab, "W") };
+    await ctx.verify("the frame follows the keys", [
+      check("Shift with an arrow key resizes it", Number(resized.w) < Number(before.w), [before, resized]),
+      check("an arrow key moves it", Number(moved.x) > Number(resized.x) && moved.w === resized.w, [resized, moved]),
+    ]);
     await tab.click({ role: "button", name: "Save as copy" });
     let listed = await folderAssets(ctx, folder.id);
     for (let attempt = 0; attempt < 20 && listed.assets.length < 2; attempt += 1) {
@@ -165,9 +169,7 @@ const theCropFrameFollowsTheArrowKeys = {
       listed = await folderAssets(ctx, folder.id);
     }
     const copy = listed.assets.find((asset) => pick(asset, "id") !== file.id);
-    await ctx.verify("the frame follows the keys", [
-      check("Shift with an arrow key resizes it", Number(resized.w) < Number(before.w), [before, resized]),
-      check("an arrow key moves it", Number(moved.x) > Number(resized.x) && moved.w === resized.w, [resized, moved]),
+    await ctx.verify("the copy has the frame", [
       check("Save as copy applies the crop", Number(pick(copy, "width")) === Number(moved.w), [moved, copy]),
     ]);
   },
