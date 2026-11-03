@@ -105,7 +105,7 @@ const theFileTabsEditAndShowTheFile = {
     await ctx.verify("the changes are saved", [check("the alt text", pick(read.body, "asset", "alt") === "Façade au crépuscule", read.body), check("the visibility", pick(read.body, "asset", "visibility") === "public", read.body)]);
     await tab.click({ role: "tab", name: /^Delivery/ });
     const panel = tab.page.getByRole("tabpanel", { name: /^Delivery/ });
-    await panel.getByRole("button", { name: "Copy" }).first().click({ timeout: 15_000 }).catch(() => undefined);
+    await clickUntil(tab, panel.getByRole("button", { name: "Copy" }).first(), async () => (await tab.page.evaluate(() => navigator.clipboard.readText()).catch(() => "")).includes("/media/"));
     const copied = await tab.page.evaluate(() => navigator.clipboard.readText()).catch(() => "");
     await ctx.verify("the Delivery tab", [
       tab.shows(new RegExp(`/media/${file.id}/photo\\.png`), { timeoutMs: 15_000 }),
