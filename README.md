@@ -62,7 +62,7 @@ new AssetType({
 
 ## Compatibility
 
-The module also needs a DMS backend in a release that implements the `@antelopejs/interface-dms` range in the [module README compatibility block](packages/dms-media/README.md#compatibility), and the `@antelopejs/dms-frontend` renderer in the range its frontend module declares in `engines["@antelopejs/dms-frontend"]` of `packages/dms-media/frontend-vue/package.json`. The `ajs dms` CLI refuses to build it with a renderer outside that range.
+The module also needs `@antelopejs/dms` `>=0.13.1 <1.0.0`, in a release that implements the `@antelopejs/interface-dms` range in the [module README compatibility block](packages/dms-media/README.md#compatibility), and the `@antelopejs/dms-frontend` renderer in the range its frontend module declares in `engines["@antelopejs/dms-frontend"]` of `packages/dms-media/frontend-vue/package.json`. The `ajs dms` CLI refuses to build it with a renderer outside that range.
 
 - File storage: an `@antelopejs/interface-file-storage` implementation, such as `@antelopejs/file-storage-local`.
 
