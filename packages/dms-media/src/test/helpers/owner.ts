@@ -1,6 +1,7 @@
 import { z } from "zod";
 import { readBody } from "./bodies";
 import { createClient } from "./http";
+import { SETUP_TOKEN } from "./setup-token";
 
 const OWNER_EMAIL = "owner@test.local";
 const OWNER_PASSWORD = "TestPassw0rd!";
@@ -21,6 +22,7 @@ export async function ensureOwnerSession(): Promise<OwnerSession> {
     lastName: OWNER_LAST_NAME,
     email: OWNER_EMAIL,
     password: OWNER_PASSWORD,
+    setupToken: SETUP_TOKEN,
   });
   const isRegistered = registration.status < HTTP_BAD_REQUEST;
   const isAlreadyRegistered =
