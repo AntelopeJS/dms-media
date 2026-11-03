@@ -93,6 +93,9 @@ $C doors "$PWD/.agents/skills/verify-dms-media/seeded-doors/data.patch"
 - The run's browser is 1280 px wide: the Library's details open in the drawer. Journeys that need the side panel widen the viewport.
 - Members and owner-only checks need a page grant that includes the page's form block; the fixture's `page:fields` does that.
 - The toolbar of the live pages names its buttons Live and Pause; the docs say Direct and Pause.
+- Several files in one pick are given to the browser's file chooser at once (`pickSeveral` in `journeys/parts/pickers.mjs`); a drop is a synthetic `DragEvent` with a `DataTransfer` of `File`s.
+- The reason a file was refused is read from its batch's result on the Uploads page, where the queue keeps it after the upload ends.
+- `overview/own-uploads-keep-moving-while-paused-and-activity-follows` holds the browser's storage `PUT` for 4 s with Playwright's request routing, so the upload is still in progress while the page is paused.
 - Uploads through the dashboard go to the dashboard's own origin; `STORAGE_ORIGIN=api` sends them to the API's origin, and `unreachable` to a closed port.
 - `mongod` comes from `DMS_CONTROL_MONGOD`, `PATH`, or the mongodb-memory-server cache (`~/.cache/mongodb-binaries`).
 - A step whose check fails because the backend or the dashboard stopped answering ends the journey with a `NOT VERIFIED` error and no failing check (`guard.mjs`), so `seeded` never counts an outage as a catch.
@@ -111,6 +114,7 @@ List these under `notVerified` in the judgement of every verdict:
 - a binding released when its module unloads and replayed to a reloaded implementation: the run starts the project without module reloads;
 - another tenant using the same declaration key: the run has one tenant;
 - the live toolbar hidden by a role: the Media pages are owner-only and an owner holds every block;
+- the modification-date filters beyond `7d` (`30d`, `year`): the run cannot age files; `7d` and the other facets are driven;
 - the link and star icons of the Locations tree (icons are not in the accessibility tree; the `bound` and `starred` flags are driven through the API);
 - the frontend server's 413 over 500 MiB and reverse-proxy limits (the dashboard's and the deployment's, not this module's);
 - `ajs project modules add`, `ajs dms`'s renderer range refusal, and the repository playground's commands (developer tooling).

@@ -120,7 +120,7 @@ export function pickerJourneys() {
     },
     {
       id: "the-queue-explains-each-refusal",
-      title: "the upload queue explains a field type refusal with the types the field accepts, an image that does not decode, and a full storage plan, while the other files of the batch land",
+      title: "a refusal is explained in plain words in the batch's result on the Uploads page: the types a linked folder's field accepts, an image that does not decode, a full storage plan; the other files of the batch land",
       entryPoint: "Library › Upload into a linked folder, a broken image, a full plan",
       async run(/** @type {Ctx} */ ctx) {
         const sheets = await boundFolder(ctx, "verify.sheets");
@@ -129,20 +129,26 @@ export function pickerJourneys() {
         await tab.signIn("admin");
         await tab.goto(`/modules/media/files?folder=${sheets}`);
         await pickSeveral(ctx, tab, tab.page.getByRole("button", { name: /^Upload/ }).first(), [{ name: "photo.png", mimeType: "image/png", buffer: await image(ctx, { width: 5, height: 5 }) }]);
-        await ctx.verify("a field type refusal names the accepted types", [tab.shows(/This folder feeds a field that only accepts .*PDF|application\/pdf/i, { timeoutMs: 30_000 })]);
+        await tab.page.waitForTimeout(3000);
+        await tab.goto("/modules/media/uploads");
+        await ctx.verify("the queue names the types the field accepts", [tab.shows(/photo\.png[^\n]*only accepts application\/pdf/i, { timeoutMs: 30_000 })]);
         await tab.goto(`/modules/media/files?folder=${folder.id}`);
         await pickSeveral(ctx, tab, tab.page.getByRole("button", { name: /^Upload/ }).first(), [
           { name: "casse.png", mimeType: "image/png", buffer: Buffer.from("not a png") },
           { name: "bonne.png", mimeType: "image/png", buffer: await image(ctx, { width: 5, height: 5 }) },
         ]);
-        await ctx.verify("an image that does not decode is explained, the other lands", [tab.shows(/Not a readable image/, { timeoutMs: 30_000 }), check("bonne.png landed", (await landed(ctx, folder.id, ["bonne.png"])).includes("bonne.png"), "bonne.png")]);
+        const bonne = await landed(ctx, folder.id, ["bonne.png"]);
+        await tab.goto("/modules/media/uploads");
+        await ctx.verify("an image that does not decode is explained, the other lands", [tab.shows(/casse\.png[^\n]*not a readable image/i, { timeoutMs: 30_000 }), check("bonne.png landed", bonne.includes("bonne.png"), bonne)]);
         await uploaded(ctx, { folderId: folder.id, name: "remplit.txt", mimetype: "text/plain", bytes: Buffer.alloc(4000, 97) });
         await withConfig(ctx, { VERIFY_MEDIA_QUOTA: "5000" }, async () => {
           const quotaTab = await ctx.tab("admin", "quota");
           await quotaTab.signIn("admin");
           await quotaTab.goto(`/modules/media/files?folder=${folder.id}`);
           await pickSeveral(ctx, quotaTab, quotaTab.page.getByRole("button", { name: /^Upload/ }).first(), [{ name: "trop.txt", mimeType: "text/plain", buffer: Buffer.alloc(3000, 98) }]);
-          await ctx.verify("a full plan is explained", [quotaTab.shows(/Storage plan full/, { timeoutMs: 30_000 })]);
+          await quotaTab.page.waitForTimeout(3000);
+          await quotaTab.goto("/modules/media/uploads");
+          await ctx.verify("a full plan is explained", [quotaTab.shows(/trop\.txt[^\n]*storage plan (is )?full/i, { timeoutMs: 30_000 })]);
         });
       },
     },

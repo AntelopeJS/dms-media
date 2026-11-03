@@ -51,7 +51,7 @@ Uploads go from the browser straight to the storage: `presign` checks the type a
 - `a-storage-that-refuses-the-origin-is-named`: a dashboard opened on an origin the API's CORS settings do not list, with the storage on the API's origin: presign works, the browser's PUT is blocked, the queue names the origin to add, and nothing is stored.
 - `an-unreachable-storage-is-named`: when the storage's address cannot be reached from the browser, the queue names that address and nothing is stored.
 - `every-file-picker-takes-several-files`: the Library's Upload, the Overview's Choose files, the Uploads page's Upload files and a multiple asset field's upload each take several files in one pick, and every file lands.
-- `the-queue-explains-each-refusal`: the upload queue explains a field type refusal with the types the field accepts, an image that does not decode, and a full storage plan, while the other files of the batch land.
+- `the-queue-explains-each-refusal`: a refusal is explained in plain words in the batch's result on the Uploads page: the types a linked folder's field accepts, an image that does not decode, a full storage plan; the other files of the batch land.
 
 ## How to get to it (user POV)
 

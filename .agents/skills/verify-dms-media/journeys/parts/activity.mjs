@@ -97,7 +97,7 @@ export function activityJourneys() {
       title: "while the Overview is paused, an upload of its own drop zone still goes through; the Activity page shows a change made elsewhere without a reload",
       entryPoint: "/modules/media/overview paused, /modules/media/activity live",
       async run(/** @type {Ctx} */ ctx) {
-        const name = ctx.unique("Paused");
+        const name = ctx.unique("Holding");
         const folder = await createFolder(ctx, name);
         const tab = await ctx.tab();
         await tab.signIn("admin");

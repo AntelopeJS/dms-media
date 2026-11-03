@@ -93,7 +93,7 @@ export const journeys = guarded([
         check("Public", JSON.stringify(open.files) === JSON.stringify(["big.png"]), open.files),
         check("Missing alt text: images without alt only", missing.files.includes("big.png") && !missing.files.includes("small.png") && !missing.files.includes("doc.txt"), missing.files),
         check("a blank alt is saved as given and still counts as missing", pick(blankRead.body, "asset", "alt") === "   " && missing.files.includes("blank.png"), [pick(blankRead.body, "asset", "alt"), missing.files]),
-        check("a view inside one folder", JSON.stringify(scoped.files) === JSON.stringify(["small.png"]), scoped.files),
+        check("a view inside one folder", JSON.stringify([...scoped.files].sort((left, right) => left.localeCompare(right))) === JSON.stringify(["blank.png", "small.png"]), scoped.files),
         check("the tree counts the starred file and folder, and the two images missing alt", pick(read2.answer.body, "views", "starred") === 2 && pick(read2.answer.body, "views", "missingAlt") === 2, pick(read2.answer.body, "views")),
         check("a starred folder is marked in the tree", pick(read2.folders.find((folder) => pick(folder, "id") === two.id), "starred") === true, read2.folders.length),
       ]);

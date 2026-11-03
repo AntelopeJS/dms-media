@@ -1,13 +1,12 @@
-diff --git a/packages/dms-media/src/declared/records.ts b/packages/dms-media/src/declared/records.ts
-index 753b7f3..28da465 100644
---- a/packages/dms-media/src/declared/records.ts
-+++ b/packages/dms-media/src/declared/records.ts
-@@ -22,7 +22,7 @@ export const DECLARED_CONTENT_AUTHOR: MediaEventAuthor = {
- };
- 
- const KIND_LABELS: Record<MediaDeclarationKind, string> = {
--  folder: "Media folder",
-+  folder: "Folder",
-   asset: "Media file",
- };
- 
+diff --git a/packages/dms-media/src/upload-policy.ts b/packages/dms-media/src/upload-policy.ts
+index a315bb1..467cba7 100644
+--- a/packages/dms-media/src/upload-policy.ts
++++ b/packages/dms-media/src/upload-policy.ts
+@@ -14,7 +14,6 @@ const REFUSED_MIMETYPES = new Set([
+   "text/x-php",
+ ]);
+ const REFUSED_EXTENSIONS = new Set([
+-  "htm",
+   "html",
+   "xhtml",
+   "xht",
