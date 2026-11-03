@@ -47,6 +47,7 @@ declare module "playwright-core" {
   }
 
   interface FileChooser {
+    isMultiple(): boolean;
     setFiles(files: { name: string; mimeType: string; buffer: Buffer }[]): Promise<void>;
   }
 

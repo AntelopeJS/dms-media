@@ -24,9 +24,10 @@ async function pickSeveral(ctx, tab, button, files) {
     await button.click({ timeout: 10_000 }).catch(() => undefined);
     const opened = await chooser;
     if (opened) {
-      await opened.setFiles(files);
-      ctx.record(ctx.step(`choose ${files.map((file) => file.name).join(", ")} at once`), [check("the picker opened", true, files.length)]);
-      return true;
+      const several = opened.isMultiple();
+      await opened.setFiles(several ? files : files.slice(0, 1)).catch(() => undefined);
+      ctx.record(ctx.step(`choose ${files.map((file) => file.name).join(", ")} at once`), [check("the picker takes several files at once", several, several)]);
+      return several;
     }
   }
   ctx.record(ctx.step(`choose ${files.length} files at once`), [check("the picker opened", false, "no file chooser")]);
@@ -108,7 +109,9 @@ export function pickerJourneys() {
         const chooser = tab.page.waitForEvent("filechooser", { timeout: 30_000 }).catch(() => null);
         await chooseDestination(tab, name);
         const opened = await chooser;
-        if (opened) await opened.setFiles(page);
+        const several = opened?.isMultiple() === true;
+        if (opened) await opened.setFiles(several ? page : page.slice(0, 1)).catch(() => undefined);
+        ctx.record(ctx.step("choose the Uploads page's files at once"), [check("the Uploads page's picker takes several files at once", several, several)]);
         results.push({ where: "Uploads page Upload files", wanted: page.map((file) => file.name), found: await landed(ctx, folder.id, page.map((file) => file.name)) });
         const projects = await boundFolder(ctx, "verify.projects");
         await tab.goto("/verify-fields");
