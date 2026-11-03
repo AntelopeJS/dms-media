@@ -1,0 +1,13 @@
+diff --git a/packages/dms-media/src/declared/records.ts b/packages/dms-media/src/declared/records.ts
+index 753b7f3..28da465 100644
+--- a/packages/dms-media/src/declared/records.ts
++++ b/packages/dms-media/src/declared/records.ts
+@@ -22,7 +22,7 @@ export const DECLARED_CONTENT_AUTHOR: MediaEventAuthor = {
+ };
+ 
+ const KIND_LABELS: Record<MediaDeclarationKind, string> = {
+-  folder: "Media folder",
++  folder: "Folder",
+   asset: "Media file",
+ };
+ 

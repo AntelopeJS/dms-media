@@ -374,3 +374,7 @@ $RECYCLE.BIN/
 # pnpm store
 .pnpm-store
 /nuxt-layer/.output/
+
+/.agents/skills/verify-dms-media/playground/node_modules
+/.agents/skills/verify-dms-media/playground/dist
+/.agents/skills/verify-dms-media/node_modules

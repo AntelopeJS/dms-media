@@ -1,0 +1,12 @@
+diff --git a/packages/dms-media/src/upload-policy.ts b/packages/dms-media/src/upload-policy.ts
+index a315bb1..600a34f 100644
+--- a/packages/dms-media/src/upload-policy.ts
++++ b/packages/dms-media/src/upload-policy.ts
+@@ -21,7 +21,6 @@ const REFUSED_EXTENSIONS = new Set([
+   "shtml",
+   "mht",
+   "mhtml",
+-  "php",
+   "php3",
+   "php4",
+   "php5",

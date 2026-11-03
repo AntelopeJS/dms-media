@@ -1,0 +1,13 @@
+diff --git a/packages/dms-media/src/routes/media/transform.ts b/packages/dms-media/src/routes/media/transform.ts
+index 30e4c60..49f1139 100644
+--- a/packages/dms-media/src/routes/media/transform.ts
++++ b/packages/dms-media/src/routes/media/transform.ts
+@@ -156,7 +156,7 @@ export class MediaTransformController extends MediaApiController {
+     const asset = await requireReadableAsset(context, assetId);
+     requireFolderRight(context, asset.folderId, "write");
+     assert(
+-      Boolean(asset.originalKey),
++      !asset.originalKey,
+       HTTP_CONFLICT,
+       "Asset has no original to revert to",
+     );

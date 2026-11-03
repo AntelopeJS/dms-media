@@ -1,0 +1,13 @@
+diff --git a/packages/dms-media/src/acl/resolver.ts b/packages/dms-media/src/acl/resolver.ts
+index 13fcee4..6f91a4c 100644
+--- a/packages/dms-media/src/acl/resolver.ts
++++ b/packages/dms-media/src/acl/resolver.ts
+@@ -26,7 +26,7 @@ const ALL_RIGHTS: readonly AclRight[] = ["read", "write", "manage"];
+ const RIGHT_IMPLICATIONS: Record<AclRight, readonly AclRight[]> = {
+   read: ["read"],
+   write: ["read", "write"],
+-  manage: ["read", "write", "manage"],
++  manage: ["read", "manage"],
+ };
+ 
+ const SUBJECT_MATCHERS: Record<

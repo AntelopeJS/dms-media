@@ -1,0 +1,13 @@
+diff --git a/packages/dms-media/src/bindings.ts b/packages/dms-media/src/bindings.ts
+index ee5e9e3..5da024d 100644
+--- a/packages/dms-media/src/bindings.ts
++++ b/packages/dms-media/src/bindings.ts
+@@ -132,7 +132,7 @@ async function ensureBindingFolder(
+     return;
+   }
+   await folderModel.insert({
+-    name: config.folderName ?? config.id,
++    name: config.id,
+     parentId: contentRootId,
+     path: [contentRootId],
+     binding: config.id,

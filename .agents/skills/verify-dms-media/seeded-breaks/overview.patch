@@ -1,0 +1,13 @@
+diff --git a/packages/dms-media/src/routes/media/overview.ts b/packages/dms-media/src/routes/media/overview.ts
+index dc2b697..8b6bdde 100644
+--- a/packages/dms-media/src/routes/media/overview.ts
++++ b/packages/dms-media/src/routes/media/overview.ts
+@@ -29,7 +29,7 @@ const EVENTS_SCANNED = 400;
+ /** A narrowed feed reads further back, so a rare kind still fills it. */
+ const FILTERED_EVENTS_SCANNED = 2000;
+ const DEFAULT_FEED_LENGTH = 12;
+-const MAX_FEED_LENGTH = 50;
++const MAX_FEED_LENGTH = 40;
+ const RECENT_FILES = 6;
+ /** The overview blocks read the library together: one read serves them all. */
+ const ASSETS_CACHE_TTL_MS = 5000;
