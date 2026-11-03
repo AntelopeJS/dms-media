@@ -2,7 +2,10 @@ import { guarded } from "../guard.mjs";
 import { createFolder, setVisibility, tree, uploaded, withConfig } from "../library.mjs";
 import { check, image, list, media, pick, text } from "../media.mjs";
 import { activityJourneys } from "./parts/activity.mjs";
+import { activityTabJourneys } from "./parts/activity-tabs.mjs";
 import { overviewFigureJourneys } from "./parts/overview-figures.mjs";
+import { liveRateJourneys } from "./parts/live-rate.mjs";
+import { overviewWindowJourneys } from "./parts/time-windows.mjs";
 import { renderedJourneys } from "./parts/rendered.mjs";
 import { chooseFiles } from "./parts/upload-page.mjs";
 
@@ -148,6 +151,9 @@ export const journeys = guarded([
     },
   },
   ...activityJourneys(),
+  ...activityTabJourneys(),
   ...renderedJourneys(),
   ...overviewFigureJourneys(),
+  ...overviewWindowJourneys(),
+  ...liveRateJourneys(),
 ]);

@@ -13,6 +13,16 @@ async function filesKpi(tab) {
   return (await tab.page.getByRole("link", { name: /^Files \d+/ }).first().textContent({ timeout: 10_000 }).catch(() => "")) ?? "";
 }
 
+/** Each Activity filter, the event keys its rows may have, and one this journey's writes must show in it. */
+const TAB_KINDS = new Map(Object.entries({
+  uploads: { allowed: ["asset_upload", "upload_batch"], expected: "asset_upload" },
+  edits: { allowed: ["asset_rename", "asset_alt", "asset_transform", "asset_revert"], expected: "asset_transform" },
+  moves: { allowed: ["asset_move", "folder_move"], expected: "asset_move" },
+  deletions: { allowed: ["asset_delete", "folder_delete"], expected: "asset_delete" },
+  visibility: { allowed: ["asset_visibility", "folder_visibility"], expected: "asset_visibility_public" },
+  folders: { allowed: ["folder_create", "folder_rename", "folder_move", "folder_delete", "folder_visibility"], expected: "folder_rename" },
+}));
+
 /**
  * Journeys of the Activity page and of live updates.
  *
@@ -40,12 +50,14 @@ export function activityJourneys() {
         const kinds = { uploads: await titles("uploads"), edits: await titles("edits"), moves: await titles("moves"), deletions: await titles("deletions"), visibility: await titles("visibility"), folders: await titles("folders") };
         await ctx.verify("each filter", [
           check("the latest 50 events, newest first", all.length === 50 && JSON.stringify(pick(all[0], "params")).includes("Feed target 54"), [all.length, pick(all[0], "params")]),
-          check("uploads", kinds.uploads.length >= 2 && kinds.uploads.every((title) => title.includes("upload")), kinds.uploads),
-          check("edits", kinds.edits.some((title) => title.includes("transform")), kinds.edits),
-          check("moves", kinds.moves.some((title) => title.includes("move")), kinds.moves),
-          check("deletions", kinds.deletions.some((title) => title.includes("delete")), kinds.deletions),
-          check("visibility", kinds.visibility.some((title) => title.includes("visibility")), kinds.visibility),
-          check("folders", kinds.folders.some((title) => title.includes("folder")), kinds.folders),
+          ...Object.entries(kinds).flatMap(([tab, titles]) => {
+            const { allowed, expected } = TAB_KINDS.get(tab) ?? { allowed: [], expected: "a kind" };
+            const keys = titles.map((title) => title.split(".").pop() ?? "");
+            return [
+              check(`${tab}: every row is one of ${allowed.join(", ")}`, keys.length > 0 && keys.every((key) => allowed.some((kind) => key.startsWith(kind))), keys),
+              check(`${tab}: lists ${expected}`, keys.some((key) => key.startsWith(expected)), keys),
+            ];
+          }),
         ]);
         const tab = await ctx.tab();
         await tab.signIn("admin");

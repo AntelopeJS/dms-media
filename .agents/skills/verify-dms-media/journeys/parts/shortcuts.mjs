@@ -127,11 +127,19 @@ const shortcutsActOnFilesAndFolders = {
   entryPoint: "/modules/media/files keyboard",
   async run(/** @type {Ctx} */ ctx) {
     const { tab, folderId, parentId, ids } = await explorerWithFiles(ctx);
-    const chooser = tab.page.waitForEvent("filechooser", { timeout: 10_000 }).then(() => true).catch(() => false);
+    await tab.page.evaluate(() => {
+      const root = document.documentElement;
+      root.dataset.verifyFileInputClicks = "0";
+      document.addEventListener("click", (event) => {
+        if (event.target instanceof HTMLInputElement && event.target.type === "file") root.dataset.verifyFileInputClicks = String(Number(root.dataset.verifyFileInputClicks) + 1);
+      }, true);
+    });
     await tab.press("u");
-    const picked = await chooser;
+    const picks = Number(await tab.page.evaluate(() => document.documentElement.dataset.verifyFileInputClicks ?? "0"));
+    const dialogsAfterU = await tab.page.getByRole("dialog").count();
+    await ctx.verify("U opens the file picker", [check("U clicks the explorer's file input once, which opens the browser's file picker", picks === 1, picks), check("and no destination dialog opens instead", dialogsAfterU === 0, dialogsAfterU)]);
     await tab.press("Shift+N");
-    await ctx.verify("U and Shift N", [check("U opens the file picker", picked, picked), tab.visible({ role: "dialog" }, { timeoutMs: 10_000 })]);
+    await ctx.verify("Shift N opens the new folder dialog", [tab.visible({ role: "dialog" }, { timeoutMs: 10_000 })]);
     await tab.press("Escape");
     await tab.page.getByRole("option", { name: /^a\.png/ }).click();
     await tab.press("F2");

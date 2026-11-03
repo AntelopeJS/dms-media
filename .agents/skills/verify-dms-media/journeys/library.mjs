@@ -2,7 +2,9 @@ import { guarded } from "../guard.mjs";
 import { createFolder, setVisibility, tree, uploaded } from "../library.mjs";
 import { check, image, list, media, names, pick } from "../media.mjs";
 import { explorerJourneys } from "./parts/explorer.mjs";
+import { layoutJourneys } from "./parts/layout.mjs";
 import { shortcutJourneys } from "./parts/shortcuts.mjs";
+import { libraryWindowJourneys } from "./parts/time-windows.mjs";
 
 /** @typedef {import("../media.mjs").Ctx} Ctx */
 
@@ -147,4 +149,6 @@ export const journeys = guarded([
   },
   ...explorerJourneys(),
   ...shortcutJourneys(),
+  ...layoutJourneys(),
+  ...libraryWindowJourneys(),
 ]);

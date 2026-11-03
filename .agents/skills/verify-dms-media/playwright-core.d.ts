@@ -41,6 +41,7 @@ declare module "playwright-core" {
     waitFor(options?: Timeout & { state?: "attached" | "detached" | "visible" | "hidden" }): Promise<void>;
     evaluate<R, A>(callback: (element: HTMLElement, argument: A) => R, argument?: A): Promise<R>;
     setInputFiles(files: { name: string; mimeType: string; buffer: Buffer }[]): Promise<void>;
+    boundingBox(): Promise<{ x: number; y: number; width: number; height: number } | null>;
   }
 
   interface Download {
@@ -85,9 +86,15 @@ declare module "playwright-core" {
     waitForEvent(event: "download", options?: Timeout): Promise<Download>;
     waitForEvent(event: "filechooser", options?: Timeout): Promise<FileChooser>;
     evaluate<R>(callback: () => R): Promise<R>;
+    on(event: "request", listener: (request: { url(): string }) => void): void;
     setViewportSize(size: { width: number; height: number }): Promise<void>;
     context(): BrowserContext;
     keyboard: Keyboard;
+    mouse: {
+      move(x: number, y: number, options?: { steps?: number }): Promise<void>;
+      down(): Promise<void>;
+      up(): Promise<void>;
+    };
   }
 
   interface Browser {

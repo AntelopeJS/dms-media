@@ -2,6 +2,7 @@ import { guarded } from "../guard.mjs";
 import { createFolder, folderAssets, follow, uploaded } from "../library.mjs";
 import { check, image, imageInfo, media, pick, sha256, SVG, text } from "../media.mjs";
 import { editorPageJourneys } from "./parts/editor-page.mjs";
+import { editorPointerJourneys } from "./parts/editor-pointer.mjs";
 
 /** @typedef {import("../media.mjs").Ctx} Ctx */
 
@@ -107,4 +108,5 @@ export const journeys = guarded([
     },
   },
   ...editorPageJourneys(),
+  ...editorPointerJourneys(),
 ]);

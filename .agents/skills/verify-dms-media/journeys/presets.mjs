@@ -2,6 +2,7 @@ import { chmodSync, mkdirSync } from "node:fs";
 import { guarded } from "../guard.mjs";
 import { createFolder, follow, setVisibility, uploaded, withConfig } from "../library.mjs";
 import { check, image, imageInfo, list, media, pick, recordRaw, storagePath, SVG, text } from "../media.mjs";
+import { coverCropJourneys } from "./parts/cover-crop.mjs";
 import { presetPageJourneys } from "./parts/preset-page.mjs";
 
 /**
@@ -189,4 +190,5 @@ export const journeys = guarded([
     },
   },
   ...presetPageJourneys(),
+  ...coverCropJourneys(),
 ]);

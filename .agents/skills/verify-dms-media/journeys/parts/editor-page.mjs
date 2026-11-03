@@ -28,7 +28,7 @@ async function settled(ctx, id, accept) {
  * @param {string} name The crop field
  * @returns {Promise<string>} Its value
  */
-async function field(tab, name) {
+export async function field(tab, name) {
   return tab.page.getByRole("spinbutton", { name, exact: true }).inputValue({ timeout: 10_000 }).catch(() => "");
 }
 
@@ -39,7 +39,7 @@ async function field(tab, name) {
  * @param {Tab} tab The editor tab
  * @returns {Promise<boolean>} Whether the rotation is pending
  */
-async function rotateOnce(tab) {
+export async function rotateOnce(tab) {
   await tab.page.getByRole("button", { name: "Rotate right" }).waitFor({ timeout: 30_000 }).catch(() => undefined);
   for (let attempt = 0; attempt < 10; attempt += 1) {
     await tab.page.getByRole("button", { name: "Rotate right" }).click().catch(() => undefined);

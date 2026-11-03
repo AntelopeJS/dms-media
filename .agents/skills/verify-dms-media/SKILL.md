@@ -90,13 +90,15 @@ $C doors "$PWD/.agents/skills/verify-dms-media/seeded-doors/data.patch"
 ## Gotchas
 
 - Every dashboard page renders on the server and hydrates after `load`; a click that lands first does nothing. The journeys click again until what the click opens shows (`openPicker`, `clickUntil`, `rotateOnce`, `explorerWithFiles`), and `tab.signIn` waits for the sign-in form to hydrate.
-- The run's browser is 1280 px wide: the Library's details open in the drawer. Journeys that need the side panel widen the viewport.
+- The run's browser is 1280 px wide: the Library's details open in the drawer. Journeys that need the side panel widen the viewport. The explorer lays out by its own content box, inside its 1 px border, not by the window: `journeys/parts/layout.mjs` resizes the window until that box is the width wanted.
 - Members and owner-only checks need a page grant that includes the page's form block; the fixture's `page:fields` does that.
 - The toolbar of the live pages names its buttons Live and Pause; the docs say Direct and Pause.
 - Several files in one pick are given to the browser's file chooser at once (`pickSeveral` in `journeys/parts/pickers.mjs`); a drop is a synthetic `DragEvent` with a `DataTransfer` of `File`s.
 - The reason a file was refused is read from its batch's result on the Uploads page, where the queue keeps it after the upload ends.
 - `overview/own-uploads-keep-moving-while-paused-and-activity-follows` holds the browser's storage `PUT` for 4 s with Playwright's request routing, so the upload is still in progress while the page is paused.
 - Uploads through the dashboard go to the dashboard's own origin; `STORAGE_ORIGIN=api` sends them to the API's origin, and `unreachable` to a closed port.
+- No request ages a file or an event. `clock.mjs` moves a row's `createdAt` or `updatedAt` back in the run's database, with the MongoDB driver dms-control resolves, for the 24-hour, 7-day, 30-day and year windows.
+- `library/shortcuts-act-on-files-and-folders` counts clicks on the explorer's file input rather than waiting for Playwright's `filechooser` event: Playwright turns its file-chooser interception on without waiting for it, so a key pressed right after `waitForEvent` can open no event.
 - `mongod` comes from `DMS_CONTROL_MONGOD`, `PATH`, or the mongodb-memory-server cache (`~/.cache/mongodb-binaries`).
 - A step whose check fails because the backend or the dashboard stopped answering ends the journey with a `NOT VERIFIED` error and no failing check (`guard.mjs`), so `seeded` never counts an outage as a catch.
 - Known findings at the integration head, each a failing journey with an issue draft: `library/the-details-drawer-steps-through-the-files` (the drawer ends on a 500), `uploads/a-live-uploads-page-shows-a-new-batch` (Recent batches does not follow Live), `asset-field/the-pickers-upload-targets-the-linked-folder` (the picker's Upload from a subfolder lands in the subfolder; draft `dms-media-picker-upload-into-subfolder`).
@@ -105,7 +107,7 @@ $C doors "$PWD/.agents/skills/verify-dms-media/seeded-doors/data.patch"
 
 List these under `notVerified` in the judgement of every verdict:
 
-- the scheduled jobs (`dms-media-purge-staging`, `dms-media-sweep-derivatives`): only the module's own `node-cron` schedule starts them, and the run can neither age records by 24 hours or 90 days nor move the module's clock;
+- the scheduled jobs (`dms-media-purge-staging`, `dms-media-sweep-derivatives`): only the module's own `node-cron` schedule starts them, and no request or switch runs them, even though `clock.mjs` can age the rows they read;
 - a zip over 1 GiB (the 200-file limit is driven; the size limit needs more than 1 GiB of stored files per run);
 - links that stay relative with neither `publicBaseUrl` nor `apiBaseUrl`: the DMS fills `apiBaseUrl` with a default when it is unset;
 - the 401 HTML page when the dashboard URL is unknown: the DMS refuses to start without `clientBaseUrl` outside development;
@@ -114,7 +116,6 @@ List these under `notVerified` in the judgement of every verdict:
 - a binding released when its module unloads and replayed to a reloaded implementation: the run starts the project without module reloads;
 - another tenant using the same declaration key: the run has one tenant;
 - the live toolbar hidden by a role: the Media pages are owner-only and an owner holds every block;
-- the modification-date filters beyond `7d` (`30d`, `year`): the run cannot age files; `7d` and the other facets are driven;
 - the link and star icons of the Locations tree (icons are not in the accessibility tree; the `bound` and `starred` flags are driven through the API);
 - the frontend server's 413 over 500 MiB and reverse-proxy limits (the dashboard's and the deployment's, not this module's);
 - `ajs project modules add`, `ajs dms`'s renderer range refusal, and the repository playground's commands (developer tooling).

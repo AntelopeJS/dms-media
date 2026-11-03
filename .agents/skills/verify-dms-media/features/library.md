@@ -38,6 +38,8 @@ The Library page: views, the folder tree, search, facets, sort, grid, list and c
 - `the-details-drawer-steps-through-the-files`: narrower than 1000px the details open in the DMS drawer, whose previous and next buttons and J and K keys step through the files shown.
 - `shortcuts-select-and-view`: ← → move between files, Shift ↓ extends the selection, Ctrl Space ticks a file, Ctrl A selects all, Escape clears, 1 2 3 switch grid, list and columns, I toggles the details panel, Enter opens the details, Space previews, ? lists every shortcut, and none fires while typing in a field.
 - `shortcuts-act-on-files-and-folders`: Ctrl ↑ opens the parent folder, U opens the file picker, Shift N a new folder, F2 renames, M moves, Delete deletes and E opens the image editor.
+- `the-details-panel-follows-the-explorers-width`: when the explorer is at least 1000px wide the details panel sits beside the files (1000, 1200 and 1500 px); at 999 px it leaves the side of the files for the DMS drawer, which the-details-drawer-steps-through-the-files opens.
+- `the-modified-filter-keeps-its-window`: the modification date filter keeps the files changed in the last 7 days, the last 30 days or since 1 January, and every file for any date.
 
 ## How to get to it (user POV)
 
@@ -54,3 +56,5 @@ dms-control journey "$RUN" library
 - The explorer hydrates after `load`; `explorerWithFiles` clicks a file until it is selected before it presses keys.
 - The run's browser is 1280 px wide, so the explorer is narrower than 1000 px and the details open in a drawer; the side-panel steps widen the viewport to 1900 px.
 - `the-details-drawer-steps-through-the-files` fails at the integration head: J, K or closing the drawer ends on a 500 (issue draft `dms-media-details-drawer-crashes`).
+- `the-details-panel-follows-the-explorers-width` measures the explorer's content box, inside its border, which is what its layout follows, and never opens the drawer, which crashes at head (#119).
+- `the-modified-filter-keeps-its-window` ages files in the run's database with `clock.mjs`.

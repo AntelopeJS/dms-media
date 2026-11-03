@@ -28,6 +28,7 @@ Named image sizes: sharp renders each the first time it is requested, the storag
 - `a-changed-size-renders-again-from-the-same-link`: after thumb changes in the config, the same link serves the new rendering, under a new cache key, with no cache to clear.
 - `the-sizes-api-gives-copyable-examples`: the sizes list has no example while the library holds no image, then an example on the public origin built on the public photo, and a preview path; the cache facts give the signed link lifetimes and the config block names every size.
 - `image-sizes-page-shows-each-size`: Settings › Image sizes shows a card per size with its size, format, an example link on the public origin, a preview loaded through the dashboard even for a private image, the cached count, the Cache card and the configuration block.
+- `cover-cropping-is-centred`: a cover size crops around the centre, with no focal point: the square thumb of a red, green and blue banded image is all green, edge to edge.
 
 ## How to get to it (user POV)
 
@@ -43,3 +44,4 @@ dms-control journey "$RUN" presets
 
 - Renderings are read back with sharp from the module's own dependencies (`sharpOf`).
 - `sizes-refuse-what-they-cannot-render` makes the asset's rendering folder read-only in the run's storage to get a 503, then makes it writable again.
+- `cover-cropping-is-centred` uploads three vertical bands, red, green and blue, and reads three pixels of the `thumb` back with sharp: a centred square holds only green.
