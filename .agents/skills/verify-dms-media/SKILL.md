@@ -99,7 +99,7 @@ $C doors "$PWD/.agents/skills/verify-dms-media/seeded-doors/data.patch"
 - Uploads through the dashboard go to the dashboard's own origin; `STORAGE_ORIGIN=api` sends them to the API's origin, and `unreachable` to a closed port.
 - `mongod` comes from `DMS_CONTROL_MONGOD`, `PATH`, or the mongodb-memory-server cache (`~/.cache/mongodb-binaries`).
 - A step whose check fails because the backend or the dashboard stopped answering ends the journey with a `NOT VERIFIED` error and no failing check (`guard.mjs`), so `seeded` never counts an outage as a catch.
-- Known findings at the integration head, each a failing journey with an issue draft: `library/the-details-drawer-steps-through-the-files` (the drawer ends on a 500), `uploads/a-live-uploads-page-shows-a-new-batch` (Recent batches does not follow Live). A typed or arrow-nudged crop is not asserted (it is not saved; draft `dms-media-editor-typed-crop-not-saved`).
+- Known findings at the integration head, each a failing journey with an issue draft: `library/the-details-drawer-steps-through-the-files` (the drawer ends on a 500), `uploads/a-live-uploads-page-shows-a-new-batch` (Recent batches does not follow Live), `asset-field/the-pickers-upload-targets-the-linked-folder` (the picker's Upload from a subfolder lands in the subfolder; draft `dms-media-picker-upload-into-subfolder`). A typed or arrow-nudged crop is not asserted (it is not saved; draft `dms-media-editor-typed-crop-not-saved`).
 
 ## Not driven
 

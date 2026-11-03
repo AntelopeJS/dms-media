@@ -145,7 +145,7 @@ export const journeys = guarded([
   },
   {
     id: "a-members-picker-shows-only-what-they-can-read",
-    title: "a member opening a field's picker sees only the folders they can read, and a linked field's picker opens on its folder, browses its subfolders and uploads into the linked folder",
+    title: "a member opening a field's picker sees only the folders they can read, and a linked field's picker opens on its folder and lists its subfolders",
     entryPoint: "/verify-fields as a member, Attachment and Projects pickers",
     async run(/** @type {Ctx} */ ctx) {
       const hidden = await createFolder(ctx, ctx.unique("Owner only"));
@@ -166,18 +166,39 @@ export const journeys = guarded([
       ]);
       await dialog.getByRole("button", { name: "Close" }).click().catch(() => undefined);
       const projectsOpened = await openPicker(tab, "Projects");
-      await tab.page.getByRole("dialog", { name: "Choose from the library" }).getByRole("button", { name: /^Chantier Nord/ }).dblclick({ timeout: 10_000 }).catch(() => undefined);
-      await tab.page.waitForTimeout(1000);
+      await ctx.verify("the linked field opens on its folder and lists its subfolder", [check("the picker opens", projectsOpened, projectsOpened), tab.visible({ role: "heading", name: "Verify projects", level: 2 }), tab.visible({ role: "button", name: /^Chantier Nord/ })]);
+    },
+  },
+  {
+    id: "the-pickers-upload-targets-the-linked-folder",
+    title: "a linked field's picker browsed into a subfolder still uploads into the linked folder itself",
+    entryPoint: "/verify-fields, Projects picker, Chantier Nord, Upload",
+    async run(/** @type {Ctx} */ ctx) {
+      const projects = await boundFolder(ctx, "verify.projects");
+      const sub = await createFolder(ctx, "Chantier Nord", { parentId: projects });
+      await member(ctx, "picker", ["page:fields"]);
+      const tab = await ctx.tab("picker");
+      await tab.signIn("picker");
+      await tab.goto("/verify-fields");
+      const projectsOpened = await openPicker(tab, "Projects");
+      await ctx.verify("the picker opens", [check("the dialog", projectsOpened, projectsOpened)]);
+      const pickerDialog = tab.page.getByRole("dialog", { name: "Choose from the library" });
+      await pickerDialog.getByRole("button", { name: /^Chantier Nord/ }).dblclick({ timeout: 10_000 }).catch(() => undefined);
+      const inside = await tab.visible({ role: "heading", name: "Chantier Nord", level: 2 }, { timeoutMs: 10_000 });
       const chooser = tab.page.waitForEvent("filechooser", { timeout: 20_000 }).catch(() => null);
-      await tab.page.getByRole("dialog", { name: "Choose from the library" }).getByRole("button", { name: "Upload", exact: true }).click({ timeout: 10_000 }).catch(() => undefined);
+      await pickerDialog.getByRole("button", { name: "Upload", exact: true }).click({ timeout: 10_000 }).catch(() => undefined);
       await (await chooser)?.setFiles([{ name: "depuis-le-picker.png", mimeType: "image/png", buffer: await image(ctx, { width: 6, height: 6 }) }]);
-      let landed = await folderAssets(ctx, projects, { as: "picker" });
-      for (let attempt = 0; attempt < 20 && !landed.assets.some((asset) => text(asset, "name") === "depuis-le-picker.png"); attempt += 1) {
+      /** @returns {Promise<{ bound: string[], sub: string[] }>} */
+      const where = async () => ({
+        bound: (await folderAssets(ctx, projects, { as: "picker" })).assets.map((asset) => text(asset, "name")),
+        sub: (await folderAssets(ctx, sub.id, { as: "picker" })).assets.map((asset) => text(asset, "name")),
+      });
+      let found = await where();
+      for (let attempt = 0; attempt < 20 && ![...found.bound, ...found.sub].includes("depuis-le-picker.png"); attempt += 1) {
         await tab.page.waitForTimeout(1000);
-        landed = await folderAssets(ctx, projects, { as: "picker" });
+        found = await where();
       }
-      await ctx.verify("the linked field opens on its folder", [
-        check("the picker's Upload, from a subfolder, sends to the field's linked folder itself", landed.assets.some((asset) => text(asset, "name") === "depuis-le-picker.png"), landed.assets.map((asset) => text(asset, "name"))),check("the picker opens", projectsOpened, projectsOpened), tab.visible({ role: "heading", name: "Verify projects", level: 2 }), tab.visible({ role: "button", name: /^Chantier Nord/ })]);
+      await ctx.verify("its Upload targets the linked folder even from a subfolder", [inside, check("the file is in the linked folder itself, not the subfolder", found.bound.includes("depuis-le-picker.png") && !found.sub.includes("depuis-le-picker.png"), found)]);
     },
   },
 ]);
