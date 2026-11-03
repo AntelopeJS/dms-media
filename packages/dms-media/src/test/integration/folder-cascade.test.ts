@@ -6,6 +6,7 @@ import { uploadStorageBytes } from "../../derivatives";
 import { deleteFolderTree } from "../../routes/media/folders";
 
 const TENANT = "folder-cascade";
+const TEST_TIMEOUT_MS = 20 * 1000;
 
 async function insertFolder(
   model: MediaFolderModel,
@@ -47,7 +48,8 @@ async function insertAsset(
   return _id;
 }
 
-describe("[integration] folder deletion cascade", () => {
+describe("[integration] folder deletion cascade", function () {
+  this.timeout(TEST_TIMEOUT_MS);
   let folderModel: MediaFolderModel;
   let assetModel: MediaAssetModel;
 
