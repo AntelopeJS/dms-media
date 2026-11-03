@@ -152,7 +152,10 @@ const aSignedOutBrowserReachesTheFileThroughSignIn = {
     }
     await tab.page.getByRole("textbox", { name: "Email address" }).fill(credentials?.email ?? "");
     await tab.page.getByRole("textbox", { name: "Password", exact: true }).fill(credentials?.password ?? "");
-    await tab.page.getByRole("button", { name: "Login", exact: true }).click();
+    for (let attempt = 0; attempt < 3 && new URL(tab.page.url()).pathname.startsWith("/auth"); attempt += 1) {
+      await tab.page.getByRole("button", { name: "Login", exact: true }).click({ timeout: 10_000 }).catch(() => undefined);
+      await tab.page.waitForURL((url) => !url.pathname.startsWith("/auth"), { timeout: 15_000 }).catch(() => undefined);
+    }
     const shown = await tab.visible({ role: "heading", name: "secret.png", level: 1 }, { timeoutMs: 40_000 });
     await ctx.verify("back on the file", [
       check("the link led to the sign-in of the file's page", new URL(atSignIn).pathname.startsWith("/auth") && decodeURIComponent(atSignIn).includes(`/modules/media/file?asset=${file.id}`), atSignIn),
