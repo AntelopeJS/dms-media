@@ -3,6 +3,7 @@ import { createFolder, declareFolder, member, tree, uploaded, withConfig } from 
 import { check, image, list, media, pick, text } from "../media.mjs";
 import { hasRights, probeRights } from "./bindings.mjs";
 import { boundFolder } from "./folders.mjs";
+import { subjectJourneys } from "./parts/subjects.mjs";
 
 /** @typedef {import("../media.mjs").Ctx} Ctx */
 
@@ -190,4 +191,5 @@ export const journeys = guarded([
       await ctx.verify("the member never reached a Media page right", [check("but sees the linked folder", seen.folders.some((folder) => pick(folder, "id") === projects), seen.folders.length)]);
     },
   },
+  ...subjectJourneys(),
 ]);

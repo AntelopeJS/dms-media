@@ -26,6 +26,8 @@ Who may do what: the Media pages and statistics are the owner's, a folder's righ
 - `a-folder-without-an-acl-takes-its-parents`: a subfolder without its own ACL takes its parent's rights, a root folder takes rootAcl, which grants members nothing by default and opens every folder whose ancestors set no ACL when it names them.
 - `only-the-owner-changes-visibility`: a member who manages a folder cannot change a folder's or a file's visibility, nor move a file where its visibility would change, but moves it where it stays the same.
 - `a-writer-of-a-linked-folder-changes-any-of-its-files`: a member who can write in a linked folder renames, describes, moves, edits and deletes a file the owner uploaded there.
+- `a-role-subject-grants-its-holders`: an ACL entry whose subject kind is role grants its rights to the members holding that role, and nothing to a member with another role.
+- `a-write-mapping-grants-write-only`: a binding's write mapping, and the page fallback, grant write and not manage: the member uploads and renames files, but creating or renaming a folder answers 403, even with subfolders allowed.
 
 ## How to get to it (user POV)
 
@@ -40,3 +42,4 @@ dms-control journey "$RUN" access
 ## Gotchas
 
 - Members come from the fixture's `POST /verify-media/member`: a role with the given permissions (`page:fields` stands for the field page and its form block) and an invitation, then `/api/auth/signup`.
+- `a-role-subject-grants-its-holders` names the role the fixture created for the member in `VERIFY_MEDIA_ROOT_ACL=role:<roleId>:read`.

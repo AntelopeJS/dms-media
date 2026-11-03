@@ -55,6 +55,6 @@ dms-control journey "$RUN" library
 
 - The explorer hydrates after `load`; `explorerWithFiles` clicks a file until it is selected before it presses keys.
 - The run's browser is 1280 px wide, so the explorer is narrower than 1000 px and the details open in a drawer; the side-panel steps widen the viewport to 1900 px.
-- `the-details-drawer-steps-through-the-files` fails at the integration head: J, K or closing the drawer ends on a 500 (issue draft `dms-media-details-drawer-crashes`).
+- `the-details-drawer-steps-through-the-files` fails at the integration head: J, K or closing the drawer ends on a 500 (#119).
 - `the-details-panel-follows-the-explorers-width` measures the explorer's content box, inside its border, which is what its layout follows, and never opens the drawer, which crashes at head (#119).
 - `the-modified-filter-keeps-its-window` ages files in the run's database with `clock.mjs`.

@@ -5,6 +5,7 @@ import { declareAsset, declareFolder, follow, tree, withConfig } from "../librar
 import { check, image, list, longText, media, pick, sha256, text } from "../media.mjs";
 import { boundFolder } from "./folders.mjs";
 import { declarationRuleJourneys } from "./parts/declaration-rules.mjs";
+import { storagePathJourneys } from "./parts/storage-paths.mjs";
 
 /** @typedef {import("../media.mjs").Ctx} Ctx */
 
@@ -178,4 +179,5 @@ export const journeys = guarded([
     },
   },
   ...declarationRuleJourneys(),
+  ...storagePathJourneys(),
 ]);

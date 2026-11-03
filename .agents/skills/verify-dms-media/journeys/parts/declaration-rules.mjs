@@ -100,6 +100,7 @@ export function declarationRuleJourneys() {
         const empty = await declare("empty", { source: { kind: "bytes", base64: "" } });
         const longAlt = await declare("alt", { alt: "a".repeat(256) });
         const maxAlt = await declare("altok", { alt: "a".repeat(255) });
+        const maxName = await declare("nameok", { name: `${"n".repeat(251)}.txt` });
         const noFolder = await declareAsset(ctx, { key: `${base}.nofolder`, folder: { key: `${base}.missing` }, name: "x.txt", mimetype: "text/plain", source: { kind: "bytes", base64: "eA==" } });
         await ctx.verify("each file rule", [
           ...checks,
@@ -107,6 +108,7 @@ export function declarationRuleJourneys() {
           rejected(empty, "file", `${base}.empty`, "an empty file"),
           rejected(longAlt, "file", `${base}.alt`, "alt over 255"),
           check("alt of 255 is fine", outcomeOf(maxAlt) === "created", maxAlt.body),
+          check("a name of exactly 255 characters is fine", outcomeOf(maxName) === "created", maxName.body),
           rejected(noFolder, "file", `${base}.nofolder`, "an undeclared folder"),
         ]);
       },

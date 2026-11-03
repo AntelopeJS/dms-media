@@ -3,6 +3,7 @@ import { guarded } from "../guard.mjs";
 import { createFolder, follow, setVisibility, uploaded, withConfig } from "../library.mjs";
 import { check, image, imageInfo, list, media, pick, recordRaw, storagePath, SVG, text } from "../media.mjs";
 import { coverCropJourneys } from "./parts/cover-crop.mjs";
+import { defaultRenderJourneys } from "./parts/default-renders.mjs";
 import { presetPageJourneys } from "./parts/preset-page.mjs";
 
 /**
@@ -166,12 +167,13 @@ export const journeys = guarded([
   },
   {
     id: "the-sizes-api-gives-copyable-examples",
-    title: "the sizes list has no example while the library holds no image, then an example on the public origin built on the public photo, and a preview path; the cache facts give the signed link lifetimes and the config block names every size",
+    title: "the sizes list has no example while the library holds no image, an example built on a private image while it is the only one, then an example on the public origin built on the public photo even when a private one is newer, and a preview path; the cache facts give the signed link lifetimes and the config block names every size",
     entryPoint: "GET /api/media/presets, /presets/cache, /presets/config",
     async run(/** @type {Ctx} */ ctx) {
       const none = await media(ctx, "read the sizes with no public image", "GET", "/presets");
       const folder = await createFolder(ctx, ctx.unique("Examples"));
       const photo = await uploaded(ctx, { folderId: folder.id, name: "exemple été.png", mimetype: "image/png", bytes: await image(ctx, { width: 50, height: 40 }) });
+      const privateOnly = list((await media(ctx, "read the sizes with only a private image", "GET", "/presets")).body, "presets").find((row) => pick(row, "id") === "thumb");
       await setVisibility(ctx, "assets", photo.id, "public");
       await uploaded(ctx, { folderId: folder.id, name: "newer private.png", mimetype: "image/png", bytes: await image(ctx, { width: 50, height: 40 }) });
       const some = await media(ctx, "read the sizes with a public image", "GET", "/presets");
@@ -187,6 +189,7 @@ export const journeys = guarded([
         check("no example while the library holds no image", pick(noneThumb, "exampleUrl") === null && pick(noneThumb, "examplePreviewUrl") === null, noneThumb),
         check("the example link is the public origin plus the path", pick(thumbRow, "exampleUrl") === `${base}${examplePath}` && base.startsWith("http"), [base, thumbRow]),
         check("the preview is the path the dashboard shows", pick(thumbRow, "examplePreviewUrl") === examplePath, thumbRow),
+        check("with only a private image, the example is built on it, as the Image sizes page says", pick(privateOnly, "examplePreviewUrl") === examplePath && String(pick(privateOnly, "exampleUrl")).endsWith(examplePath), privateOnly),
         check("public links live one hour", cacheValue(cache.body, "public") === "hours 1", cache.body),
         check("private links live five minutes", cacheValue(cache.body, "private") === "minutes 5", cache.body),
         check("the nightly clean-up's last and next run", /sweep_(never|last)/.test(JSON.stringify(sweepRow)) && pick(sweepRow, "detail", "params", "next", "type") === "datetime", sweepRow),
@@ -196,4 +199,5 @@ export const journeys = guarded([
   },
   ...presetPageJourneys(),
   ...coverCropJourneys(),
+  ...defaultRenderJourneys(),
 ]);

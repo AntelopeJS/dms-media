@@ -1,7 +1,7 @@
 /**
  * @typedef {import("./media.mjs").Tab} Tab
  * @typedef {{ name: string, mimeType: string, buffer: Buffer }} Chosen
- * @typedef {{ opened: boolean, multiple: boolean, clicks: number, choose: (files: Chosen[]) => Promise<void> }} Picker
+ * @typedef {{ opened: boolean, multiple: boolean, clicks: number, attempts: number, choose: (files: Chosen[]) => Promise<void> }} Picker
  */
 
 /**
@@ -45,20 +45,28 @@ async function clicksOf(tab) {
 }
 
 /**
- * Runs an action that should open the file picker, and answers the file input it clicked, the way the picker would.
+ * Runs an action that should open the file picker, again while no file-input click is counted (a click that lands
+ * before the page hydrates does nothing), and answers the file input it clicked, the way the picker would.
  *
  * @param {Tab} tab The tab
  * @param {() => Promise<unknown>} action What a person does to open the picker
- * @param {number} [timeoutMs] How long the click may take to land
- * @returns {Promise<Picker>} Whether a file input was clicked, whether it takes several files, and how to answer it
+ * @param {number} [timeoutMs] How long to keep trying
+ * @returns {Promise<Picker>} Whether a file input was clicked, after how many attempts, whether it takes several
+ *   files, and how to answer it
  */
 export async function openFilePicker(tab, action, timeoutMs = 15_000) {
   const before = await arm(tab);
-  await action();
-  let clicks = await clicksOf(tab);
-  for (let waited = 0; waited < timeoutMs && clicks <= before; waited += 250) {
-    await tab.page.waitForTimeout(250);
-    clicks = await clicksOf(tab);
+  const deadline = Date.now() + timeoutMs;
+  let clicks = before;
+  let attempts = 0;
+  while (clicks <= before && Date.now() < deadline) {
+    attempts += 1;
+    await arm(tab);
+    await action();
+    for (let waited = 0; waited < 2500 && clicks <= before; waited += 250) {
+      await tab.page.waitForTimeout(250);
+      clicks = await clicksOf(tab);
+    }
   }
   const input = tab.page.locator("input[type=file][data-verify-chosen]").first();
   const opened = clicks > before;
@@ -67,6 +75,7 @@ export async function openFilePicker(tab, action, timeoutMs = 15_000) {
     opened,
     multiple,
     clicks: clicks - before,
+    attempts,
     choose: async (files) => {
       if (opened) await input.setInputFiles(files);
     },

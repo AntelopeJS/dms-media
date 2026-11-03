@@ -26,6 +26,7 @@ docs:
 - `the-limits-of-an-upload-apply`: a declared file over 500 MiB, over the storage plan, of a type the library or the bound field refuses, or an image that does not decode is refused with an error naming its kind and key; a decoded image is stored under the decoded type.
 - `folder-declarations-follow-the-dashboards-rules`: a declared folder refuses / \ < > : " | ? * and control characters, more than 255 characters, a sibling's name whatever its case or Unicode form, an undeclared, deleted or own parent, an unregistered binding or one without subfolders, and an ACL entry without rights; the key is trimmed and 1 to 255 characters.
 - `file-declarations-follow-the-dashboards-rules`: a declared file refuses / \ and control characters or more than 255 characters in its name, an empty file, alt text over 255 characters and an undeclared folder; a colon is fine in a file name.
+- `storage-paths-include-the-tenant`: a declared file and an uploaded file are stored under media/<tenantId>/<folderId>/, so storage paths include the tenant ID.
 
 ## How to get to it (user POV)
 
@@ -41,3 +42,4 @@ dms-control journey "$RUN" declared
 
 - The fixture calls both functions from `POST /verify-media/folder` and `/asset` and answers `{ ok, result | error, loads }`, where `loads` counts the calls of a `load` source.
 - `the-limits-of-an-upload-apply` writes a sparse 500 MiB + 1 byte file under the run's `HOME` and empties it afterwards.
+- `storage-paths-include-the-tenant` reads the stored `storageKey` in the run's database (`storedRow` in `clock.mjs`): no request returns it.

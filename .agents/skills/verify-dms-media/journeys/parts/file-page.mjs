@@ -146,18 +146,22 @@ const aSignedOutBrowserReachesTheFileThroughSignIn = {
     await tab.page.waitForURL((url) => url.pathname.startsWith("/auth"), { timeout: 30_000 }).catch(() => undefined);
     const atSignIn = tab.page.url();
     const credentials = ctx.state.accounts?.admin;
-    for (let attempt = 0; attempt < 20; attempt += 1) {
+    let hydrated = false;
+    for (let attempt = 0; attempt < 20 && !hydrated; attempt += 1) {
       await tab.page.getByRole("button", { name: "Show password" }).click({ timeout: 5000 }).catch(() => undefined);
-      if (await tab.page.getByRole("button", { name: "Hide password" }).isVisible()) break;
+      hydrated = await tab.page.getByRole("button", { name: "Hide password" }).isVisible();
     }
     await tab.page.getByRole("textbox", { name: "Email address" }).fill(credentials?.email ?? "");
     await tab.page.getByRole("textbox", { name: "Password", exact: true }).fill(credentials?.password ?? "");
+    let loginClicks = 0;
     for (let attempt = 0; attempt < 3 && new URL(tab.page.url()).pathname.startsWith("/auth"); attempt += 1) {
+      loginClicks += 1;
       await tab.page.getByRole("button", { name: "Login", exact: true }).click({ timeout: 10_000 }).catch(() => undefined);
-      await tab.page.waitForURL((url) => !url.pathname.startsWith("/auth"), { timeout: 15_000 }).catch(() => undefined);
+      await tab.page.waitForURL((url) => !url.pathname.startsWith("/auth"), { timeout: 30_000 }).catch(() => undefined);
     }
     const shown = await tab.visible({ role: "heading", name: "secret.png", level: 1 }, { timeoutMs: 40_000 });
     await ctx.verify("back on the file", [
+      check("a hydrated sign-in form needs one Login click (retries are only for a form that never hydrated)", !hydrated || loginClicks === 1, { hydrated, loginClicks }),
       check("the link led to the sign-in of the file's page", new URL(atSignIn).pathname.startsWith("/auth") && decodeURIComponent(atSignIn).includes(`/modules/media/file?asset=${file.id}`), atSignIn),
       shown,
       check("on the file page", tab.page.url().includes(`/modules/media/file?asset=${file.id}`), tab.page.url()),

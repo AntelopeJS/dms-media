@@ -66,7 +66,7 @@ export const journeys = guarded([
         const answer = await createFolder(ctx, name);
         refused.push(check(`folder ${JSON.stringify(name.slice(0, 20))} refused`, answer.answer.status === 400 && JSON.stringify(answer.answer.body).includes("$dms_media.errors."), answer.answer.body));
       }
-      const fine = await createFolder(ctx, `${"y".repeat(250)} été`);
+      const fine = await createFolder(ctx, `${"y".repeat(251)} été`);
       const folder = await createFolder(ctx, ctx.unique("Files"));
       const file = await uploaded(ctx, { folderId: folder.id, name: "f.txt", mimetype: "text/plain", bytes: Buffer.from("f") });
       const colon = await media(ctx, "rename the file with a colon", "POST", `/assets/${file.id}/update`, { body: { name: "a:b?.txt" } });

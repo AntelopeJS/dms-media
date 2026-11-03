@@ -29,6 +29,7 @@ export const journeys = guarded([
       const taken = await media(ctx, "rename onto a taken name", "POST", `/assets/${file.id}/update`, { body: { name: "ÉTÉ.png" } });
       const longAlt = await media(ctx, "alt over 255", "POST", `/assets/${file.id}/update`, { body: { alt: "a".repeat(256) } });
       const read = await media(ctx, "read it back", "GET", `/assets/${file.id}`);
+      const maxAlt = await media(ctx, "alt of exactly 255", "POST", `/assets/${file.id}/update`, { body: { alt: "a".repeat(255) } });
       const move = await media(ctx, "move it", "POST", `/assets/${file.id}/move`, { body: { folderId: target.id } });
       const moved = await media(ctx, "read it after the move", "GET", `/assets/${file.id}`);
       const removed = await media(ctx, "delete it", "DELETE", `/assets/${file.id}`);
@@ -37,6 +38,7 @@ export const journeys = guarded([
         check("name and alt", update.status === 200 && pick(read.body, "asset", "name") === "b é.png" && pick(read.body, "asset", "alt") === "Un toit au soleil, 東京", read.body),
         check("a taken name is 409 name_taken", taken.status === 409 && JSON.stringify(taken.body).includes("name_taken"), taken.body),
         check("alt over 255 is 400", longAlt.status === 400 && JSON.stringify(longAlt.body).includes("alt_too_long"), longAlt.body),
+        check("alt of exactly 255 is saved", maxAlt.status === 200, maxAlt.body),
         check("moved", move.status === 200 && pick(moved.body, "asset", "folderId") === target.id, moved.body),
         check("deleted", removed.status === 200 && gone.status === 404, [removed.status, gone.status]),
       ]);
