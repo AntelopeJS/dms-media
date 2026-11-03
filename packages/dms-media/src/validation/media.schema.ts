@@ -131,7 +131,7 @@ export const assetVisibilitySchema = z.object({
 const MAX_PREVIEW_BATCH = 200;
 
 export const previewIdsSchema = z.object({
-  ids: z.array(z.string().min(1)).max(MAX_PREVIEW_BATCH),
+  ids: z.array(z.string().uuid()).min(1).max(MAX_PREVIEW_BATCH),
 });
 
 const normalizedRatio = z.number().min(0).max(1);

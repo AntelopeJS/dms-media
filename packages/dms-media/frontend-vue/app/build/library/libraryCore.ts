@@ -7,6 +7,7 @@ export function createMediaLibrary(options: MediaLibraryOptions) {
 	const api = useMediaApi()
 	const { t } = useI18n()
 	const toast = useToast()
+	const { presentError } = useApiErrorPresenter()
 	const previews = useMediaPreviews()
 	const uploads = useUploadQueue()
 	const tree = useLibraryTree({ scopeFolderId: options.scopeFolderId })
@@ -51,7 +52,7 @@ export function createMediaLibrary(options: MediaLibraryOptions) {
 	}
 
 	function notifyFailure(error: unknown, titleKey: string): void {
-		useApiError(error, { title: t(titleKey) })
+		presentError(error, { fallbackKey: titleKey })
 	}
 
 	async function open(next: LibraryLocation, remember = true): Promise<void> {

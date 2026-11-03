@@ -345,9 +345,9 @@ describe("[integration] media delivery and editing — cache, orientation, activ
         .png()
         .toBuffer(),
     );
-    const answer = await client.post("/api/media/previews", {
-      ids: [logo.id, banner.id],
-    });
+    const answer = await client.get(
+      `/api/media/previews?ids=${logo.id}&ids=${banner.id}`,
+    );
     expect(answer.status).to.equal(HTTP_OK);
     const { previews } = readBody(answer, previewsBody);
     const [vector, raster] = await Promise.all(
