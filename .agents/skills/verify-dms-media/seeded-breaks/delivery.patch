@@ -2,11 +2,12 @@ diff --git a/packages/dms-media/src/routes/media/delivery.ts b/packages/dms-medi
 index 64a4035..1278ce0 100644
 --- a/packages/dms-media/src/routes/media/delivery.ts
 +++ b/packages/dms-media/src/routes/media/delivery.ts
-@@ -190,7 +190,6 @@ async function redirectToStorage(
+@@ -190,7 +190,7 @@ async function redirectToStorage(
      ? PUBLIC_READ_URL_TTL_SECONDS
      : PRIVATE_READ_URL_TTL_SECONDS;
    const location = await signedReadUrl(storageKey, storage, ttl);
 -  if (isPublic) openPublicCors(ctx.response);
++  if (!isPublic) openPublicCors(ctx.response);
    return redirectTo(
      ctx,
      location,
