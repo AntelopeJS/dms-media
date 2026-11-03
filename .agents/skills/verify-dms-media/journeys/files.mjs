@@ -45,7 +45,7 @@ export const journeys = guarded([
   {
     id: "read-urls-previews-and-search",
     title: "a read URL lives five minutes and serves the file or one of its sizes; previews give thumbnails of images only; the asset list and the asset search answer the readable files by name and type",
-    entryPoint: "GET /api/media/assets/:id/read-url?preset=, POST /previews, GET /assets, GET /assets/search",
+    entryPoint: "GET /api/media/assets/:id/read-url?preset=, GET /previews?ids=, GET /assets, GET /assets/search",
     async run(/** @type {Ctx} */ ctx) {
       const folder = await createFolder(ctx, ctx.unique("Reads"));
       const bytes = await image(ctx, { width: 500, height: 400 });
@@ -55,7 +55,7 @@ export const journeys = guarded([
       const thumb = await media(ctx, "read URL of the thumb", "GET", `/assets/${photo.id}/read-url?preset=thumb`);
       const originalBytes = await raw(ctx, "follow the original read URL", { url: new URL(text(original.body, "url"), ctx.state.apiUrl).href });
       const thumbBytes = await raw(ctx, "follow the thumb read URL", { url: new URL(text(thumb.body, "url"), ctx.state.apiUrl).href });
-      const previews = await media(ctx, "previews of both", "POST", "/previews", { body: { ids: [photo.id, doc.id] } });
+      const previews = await media(ctx, "previews of both", "GET", `/previews?ids=${photo.id}&ids=${doc.id}`);
       const all = await media(ctx, "list every readable file", "GET", "/assets");
       const search = await media(ctx, "search toiture among PDFs", "GET", `/assets/search?q=toiture&mime=application/&folderId=${folder.id}`);
       const lifetime = signedLifetime(ctx, text(original.body, "url"));
