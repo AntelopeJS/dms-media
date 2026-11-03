@@ -68,6 +68,9 @@ export const journeys = guarded([
       const big = await uploaded(ctx, { folderId: two.id, name: "big.png", mimetype: "image/png", bytes: await image(ctx, { width: 300, height: 300 }) });
       const doc = await uploaded(ctx, { folderId: two.id, name: "doc.txt", mimetype: "text/plain", bytes: Buffer.from("x") });
       await media(ctx, "describe the small image", "POST", `/assets/${small.id}/update`, { body: { alt: "Petit" } });
+      const blank = await uploaded(ctx, { folderId: one.id, name: "blank.png", mimetype: "image/png", bytes: await image(ctx, { width: 5, height: 5 }) });
+      await media(ctx, "give an image a blank alt text", "POST", `/assets/${blank.id}/update`, { body: { alt: "   " } });
+      const blankRead = await media(ctx, "read the blank alt back", "GET", `/assets/${blank.id}`);
       await media(ctx, "star the document", "POST", "/favorites", { body: { kind: "asset", targetId: doc.id, starred: true } });
       await media(ctx, "star folder Two", "POST", "/favorites", { body: { kind: "folder", targetId: two.id, starred: true } });
       await setVisibility(ctx, "assets", big.id, "public");
@@ -84,20 +87,21 @@ export const journeys = guarded([
       const scoped = await read("largest", `?folderId=${one.id}`);
       const read2 = await tree(ctx);
       await ctx.verify("each view", [
-        check("Recent: newest first", JSON.stringify(recent.files.slice(0, 3)) === JSON.stringify(["doc.txt", "big.png", "small.png"]), recent.files),
+        check("Recent: newest first", JSON.stringify(recent.files.slice(0, 4)) === JSON.stringify(["blank.png", "doc.txt", "big.png", "small.png"]), recent.files),
         check("Starred: the starred file and folder", starred.files.includes("doc.txt") && !starred.files.includes("big.png") && starred.folders.includes(String(pick(read2.folders.find((folder) => pick(folder, "id") === two.id), "name"))), starred),
         check("Largest files: biggest first", largest.files[0] === "big.png", largest.files),
         check("Public", JSON.stringify(open.files) === JSON.stringify(["big.png"]), open.files),
         check("Missing alt text: images without alt only", missing.files.includes("big.png") && !missing.files.includes("small.png") && !missing.files.includes("doc.txt"), missing.files),
+        check("a blank alt is saved as given and still counts as missing", pick(blankRead.body, "asset", "alt") === "   " && missing.files.includes("blank.png"), [pick(blankRead.body, "asset", "alt"), missing.files]),
         check("a view inside one folder", JSON.stringify(scoped.files) === JSON.stringify(["small.png"]), scoped.files),
-        check("the tree counts the starred file and folder, and missing alt", pick(read2.answer.body, "views", "starred") === 2 && Number(pick(read2.answer.body, "views", "missingAlt")) >= 1, pick(read2.answer.body, "views")),
+        check("the tree counts the starred file and folder, and the two images missing alt", pick(read2.answer.body, "views", "starred") === 2 && pick(read2.answer.body, "views", "missingAlt") === 2, pick(read2.answer.body, "views")),
         check("a starred folder is marked in the tree", pick(read2.folders.find((folder) => pick(folder, "id") === two.id), "starred") === true, read2.folders.length),
       ]);
     },
   },
   {
     id: "facets-sort-and-paging-narrow-a-listing",
-    title: "a folder listing narrows by type, visibility, modification date and orientation, sorts by name, date added, size or type in either direction, and pages with offset and a limit of at most 500",
+    title: "a folder listing narrows by type, visibility, modification date and orientation, sorts by name (in natural order), date added, size or type in either direction, and pages with offset and a limit of at most 500; search and views take the same facets",
     entryPoint: "GET /api/media/folders/:id/assets?type=&visibility=&modified=&orientation=&sort=&direction=&offset=&limit=",
     async run(/** @type {Ctx} */ ctx) {
       const folder = await createFolder(ctx, ctx.unique("Facets"));
@@ -124,6 +128,18 @@ export const journeys = guarded([
         check("type ascending puts images and the document apart", (await listing("sort=type&direction=asc")).indexOf("d-doc.pdf") !== 1 && (await listing("sort=type&direction=asc")).indexOf("d-doc.pdf") !== 2, "type sort"),
         check("offset and limit page", JSON.stringify(await listing("offset=1&limit=2")) === JSON.stringify(["b-square.png", "c-wide.png"]), "page"),
         check("a limit over 500 is refused", tooBig.status === 400, tooBig.status),
+      ]);
+      const numbered = await createFolder(ctx, ctx.unique("Numbered"));
+      for (const name of ["img10.png", "img2.png", "img1.png"]) await uploaded(ctx, { folderId: numbered.id, name, mimetype: "image/png", bytes: await image(ctx, { width: 3, height: 3 }) });
+      const natural = names((await media(ctx, "list the numbered files by name", "GET", `/folders/${numbered.id}/assets?sort=name`)).body, "assets");
+      const searchedImages = names((await media(ctx, "search with a type facet", "GET", `/search?q=png&type=image&folderId=${folder.id}`)).body, "assets");
+      const searchedPdf = names((await media(ctx, "search for a PDF among images", "GET", `/search?q=doc&type=image&folderId=${folder.id}`)).body, "assets");
+      const viewFacet = names((await media(ctx, "a view with an orientation facet", "GET", `/views/recent?folderId=${folder.id}&orientation=portrait`)).body, "assets");
+      await ctx.verify("names sort in natural order, and search and views take the facets", [
+        check("img1, img2, img10", JSON.stringify(natural) === JSON.stringify(["img1.png", "img2.png", "img10.png"]), natural),
+        check("search with type=image keeps the images", searchedImages.length === 3 && !searchedImages.includes("d-doc.pdf"), searchedImages),
+        check("search with type=image leaves the PDF out", searchedPdf.length === 0, searchedPdf),
+        check("a view with orientation=portrait keeps the tall image", JSON.stringify(viewFacet) === JSON.stringify(["a-tall.png"]), viewFacet),
       ]);
       await ctx.verify("the listing's own shape", [check("the facets left the rows' order alone", list((await media(ctx, "plain listing", "GET", `/folders/${folder.id}/assets`)).body, "assets").length === 4, "plain")]);
     },

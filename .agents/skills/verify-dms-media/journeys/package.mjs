@@ -70,7 +70,7 @@ export const journeys = guarded([
   },
   {
     id: "the-interface-tarball-exports-the-contract",
-    title: "the interface's tarball holds its build and its consumer reference, and its root export carries the documented functions and constants",
+    title: "the interface's tarball holds its build and its consumer reference, and its root export carries every function, constant and type its README lists",
     entryPoint: "npm pack of packages/interface-dms-media",
     database: "shared",
     onboard: false,
@@ -81,7 +81,7 @@ export const journeys = guarded([
         check("name", pick(manifest, "name") === "@antelopejs/interface-dms-media", pick(manifest, "name")),
         check("main and types are packed", files.includes("dist/index.js") && files.includes("dist/index.d.ts"), files.slice(0, 10)),
         check("the consumer reference ships", files.includes("docs/1.index.md"), files.filter((file) => file.startsWith("docs/"))),
-        ...["AssetType", "RegisterAssetBinding", "UnregisterAssetBinding", "EnsureMediaFolder", "ImportMediaAsset", "ASSET_DATA_TYPE_ID", "ASSET_PICKER_COMPONENT", "AclEntry", "MediaDeclarationResult"].map((name) => check(`exports ${name}`, new RegExp(`export (declare )?(function|class|const|interface|type) ${name}\\b`).test(declarations), name)),
+        ...["AssetType", "RegisterAssetBinding", "UnregisterAssetBinding", "EnsureMediaFolder", "ImportMediaAsset", "ASSET_DATA_TYPE_ID", "ASSET_PICKER_COMPONENT", "AssetTypeOptions", "AssetPickerComponentOptions", "AssetBindingConfig", "AssetBindingField", "AssetPermissionMapping", "MediaFolderDeclaration", "MediaFolderVisibility", "MediaAssetDeclaration", "MediaFolderTarget", "DeclaredFolderTarget", "BoundFolderTarget", "MediaAssetSource", "MediaBytesSource", "MediaFileSource", "MediaLazySource", "MediaDeclarationResult", "MediaDeclarationStatus", "AclEntry", "AclSubject", "AclSubjectKind", "AclRight"].map((name) => check(`exports ${name}`, new RegExp(`export (declare )?(function|class|const|interface|type) ${name}\\b`).test(declarations), name)),
       ]);
     },
   },

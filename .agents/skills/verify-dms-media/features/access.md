@@ -21,6 +21,7 @@ Who may do what: the Media pages and statistics are the owner's, a folder's righ
 
 - `every-media-route-needs-a-signed-in-member`: the /api/media routes answer 401 without a session.
 - `media-pages-and-statistics-are-owner-only`: a member, even one whose role holds the Library page permission, gets 403 from the overview and activity routes, cannot open the Media pages, and that permission grants no folder right.
+- `a-member-reaches-only-what-their-rights-open`: for a member, the folder of a binding they cannot see is null, the starter folders need manage at the root, a folder zips only with read, and bulk actions refuse the files they cannot reach.
 - `rights-include-the-weaker-ones`: manage includes write and read, write includes read: read lists, write uploads and edits files, manage changes the folder structure.
 - `a-folder-without-an-acl-takes-its-parents`: a subfolder without its own ACL takes its parent's rights, a root folder takes rootAcl, which grants members nothing by default and opens every folder whose ancestors set no ACL when it names them.
 - `only-the-owner-changes-visibility`: a member who manages a folder cannot change a folder's or a file's visibility, nor move a file where its visibility would change, but moves it where it stays the same.

@@ -2,6 +2,8 @@ import { existsSync } from "node:fs";
 import { guarded } from "../guard.mjs";
 import { createFolder, folderAssets, upload, uploaded, withConfig } from "../library.mjs";
 import { check, image, list, longText, media, pick, raw, recordRaw, sha256, storagePath, text } from "../media.mjs";
+import { pickerJourneys } from "./parts/pickers.mjs";
+import { refusalJourneys } from "./parts/refusals.mjs";
 import { uploadPageJourneys } from "./parts/upload-page.mjs";
 
 /** @typedef {import("../media.mjs").Ctx} Ctx */
@@ -98,48 +100,7 @@ export const journeys = guarded([
       ]);
     },
   },
-  {
-    id: "active-documents-are-refused-by-type-or-extension",
-    title: "HTML, XHTML and PHP are refused 415 type_not_allowed whatever their declared type, and a type outside allowedMimetypes too",
-    entryPoint: "POST /api/media/upload/presign",
-    async run(/** @type {Ctx} */ ctx) {
-      const folder = await createFolder(ctx, ctx.unique("Refusals"));
-      const cases = [
-        ["page.html", "text/html"],
-        ["page.xhtml", "application/xhtml+xml"],
-        ["run.php", "application/x-httpd-php"],
-        ["looks-plain.html", "text/plain"],
-        ["looks-plain.PHP", "text/plain"],
-        ["tool.exe", "application/x-msdownload"],
-      ];
-      for (const [name, mimetype] of cases) {
-        const done = await upload(ctx, { folderId: folder.id, name: String(name), mimetype: String(mimetype), bytes: Buffer.from("<p>x</p>") });
-        await ctx.verify(`${name} as ${mimetype} is refused`, refused(done.presign, 415, "type_not_allowed"));
-      }
-      const accepted = await upload(ctx, { folderId: folder.id, name: "notes.md", mimetype: "text/markdown", bytes: Buffer.from("# Notes\n") });
-      await ctx.verify("a default type is accepted", [check("markdown is uploaded", accepted.confirm?.status === 200, accepted.confirm?.body)]);
-    },
-  },
-  {
-    id: "allowed-mimetypes-match-a-prefix-and-confirm-checks-again",
-    title: "allowedMimetypes with image/* accepts any image and refuses a PDF, and confirm refuses a file whose type the library stopped accepting after presign",
-    entryPoint: "allowedMimetypes, POST /api/media/upload/confirm",
-    async run(/** @type {Ctx} */ ctx) {
-      const folder = await createFolder(ctx, ctx.unique("Types"));
-      const pdfBytes = Buffer.from("%PDF-1.4\n%%EOF\n");
-      const pdf = await media(ctx, "presign a PDF", "POST", "/upload/presign", { body: { folderId: folder.id, filename: "late.pdf", size: pdfBytes.byteLength, mimetype: "application/pdf" } });
-      await raw(ctx, "PUT the PDF", { url: text(pdf.body, "uploadUrl"), method: "PUT", headers: { "content-type": "application/pdf" }, body: pdfBytes });
-      await withConfig(ctx, { VERIFY_MEDIA_MIMETYPES: "image/*" }, async () => {
-        const webp = await uploaded(ctx, { folderId: folder.id, name: "a.webp", mimetype: "image/webp", bytes: await image(ctx, { width: 4, height: 4, format: "webp" }) });
-        const refusedPdf = await upload(ctx, { folderId: folder.id, name: "b.pdf", mimetype: "application/pdf", bytes: Buffer.from("%PDF-1.4\n") });
-        await ctx.verify("image/* is a prefix", [check("webp accepted", webp.id !== "", webp.id), ...refused(refusedPdf.presign, 415, "type_not_allowed")]);
-        const confirm = await media(ctx, "confirm the PDF presigned before the change", "POST", "/upload/confirm", {
-          body: { folderId: folder.id, resourceKey: text(pdf.body, "resourceKey"), filename: "late.pdf" },
-        });
-        await ctx.verify("confirm runs the type check too", refused(confirm, 415, "type_not_allowed"));
-      });
-    },
-  },
+  ...refusalJourneys(),
   {
     id: "a-field-folder-refuses-other-types",
     title: "a folder bound to a PDF field refuses an image with 415 field_type listing what the field accepts, and so does a subfolder of an image field for a PDF",
@@ -244,4 +205,5 @@ export const journeys = guarded([
     },
   },
   ...uploadPageJourneys(),
+  ...pickerJourneys(),
 ]);

@@ -36,10 +36,14 @@ export const journeys = guarded([
       await withConfig(ctx, { VERIFY_MEDIA_PUBLIC_BASE_URL: "https://cdn.example.org" }, async () => {
         seen.push(await links(ctx, photo.id));
       });
-      const [configured] = seen;
+      await withConfig(ctx, { VERIFY_MEDIA_PUBLIC_BASE_URL: "https://cdn.example.org//" }, async () => {
+        seen.push(await links(ctx, photo.id));
+      });
+      const [configured, slashed] = seen;
       await ctx.verify("the origin of every copied link", [
         check("without publicBaseUrl, the DMS apiBaseUrl", fallback.origin === ctx.state.webUrl && fallback.delivery.includes(`${ctx.state.webUrl}/media/${photo.id}/`) && fallback.example.startsWith(`${ctx.state.webUrl}/media/`), fallback),
         check("request headers never change it", pick(forwarded, "origin") === ctx.state.webUrl, forwarded),
+        check("a trailing slash of publicBaseUrl is dropped, so links hold no //media", slashed?.origin === "https://cdn.example.org" && !slashed.delivery.includes("//media") && !slashed.example.includes("//media"), slashed),
         check("with publicBaseUrl, it", configured?.origin === "https://cdn.example.org" && configured.delivery.includes(`https://cdn.example.org/media/${photo.id}/`) && configured.example.startsWith("https://cdn.example.org/media/"), configured),
       ]);
     },

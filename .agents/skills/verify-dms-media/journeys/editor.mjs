@@ -85,6 +85,10 @@ export const journeys = guarded([
       const svg = await uploaded(ctx, { folderId: folder.id, name: "v.svg", mimetype: "image/svg+xml", bytes: SVG });
       const gif = await uploaded(ctx, { folderId: folder.id, name: "g.gif", mimetype: "image/gif", bytes: await image(ctx, { width: 10, height: 10, format: "gif" }) });
       const png = await uploaded(ctx, { folderId: folder.id, name: "p.png", mimetype: "image/png", bytes: await image(ctx, { width: 10, height: 10 }) });
+      const turned = await uploaded(ctx, { folderId: folder.id, name: "t.png", mimetype: "image/png", bytes: await image(ctx, { width: 30, height: 10 }) });
+      const half = await media(ctx, "rotate 180°", "POST", `/assets/${turned.id}/transform`, { body: { rotate: 180 } });
+      const threeQuarters = await media(ctx, "rotate 270° more", "POST", `/assets/${turned.id}/transform`, { body: { rotate: 270 } });
+      results.push(check("180° keeps 30×10", half.status === 200 && pick(half.body, "asset", "width") === 30, half.body), check("then 270° turns it to 10×30", threeQuarters.status === 200 && pick(threeQuarters.body, "asset", "width") === 10 && pick(threeQuarters.body, "asset", "height") === 30, threeQuarters.body));
       const svgEdit = await media(ctx, "rotate the SVG", "POST", `/assets/${svg.id}/transform`, { body: { rotate: 90 } });
       const gifEdit = await media(ctx, "rotate the GIF", "POST", `/assets/${gif.id}/transform`, { body: { rotate: 90 } });
       const none = await media(ctx, "no operation", "POST", `/assets/${png.id}/transform`, { body: {} });

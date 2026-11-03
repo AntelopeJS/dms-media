@@ -57,6 +57,8 @@ export function activeContentJourneys(svg) {
         recordRaw(ctx, other, [check("200 with the body", other.status === 200 && other.bytes.byteLength === drawing.byteLength, other.status)]);
         const range = await raw(ctx, "ask for a byte range", { path: file.path, as: "admin", headers: { range: "bytes=0-9" } });
         recordRaw(ctx, range, [check("the whole file, not 206", range.status === 200 && range.bytes.byteLength === drawing.byteLength, `${range.status} ${range.bytes.byteLength}`)]);
+        const head = await raw(ctx, "HEAD the private SVG", { path: file.path, as: "admin", method: "HEAD" });
+        recordRaw(ctx, head, [check("HEAD answers 200 with the length and no body", head.status === 200 && head.headers["content-length"] === String(drawing.byteLength) && head.bytes.byteLength === 0, [head.status, head.headers["content-length"], head.bytes.byteLength])]);
         await setVisibility(ctx, "assets", file.id, "public");
         const open = await raw(ctx, "read the public SVG without a session", { path: file.path, headers: { origin: "https://site.example.org" } });
         recordRaw(ctx, open, [

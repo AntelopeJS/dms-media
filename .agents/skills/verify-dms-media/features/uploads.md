@@ -37,8 +37,8 @@ Uploads go from the browser straight to the storage: `presign` checks the type a
 
 - `three-steps-keep-every-byte`: presign answers a staged storage URL, the PUT lands there, confirm creates the file: every byte of a multi-chunk upload and its non-ASCII name are kept.
 - `abort-deletes-the-staged-file`: abort deletes a staged upload, so confirming it afterwards fails and nothing is listed.
-- `active-documents-are-refused-by-type-or-extension`: HTML, XHTML and PHP are refused 415 type_not_allowed whatever their declared type, and a type outside allowedMimetypes too.
-- `allowed-mimetypes-match-a-prefix-and-confirm-checks-again`: allowedMimetypes with image/* accepts any image and refuses a PDF, and confirm refuses a file whose type the library stopped accepting after presign.
+- `active-documents-are-refused-by-type-or-extension`: HTML, XHTML and PHP are refused 415 type_not_allowed at presign and at confirm, by every type and every extension the module lists, case aside, and a type outside allowedMimetypes too; a default type is accepted.
+- `allowed-mimetypes-match-a-prefix-and-confirm-checks-again`: by default video, audio, PDF, Office, OpenDocument, RTF, plain text, Markdown and CSV are accepted and other types refused; allowedMimetypes with image/* accepts any image and refuses a PDF, and confirm refuses a file whose type the library stopped accepting after presign.
 - `a-field-folder-refuses-other-types`: a folder bound to a PDF field refuses an image with 415 field_type listing what the field accepts, and so does a subfolder of an image field for a PDF.
 - `the-storage-plan-refuses-what-goes-past-it`: with storageQuotaBytes set, presign and confirm refuse with 413 quota, remaining and quota, an upload that would go past it.
 - `a-declared-image-must-decode`: confirm refuses with 422 invalid_image an image that does not decode and deletes the staged file; a file that decodes as another format is stored with the decoded type; a format sharp does not decode is not checked.
@@ -50,6 +50,8 @@ Uploads go from the browser straight to the storage: `presign` checks the type a
 - `a-taken-name-offers-keep-both-or-cancel`: uploading a file whose name the folder already has, ignoring case, offers Keep both, which stores photo (2).jpg, or Cancel, which leaves the file out.
 - `a-storage-that-refuses-the-origin-is-named`: a dashboard opened on an origin the API's CORS settings do not list, with the storage on the API's origin: presign works, the browser's PUT is blocked, the queue names the origin to add, and nothing is stored.
 - `an-unreachable-storage-is-named`: when the storage's address cannot be reached from the browser, the queue names that address and nothing is stored.
+- `every-file-picker-takes-several-files`: the Library's Upload, the Overview's Choose files, the Uploads page's Upload files and a multiple asset field's upload each take several files in one pick, and every file lands.
+- `the-queue-explains-each-refusal`: the upload queue explains a field type refusal with the types the field accepts, an image that does not decode, and a full storage plan, while the other files of the batch land.
 
 ## How to get to it (user POV)
 

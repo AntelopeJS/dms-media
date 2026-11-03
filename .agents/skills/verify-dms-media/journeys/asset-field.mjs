@@ -166,6 +166,8 @@ export const journeys = guarded([
       ]);
       await dialog.getByRole("button", { name: "Close" }).click().catch(() => undefined);
       const projectsOpened = await openPicker(tab, "Projects");
+      await tab.page.getByRole("dialog", { name: "Choose from the library" }).getByRole("button", { name: /^Chantier Nord/ }).dblclick({ timeout: 10_000 }).catch(() => undefined);
+      await tab.page.waitForTimeout(1000);
       const chooser = tab.page.waitForEvent("filechooser", { timeout: 20_000 }).catch(() => null);
       await tab.page.getByRole("dialog", { name: "Choose from the library" }).getByRole("button", { name: "Upload", exact: true }).click({ timeout: 10_000 }).catch(() => undefined);
       await (await chooser)?.setFiles([{ name: "depuis-le-picker.png", mimeType: "image/png", buffer: await image(ctx, { width: 6, height: 6 }) }]);
@@ -175,7 +177,7 @@ export const journeys = guarded([
         landed = await folderAssets(ctx, projects, { as: "picker" });
       }
       await ctx.verify("the linked field opens on its folder", [
-        check("the picker's Upload sends to the field's linked folder", landed.assets.some((asset) => text(asset, "name") === "depuis-le-picker.png"), landed.assets.map((asset) => text(asset, "name"))),check("the picker opens", projectsOpened, projectsOpened), tab.visible({ role: "heading", name: "Verify projects", level: 2 }), tab.visible({ role: "button", name: /^Chantier Nord/ })]);
+        check("the picker's Upload, from a subfolder, sends to the field's linked folder itself", landed.assets.some((asset) => text(asset, "name") === "depuis-le-picker.png"), landed.assets.map((asset) => text(asset, "name"))),check("the picker opens", projectsOpened, projectsOpened), tab.visible({ role: "heading", name: "Verify projects", level: 2 }), tab.visible({ role: "button", name: /^Chantier Nord/ })]);
     },
   },
 ]);

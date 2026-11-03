@@ -92,5 +92,40 @@ export function activityJourneys() {
         await ctx.verify("?live=0 opens paused", [tab.visible({ role: "button", name: "Pause", pressed: true }, { timeoutMs: 20_000 })]);
       },
     },
+    {
+      id: "own-uploads-keep-moving-while-paused-and-activity-follows",
+      title: "while the Overview is paused, an upload of its own drop zone still goes through; the Activity page shows a change made elsewhere without a reload",
+      entryPoint: "/modules/media/overview paused, /modules/media/activity live",
+      async run(/** @type {Ctx} */ ctx) {
+        const name = ctx.unique("Paused");
+        const folder = await createFolder(ctx, name);
+        const tab = await ctx.tab();
+        await tab.signIn("admin");
+        await tab.goto("/modules/media/overview");
+        await tab.page.getByRole("button", { name: "Choose a folder" }).click({ timeout: 20_000 }).catch(() => undefined);
+        const dialog = tab.page.getByRole("dialog");
+        await dialog.getByText(name).first().click({ timeout: 15_000 }).catch(() => undefined);
+        await dialog.getByRole("button", { name: /Choose|Select|Use/ }).last().click({ timeout: 15_000 }).catch(() => undefined);
+        await tab.click({ role: "button", name: "Pause" });
+        await tab.page.route("**/file-storage/upload/**", async (route) => {
+          await new Promise((resolve) => setTimeout(resolve, 4000));
+          await route.continue();
+        });
+        const chooser = tab.page.waitForEvent("filechooser", { timeout: 20_000 }).catch(() => null);
+        await tab.page.getByRole("button", { name: /^Choose files/ }).click({ timeout: 10_000 }).catch(() => undefined);
+        await (await chooser)?.setFiles([{ name: "pendant-la-pause.png", mimeType: "image/png", buffer: await image(ctx, { width: 6, height: 6 }) }]);
+        let listed = await media(ctx, "list the folder", "GET", `/folders/${folder.id}/assets`);
+        for (let attempt = 0; attempt < 30 && list(listed.body, "assets").length === 0; attempt += 1) {
+          await tab.page.waitForTimeout(1000);
+          listed = await media(ctx, "list the folder again", "GET", `/folders/${folder.id}/assets`);
+        }
+        await ctx.verify("the paused page's own upload went through", [check("the file landed", list(listed.body, "assets").length === 1, listed.body), tab.visible({ role: "button", name: "Pause", pressed: true })]);
+        await tab.goto("/modules/media/activity");
+        await tab.page.getByRole("button", { name: "Live" }).click({ timeout: 15_000 }).catch(() => undefined);
+        await tab.visible({ role: "button", name: "Live", pressed: true }, { timeoutMs: 10_000 });
+        await media(ctx, "rename the folder elsewhere", "POST", `/folders/${folder.id}/rename`, { body: { name: `${name} bis` } });
+        await ctx.verify("the Activity feed follows", [tab.shows(new RegExp(`renamed[\\s\\S]*${name} bis|${name} bis[\\s\\S]*renamed`, "i"), { timeoutMs: 20_000 })]);
+      },
+    },
   ];
 }

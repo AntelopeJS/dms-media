@@ -154,6 +154,7 @@ export const journeys = guarded([
       const tooBig = await declareAsset(ctx, { key: `${key}.big`, folder: { key }, name: "big.pdf", mimetype: "application/pdf", source: { kind: "filePath", filePath: big } });
       writeFileSync(big, "");
       const html = await declareAsset(ctx, { key: `${key}.html`, folder: { key }, name: "page.html", mimetype: "text/html", source: { kind: "bytes", base64: "PHA+" } });
+      const htm = await declareAsset(ctx, { key: `${key}.htm`, folder: { key }, name: "page.htm", mimetype: "text/plain", source: { kind: "bytes", base64: "PHA+" } });
       const exe = await declareAsset(ctx, { key: `${key}.exe`, folder: { key }, name: "tool.exe", mimetype: "application/x-msdownload", source: { kind: "bytes", base64: "TVo=" } });
       const field = await declareAsset(ctx, { key: `${key}.field`, folder: { binding: "verify.sheets" }, name: "x.png", mimetype: "image/png", source: { kind: "bytes", base64: (await image(ctx, { width: 4, height: 4 })).toString("base64") } });
       const broken = await declareAsset(ctx, { key: `${key}.broken`, folder: { key }, name: "broken.jpg", mimetype: "image/jpeg", source: { kind: "bytes", base64: Buffer.from("nope").toString("base64") } });
@@ -167,6 +168,7 @@ export const journeys = guarded([
           named(tooBig, "big"),
           named(html, "html"),
           named(exe, "exe"),
+          named(htm, "htm"),
           named(field, "field"),
           named(broken, "broken"),
           named(over, "quota"),

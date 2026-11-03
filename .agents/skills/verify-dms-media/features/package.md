@@ -18,7 +18,7 @@ What a project installs from the registry: the module with its build, dashboard 
 ## Sub-features
 
 - `the-module-tarball-holds-what-its-manifest-names`: the module's tarball holds the build, the dashboard layer, the agent skill and every path its manifest points at, without build info.
-- `the-interface-tarball-exports-the-contract`: the interface's tarball holds its build and its consumer reference, and its root export carries the documented functions and constants.
+- `the-interface-tarball-exports-the-contract`: the interface's tarball holds its build and its consumer reference, and its root export carries every function, constant and type its README lists.
 - `ranges-match-the-compatibility-table`: the README compatibility table lists the interface ranges the module depends on, its interface-dms-media range accepts the interface in the tree, and the dashboard layer pins its renderer minor.
 
 ## How to get to it (user POV)

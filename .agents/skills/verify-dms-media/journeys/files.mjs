@@ -82,6 +82,9 @@ export const journeys = guarded([
       const moved = await media(ctx, "bulk move", "POST", "/assets/bulk/move", { body: { ids: [a.id, b.id, missing], folderId: target.id } });
       const shown = await media(ctx, "bulk publish", "POST", "/assets/bulk/visibility", { body: { ids: [a.id, missing], visibility: "public" } });
       const anon = await raw(ctx, "the published file, anonymously", { path: `/media/${a.id}/a.txt` });
+      const hidden = await media(ctx, "bulk make private", "POST", "/assets/bulk/visibility", { body: { ids: [a.id], visibility: "private" } });
+      const anonAfter = await raw(ctx, "the file made private, anonymously", { path: `/media/${a.id}/a.txt` });
+      const malformed = await media(ctx, "bulk move without a folder", "POST", "/assets/bulk/move", { body: { ids: [a.id] } });
       const removed = await media(ctx, "bulk delete", "POST", "/assets/bulk/delete", { body: { ids: [a.id, b.id] } });
       const tooMany = await media(ctx, "bulk delete 501 ids", "POST", "/assets/bulk/delete", { body: { ids: Array.from({ length: 501 }, (_, index) => `id-${index}`) } });
       const fiveHundred = await media(ctx, "bulk delete 500 unknown ids", "POST", "/assets/bulk/delete", { body: { ids: Array.from({ length: 500 }, (_, index) => `id-${index}`) } });
@@ -90,6 +93,8 @@ export const journeys = guarded([
         check("move: both done, the unknown refused", JSON.stringify(pick(moved.body, "done")) === JSON.stringify([a.id, b.id]) && list(moved.body, "refused").map((row) => pick(row, "id")).join() === missing, moved.body),
         check("a refusal has a status and a message", Number.isInteger(pick(list(moved.body, "refused")[0], "status")) && text(list(moved.body, "refused")[0], "message") !== "", moved.body),
         check("visibility: done for the file", JSON.stringify(pick(shown.body, "done")) === JSON.stringify([a.id]) && anon.status === 302, [shown.body, anon.status]),
+        check("visibility private: done, and the file needs a session again", JSON.stringify(pick(hidden.body, "done")) === JSON.stringify([a.id]) && anonAfter.status === 401, [hidden.body, anonAfter.status]),
+        check("a malformed bulk write answers 400 with an error key", malformed.status === 400 && JSON.stringify(malformed.body).includes("$dms_media.errors."), malformed.body),
         check("delete: both done", JSON.stringify(pick(removed.body, "done")) === JSON.stringify([a.id, b.id]) && after.status === 404, removed.body),
         check("501 ids refused 400", tooMany.status === 400, tooMany.status),
         check("500 ids accepted, each refused", fiveHundred.status === 200 && list(fiveHundred.body, "refused").length === 500, fiveHundred.status),

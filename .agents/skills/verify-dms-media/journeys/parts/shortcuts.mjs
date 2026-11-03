@@ -126,7 +126,7 @@ const shortcutsActOnFilesAndFolders = {
   title: "Ctrl ↑ opens the parent folder, U opens the file picker, Shift N a new folder, F2 renames, M moves, Delete deletes and E opens the image editor",
   entryPoint: "/modules/media/files keyboard",
   async run(/** @type {Ctx} */ ctx) {
-    const { tab, parentId, ids } = await explorerWithFiles(ctx);
+    const { tab, folderId, parentId, ids } = await explorerWithFiles(ctx);
     const chooser = tab.page.waitForEvent("filechooser", { timeout: 10_000 }).then(() => true).catch(() => false);
     await tab.press("u");
     const picked = await chooser;
@@ -135,12 +135,29 @@ const shortcutsActOnFilesAndFolders = {
     await tab.press("Escape");
     await tab.page.getByRole("option", { name: /^a\.png/ }).click();
     await tab.press("F2");
-    await ctx.verify("F2 renames", [tab.visible({ role: "textbox", name: /name/i }, { timeoutMs: 10_000 })]);
-    await tab.press("Escape");
-    await tab.page.getByRole("option", { name: /^a\.png/ }).click();
+    await ctx.verify("F2 opens the rename field", [tab.visible({ role: "textbox", name: /name/i }, { timeoutMs: 10_000 })]);
+    await tab.page.getByRole("textbox", { name: /name/i }).last().fill("renomme");
+    await tab.press("Enter");
+    let renamed = await media(ctx, "read a.png after F2", "GET", `/assets/${ids[0]}`);
+    for (let attempt = 0; attempt < 10 && !String(pick(renamed.body, "asset", "name")).startsWith("renomme"); attempt += 1) {
+      await tab.page.waitForTimeout(500);
+      renamed = await media(ctx, "read a.png again", "GET", `/assets/${ids[0]}`);
+    }
+    await ctx.verify("F2 renames", [check("the file is renamed", String(pick(renamed.body, "asset", "name")).startsWith("renomme"), renamed.body)]);
+    await tab.page.getByRole("option", { name: /^b\.png/ }).click();
     await tab.press("m");
-    await ctx.verify("M moves", [tab.visible({ role: "dialog" }, { timeoutMs: 10_000 }), tab.shows(/Move/)]);
-    await tab.press("Escape");
+    await ctx.verify("M opens the move dialog", [tab.visible({ role: "dialog" }, { timeoutMs: 10_000 }), tab.shows(/Move/)]);
+    const dialog = tab.page.getByRole("dialog");
+    await dialog.getByText("Keys parent", { exact: false }).first().click({ timeout: 10_000 }).catch(() => undefined);
+    await dialog.getByRole("button", { name: /^Move/ }).last().click({ timeout: 10_000 }).catch(() => undefined);
+    let moved = await media(ctx, "read b.png after M", "GET", `/assets/${ids[1]}`);
+    for (let attempt = 0; attempt < 10 && pick(moved.body, "asset", "folderId") !== parentId; attempt += 1) {
+      await tab.page.waitForTimeout(500);
+      moved = await media(ctx, "read b.png again", "GET", `/assets/${ids[1]}`);
+    }
+    await ctx.verify("M moves", [check("b.png is in the parent folder", pick(moved.body, "asset", "folderId") === parentId, moved.body)]);
+    await tab.goto(`/modules/media/files?folder=${folderId}`);
+    await tab.visible({ role: "option", name: /^c\.png/ }, { timeoutMs: 20_000 });
     await tab.page.getByRole("option", { name: /^c\.png/ }).click();
     await tab.press("Delete");
     await tab.page.getByRole("button", { name: /^Delete/ }).last().click({ timeout: 10_000 }).catch(() => undefined);
@@ -150,7 +167,7 @@ const shortcutsActOnFilesAndFolders = {
       gone = await media(ctx, "read c.png again", "GET", `/assets/${ids[2]}`);
     }
     await ctx.verify("Delete deletes", [check("c.png is gone", gone.status === 404, pick(gone.body, "asset"))]);
-    await tab.page.getByRole("option", { name: /^b\.png/ }).click();
+    await tab.page.getByRole("option", { name: /^renomme/ }).click();
     await tab.press("e");
     await ctx.verify("E opens the editor", [tab.at(/^\/modules\/media\/editor$/, { timeoutMs: 15_000 })]);
     await tab.goto(`/modules/media/files?folder=${parentId}`);

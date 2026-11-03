@@ -36,6 +36,7 @@ export function presetPageJourneys() {
         const folder = await createFolder(ctx, ctx.unique("Page sizes"));
         const photo = await uploaded(ctx, { folderId: folder.id, name: "carte.png", mimetype: "image/png", bytes: await image(ctx, { width: 600, height: 400 }) });
         const tab = await ctx.tab();
+        await tab.page.context().grantPermissions(["clipboard-read", "clipboard-write"], { origin: ctx.state.webUrl });
         await tab.signIn("admin");
         await tab.goto("/modules/media/presets");
         const thumbPreview = await loadedImage(tab, "carte.png rendered at the thumb size");
@@ -48,6 +49,14 @@ export function presetPageJourneys() {
           tab.visible({ role: "link", name: `${ctx.state.webUrl}/media/${photo.id}/thumb/carte.png` }),
           check("the private example's preview loads through the dashboard's origin", thumbPreview.loaded && thumbPreview.src.startsWith("/media/"), thumbPreview),
         ]);
+        const exampleLink = `${ctx.state.webUrl}/media/${photo.id}/thumb/carte.png`;
+        let copied = "";
+        for (let attempt = 0; attempt < 5 && copied !== exampleLink; attempt += 1) {
+          await tab.page.getByRole("article").first().getByRole("button", { name: "Copy" }).click({ timeout: 10_000 }).catch(() => undefined);
+          await tab.page.waitForTimeout(500);
+          copied = await tab.page.evaluate(() => navigator.clipboard.readText()).catch(() => "");
+        }
+        await ctx.verify("Copy copies the example link", [check("the clipboard holds the thumb link", copied === exampleLink, copied)]);
         await ctx.verify("the Cache card", [tab.shows(/Public files\s*1 h/), tab.shows(/Private files\s*5 min/), tab.shows(/Nightly clean-up of old sizes/)]);
         await ctx.verify("the Configuration card", [tab.shows(/antelope\.config\.ts/), tab.shows(/"presets": \[/), tab.visible({ role: "button", name: "Copy" })]);
         await follow(ctx, `/media/${photo.id}/thumb/carte.png`, { as: "admin" });

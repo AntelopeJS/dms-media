@@ -1,6 +1,6 @@
 import { guarded } from "../guard.mjs";
 import { createFolder, declareFolder, member, tree, uploaded, withConfig } from "../library.mjs";
-import { check, image, media, pick, text } from "../media.mjs";
+import { check, image, list, media, pick, text } from "../media.mjs";
 import { hasRights, probeRights } from "./bindings.mjs";
 import { boundFolder } from "./folders.mjs";
 
@@ -59,6 +59,32 @@ export const journeys = guarded([
         ...answers.map((row) => check(`${row.path}: 403 for the member, 200 for the owner`, row.member.status === 403 && row.owner.status === 200, [row.member.status, row.owner.status])),
         ...pages.map((row) => check(`${row.path} is not shown to the member`, row.at !== row.path && row.library === 0 && row.sizes === 0, row)),
         hasRights(await probeRights(ctx, folder.id, "libraryrole"), "none", "the Library page permission grants no folder right"),
+      ]);
+    },
+  },
+  {
+    id: "a-member-reaches-only-what-their-rights-open",
+    title: "for a member, the folder of a binding they cannot see is null, the starter folders need manage at the root, a folder zips only with read, and bulk actions refuse the files they cannot reach",
+    entryPoint: "GET /api/media/bindings/:id/folder, POST /folders/starter, POST /folders/:id/zip, POST /assets/bulk/* as a member",
+    async run(/** @type {Ctx} */ ctx) {
+      const managed = await aclFolder(ctx, "verify.limits", ["manage"]);
+      const closed = await createFolder(ctx, ctx.unique("Closed"));
+      const shut = await uploaded(ctx, { folderId: closed.id, name: "shut.png", mimetype: "image/png", bytes: await image(ctx, { width: 4, height: 4 }) });
+      const open = await uploaded(ctx, { folderId: managed, name: "open.png", mimetype: "image/png", bytes: await image(ctx, { width: 4, height: 4 }) });
+      await member(ctx, "limited", ["verify.limits"]);
+      const binding = await media(ctx, "the cover field's folder as the member", "GET", "/bindings/verify.cover/folder", { as: "limited" });
+      const starter = await media(ctx, "starter folders as the member", "POST", "/folders/starter", { body: { folders: [{ name: "Catalog", visibility: "private" }] }, as: "limited" });
+      const zipClosed = await media(ctx, "zip the closed folder as the member", "POST", `/folders/${closed.id}/zip`, { body: {}, as: "limited" });
+      const zipOpen = await media(ctx, "zip the managed folder as the member", "POST", `/folders/${managed}/zip`, { body: {}, as: "limited" });
+      const bulk = await media(ctx, "bulk delete both files as the member", "POST", "/assets/bulk/delete", { body: { ids: [open.id, shut.id] }, as: "limited" });
+      const shutStays = await media(ctx, "read the closed file as the owner", "GET", `/assets/${shut.id}`);
+      await ctx.verify("each limit", [
+        check("the binding's folder is null", binding.status === 200 && pick(binding.body, "folder") === null, binding.body),
+        check("starter folders refused 403 without manage at the root", starter.status === 403, starter.status),
+        check("a folder without read does not zip", zipClosed.status === 403 || zipClosed.status === 404, zipClosed.status),
+        check("a folder with read zips", zipOpen.status === 200, zipOpen.status),
+        check("bulk: the reachable file done, the other refused", JSON.stringify(pick(bulk.body, "done")) === JSON.stringify([open.id]) && JSON.stringify(list(bulk.body, "refused").map((row) => pick(row, "id"))) === JSON.stringify([shut.id]), bulk.body),
+        check("the refused file is still there", shutStays.status === 200, shutStays.status),
       ]);
     },
   },

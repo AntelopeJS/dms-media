@@ -86,6 +86,15 @@ export function editorPageJourneys() {
         const frame = tab.page.getByRole("group", { name: "Crop area" });
         const before = { x: await field(tab, "X"), w: await field(tab, "W") };
         await frame.focus().catch(() => undefined);
+        await tab.page.getByRole("radio", { name: /^1:1/ }).first().click({ timeout: 10_000 }).catch(() => undefined);
+        await tab.page.waitForTimeout(800);
+        const square = { w: await field(tab, "W"), h: await field(tab, "H") };
+        await tab.click({ role: "button", name: "Rotate left" });
+        const back = await tab.page.getByText(/Rotate 90°/).first().isVisible({ timeout: 2000 }).catch(() => false);
+        await ctx.verify("1:1 squares the frame and Rotate left undoes Rotate right", [
+          check("the frame is square", square.w !== "" && square.w === square.h, square),
+          check("the right quarter turn is no longer pending", !back, back),
+        ]);
         await tab.click({ role: "button", name: "Discard" });
         const untouched = await settled(ctx, file.id, () => true);
         await ctx.verify("the frame, and nothing written", [
