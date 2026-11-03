@@ -1,4 +1,5 @@
 import { createFolder, folderAssets, uploaded, withConfig } from "../../library.mjs";
+import { openFilePicker } from "../../chooser.mjs";
 import { check, image, media } from "../../media.mjs";
 
 /**
@@ -18,10 +19,9 @@ import { check, image, media } from "../../media.mjs";
  */
 export async function chooseFiles(ctx, tab, files, button = /^Upload/) {
   const folder = ctx.step(`choose ${files.map((file) => file.name).join(", ")}`);
-  const chooser = tab.page.waitForEvent("filechooser", { timeout: 30_000 });
-  await tab.page.getByRole("button", { name: button }).first().click();
-  await (await chooser).setFiles(files);
-  ctx.record(folder, [check("the file picker took the files", true, files.length)]);
+  const picker = await openFilePicker(tab, () => tab.page.getByRole("button", { name: button }).first().click(), 30_000);
+  await picker.choose(files);
+  ctx.record(folder, [check("the file picker took the files", picker.opened, files.length)]);
 }
 
 /**

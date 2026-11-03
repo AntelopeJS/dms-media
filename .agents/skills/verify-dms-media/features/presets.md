@@ -23,7 +23,7 @@ Named image sizes: sharp renders each the first time it is requested, the storag
 ## Sub-features
 
 - `default-sizes-render-on-first-request`: thumb renders 300×300 WebP cropped square, preview fits 1600 wide in WebP and never upscales, and the Image sizes API counts the cached renderings.
-- `configured-sizes-follow-their-fields`: a presets list replaces the defaults; width or height alone keeps the ratio, neither keeps the size, cover is the default fit, contain fills the box, inside fits it, no format keeps the source's, quality applies with a format, and an SVG renders as PNG.
+- `configured-sizes-follow-their-fields`: a presets list replaces the defaults; width or height alone keeps the ratio, neither keeps the size, cover is the default fit, contain fills the box, inside fits it, no format keeps the source's, quality applies only with a format (without one the bytes are those of no quality), and an SVG renders as PNG.
 - `sizes-refuse-what-they-cannot-render`: an unknown size and a size of a file that is not an image answer 404, an image sharp cannot read 422, and a size the storage cannot write 503.
 - `a-changed-size-renders-again-from-the-same-link`: after thumb changes in the config, the same link serves the new rendering, under a new cache key, with no cache to clear.
 - `the-sizes-api-gives-copyable-examples`: the sizes list has no example while the library holds no image, then an example on the public origin built on the public photo, and a preview path; the cache facts give the signed link lifetimes and the config block names every size.

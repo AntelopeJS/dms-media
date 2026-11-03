@@ -1,4 +1,5 @@
 import { guarded } from "../guard.mjs";
+import { openFilePicker } from "../chooser.mjs";
 import { createFolder, folderAssets, member, uploaded } from "../library.mjs";
 import { check, fixture, image, pick, text } from "../media.mjs";
 import { boundFolder } from "./folders.mjs";
@@ -121,10 +122,9 @@ export const journeys = guarded([
       await tab.goto("/verify-fields");
       await tab.visible({ role: "button", name: "Upload to Verify covers" }, { timeoutMs: 20_000 });
       const folder = ctx.step("choose a file with the field's Upload button");
-      const chooser = tab.page.waitForEvent("filechooser", { timeout: 30_000 });
-      await tab.page.getByRole("button", { name: "Upload to Verify covers" }).click();
-      await (await chooser).setFiles([{ name: "par-bouton.png", mimeType: "image/png", buffer: await image(ctx, { width: 10, height: 10 }) }]);
-      ctx.record(folder, [check("the picker took the file", true, "par-bouton.png")]);
+      const byButton = await openFilePicker(tab, () => tab.page.getByRole("button", { name: "Upload to Verify covers" }).click(), 30_000);
+      await byButton.choose([{ name: "par-bouton.png", mimeType: "image/png", buffer: await image(ctx, { width: 10, height: 10 }) }]);
+      ctx.record(folder, [check("the picker took the file", byButton.opened, "par-bouton.png")]);
       const dropped = await image(ctx, { width: 11, height: 11 });
       await tab.page.getByRole("button", { name: "Cover", exact: true }).evaluate((element, base64) => {
         const binary = atob(base64);
@@ -185,9 +185,8 @@ export const journeys = guarded([
       const pickerDialog = tab.page.getByRole("dialog", { name: "Choose from the library" });
       await pickerDialog.getByRole("button", { name: /^Chantier Nord/ }).dblclick({ timeout: 10_000 }).catch(() => undefined);
       const inside = await tab.visible({ role: "heading", name: "Chantier Nord", level: 2 }, { timeoutMs: 10_000 });
-      const chooser = tab.page.waitForEvent("filechooser", { timeout: 20_000 }).catch(() => null);
-      await pickerDialog.getByRole("button", { name: "Upload", exact: true }).click({ timeout: 10_000 }).catch(() => undefined);
-      await (await chooser)?.setFiles([{ name: "depuis-le-picker.png", mimeType: "image/png", buffer: await image(ctx, { width: 6, height: 6 }) }]);
+      const fromPicker = await openFilePicker(tab, () => pickerDialog.getByRole("button", { name: "Upload", exact: true }).click({ timeout: 10_000 }).catch(() => undefined), 20_000);
+      await fromPicker.choose([{ name: "depuis-le-picker.png", mimeType: "image/png", buffer: await image(ctx, { width: 6, height: 6 }) }]);
       /** @returns {Promise<{ bound: string[], sub: string[] }>} */
       const where = async () => ({
         bound: (await folderAssets(ctx, projects, { as: "picker" })).assets.map((asset) => text(asset, "name")),

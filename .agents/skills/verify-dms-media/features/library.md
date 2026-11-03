@@ -31,7 +31,7 @@ The Library page: views, the folder tree, search, facets, sort, grid, list and c
 ## Sub-features
 
 - `search-matches-every-word-ignoring-accents-case-and-punctuation`: every word must appear in the file's name, alt text or folder path, in any order, at least one in the name or alt; accents, case and punctuation are ignored; folder names match too; an empty search finds nothing; a folder scope keeps to it and its subfolders.
-- `smart-views-gather-files-across-folders`: Recent, Starred, Largest files, Public and Missing alt text gather the files of every folder, the tree counts them, and a view can stay inside one folder.
+- `smart-views-gather-files-across-folders`: Recent, Starred, Largest files, Public and Missing alt text gather the files of every folder, the tree counts them, and a view can stay inside one folder and its subfolders.
 - `facets-sort-and-paging-narrow-a-listing`: a folder listing narrows by type, visibility, modification date and orientation, sorts by name (in natural order), date added, size or type in either direction, and pages with offset and a limit of at most 500; search and views take the same facets.
 - `the-explorer-shows-views-locations-and-thumbnails`: the Library lists the views and the folder tree, switches grid, list and columns with a tile size slider, opens a view and a search, and shows images by their thumb size, an SVG by its uncropped preview and a PDF by its type.
 - `a-selection-is-moved-published-zipped-and-deleted`: the selection toolbar moves the selected files, makes them public, downloads them as a zip and deletes them; New folder creates a subfolder; the details panel edits the alt text.

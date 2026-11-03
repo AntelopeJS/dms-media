@@ -1,4 +1,5 @@
 import { createFolder, folderAssets, uploaded, withConfig } from "../../library.mjs";
+import { openFilePicker } from "../../chooser.mjs";
 import { check, image, text } from "../../media.mjs";
 import { boundFolder } from "../folders.mjs";
 
@@ -20,12 +21,10 @@ import { boundFolder } from "../folders.mjs";
  */
 async function pickSeveral(ctx, tab, button, files) {
   for (let attempt = 0; attempt < 6; attempt += 1) {
-    const chooser = tab.page.waitForEvent("filechooser", { timeout: 6000 }).catch(() => null);
-    await button.click({ timeout: 10_000 }).catch(() => undefined);
-    const opened = await chooser;
-    if (opened) {
-      const several = opened.isMultiple();
-      await opened.setFiles(several ? files : files.slice(0, 1)).catch(() => undefined);
+    const opened = await openFilePicker(tab, () => button.click({ timeout: 10_000 }).catch(() => undefined), 6000);
+    if (opened.opened) {
+      const several = opened.multiple;
+      await opened.choose(several ? files : files.slice(0, 1)).catch(() => undefined);
       ctx.record(ctx.step(`choose ${files.map((file) => file.name).join(", ")} at once`), [check("the picker takes several files at once", several, several)]);
       return several;
     }
@@ -106,11 +105,9 @@ export function pickerJourneys() {
         await tab.goto("/modules/media/uploads");
         await tab.page.getByRole("link", { name: "Upload files" }).click({ timeout: 20_000 }).catch(() => undefined);
         const page = await twoImages(ctx, "envois");
-        const chooser = tab.page.waitForEvent("filechooser", { timeout: 30_000 }).catch(() => null);
-        await chooseDestination(tab, name);
-        const opened = await chooser;
-        const several = opened?.isMultiple() === true;
-        if (opened) await opened.setFiles(several ? page : page.slice(0, 1)).catch(() => undefined);
+        const opened = await openFilePicker(tab, () => chooseDestination(tab, name), 30_000);
+        const several = opened.multiple;
+        if (opened.opened) await opened.choose(several ? page : page.slice(0, 1)).catch(() => undefined);
         ctx.record(ctx.step("choose the Uploads page's files at once"), [check("the Uploads page's picker takes several files at once", several, several)]);
         results.push({ where: "Uploads page Upload files", wanted: page.map((file) => file.name), found: await landed(ctx, folder.id, page.map((file) => file.name)) });
         const projects = await boundFolder(ctx, "verify.projects");

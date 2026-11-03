@@ -61,11 +61,13 @@ export const journeys = guarded([
   },
   {
     id: "smart-views-gather-files-across-folders",
-    title: "Recent, Starred, Largest files, Public and Missing alt text gather the files of every folder, the tree counts them, and a view can stay inside one folder",
+    title: "Recent, Starred, Largest files, Public and Missing alt text gather the files of every folder, the tree counts them, and a view can stay inside one folder and its subfolders",
     entryPoint: "GET /api/media/views/:view, POST /api/media/favorites",
     async run(/** @type {Ctx} */ ctx) {
       const one = await createFolder(ctx, ctx.unique("One"));
       const two = await createFolder(ctx, ctx.unique("Two"));
+      const inner = await createFolder(ctx, "Inner", { parentId: one.id });
+      await uploaded(ctx, { folderId: inner.id, name: "nested.png", mimetype: "image/png", bytes: await image(ctx, { width: 6, height: 6 }) });
       const small = await uploaded(ctx, { folderId: one.id, name: "small.png", mimetype: "image/png", bytes: await image(ctx, { width: 4, height: 4 }) });
       const big = await uploaded(ctx, { folderId: two.id, name: "big.png", mimetype: "image/png", bytes: await image(ctx, { width: 300, height: 300 }) });
       const doc = await uploaded(ctx, { folderId: two.id, name: "doc.txt", mimetype: "text/plain", bytes: Buffer.from("x") });
@@ -87,6 +89,7 @@ export const journeys = guarded([
       const open = await read("public");
       const missing = await read("missing-alt");
       const scoped = await read("largest", `?folderId=${one.id}`);
+      const scopedMissing = await read("missing-alt", `?folderId=${one.id}`);
       const read2 = await tree(ctx);
       await ctx.verify("each view", [
         check("Recent: newest first", JSON.stringify(recent.files.slice(0, 4)) === JSON.stringify(["blank.png", "doc.txt", "big.png", "small.png"]), recent.files),
@@ -95,8 +98,9 @@ export const journeys = guarded([
         check("Public", JSON.stringify(open.files) === JSON.stringify(["big.png"]), open.files),
         check("Missing alt text: images without alt only", missing.files.includes("big.png") && !missing.files.includes("small.png") && !missing.files.includes("doc.txt"), missing.files),
         check("a blank alt is saved as given and still counts as missing", pick(blankRead.body, "asset", "alt") === "   " && missing.files.includes("blank.png"), [pick(blankRead.body, "asset", "alt"), missing.files]),
-        check("a view inside one folder", JSON.stringify([...scoped.files].sort((left, right) => left.localeCompare(right))) === JSON.stringify(["blank.png", "small.png"]), scoped.files),
-        check("the tree counts the starred file and folder, and the two images missing alt", pick(read2.answer.body, "views", "starred") === 2 && pick(read2.answer.body, "views", "missingAlt") === 2, pick(read2.answer.body, "views")),
+        check("Largest files inside one folder takes its subfolder's files too", JSON.stringify([...scoped.files].sort((left, right) => left.localeCompare(right))) === JSON.stringify(["blank.png", "nested.png", "small.png"]), scoped.files),
+        check("Missing alt text inside one folder takes its subfolder's files too", JSON.stringify([...scopedMissing.files].sort((left, right) => left.localeCompare(right))) === JSON.stringify(["blank.png", "nested.png"]), scopedMissing.files),
+        check("the tree counts the starred file and folder, and the three images missing alt", pick(read2.answer.body, "views", "starred") === 2 && pick(read2.answer.body, "views", "missingAlt") === 3, pick(read2.answer.body, "views")),
         check("a starred folder is marked in the tree", pick(read2.folders.find((folder) => pick(folder, "id") === two.id), "starred") === true, read2.folders.length),
       ]);
     },

@@ -66,7 +66,7 @@ export function refusalJourneys() {
         const pdfBytes = Buffer.from("%PDF-1.4\n%%EOF\n");
         const pdf = await media(ctx, "presign a PDF", "POST", "/upload/presign", { body: { folderId: folder.id, filename: "late.pdf", size: pdfBytes.byteLength, mimetype: "application/pdf" } });
         await raw(ctx, "PUT the PDF", { url: text(pdf.body, "uploadUrl"), method: "PUT", headers: { "content-type": "application/pdf" }, body: pdfBytes });
-        const defaults = ["video/mp4", "video/webm", "audio/mpeg", "application/pdf", "application/msword", "application/vnd.ms-excel", "application/vnd.ms-powerpoint", "application/vnd.openxmlformats-officedocument.wordprocessingml.document", "application/vnd.oasis.opendocument.text", "application/rtf", "text/plain", "text/markdown", "text/csv"];
+        const defaults = ["video/mp4", "video/webm", "audio/mpeg", "application/pdf", "application/msword", "application/vnd.ms-excel", "application/vnd.ms-powerpoint", "application/vnd.openxmlformats-officedocument.wordprocessingml.document", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", "application/vnd.openxmlformats-officedocument.presentationml.presentation", "application/vnd.oasis.opendocument.text", "application/vnd.oasis.opendocument.spreadsheet", "application/vnd.oasis.opendocument.presentation", "audio/wav", "video/quicktime", "application/rtf", "text/plain", "text/markdown", "text/csv"];
         const defaultChecks = [];
         for (const [index, mimetype] of defaults.entries()) {
           const done = await upload(ctx, { folderId: folder.id, name: `default-${index}.bin`, mimetype, bytes: Buffer.from(`file ${index}`) });

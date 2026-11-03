@@ -117,16 +117,22 @@ export const journeys = guarded([
       const parent = await aclFolder(ctx, "verify.parent", ["read"]);
       const child = await createFolder(ctx, "Child", { parentId: parent });
       const plain = await createFolder(ctx, ctx.unique("Plain"));
+      const plainChild = await createFolder(ctx, "Plain child", { parentId: plain.id });
+      const plainGrandchild = await createFolder(ctx, "Plain grandchild", { parentId: plainChild.id });
       await member(ctx, "inheritor", ["verify.parent", "verify.root"]);
       const inherited = await probeRights(ctx, child.id, "inheritor");
       const noRoot = await probeRights(ctx, plain.id, "inheritor");
       await withConfig(ctx, { VERIFY_MEDIA_ROOT_ACL: "permission:verify.root:write" }, async () => {
         const rooted = await probeRights(ctx, plain.id, "inheritor");
+        const rootedChild = await probeRights(ctx, plainChild.id, "inheritor");
+        const rootedGrandchild = await probeRights(ctx, plainGrandchild.id, "inheritor");
         const ownAcl = await probeRights(ctx, parent, "inheritor");
         await ctx.verify("the inheritance", [
           hasRights(inherited, "read", "the subfolder takes its parent's read"),
           hasRights(noRoot, "none", "the default rootAcl grants nothing"),
           hasRights(rooted, "write", "a rootAcl entry reaches a root folder without an ACL"),
+          hasRights(rootedChild, "write", "and its subfolder, which sets no ACL either"),
+          hasRights(rootedGrandchild, "write", "and the subfolder below that"),
           hasRights(ownAcl, "read", "a folder with its own ACL keeps it"),
         ]);
       });

@@ -91,15 +91,21 @@ export const journeys = guarded([
   },
   {
     id: "an-empty-library-offers-four-starter-folders",
-    title: "while the library is empty the Overview offers to create Catalog, Marketing, Brand and Documents in one click",
+    title: "while the library is empty the Overview offers to create Catalog, Marketing, Brand and Documents in one click; a single file, even in a linked folder, makes it not empty",
     entryPoint: "/modules/media/overview, Start your media library",
     async run(/** @type {Ctx} */ ctx) {
       const read = await tree(ctx);
       for (const folder of read.folders.filter((row) => !pick(row, "parentId") && !pick(row, "bound"))) await media(ctx, `delete ${text(folder, "name")}`, "DELETE", `/folders/${text(folder, "id")}`);
+      const bound = read.folders.find((row) => pick(row, "bound"));
+      const lone = await uploaded(ctx, { folderId: text(bound, "id"), name: "seul.png", mimetype: "image/png", bytes: await image(ctx, { width: 4, height: 4 }) });
       const tab = await ctx.tab();
       await tab.signIn("admin");
       await tab.goto("/modules/media/overview");
-      await ctx.verify("the offer shows", [tab.shows(/Start your media library/, { timeoutMs: 30_000 })]);
+      await tab.visible({ role: "group", name: "Live updates" }, { timeoutMs: 30_000 });
+      await ctx.verify("one file is enough to make the library not empty", [tab.shows(/Start your media library/, { not: true, timeoutMs: 5000 })]);
+      await media(ctx, "delete the only file", "DELETE", `/assets/${lone.id}`);
+      await tab.reload();
+      await ctx.verify("the offer shows again once the library is empty", [tab.shows(/Start your media library/, { timeoutMs: 30_000 })]);
       await tab.page.getByRole("button", { name: /Create|starter/i }).first().click({ timeout: 15_000 }).catch(() => undefined);
       await tab.page.waitForTimeout(2000);
       const after = await tree(ctx);

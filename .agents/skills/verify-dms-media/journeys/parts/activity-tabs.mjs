@@ -5,11 +5,11 @@ import { check, image, list, media, pick } from "../../media.mjs";
 
 /** The Activity tabs, their `type` filter, and the folder event each must keep or leave out. */
 const TABS = [
-  { tab: "Uploads", type: "uploads", keeps: [], leaves: ["folder_delete", "folder_move", "folder_visibility_public"] },
-  { tab: "Moves", type: "moves", keeps: ["folder_move"], leaves: ["folder_delete", "folder_visibility_public"] },
-  { tab: "Deletions", type: "deletions", keeps: ["folder_delete"], leaves: ["folder_move", "folder_visibility_public"] },
-  { tab: "Visibility", type: "visibility", keeps: ["folder_visibility_public"], leaves: ["folder_delete", "folder_move"] },
-  { tab: "Folders", type: "folders", keeps: ["folder_delete", "folder_move", "folder_visibility_public"], leaves: [] },
+  { tab: "Uploads", type: "uploads", keeps: [], leaves: ["folder_create", "folder_delete", "folder_move", "folder_visibility_public"] },
+  { tab: "Moves", type: "moves", keeps: ["folder_move"], leaves: ["folder_create", "folder_delete", "folder_visibility_public"] },
+  { tab: "Deletions", type: "deletions", keeps: ["folder_delete"], leaves: ["folder_create", "folder_move", "folder_visibility_public"] },
+  { tab: "Visibility", type: "visibility", keeps: ["folder_visibility_public"], leaves: ["folder_create", "folder_delete", "folder_move"] },
+  { tab: "Folders", type: "folders", keeps: ["folder_create", "folder_delete", "folder_move", "folder_visibility_public"], leaves: [] },
 ];
 
 /**
@@ -25,7 +25,7 @@ async function keysOf(ctx, type) {
 /** @type {{ id: string, title: string, entryPoint: string, run: (ctx: Ctx) => Promise<void> }} */
 const eachTabKeepsItsFolderEvents = {
   id: "each-activity-tab-keeps-its-folder-events",
-  title: "a deleted folder is listed under Deletions and Folders and under no other tab, a moved folder under Moves and Folders, a folder made public under Visibility and Folders; Uploads keeps none of them",
+  title: "a deleted folder is listed under Deletions and Folders and under no other tab, a moved folder under Moves and Folders, a folder made public under Visibility and Folders, a created folder under Folders only; Uploads keeps none of them",
   entryPoint: "/modules/media/activity tabs, GET /api/media/activity?type=",
   async run(/** @type {Ctx} */ ctx) {
     const stamp = ctx.unique("Tab");
@@ -49,13 +49,14 @@ const eachTabKeepsItsFolderEvents = {
     await tab.goto("/modules/media/activity");
     await tab.visible({ role: "tab", name: "Deletions" }, { timeoutMs: 30_000 });
     const texts = new Map([
+      ["folder_create", new RegExp(`created the folder ${stamp} home`)],
       ["folder_delete", new RegExp(`deleted the folder ${stamp} doomed`)],
       ["folder_move", new RegExp(`moved the folder ${stamp} travelling`)],
       ["folder_visibility_public", new RegExp(`made the folder ${stamp} shown public`)],
     ]);
     /** @param {string} key @returns {RegExp} */
     const textOf = (key) => texts.get(key) ?? new RegExp(`no text for ${key}`);
-    for (const row of TABS.filter((entry) => entry.tab !== "Folders")) {
+    for (const row of TABS) {
       await tab.click({ role: "tab", name: row.tab });
       await tab.page.waitForTimeout(1000);
       await ctx.verify(`the ${row.tab} tab`, [

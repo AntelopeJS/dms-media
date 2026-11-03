@@ -1,3 +1,4 @@
+import { openFilePicker } from "../../chooser.mjs";
 import { createFolder, uploaded } from "../../library.mjs";
 import { check, image, media, pick } from "../../media.mjs";
 
@@ -127,15 +128,8 @@ const shortcutsActOnFilesAndFolders = {
   entryPoint: "/modules/media/files keyboard",
   async run(/** @type {Ctx} */ ctx) {
     const { tab, folderId, parentId, ids } = await explorerWithFiles(ctx);
-    await tab.page.evaluate(() => {
-      const root = document.documentElement;
-      root.dataset.verifyFileInputClicks = "0";
-      document.addEventListener("click", (event) => {
-        if (event.target instanceof HTMLInputElement && event.target.type === "file") root.dataset.verifyFileInputClicks = String(Number(root.dataset.verifyFileInputClicks) + 1);
-      }, true);
-    });
-    await tab.press("u");
-    const picks = Number(await tab.page.evaluate(() => document.documentElement.dataset.verifyFileInputClicks ?? "0"));
+    const picker = await openFilePicker(tab, () => tab.press("u"), 5000);
+    const picks = picker.clicks;
     const dialogsAfterU = await tab.page.getByRole("dialog").count();
     await ctx.verify("U opens the file picker", [check("U clicks the explorer's file input once, which opens the browser's file picker", picks === 1, picks), check("and no destination dialog opens instead", dialogsAfterU === 0, dialogsAfterU)]);
     await tab.press("Shift+N");

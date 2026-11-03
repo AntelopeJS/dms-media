@@ -78,11 +78,11 @@ export const journeys = guarded([
   },
   {
     id: "configured-sizes-follow-their-fields",
-    title: "a presets list replaces the defaults; width or height alone keeps the ratio, neither keeps the size, cover is the default fit, contain fills the box, inside fits it, no format keeps the source's, quality applies with a format, and an SVG renders as PNG",
+    title: "a presets list replaces the defaults; width or height alone keeps the ratio, neither keeps the size, cover is the default fit, contain fills the box, inside fits it, no format keeps the source's, quality applies only with a format (without one the bytes are those of no quality), and an SVG renders as PNG",
     entryPoint: "presets option, GET /media/<id>/<preset>/<name>",
     async run(/** @type {Ctx} */ ctx) {
       const folder = await createFolder(ctx, ctx.unique("Configured"));
-      const presets = ["thumb:300:300:cover:webp:80", "wide:200:::jpeg:30", "sharp:200:::jpeg:95", "box:100:50:contain:png:", "fit:100:50:inside::", "tall::120:::", "same:::::", "cov:50:50::png:", "vector:::::", "vecwebp:80:::webp:"].join(";");
+      const presets = ["thumb:300:300:cover:webp:80", "wide:200:::jpeg:30", "sharp:200:::jpeg:95", "box:100:50:contain:png:", "fit:100:50:inside::", "tall::120:::", "same:::::", "cov:50:50::png:", "vector:::::", "vecwebp:80:::webp:", "noq:200::::", "q30:200::::30"].join(";");
       await withConfig(ctx, { VERIFY_MEDIA_PRESETS: presets }, async () => {
         const photo = await uploaded(ctx, { folderId: folder.id, name: "photo.jpg", mimetype: "image/jpeg", bytes: await image(ctx, { width: 400, height: 300, format: "jpeg" }) });
         const logo = await uploaded(ctx, { folderId: folder.id, name: "logo.svg", mimetype: "image/svg+xml", bytes: SVG });
@@ -97,6 +97,9 @@ export const journeys = guarded([
         const vector = await rendering(ctx, { id: logo.id, name: "logo.svg" }, "vector");
         const vectorWebp = await rendering(ctx, { id: logo.id, name: "logo.svg" }, "vecwebp");
         const preview = await follow(ctx, `/media/${photo.id}/preview/photo.jpg`, { as: "admin" });
+        const noQuality = await follow(ctx, `/media/${photo.id}/noq/photo.jpg`, { as: "admin" });
+        const qualityOnly = await follow(ctx, `/media/${photo.id}/q30/photo.jpg`, { as: "admin" });
+        const noQualityInfo = noQuality.file ? await imageInfo(ctx, noQuality.file.bytes) : { format: "", width: 0, height: 0 };
         await ctx.verify("each size follows its fields", [
           renders(wide, "jpeg", 200, 150),
           check("quality applies with a format: q95 is heavier than q30", sharper.bytes > wide.bytes && sharper.width === 200, [wide.bytes, sharper.bytes]),
@@ -108,6 +111,8 @@ export const journeys = guarded([
           check("an SVG without a format renders as PNG, served as image/png", vector.format === "png" && vector.type === "image/png" && vector.status === 302, vector),
           check("an SVG with a format renders in it", vectorWebp.format === "webp" && vectorWebp.type === "image/webp" && vectorWebp.width === 80, vectorWebp),
           check("the list replaced the defaults: preview is gone", preview.link.status === 404, preview.link.status),
+          check("quality without a format changes nothing: the same bytes as no quality", noQuality.file !== null && qualityOnly.file !== null && Buffer.compare(noQuality.file.bytes, qualityOnly.file.bytes) === 0, [noQuality.file?.bytes.byteLength, qualityOnly.file?.bytes.byteLength]),
+          check("both keep the source's JPEG, 200 wide", noQualityInfo.format === "jpeg" && noQualityInfo.width === 200, noQualityInfo),
         ]);
       });
     },
