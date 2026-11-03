@@ -4,7 +4,7 @@
 
 <a href="https://www.npmjs.com/package/@antelopejs/dms-media"><img data-illustration alt="npm" src="https://img.shields.io/npm/v/@antelopejs/dms-media?style=for-the-badge&labelColor=000000&color=000000"></a>
 <a href="./LICENSE"><img data-illustration alt="License" src="https://img.shields.io/npm/l/@antelopejs/dms-media?style=for-the-badge&labelColor=000000&color=000000"></a>
-<a href="https://discord.gg/sjK28QHrA7"><img data-illustration alt="Discord" src="https://img.shields.io/badge/Discord-18181B?logo=discord&style=for-the-badge&color=000000"></a>
+<a href="https://discord.gg/g4pFt6eXqu"><img data-illustration alt="Discord" src="https://img.shields.io/badge/Discord-18181B?logo=discord&style=for-the-badge&color=000000"></a>
 <a href="https://dms.antelopejs.com/docs/modules/media"><img data-illustration alt="Documentation" src="https://img.shields.io/badge/Docs-18181B?style=for-the-badge&color=000000"></a>
 
 A media library for the AntelopeJS DMS: uploads, folders, image sizes and light editing.
@@ -37,7 +37,7 @@ Point the module's links at the API's public URL, and allow the dashboard's orig
 ```ts fragment
 // antelope.config.ts
 "dms-media": {
-  source: { type: "package", package: "@antelopejs/dms-media", version: "^0.6.1" },
+  source: { type: "package", package: "@antelopejs/dms-media", version: "^0.7.0" },
   config: {
     publicBaseUrl: "${@api.API_PUBLIC_BASE_URL}",
   },
