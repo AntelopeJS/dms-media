@@ -3,6 +3,8 @@ covers:
   - packages/dms-media/src/declared/**
   - packages/dms-media/src/validation/declared.schema.ts
   - packages/interface-dms-media/src/content.ts
+  - packages/dms-media/src/upload-policy.ts
+  - packages/dms-media/src/upload-checks.ts
 docs:
   - packages/interface-dms-media/docs/1.index.md
   - packages/dms-media/docs/5.extending.md
@@ -12,7 +14,7 @@ docs:
 
 # Declared
 
-`EnsureMediaFolder` and `ImportMediaAsset` ship folders and files as code, once per tenant and key, under the dashboard's rules.
+`EnsureMediaFolder` and `ImportMediaAsset` ship folders and files as code, once per tenant and key, under the dashboard's rules: the upload policy and checks are the uploads' own, so this feature covers them too.
 
 ## Sub-features
 
