@@ -74,7 +74,7 @@
   },
   "devDependencies": {
     "@antelopejs/core": "file:../../.campaign/tgz/antelopejs-core-184eb90.tgz",
-    "@antelopejs/dms": ">=0.13.1 <1.0.0",
+    "@antelopejs/dms": "file:../../.campaign/tgz/antelopejs-dms-4358eef.tgz",
     "@antelopejs/dms-frontend": "file:../../.campaign/tgz/antelopejs-dms-frontend-ee4e931.tgz",
     "@antelopejs/interface-data-api": "file:../../.campaign/tgz/antelopejs-interface-data-api-d8a868f.tgz",
     "@antelopejs/tooling-configs": "file:../../.campaign/tgz/antelopejs-tooling-configs-a423d41.tgz",
