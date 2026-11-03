@@ -1,17 +1,17 @@
 <div align="center">
 
-# @antelopejs/dms-media
+# `@antelopejs/dms-media`
 
-<a href="https://www.npmjs.com/package/@antelopejs/dms-media"><img alt="npm" src="https://img.shields.io/npm/v/@antelopejs/dms-media?style=for-the-badge&labelColor=000000&color=000000"></a>
-<a href="./LICENSE"><img alt="License" src="https://img.shields.io/npm/l/@antelopejs/dms-media?style=for-the-badge&labelColor=000000&color=000000"></a>
-<a href="https://discord.gg/sjK28QHrA7"><img alt="Discord" src="https://img.shields.io/badge/Discord-18181B?logo=discord&style=for-the-badge&color=000000"></a>
-<a href="https://dms.antelopejs.com/docs/modules/media"><img alt="Documentation" src="https://img.shields.io/badge/Docs-18181B?style=for-the-badge&color=000000"></a>
+<a href="https://www.npmjs.com/package/@antelopejs/dms-media"><img data-illustration alt="npm" src="https://img.shields.io/npm/v/@antelopejs/dms-media?style=for-the-badge&labelColor=000000&color=000000"></a>
+<a href="./LICENSE"><img data-illustration alt="License" src="https://img.shields.io/npm/l/@antelopejs/dms-media?style=for-the-badge&labelColor=000000&color=000000"></a>
+<a href="https://discord.gg/sjK28QHrA7"><img data-illustration alt="Discord" src="https://img.shields.io/badge/Discord-18181B?logo=discord&style=for-the-badge&color=000000"></a>
+<a href="https://dms.antelopejs.com/docs/modules/media"><img data-illustration alt="Documentation" src="https://img.shields.io/badge/Docs-18181B?style=for-the-badge&color=000000"></a>
 
 A media library for the AntelopeJS DMS: uploads, folders, image sizes and light editing.
 
 </div>
 
-![The Media library explorer: views and folders on the left, the files of a folder in the middle, the selected file's details on the right](./packages/dms-media/docs/images/library.png)
+![The Media library of the Helio demo: views and folders on the left, the six top-level folders in the middle](./packages/dms-media/docs/images/captures/library.webp)
 
 ## What it does
 
@@ -62,7 +62,7 @@ new AssetType({
 
 ## Compatibility
 
-The module also needs a DMS backend in a release that implements the `@antelopejs/interface-dms` range in the [module README compatibility block](packages/dms-media/README.md#compatibility), and the `@antelopejs/dms-frontend` renderer in the range its frontend module declares in `engines["@antelopejs/dms-frontend"]` of `packages/dms-media/frontend-vue/package.json`; the `ajs dms` CLI refuses to build it with a renderer outside that range.
+The module also needs a DMS backend in a release that implements the `@antelopejs/interface-dms` range in the [module README compatibility block](packages/dms-media/README.md#compatibility), and the `@antelopejs/dms-frontend` renderer in the range its frontend module declares in `engines["@antelopejs/dms-frontend"]` of `packages/dms-media/frontend-vue/package.json`. The `ajs dms` CLI refuses to build it with a renderer outside that range.
 
 - File storage: an `@antelopejs/interface-file-storage` implementation, such as `@antelopejs/file-storage-local`.
 
@@ -89,7 +89,7 @@ The guide's sources live in [`packages/dms-media/docs`](./packages/dms-media/doc
 
 Read [CONTRIBUTING.md](./CONTRIBUTING.md) before opening a pull request. The playground is a project of its own, outside the workspace, and links the interface package from the tree. It connects to MongoDB at `mongodb://localhost:27017` unless `MONGO_URL` is set.
 
-One install from the repository root includes the backend, interface and shipped Vue frontend. The root lockfile covers this workspace; the frontend retains its lockfile for standalone consumers. The playground still needs a separate install for local development.
+One install from the repository root includes the backend, interface and shipped Vue frontend. The root lockfile covers this workspace. The frontend keeps its own lockfile for standalone consumers. The playground still needs a separate install for local development.
 
 ```bash
 pnpm install --frozen-lockfile
@@ -102,16 +102,16 @@ pnpm knip
 pnpm test           # frontend unit tests
 pnpm --dir packages/dms-media test  # backend unit and integration suites
 pnpm test:frontend  # typechecks the frontend layer against the DMS layer
-pnpm run checks     # typecheck, lint, format, knip, tests, size, ratchet and sync
+pnpm run checks     # typecheck, lint, format, knip, tests, size, suppressions and sync
 ```
 
 <details>
 <summary>Repository notes</summary>
 
-- The playground's Media demo page (`/media-demo`) holds every flavour of the `AssetType` picker: a single cover image with a linked folder, a gallery with a maximum, a PDF-only spec sheet, restricted documents in their own folder, and a free attachment.
-- The frontend entry is `frontend-vue/dms.frontend.ts`. It declares the `DmsMedia` component prefix and registers the blocks of `app/components/*.vue` by file name (`Explorer` is served as `DmsMediaExplorer`); the parts in subfolders are imported by path. `dms.frontend.build.ts` auto-imports `app/composables` and `app/utils`. Use relative imports for module-local files, because the renderer copies the frontend separately from the backend.
+- The playground's Media demo page (`/media-demo`) holds every kind of `AssetType` picker: a single cover image with a linked folder, a gallery with a maximum, a PDF-only spec sheet, documents in their own linked folder, and a free attachment.
+- The frontend entry is `frontend-vue/dms.frontend.ts`. It declares the `DmsMedia` component prefix and registers the blocks of `app/components/*.vue` by file name (`Explorer` is served as `DmsMediaExplorer`). The parts in subfolders are imported by path. `dms.frontend.build.ts` auto-imports `app/composables` and `app/utils`. Use relative imports for module-local files, because the renderer copies the frontend separately from the backend.
 - The blocks read the data they render with the DMS's `useApiData`, and the explorer's file listing with `useApiPagedData`. Writes, downloads, the asset field's entries, the dialogs and the image editor's canvas stay `$authFetch` calls in the browser.
-- The file links (`/media/<id>/<name>`) are served by the backend: the module declares `/media/**` as a backend prefix with the session (`backendProxies`), so a private file opens for a signed-in member.
+- The backend serves the file links (`/media/<id>/<name>`). The module declares `/media/**` as a backend prefix with the session (`backendProxies`), so a private file opens for a signed-in member.
 - Release the interface first (`release-interface.yml`), then the module (`release.yml`), which checks that the interface version in the tree is already on npm. `pnpm --dir packages/dms-media test:reload` checks the hot reload of a consumer and of the module in a real project.
 
 </details>
