@@ -68,11 +68,14 @@ const EDITED_TOPIC = "media.library.reloaded";
 const FILES_PAGE_PERMISSION = "modules.media.library.files";
 const CONSUMER_BINDING = "reload-probe.cover";
 const CONSUMER_FOLDER = "Reload probe covers";
+/** The first-owner setup token dms 0.15 asks of the registration, handed to it as `DMS_SETUP_TOKEN`. */
+const SETUP_TOKEN = "dms-media-reload-setup-token";
 const OWNER = {
   firstName: "Reload",
   lastName: "Owner",
   email: "reload-owner@test.local",
   password: "TestPassw0rd!",
+  setupToken: SETUP_TOKEN,
 };
 /** What a module declaring DMS pages depends on anyway, as template-dms-demo does. */
 const CONSUMER_INTERFACES = {
@@ -406,6 +409,7 @@ void describe("hot reload keeps dms-media's registrations with dms-media", () =>
       path.join(projectFolder, "antelope.config.ts"),
       `export default ${JSON.stringify(config, null, 2)};\n`,
     );
+    process.env.DMS_SETUP_TOKEN = SETUP_TOKEN;
     manager = await launch(projectFolder, "default", { watch: true });
   });
 
