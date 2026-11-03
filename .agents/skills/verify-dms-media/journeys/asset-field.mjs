@@ -201,4 +201,23 @@ export const journeys = guarded([
       await ctx.verify("its Upload targets the linked folder even from a subfolder", [inside, check("the file is in the linked folder itself, not the subfolder", found.bound.includes("depuis-le-picker.png") && !found.sub.includes("depuis-le-picker.png"), found)]);
     },
   },
+  {
+    id: "a-refusal-speaks-the-members-language",
+    title: "a member whose language is French sees a refused file explained in French",
+    entryPoint: "/verify-fields as a fr-FR member, Cover field upload of a PDF",
+    async run(/** @type {Ctx} */ ctx) {
+      await member(ctx, "francais", ["page:fields"], "fr");
+      const tab = await ctx.tab("francais");
+      await tab.signIn("francais");
+      await tab.goto("/verify-fields");
+      await tab.page.locator("input[type=file]").first().waitFor({ state: "attached", timeout: 30_000 }).catch(() => undefined);
+      let shown = false;
+      for (let attempt = 0; attempt < 5 && !shown; attempt += 1) {
+        await tab.page.locator("input[type=file]").first().setInputFiles([{ name: "fiche.pdf", mimeType: "application/pdf", buffer: Buffer.from("%PDF-1.4\n%%EOF\n") }]).catch(() => undefined);
+        await tab.page.waitForTimeout(2000);
+        shown = await tab.page.getByText(/fiche\.pdf n'est pas accepté/).first().isVisible().catch(() => false);
+      }
+      await ctx.verify("the refusal in French", [tab.shows(/fiche\.pdf n'est pas accepté/, { timeoutMs: 10_000 }), tab.shows(/is not accepted/, { not: true, timeoutMs: 2000 })]);
+    },
+  },
 ]);

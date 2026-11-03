@@ -2,6 +2,7 @@ import { guarded } from "../guard.mjs";
 import { createFolder, setVisibility, tree, uploaded, withConfig } from "../library.mjs";
 import { check, image, list, media, pick, text } from "../media.mjs";
 import { activityJourneys } from "./parts/activity.mjs";
+import { overviewFigureJourneys } from "./parts/overview-figures.mjs";
 import { renderedJourneys } from "./parts/rendered.mjs";
 import { chooseFiles } from "./parts/upload-page.mjs";
 
@@ -148,4 +149,5 @@ export const journeys = guarded([
   },
   ...activityJourneys(),
   ...renderedJourneys(),
+  ...overviewFigureJourneys(),
 ]);

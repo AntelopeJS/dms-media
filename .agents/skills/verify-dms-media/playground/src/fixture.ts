@@ -48,6 +48,7 @@ const targetSchema = z.union([
 const memberSchema = z.object({
   name: z.string(),
   permissions: z.array(z.string()),
+  language: z.string().default("en"),
 });
 
 const folderSchema = z.object({
@@ -171,7 +172,7 @@ function sourceOf(
 export class VerifyFixtureController extends Controller("/verify-media") {
   @Post("/member")
   async member(@JSONBody() body: unknown) {
-    const { name, permissions } = memberSchema.parse(body);
+    const { name, permissions, language } = memberSchema.parse(body);
     const [roleId] = await GetModel(RoleModel, DEFAULT_TENANT_ID).insert({
       name: `${name} ${randomUUID()}`,
       permissions: withAncestors(permissions.flatMap(permissionsOf)),
@@ -181,7 +182,7 @@ export class VerifyFixtureController extends Controller("/verify-media") {
     await GetModel(UserInviteModel, DEFAULT_TENANT_ID).insert({
       email,
       roles_ids: roleId === undefined ? [] : [roleId],
-      language: "en",
+      language,
       token,
       asTenantOwner: false,
       expiresAt: new Date(Date.now() + INVITE_LIFETIME_MS),

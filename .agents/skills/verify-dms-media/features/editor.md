@@ -22,6 +22,8 @@ The image editor crops and rotates JPEG, PNG, WebP and AVIF images on the server
 - `only-raster-photos-are-edited`: JPEG, PNG, WebP and AVIF are edited; an SVG or a GIF is refused 422; a request with no operation, a rotation outside 90° steps or a crop past the image is refused 400 and nothing changes.
 - `the-editor-crops-rotates-and-saves`: the editor offers free, original and the six preset ratios, the crop fields, left and right rotation and a preview per image size; nothing is written until Save; Save rotates the file, Revert to original restores it, Save as copy adds the edit beside it.
 - `an-svg-is-edited-in-a-design-tool`: the editor of an SVG says it is a vector drawing to edit in a design tool and offers no save.
+- `the-crop-frame-follows-the-arrow-keys`: Shift with an arrow key resizes the crop frame and an arrow key moves it, and Save as copy applies that crop.
+- `a-typed-crop-is-a-pending-change`: a crop typed in the W field is a pending change that Save as copy applies.
 
 ## How to get to it (user POV)
 
@@ -36,4 +38,4 @@ dms-control journey "$RUN" editor
 ## Gotchas
 
 - The editor hydrates after `load`; `rotateOnce` clicks Rotate right until the rotation is pending.
-- A typed or arrow-nudged crop is not asserted: it moves the frame but is not saved at the integration head (issue draft `dms-media-editor-typed-crop-not-saved`).
+- The arrow keys cannot move a frame that spans the whole image: shrink it with Shift+arrow first, then move it.

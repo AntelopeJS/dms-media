@@ -30,6 +30,7 @@ docs:
 - `uploads-from-the-field-land-in-its-folder`: the field's Upload button and a drop on the field send the file to the field's linked folder.
 - `a-members-picker-shows-only-what-they-can-read`: a member opening a field's picker sees only the folders they can read, and a linked field's picker opens on its folder and lists its subfolders.
 - `the-pickers-upload-targets-the-linked-folder`: a linked field's picker browsed into a subfolder still uploads into the linked folder itself.
+- `a-refusal-speaks-the-members-language`: a member whose language is French sees a refused file explained in French.
 
 ## How to get to it (user POV)
 

@@ -40,6 +40,7 @@ declare module "playwright-core" {
     allTextContents(): Promise<string[]>;
     waitFor(options?: Timeout & { state?: "attached" | "detached" | "visible" | "hidden" }): Promise<void>;
     evaluate<R, A>(callback: (element: HTMLElement, argument: A) => R, argument?: A): Promise<R>;
+    setInputFiles(files: { name: string; mimeType: string; buffer: Buffer }[]): Promise<void>;
   }
 
   interface Download {

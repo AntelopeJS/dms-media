@@ -72,16 +72,17 @@ export async function uploaded(ctx, file) {
  * @param {Ctx} ctx The journey
  * @param {string} name The account name
  * @param {string[]} permissions The role's permission ids
+ * @param {string} [language] The member's language, `en` by default
  * @returns {Promise<{ roleId: string, userId: string }>} The role and the user
  */
-export async function member(ctx, name, permissions) {
-  const invite = await fixture(ctx, `invite ${name}`, "POST", "/member", { name, permissions });
+export async function member(ctx, name, permissions, language = "en") {
+  const invite = await fixture(ctx, `invite ${name}`, "POST", "/member", { name, permissions, language });
   const email = text(invite.body, "email");
   const password = ctx.password();
   const signup = await ctx.api(`${name} signs up`, {
     method: "POST",
     path: "/api/auth/signup",
-    body: { name, email, password, lang: "en", token: text(invite.body, "token") },
+    body: { name, email, password, lang: language, token: text(invite.body, "token") },
     as: "anon",
   });
   const userId = text(signup.body, "user", "_id");

@@ -29,6 +29,9 @@ The Overview (needs attention, KPIs, storage by type, activity, recently added, 
 - `live-pages-follow-the-library-unless-paused`: the Overview follows a change made elsewhere; paused it does not read and counts the changes it missed; Live reads them at once; L switches; the choice is shared by the live pages and kept; ?live=0 opens paused.
 - `own-uploads-keep-moving-while-paused-and-activity-follows`: while the Overview is paused, an upload of its own drop zone still goes through; the Activity page shows a change made elsewhere without a reload.
 - `pages-arrive-rendered-by-the-server`: the Overview, the Library's folder tree and listing, a link to a folder, a view or a search, and a file's page arrive from the server with their data.
+- `the-overview-figures-are-exact`: Needs attention counts exactly the files that failed today and the files over 20 MB, not one of exactly 20 MB; Storage by type gives each type's bytes, the original of an edited image included.
+- `an-upload-that-exactly-fills-the-plan-is-accepted`: with storageQuotaBytes set, a file that fills the plan to the byte is accepted, and one more byte is refused with remaining 0.
+- `the-clean-up-and-the-toolbar-tell-the-time`: the Cache card's nightly clean-up runs next at 04:00 server time, and the live toolbar's last-read age counts up and starts again after a read.
 
 ## How to get to it (user POV)
 

@@ -125,7 +125,8 @@ export const journeys = guarded([
         check("name descending", JSON.stringify(await listing("sort=name&direction=desc")) === JSON.stringify(["d-doc.pdf", "c-wide.png", "b-square.png", "a-tall.png"]), "name desc"),
         check("date added ascending is the upload order", JSON.stringify(await listing("sort=date&direction=asc")) === JSON.stringify(["c-wide.png", "a-tall.png", "b-square.png", "d-doc.pdf"]), "date"),
         check("size descending starts with the PDF", (await listing("sort=size&direction=desc"))[0] === "d-doc.pdf", "size"),
-        check("type ascending puts images and the document apart", (await listing("sort=type&direction=asc")).indexOf("d-doc.pdf") !== 1 && (await listing("sort=type&direction=asc")).indexOf("d-doc.pdf") !== 2, "type sort"),
+        check("type ascending orders by type, then name: the PDF (application/pdf) before the images", JSON.stringify(await listing("sort=type&direction=asc")) === JSON.stringify(["d-doc.pdf", "a-tall.png", "b-square.png", "c-wide.png"]), "type asc"),
+        check("type descending reverses it", JSON.stringify(await listing("sort=type&direction=desc")) === JSON.stringify(["c-wide.png", "b-square.png", "a-tall.png", "d-doc.pdf"]), "type desc"),
         check("offset and limit page", JSON.stringify(await listing("offset=1&limit=2")) === JSON.stringify(["b-square.png", "c-wide.png"]), "page"),
         check("a limit over 500 is refused", tooBig.status === 400, tooBig.status),
       ]);
