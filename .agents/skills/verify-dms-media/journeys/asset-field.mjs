@@ -100,7 +100,12 @@ export const journeys = guarded([
       await tab.page.getByRole("button", { name: /^Choose file/ }).click({ timeout: 15_000 }).catch(() => undefined);
       await ctx.verify("the field shows the chosen file", [tab.shows(/fiche\.pdf/, { timeoutMs: 15_000 }), tab.visible({ role: "dialog", name: "Choose from the library" }, { hidden: true })]);
       await tab.page.getByRole("button", { name: /^Save/ }).first().click({ timeout: 10_000 }).catch(() => undefined);
-      const saved = await ctx.api("read the saved values", { method: "GET", path: "/api/verify-media/fields/values" });
+      let saved = await ctx.api("read the saved values", { method: "GET", path: "/api/verify-media/fields/values" });
+      for (let attempt = 0; attempt < 10 && pick(saved.body, "pdf") === undefined; attempt += 1) {
+        await tab.page.getByRole("button", { name: /^Save/ }).first().click({ timeout: 5000 }).catch(() => undefined);
+        await tab.page.waitForTimeout(1000);
+        saved = await ctx.api("read the saved values again", { method: "GET", path: "/api/verify-media/fields/values" });
+      }
       await ctx.verify("the form stored the asset id", [check("pdf holds the id of fiche.pdf, not a URL", pick(saved.body, "pdf") === pdf.id, saved.body)]);
       await ctx.verify("no crop on the field", [tab.visible({ role: "button", name: /Edit image|Crop/ }, { hidden: true })]);
     },

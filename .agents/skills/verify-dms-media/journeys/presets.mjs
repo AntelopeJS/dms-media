@@ -6,7 +6,7 @@ import { presetPageJourneys } from "./parts/preset-page.mjs";
 
 /**
  * @typedef {import("../media.mjs").Ctx} Ctx
- * @typedef {{ format: string, width: number, height: number, bytes: number, status: number | null, cache: string }} Rendering
+ * @typedef {{ format: string, type: string, width: number, height: number, bytes: number, status: number | null, cache: string }} Rendering
  */
 
 /**
@@ -20,7 +20,7 @@ import { presetPageJourneys } from "./parts/preset-page.mjs";
 export async function rendering(ctx, file, preset) {
   const delivered = await follow(ctx, `/media/${file.id}/${preset}/${encodeURIComponent(file.name)}`, { as: "admin" });
   const info = delivered.file ? await imageInfo(ctx, delivered.file.bytes) : { format: "", width: 0, height: 0 };
-  const result = { ...info, bytes: delivered.file?.bytes.byteLength ?? 0, status: delivered.link.status, cache: delivered.link.headers["cache-control"] ?? "" };
+  const result = { ...info, type: delivered.file?.headers["content-type"] ?? "", bytes: delivered.file?.bytes.byteLength ?? 0, status: delivered.link.status, cache: delivered.link.headers["cache-control"] ?? "" };
   recordRaw(ctx, delivered.link, [check(`${preset} answered`, true, result)]);
   return result;
 }
@@ -33,7 +33,7 @@ export async function rendering(ctx, file, preset) {
  * @returns {import("../media.mjs").Check} The check
  */
 function renders(got, format, width, height) {
-  return check(`${format} ${width}×${height}`, got.status === 302 && got.format === format && got.width === width && got.height === height, got);
+  return check(`${format} ${width}×${height}, served as image/${format}`, got.status === 302 && got.format === format && got.type === `image/${format}` && got.width === width && got.height === height, got);
 }
 
 /**
@@ -104,8 +104,8 @@ export const journeys = guarded([
           renders(tall, "jpeg", 160, 120),
           renders(same, "jpeg", 400, 300),
           renders(cov, "png", 50, 50),
-          check("an SVG without a format renders as PNG", vector.format === "png" && vector.status === 302, vector),
-          check("an SVG with a format renders in it", vectorWebp.format === "webp" && vectorWebp.width === 80, vectorWebp),
+          check("an SVG without a format renders as PNG, served as image/png", vector.format === "png" && vector.type === "image/png" && vector.status === 302, vector),
+          check("an SVG with a format renders in it", vectorWebp.format === "webp" && vectorWebp.type === "image/webp" && vectorWebp.width === 80, vectorWebp),
           check("the list replaced the defaults: preview is gone", preview.link.status === 404, preview.link.status),
         ]);
       });
