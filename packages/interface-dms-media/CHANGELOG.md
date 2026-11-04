@@ -1,5 +1,56 @@
 # Changelog
 
+## v0.3.2
+
+[compare changes](https://github.com/AntelopeJS/dms-media/compare/interface-v0.3.1...v0.3.2)
+
+### 🚀 Enhancements
+
+- **frontend:** Enforce the backend boundary in production builds ([#81](https://github.com/AntelopeJS/dms-media/pull/81))
+
+### 🩹 Fixes
+
+- Read media previews with GET in bounded batches ([#95](https://github.com/AntelopeJS/dms-media/pull/95))
+- **playground:** Declare the frontend, and build against one file-storage interface ([#75](https://github.com/AntelopeJS/dms-media/pull/75))
+- **media:** Use the core API error presenter ([#104](https://github.com/AntelopeJS/dms-media/pull/104))
+
+### 💅 Refactors
+
+- Clean up the tests, comments, types and oversize files ([#79](https://github.com/AntelopeJS/dms-media/pull/79))
+- **amp:** Narrow the forwarded location header with a JSDoc type guard ([#82](https://github.com/AntelopeJS/dms-media/pull/82))
+- Clear the residual ratchet findings ([#84](https://github.com/AntelopeJS/dms-media/pull/84))
+
+### 📖 Documentation
+
+- **changelog:** Breaking changes of interface-dms-media 0.3.1 and dms-media 0.6.1 ([#74](https://github.com/AntelopeJS/dms-media/pull/74))
+- **readme:** Link the DMS in the opening line ([#98](https://github.com/AntelopeJS/dms-media/pull/98))
+- **readme:** Use one Discord invite ([#96](https://github.com/AntelopeJS/dms-media/pull/96))
+- **github:** Send questions and ideas to Discord ([#108](https://github.com/AntelopeJS/dms-media/pull/108))
+
+### 📦 Build
+
+- **deps:** Bump @antelopejs/tooling-configs to 0.2.17 ([#83](https://github.com/AntelopeJS/dms-media/pull/83))
+
+### 🏡 Chore
+
+- **release:** @antelopejs/dms-media v0.6.1 ([f6d2140](https://github.com/AntelopeJS/dms-media/commit/f6d2140))
+- Adopt the guardrail pack from tooling-configs 0.2.0 ([#76](https://github.com/AntelopeJS/dms-media/pull/76))
+- Configure Renovate with the shared preset ([#77](https://github.com/AntelopeJS/dms-media/pull/77))
+- **release:** @antelopejs/dms-media v0.6.2 ([977a1c3](https://github.com/AntelopeJS/dms-media/commit/977a1c3))
+- **release:** @antelopejs/dms-media v0.7.0 ([86890be](https://github.com/AntelopeJS/dms-media/commit/86890be))
+- Land the cleanup campaign on main ([#133](https://github.com/AntelopeJS/dms-media/pull/133))
+- **release:** @antelopejs/dms-media v0.7.1 ([82636ac](https://github.com/AntelopeJS/dms-media/commit/82636ac))
+- Land the cleanup campaign on main ([#136](https://github.com/AntelopeJS/dms-media/pull/136))
+
+### ✅ Tests
+
+- **skills:** Add eval cases for the dms-media skills ([#78](https://github.com/AntelopeJS/dms-media/pull/78))
+
+### ❤️ Contributors
+
+- Antony Rizzitelli ([@Upd4ting](http://github.com/Upd4ting))
+- Alessandro Aloisio ([@alessaloisio](http://github.com/alessaloisio))
+
 ## v0.3.1
 
 [compare changes](https://github.com/AntelopeJS/dms-media/compare/interface-v0.3.0...interface-v0.3.1)
