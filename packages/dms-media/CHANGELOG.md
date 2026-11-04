@@ -1,5 +1,21 @@
 # Changelog
 
+## v0.7.1
+
+[compare changes](https://github.com/AntelopeJS/dms-media/compare/v0.7.0...v0.7.1)
+
+### 📖 Documentation
+
+- **github:** Send questions and ideas to Discord ([#108](https://github.com/AntelopeJS/dms-media/pull/108))
+
+### 🏡 Chore
+
+- Land the cleanup campaign on main ([#133](https://github.com/AntelopeJS/dms-media/pull/133))
+
+### ❤️ Contributors
+
+- Antony Rizzitelli ([@Upd4ting](http://github.com/Upd4ting))
+
 ## v0.7.0
 
 [compare changes](https://github.com/AntelopeJS/dms-media/compare/v0.6.2...v0.7.0)
