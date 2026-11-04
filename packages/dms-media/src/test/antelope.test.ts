@@ -111,7 +111,7 @@ export default defineConfig({
       source: {
         type: "package",
         package: "@antelopejs/dms",
-        version: ">=0.11.0 <1.0.0",
+        version: ">=0.16.1 <1.0.0",
       },
       config: {
         /**
@@ -142,7 +142,7 @@ export default defineConfig({
       source: {
         type: "package",
         package: "@antelopejs/auth-jwt",
-        version: "1.0.3",
+        version: "1.1.0",
       },
       config: {
         secret: JWT_SECRET,
@@ -163,7 +163,7 @@ export default defineConfig({
       source: {
         type: "package",
         package: "@antelopejs/file-storage-local",
-        version: "0.1.13",
+        version: "0.2.0",
       },
     },
     nodemailer: {
