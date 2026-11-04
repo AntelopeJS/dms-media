@@ -1,5 +1,5 @@
 import { aclFolder, createFolder, declareFolder, member, uploaded } from "../../library.mjs";
-import { check, image, list, media, pick, raw, text, unzip } from "../../media.mjs";
+import { check, doneIds, image, list, media, pick, raw, text, unzip } from "../../media.mjs";
 
 /**
  * @typedef {import("../../media.mjs").Ctx} Ctx
@@ -42,7 +42,7 @@ function levelChecks(route, level, below, at) {
  * @returns {{ done: number, refused: unknown[] }} What it did and what it refused
  */
 function bulkOutcome(body) {
-  return { done: list(body, "done").length, refused: list(body, "refused").map((row) => pick(row, "status")) };
+  return { done: doneIds(body).length, refused: list(body, "refused").map((row) => pick(row, "status")) };
 }
 
 /** @type {{ id: string, title: string, entryPoint: string, run: (ctx: Ctx) => Promise<void> }} */

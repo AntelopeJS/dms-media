@@ -1,5 +1,5 @@
 import { aclFolder, member, uploaded } from "../../library.mjs";
-import { check, image, list, media, pick } from "../../media.mjs";
+import { check, doneIds, image, list, media, pick } from "../../media.mjs";
 
 /** @typedef {import("../../media.mjs").Ctx} Ctx */
 
@@ -35,12 +35,12 @@ const bulkWritesKeepTheOwnerOnlyRules = {
     const afterRefusals = await Promise.all([one.id, two.id].map(async (id) => pick((await media(ctx, "read the file", "GET", `/assets/${id}`)).body, "asset")));
     const toPrivate = await media(ctx, "the member bulk-moves both into another private folder", "POST", "/assets/bulk/move", { body: { ids: [one.id, two.id], folderId: privateB }, as: "bulkmanager" });
     await ctx.verify("the owner-only rules hold in bulk", [
-      check("bulk visibility: nothing done", list(shown.body, "done").length === 0, shown.body),
+      check("bulk visibility: nothing done", doneIds(shown.body).length === 0, shown.body),
       check("bulk visibility: each file refused 403", [one.id, two.id].every((id) => pick(refusalOf(shown.body, id), "status") === 403), shown.body),
-      check("a bulk move that would make them public: nothing done", list(toPublic.body, "done").length === 0, toPublic.body),
+      check("a bulk move that would make them public: nothing done", doneIds(toPublic.body).length === 0, toPublic.body),
       check("and each file refused 403", [one.id, two.id].every((id) => pick(refusalOf(toPublic.body, id), "status") === 403), toPublic.body),
       check("both files are still in A, following it", afterRefusals.every((asset) => pick(asset, "folderId") === privateA && pick(asset, "visibility") === "inherit"), afterRefusals),
-      check("a bulk move into a folder the member only reads: refused 403", pick(refusalOf(intoReadOnly.body, one.id), "status") === 403 && list(intoReadOnly.body, "done").length === 0, intoReadOnly.body),
+      check("a bulk move into a folder the member only reads: refused 403", pick(refusalOf(intoReadOnly.body, one.id), "status") === 403 && doneIds(intoReadOnly.body).length === 0, intoReadOnly.body),
       check("a bulk delete in a folder the member only reads: refused 403, the file kept", pick(refusalOf(deleteReadOnly.body, kept.id), "status") === 403 && stillThere.status === 200, [deleteReadOnly.body, stillThere.status]),
       check("a bulk move that keeps them private goes through", JSON.stringify(pick(toPrivate.body, "done")) === JSON.stringify([one.id, two.id]), toPrivate.body),
     ]);

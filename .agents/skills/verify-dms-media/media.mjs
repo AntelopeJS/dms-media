@@ -77,6 +77,17 @@ export function list(value, ...path) {
 }
 
 /**
+ * The ids a bulk route says it did: its `done` array, which holds plain ids, not objects.
+ *
+ * @param {unknown} body A bulk answer
+ * @returns {string[]} The ids done
+ */
+export function doneIds(body) {
+  const done = pick(body, "done");
+  return Array.isArray(done) ? done.map(String) : [];
+}
+
+/**
  * @param {unknown} value The answer
  * @param {...string} path The field names
  * @returns {string[]} The `name` of each object of the array field
