@@ -162,7 +162,7 @@ function projectConfig(mongoUrl, storagePath) {
         },
       },
       mongodb: {
-        ...packageSource("@antelopejs/mongodb", "1.5.0"),
+        ...packageSource("@antelopejs/mongodb", "1.6.2"),
         config: { url: mongoUrl, database: "dms-media-reload-test" },
       },
       "auth-jwt": {
@@ -170,7 +170,7 @@ function projectConfig(mongoUrl, storagePath) {
         config: { secret: JWT_SECRET },
       },
       api: {
-        ...packageSource("@antelopejs/api", "1.5.0"),
+        ...packageSource("@antelopejs/api", "1.6.0"),
         config: {
           servers: [{ protocol: "http", host: "127.0.0.1", port: API_PORT }],
           publicBaseUrl: BASE_URL,

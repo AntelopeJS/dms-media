@@ -69,7 +69,7 @@ new AssetType({
 | `@antelopejs/interface-api`                 | `file:../../.campaign/tgz/antelopejs-interface-api-f2a99b5.tgz`                 | `file:.campaign/tgz/antelopejs-interface-api-f2a99b5.tgz`                 |
 | `@antelopejs/interface-api-util`            | `file:../../.campaign/tgz/antelopejs-interface-api-util-639f38b.tgz`            | `file:.campaign/tgz/antelopejs-interface-api-util-639f38b.tgz`            |
 | `@antelopejs/interface-core`                | `file:../../.campaign/tgz/antelopejs-interface-core-f7df541.tgz`                | `file:.campaign/tgz/antelopejs-interface-core-f7df541.tgz`                |
-| `@antelopejs/interface-database`            | `file:../../.campaign/tgz/antelopejs-interface-database-02e0360.tgz`            | `file:.campaign/tgz/antelopejs-interface-database-02e0360.tgz`            |
+| `@antelopejs/interface-database`            | `>=0.3.0 <1.0.0`                                                                | `0.3.0`                                                                   |
 | `@antelopejs/interface-database-decorators` | `file:../../.campaign/tgz/antelopejs-interface-database-decorators-e79a62b.tgz` | `file:.campaign/tgz/antelopejs-interface-database-decorators-e79a62b.tgz` |
 | `@antelopejs/interface-dms`                 | `file:../../.campaign/tgz/antelopejs-interface-dms-14e671d.tgz`                 | `file:.campaign/tgz/antelopejs-interface-dms-14e671d.tgz`                 |
 | `@antelopejs/interface-dms-media`           | `>=0.3.0 <0.4.0`                                                                | `0.3.1`                                                                   |
