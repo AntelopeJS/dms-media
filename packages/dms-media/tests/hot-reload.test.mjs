@@ -170,7 +170,7 @@ function projectConfig(mongoUrl, storagePath) {
         config: { secret: JWT_SECRET },
       },
       api: {
-        ...packageSource("@antelopejs/api", "1.6.0"),
+        ...packageSource("@antelopejs/api", "1.7.0"),
         config: {
           servers: [{ protocol: "http", host: "127.0.0.1", port: API_PORT }],
           publicBaseUrl: BASE_URL,
