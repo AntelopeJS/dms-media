@@ -1,3 +1,4 @@
+import { waitForHydration } from "../../chooser.mjs";
 import { readFileSync } from "node:fs";
 import { createFolder, uploaded } from "../../library.mjs";
 import { check, image, media, pick, sha256 } from "../../media.mjs";
@@ -92,6 +93,7 @@ const theFileTabsEditAndShowTheFile = {
       tab.shows(/links expire in 5 min/),
       tab.shows(/Links keep working after a rename/),
     ]);
+    await waitForHydration(tab, 60_000);
     await tab.fill({ role: "textbox", name: "Alt text" }, "Façade au crépuscule");
     await tab.press("Tab");
     await tab.click({ role: "radio", name: /^Public/ });

@@ -129,9 +129,15 @@ export const journeys = guarded([
     title: "declarations made from Hook.TENANT_BEING_PROVISIONED, as the docs prescribe, are in a fresh tenant's library, recorded as System's",
     entryPoint: "Hook.TENANT_BEING_PROVISIONED in the playground's construct()",
     async run(/** @type {Ctx} */ ctx) {
-      const read = await tree(ctx);
-      const provisioned = read.folders.find((folder) => pick(folder, "name") === "Provisioned");
-      const files = await media(ctx, "list the provisioned folder", "GET", `/folders/${text(provisioned, "id")}/assets`);
+      let read = await tree(ctx);
+      let provisioned = read.folders.find((folder) => pick(folder, "name") === "Provisioned");
+      let files = await media(ctx, "list the provisioned folder", "GET", `/folders/${text(provisioned, "id")}/assets`);
+      for (let attempt = 0; attempt < 20 && list(files.body, "assets").length === 0; attempt += 1) {
+        await new Promise((resolve) => setTimeout(resolve, 1000));
+        read = await tree(ctx);
+        provisioned = read.folders.find((folder) => pick(folder, "name") === "Provisioned");
+        files = await media(ctx, "list the provisioned folder again: the hook's import may still be writing", "GET", `/folders/${text(provisioned, "id")}/assets`);
+      }
       const asset = list(files.body, "assets")[0];
       const history = await media(ctx, "read its history", "GET", `/assets/${text(asset, "id")}/history`);
       await ctx.verify("the shipped content", [
