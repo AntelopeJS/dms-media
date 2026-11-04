@@ -21,7 +21,7 @@ export async function chooseFiles(ctx, tab, files, button = /^Upload/) {
   const folder = ctx.step(`choose ${files.map((file) => file.name).join(", ")}`);
   const picker = await openFilePicker(tab, () => tab.page.getByRole("button", { name: button }).first().click(), 30_000);
   await picker.choose(files);
-  ctx.record(folder, [check("the file picker took the files", picker.opened, { files: files.length, attempts: picker.attempts })]);
+  ctx.record(folder, [check("the file picker took the files", picker.opened, { files: files.length, attempts: picker.attempts, hydrated: picker.hydrated, url: picker.url })]);
 }
 
 /**

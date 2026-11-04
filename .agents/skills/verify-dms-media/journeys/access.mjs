@@ -1,24 +1,12 @@
 import { guarded } from "../guard.mjs";
-import { createFolder, declareFolder, member, tree, uploaded, withConfig } from "../library.mjs";
-import { check, image, list, media, pick, text } from "../media.mjs";
+import { aclFolder, createFolder, member, tree, uploaded, withConfig } from "../library.mjs";
+import { check, image, list, media, pick } from "../media.mjs";
 import { hasRights, probeRights } from "./bindings.mjs";
 import { boundFolder } from "./folders.mjs";
+import { bulkRuleJourneys } from "./parts/bulk-rules.mjs";
 import { subjectJourneys } from "./parts/subjects.mjs";
 
 /** @typedef {import("../media.mjs").Ctx} Ctx */
-
-/**
- * A declared folder whose ACL grants one permission the given rights.
- *
- * @param {Ctx} ctx The journey
- * @param {string} permission The permission
- * @param {string[]} rights The rights
- * @returns {Promise<string>} The folder id
- */
-async function aclFolder(ctx, permission, rights) {
-  const answer = await declareFolder(ctx, { key: ctx.unique("verify.acl"), name: ctx.unique(`ACL ${rights.join(" ")}`), acl: [{ subject: { kind: "permission", id: permission }, rights }] });
-  return text(answer.body, "result", "id");
-}
 
 const OWNER_ONLY_READS = ["/stats/kpis", "/stats/storage", "/stats/attention", "/stats/recent", "/activity", "/activity?type=uploads"];
 
@@ -192,4 +180,5 @@ export const journeys = guarded([
     },
   },
   ...subjectJourneys(),
+  ...bulkRuleJourneys(),
 ]);

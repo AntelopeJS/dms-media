@@ -28,6 +28,8 @@ Who may do what: the Media pages and statistics are the owner's, a folder's righ
 - `a-writer-of-a-linked-folder-changes-any-of-its-files`: a member who can write in a linked folder renames, describes, moves, edits and deletes a file the owner uploaded there.
 - `a-role-subject-grants-its-holders`: an ACL entry whose subject kind is role grants its rights to the members holding that role, and nothing to a member with another role.
 - `a-write-mapping-grants-write-only`: a binding's write mapping, and the page fallback, grant write and not manage: the member uploads and renames files, but creating or renaming a folder answers 403, even with subfolders allowed.
+- `bulk-writes-keep-the-owner-only-rules`: the per-file rules hold on the bulk routes: a member who manages folders gets 403 for each file of a bulk visibility change, for each file a bulk move would make public, for a bulk move into a folder it only reads and a bulk delete there, and the files stay as they were; a bulk move that keeps them private goes through.
+- `every-bulk-route-takes-up-to-500-ids`: bulk move and bulk visibility, like bulk delete, refuse 501 ids with 400 and take 500, each unknown id refused.
 
 ## How to get to it (user POV)
 

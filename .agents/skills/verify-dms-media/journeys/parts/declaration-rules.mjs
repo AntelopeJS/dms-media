@@ -12,15 +12,29 @@ function outcomeOf(answer) {
 }
 
 /**
- * @param {import("../../media.mjs").Answer} answer The answer
- * @param {string} kind `folder` or `file`
- * @param {string} key The declaration key
+ * The whole error a refused declaration rejects with: its kind, its key and the reason, as the interface docs give
+ * it (`Media folder '<key>': <reason>`). A string reason must match exactly; a pattern stands for a reason whose
+ * wording comes from the validation library.
+ *
+ * @param {import("../../media.mjs").Answer} answer The declaration's answer
+ * @param {"folder" | "file"} kind What was declared
+ * @param {string} key The declaration's key
  * @param {string} what The rule
+ * @param {string | RegExp} reason The reason the error must carry
  * @returns {import("../../media.mjs").Check} The check
  */
-function rejected(answer, kind, key, what) {
-  return check(`${what}: rejected naming Media ${kind} '${key}'`, outcomeOf(answer).startsWith(`rejected: Media ${kind} '${key}'`), answer.body);
+function rejected(answer, kind, key, what, reason) {
+  const got = outcomeOf(answer).normalize("NFC");
+  const prefix = `rejected: Media ${kind} '${key}': `;
+  const rest = got.startsWith(prefix) ? got.slice(prefix.length) : "";
+  const matches = reason instanceof RegExp ? reason.test(rest) : rest === reason.normalize("NFC");
+  return check(`${what}: rejected as Media ${kind} '${key}': ${String(reason)}`, matches, got);
 }
+
+/** The reason a name with a character Windows or macOS cannot save is refused with. */
+const FORBIDDEN = "name: a name can't contain / \\ < > : \" | ? * or control characters";
+/** The reason a name over 255 characters is refused with. */
+const TOO_LONG = "name: the name is limited to 255 characters";
 
 /**
  * Journeys of the declaration rules the dashboard's rules mirror.
@@ -41,7 +55,7 @@ export function declarationRuleJourneys() {
         for (const name of ["a/b", "a\\b", "a<b", "a>b", "a:b", 'a"b', "a|b", "a?b", "a*b", "a\u0007b", "n".repeat(256)]) {
           index += 1;
           const key = `${base}.bad${index}`;
-          checks.push(rejected(await declareFolder(ctx, { key, name }), "folder", key, `name ${JSON.stringify(name.slice(0, 12))}`));
+          checks.push(rejected(await declareFolder(ctx, { key, name }), "folder", key, `name ${JSON.stringify(name.slice(0, 12))}`, name.length > 255 ? TOO_LONG : FORBIDDEN));
         }
         const sibling = await declareFolder(ctx, { key: `${base}.twin`, name: "Twin", parent: base });
         const twin = await declareFolder(ctx, { key: `${base}.twin2`, name: "TWIN", parent: base });
@@ -64,19 +78,19 @@ export function declarationRuleJourneys() {
         await ctx.verify("each folder rule", [
           ...checks,
           check("the first sibling is created", outcomeOf(sibling) === "created" && outcomeOf(parent) === "created", sibling.body),
-          rejected(twin, "folder", `${base}.twin2`, "a sibling's name in capitals"),
-          rejected(decomposed, "folder", `${base}.twin3`, "a root name in another Unicode form"),
+          rejected(twin, "folder", `${base}.twin2`, "a sibling's name in capitals", "a folder named 'TWIN' already exists there"),
+          rejected(decomposed, "folder", `${base}.twin3`, "a root name in another Unicode form", "a folder named 'Été' already exists there"),
           check("the same name is fine in another folder", outcomeOf(elsewhere) === "created", elsewhere.body),
           check("no refused folder was created", !read.folders.some((folder) => ["TWIN", "Orphan", "Self", "Under", "NoBinding", "Locked", "Acl"].includes(text(folder, "name"))), read.folders.map((folder) => pick(folder, "name"))),
-          rejected(undeclared, "folder", `${base}.orphan`, "an undeclared parent"),
-          rejected(self, "folder", `${base}.self`, "its own parent"),
-          rejected(underDeleted, "folder", `${base}.under`, "a deleted parent"),
-          rejected(noBinding, "folder", `${base}.nob`, "an unregistered binding"),
-          rejected(lockedBinding, "folder", `${base}.locked`, "a binding without subfolders"),
-          rejected(noRights, "folder", `${base}.acl`, "an ACL entry without rights"),
+          rejected(undeclared, "folder", `${base}.orphan`, "an undeclared parent", `'${base}.nowhere' is not a declared folder: declare it with EnsureMediaFolder first`),
+          rejected(self, "folder", `${base}.self`, "its own parent", "a folder cannot be its own parent"),
+          rejected(underDeleted, "folder", `${base}.under`, "a deleted parent", `the folder declared as '${base}.doomed' was deleted`),
+          rejected(noBinding, "folder", `${base}.nob`, "an unregistered binding", "no folder is bound to 'verify.unknown': register the binding with AssetType or RegisterAssetBinding first"),
+          rejected(lockedBinding, "folder", `${base}.locked`, "a binding without subfolders", "the folder linked to 'verify.cover' cannot hold subfolders: register its binding with subfolders: true"),
+          rejected(noRights, "folder", `${base}.acl`, "an ACL entry without rights", /^acl\.0\.rights: .+/),
           check("a key with spaces is trimmed: the same key is kept", outcomeOf(spaced) === "created" && outcomeOf(sameKey) === "kept", [spaced.body, sameKey.body]),
-          check("a blank key is refused", outcomeOf(emptyKey).startsWith("rejected"), emptyKey.body),
-          check("256 characters are refused", outcomeOf(longKey).startsWith("rejected"), longKey.body),
+          rejected(emptyKey, "folder", "   ", "a blank key", /^key: .+/),
+          rejected(longKey, "folder", "k".repeat(256), "a key of 256 characters", /^key: .+/),
           check("255 characters are accepted", outcomeOf(maxKey) === "created", maxKey.body),
         ]);
       },
@@ -94,7 +108,7 @@ export function declarationRuleJourneys() {
         let index = 0;
         for (const name of ["a/b.txt", "a\\b.txt", "a\u0001b.txt", `${"n".repeat(252)}.txt`]) {
           index += 1;
-          checks.push(rejected(await declare(`n${index}`, { name }), "file", `${base}.n${index}`, `name ${JSON.stringify(name.slice(0, 10))}`));
+          checks.push(rejected(await declare(`n${index}`, { name }), "file", `${base}.n${index}`, `name ${JSON.stringify(name.slice(0, 10))}`, name.length > 255 ? TOO_LONG : FORBIDDEN));
         }
         const colon = await declare("colon", { name: "a:b.txt" });
         const empty = await declare("empty", { source: { kind: "bytes", base64: "" } });
@@ -105,11 +119,11 @@ export function declarationRuleJourneys() {
         await ctx.verify("each file rule", [
           ...checks,
           check("a colon is fine", outcomeOf(colon) === "created", colon.body),
-          rejected(empty, "file", `${base}.empty`, "an empty file"),
-          rejected(longAlt, "file", `${base}.alt`, "alt over 255"),
+          rejected(empty, "file", `${base}.empty`, "an empty file", "declaration: the file is empty"),
+          rejected(longAlt, "file", `${base}.alt`, "alt over 255", "alt: the alt text is limited to 255 characters"),
           check("alt of 255 is fine", outcomeOf(maxAlt) === "created", maxAlt.body),
           check("a name of exactly 255 characters is fine", outcomeOf(maxName) === "created", maxName.body),
-          rejected(noFolder, "file", `${base}.nofolder`, "an undeclared folder"),
+          rejected(noFolder, "file", `${base}.nofolder`, "an undeclared folder", `'${base}.missing' is not a declared folder: declare it with EnsureMediaFolder first`),
         ]);
       },
     },

@@ -143,7 +143,7 @@ export const journeys = guarded([
   },
   {
     id: "the-limits-of-an-upload-apply",
-    title: "a declared file over 500 MiB, over the storage plan, of a type the library or the bound field refuses, or an image that does not decode is refused with an error naming its kind and key; a decoded image is stored under the decoded type",
+    title: "a declared file over 500 MiB, over the storage plan, of a type the library or the bound field refuses, or an image that does not decode is refused with an error naming its kind, its key and the refusal's message; a decoded image is stored under the decoded type",
     entryPoint: "ImportMediaAsset upload rules",
     async run(/** @type {Ctx} */ ctx) {
       const key = ctx.unique("verify.limits");
@@ -161,18 +161,23 @@ export const journeys = guarded([
       const broken = await declareAsset(ctx, { key: `${key}.broken`, folder: { key }, name: "broken.jpg", mimetype: "image/jpeg", source: { kind: "bytes", base64: Buffer.from("nope").toString("base64") } });
       const claimed = await declareAsset(ctx, { key: `${key}.claimed`, folder: { key }, name: "really-jpeg.png", mimetype: "image/png", source: { kind: "bytes", base64: (await image(ctx, { width: 9, height: 7, format: "jpeg" })).toString("base64") } });
       const claimedRead = await media(ctx, "read the claimed PNG", "GET", `/assets/${text(claimed.body, "result", "id")}`);
-      /** @param {import("../media.mjs").Answer} answer @param {string} name @returns {import("../media.mjs").Check} */
-      const named = (answer, name) => check(`${name} refused, naming Media file '<key>'`, outcomeOf(answer).startsWith(`rejected: Media file '${key}.${name}'`), answer.body);
+      /** @param {import("../media.mjs").Answer} answer @param {string} name @param {string | RegExp} reason @returns {import("../media.mjs").Check} */
+      const named = (answer, name, reason) => {
+        const prefix = `rejected: Media file '${key}.${name}': `;
+        const got = outcomeOf(answer);
+        const rest = got.startsWith(prefix) ? got.slice(prefix.length) : "";
+        return check(`${name} refused as Media file '<key>': ${String(reason)}`, reason instanceof RegExp ? reason.test(rest) : rest === reason, got);
+      };
       await withConfig(ctx, { VERIFY_MEDIA_QUOTA: "10" }, async () => {
         const over = await declareAsset(ctx, { key: `${key}.quota`, folder: { key }, name: "q.txt", mimetype: "text/plain", source: { kind: "bytes", base64: Buffer.alloc(64, 97).toString("base64") } });
         await ctx.verify("the upload rules", [
-          named(tooBig, "big"),
-          named(html, "html"),
-          named(exe, "exe"),
-          named(htm, "htm"),
-          named(field, "field"),
-          named(broken, "broken"),
-          named(over, "quota"),
+          named(tooBig, "big", "declaration: the file exceeds 524288000 bytes"),
+          named(html, "html", "This type of file can't be added to the library"),
+          named(exe, "exe", "This type of file can't be added to the library"),
+          named(htm, "htm", "This type of file can't be added to the library"),
+          named(field, "field", /^This folder feeds a field that only accepts \S.*$/),
+          named(broken, "broken", "This file is not a readable image"),
+          named(over, "quota", "The library's storage plan is full"),
           check("a JPEG declared as PNG is stored as image/jpeg", pick(claimedRead.body, "asset", "mimetype") === "image/jpeg" && pick(claimedRead.body, "asset", "width") === 9, claimedRead.body),
         ]);
       });

@@ -37,6 +37,7 @@ One file: its page with Copy link, Download and its tabs, and the routes that re
 - `the-file-tabs-edit-and-show-the-file`: Details edits the name and alt text and offers Move… and three visibility choices, Delivery lists the stable links, History the events from the upload on, and Usage says usage is not tracked.
 - `a-file-page-without-an-asset-opens-the-library`: the file page without ?asset= sends to the Library.
 - `a-signed-out-browser-reaches-the-file-through-sign-in`: a signed-out browser following a private link goes to the file's page, signs in there and comes back to the file.
+- `the-history-lists-every-event`: a file's History lists every event of the file, from its upload on: 55 renames and the upload give 56 entries, the upload last.
 
 ## How to get to it (user POV)
 

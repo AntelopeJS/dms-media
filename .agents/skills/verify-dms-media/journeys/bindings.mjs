@@ -132,6 +132,7 @@ export const journeys = guarded([
       const mapped = await bind(ctx, { id: `${stamp}.mapped`, permissionMapping: { read: ["verify.reader"] }, permissionsFromPage: "fields" });
       const noWrite = await bind(ctx, { id: `${stamp}.nowrite`, permissionMapping: { write: [] }, permissionsFromPage: "fields" });
       const writeMap = await bind(ctx, { id: `${stamp}.write`, permissionMapping: { write: ["verify.writer"] } });
+      const noRead = await bind(ctx, { id: `${stamp}.noread`, permissionMapping: { read: [], write: ["verify.writer"] }, permissionsFromPage: "fields" });
       await member(ctx, "pageuser", ["page:fields"]);
       await member(ctx, "reader", ["verify.reader"]);
       await member(ctx, "writer", ["verify.writer"]);
@@ -143,6 +144,8 @@ export const journeys = guarded([
         hasRights(await probeRights(ctx, noWrite, "pageuser"), "read", "write [] turns the write fallback off; read falls back to the page"),
         hasRights(await probeRights(ctx, writeMap, "writer"), "write", "a write mapping grants write, which includes read"),
         hasRights(await probeRights(ctx, writeMap, "pageuser"), "none", "no page, no fallback"),
+        hasRights(await probeRights(ctx, noRead, "pageuser"), "none", "read [] turns the read fallback off: the page user, whose write is mapped away too"),
+        hasRights(await probeRights(ctx, noRead, "writer"), "write", "read [] leaves the write mapping, which includes read"),
       ]);
     },
   },

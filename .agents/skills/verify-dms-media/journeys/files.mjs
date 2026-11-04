@@ -2,6 +2,7 @@ import { guarded } from "../guard.mjs";
 import { createFolder, deliveryPath, follow, setVisibility, uploaded } from "../library.mjs";
 import { check, image, isRow, list, longText, media, pick, raw, sha256, signedLifetime, text } from "../media.mjs";
 import { filePageJourneys } from "./parts/file-page.mjs";
+import { historyJourneys } from "./parts/history.mjs";
 
 /** @typedef {import("../media.mjs").Ctx} Ctx */
 
@@ -158,4 +159,5 @@ export const journeys = guarded([
     },
   },
   ...filePageJourneys(),
+  ...historyJourneys(),
 ]);
