@@ -4,6 +4,7 @@ import { check, image, list, media, pick } from "../media.mjs";
 import { hasRights, probeRights } from "./bindings.mjs";
 import { boundFolder } from "./folders.mjs";
 import { bulkRuleJourneys } from "./parts/bulk-rules.mjs";
+import { permissionLevelJourneys } from "./parts/permission-levels.mjs";
 import { subjectJourneys } from "./parts/subjects.mjs";
 
 /** @typedef {import("../media.mjs").Ctx} Ctx */
@@ -181,4 +182,5 @@ export const journeys = guarded([
   },
   ...subjectJourneys(),
   ...bulkRuleJourneys(),
+  ...permissionLevelJourneys(),
 ]);

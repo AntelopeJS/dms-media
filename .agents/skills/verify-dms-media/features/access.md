@@ -30,6 +30,8 @@ Who may do what: the Media pages and statistics are the owner's, a folder's righ
 - `a-write-mapping-grants-write-only`: a binding's write mapping, and the page fallback, grant write and not manage: the member uploads and renames files, but creating or renaming a folder answers 403, even with subfolders allowed.
 - `bulk-writes-keep-the-owner-only-rules`: the per-file rules hold on the bulk routes: a member who manages folders gets 403 for each file of a bulk visibility change, for each file a bulk move would make public, for a bulk move into a folder it only reads and a bulk delete there, and the files stay as they were; a bulk move that keeps them private goes through.
 - `every-bulk-route-takes-up-to-500-ids`: bulk move and bulk visibility, like bulk delete, refuse 501 ids with 400 and take 500, each unknown id refused.
+- `every-route-needs-its-documented-right`: every folder and file route needs exactly its documented right: reading needs read, uploading and changing files (rename, alt, move, delete, edit, revert, save as copy, bulk move and delete) need write, changing the folder structure (create, rename, move, delete) needs manage; one level below is refused, the level itself is allowed.
+- `structure-changes-cover-every-subfolder`: deleting a folder needs manage on every subfolder too: a member who manages a folder cannot delete it while a subfolder grants them only read, and everything stays; a folder zip leaves out the subfolders the member cannot read.
 
 ## How to get to it (user POV)
 

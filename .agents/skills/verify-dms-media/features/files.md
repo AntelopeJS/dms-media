@@ -38,6 +38,7 @@ One file: its page with Copy link, Download and its tabs, and the routes that re
 - `a-file-page-without-an-asset-opens-the-library`: the file page without ?asset= sends to the Library.
 - `a-signed-out-browser-reaches-the-file-through-sign-in`: a signed-out browser following a private link goes to the file's page, signs in there and comes back to the file.
 - `the-history-lists-every-event`: a file's History lists every event of the file, from its upload on: 55 renames and the upload give 56 entries, the upload last.
+- `a-move-keeps-the-targets-rules`: a file moved into a linked folder must be of a type its field accepts, and a file moved into a folder must not take a name already there, whatever its case: both moves are refused and the file stays.
 
 ## How to get to it (user POV)
 

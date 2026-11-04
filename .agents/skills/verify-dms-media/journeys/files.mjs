@@ -3,6 +3,7 @@ import { createFolder, deliveryPath, follow, setVisibility, uploaded } from "../
 import { check, image, isRow, list, longText, media, pick, raw, sha256, signedLifetime, text } from "../media.mjs";
 import { filePageJourneys } from "./parts/file-page.mjs";
 import { historyJourneys } from "./parts/history.mjs";
+import { moveRuleJourneys } from "./parts/move-rules.mjs";
 
 /** @typedef {import("../media.mjs").Ctx} Ctx */
 
@@ -62,8 +63,10 @@ export const journeys = guarded([
       const all = await media(ctx, "list every readable file", "GET", "/assets");
       const search = await media(ctx, "search toiture among PDFs", "GET", `/assets/search?q=toiture&mime=application/&folderId=${folder.id}`);
       const lifetime = signedLifetime(ctx, text(original.body, "url"));
+      const thumbLifetime = signedLifetime(ctx, text(thumb.body, "url"));
       await ctx.verify("the reads", [
         check("the read URL lives five minutes", lifetime > 240 && lifetime <= 300, lifetime),
+        check("the preset read URL lives five minutes too", thumbLifetime > 240 && thumbLifetime <= 300, thumbLifetime),
         check("it serves the original", sha256(originalBytes.bytes) === sha256(bytes), originalBytes.bytes.byteLength),
         check("the preset read URL serves the rendering", thumbBytes.status === 200 && thumbBytes.bytes.byteLength > 0 && sha256(thumbBytes.bytes) !== sha256(bytes), thumbBytes.bytes.byteLength),
         check("a preview for the image only", JSON.stringify(Object.keys(previewsOf(previews.body))) === JSON.stringify([photo.id]), previews.body),
@@ -160,4 +163,5 @@ export const journeys = guarded([
   },
   ...filePageJourneys(),
   ...historyJourneys(),
+  ...moveRuleJourneys(),
 ]);
