@@ -46,7 +46,7 @@
   "scripts": {
     "build": "rimraf dist && tsc",
     "typecheck": "tsc --noEmit",
-    "release": "pnpm --dir ../.. run lint && pnpm run build && pnpm run check:exports && release-it",
+    "release": "pnpm run build && pnpm --dir ../.. run lint && pnpm run check:exports && release-it",
     "prepack": "pnpm run build",
     "check:exports": "node scripts/check-exports.mjs",
     "knip": "knip --dependencies",
