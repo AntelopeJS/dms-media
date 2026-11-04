@@ -162,7 +162,7 @@ function projectConfig(mongoUrl, storagePath) {
         },
       },
       mongodb: {
-        ...packageSource("@antelopejs/mongodb", "1.5.0"),
+        ...packageSource("@antelopejs/mongodb", "1.6.2"),
         config: { url: mongoUrl, database: "dms-media-reload-test" },
       },
       "auth-jwt": {
