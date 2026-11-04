@@ -1,5 +1,6 @@
 import type { AxiosInstance } from "axios";
 import { expect } from "chai";
+import { z } from "zod";
 import { RegisterAssetBinding } from "@antelopejs/interface-dms-media";
 import { GetPermissionId } from "@antelopejs/interface-dms/page";
 import { UserModel } from "@antelopejs/interface-dms/auth/db";
@@ -8,6 +9,7 @@ import { GetModel } from "@antelopejs/interface-database-decorators";
 import { MediaUploadsPage } from "../../pages/uploads";
 import { uploadAvailability } from "../../pages/upload-availability";
 import { MEDIA_ROUTES } from "../../library/links";
+import { createdBody, readBody } from "../helpers/bodies";
 import { readFolderAcl, writeFolderAcl } from "../helpers/folders";
 import { readPageAccess } from "../helpers/pages";
 import { setRolePermissions } from "../helpers/members";
@@ -35,6 +37,14 @@ import {
   WAREHOUSE_VIEW_PERMISSION,
 } from "../helpers/permissions-world";
 
+const pageLayoutBody = z.object({
+  layout: z.object({
+    options: z.object({
+      headerActions: z.array(z.object({ disabled: z.boolean().optional() })),
+    }),
+  }),
+});
+
 /** Folder management and ACL edition, run after the transform suites. */
 export function folderManagementSuites(): void {
   describe("folder management and ACL edition", () => {
@@ -58,7 +68,7 @@ function folderManagementTests(): void {
       { name: "Managed" },
     );
     expect(created.status).to.equal(HTTP_OK);
-    const managedId = created.data.id;
+    const managedId = readBody(created, createdBody).id;
     const renamed = await sessions.folderManager.client.post(
       `/api/media/folders/${managedId}/rename`,
       { name: "Managed renamed" },
@@ -93,7 +103,7 @@ function folderManagementTests(): void {
       { name: "Nomad" },
     );
     expect(created.status).to.equal(HTTP_OK);
-    const nomadId = created.data.id;
+    const nomadId = readBody(created, createdBody).id;
     const invisibleTarget = await sessions.folderManager.client.post(
       `/api/media/folders/${nomadId}/move`,
       { parentId: folders.restricted },
@@ -216,7 +226,9 @@ export function laterPermissionSuites(): void {
         params: { slug: MEDIA_ROUTES.uploads },
       });
       expect(layout.status).to.equal(HTTP_OK);
-      return layout.data.layout.options.headerActions[0];
+      const [button] = readBody(layout, pageLayoutBody).layout.options
+        .headerActions;
+      return button;
     }
 
     async function latecomerAvailability() {
@@ -230,7 +242,7 @@ export function laterPermissionSuites(): void {
 
     it("serves the uploads page to the owner with the button enabled", async () => {
       const button = await uploadButton(owner);
-      expect(button.disabled).to.not.equal(true);
+      expect(button?.disabled).to.not.equal(true);
     });
 
     it("keeps the uploads page from members: module pages are owner-only", async () => {

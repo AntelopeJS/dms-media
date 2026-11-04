@@ -1,7 +1,9 @@
 import type { AxiosInstance } from "axios";
-import axios from "axios";
 import { expect } from "chai";
 import sharp from "sharp";
+import { z } from "zod";
+import { putPresigned } from "../helpers/assets";
+import { createdBody, presignBody, readBody } from "../helpers/bodies";
 import { authorizedClient } from "../helpers/http";
 import { ensureOwnerSession } from "../helpers/owner";
 
@@ -41,19 +43,16 @@ async function uploadAsset(
     mimetype,
   });
   expect(presign.status).to.equal(HTTP_OK);
-  const put = await axios.put(presign.data.uploadUrl, body, {
-    headers: presign.data.headers,
-    validateStatus: () => true,
-    transformRequest: [(data) => data],
-  });
+  const presigned = readBody(presign, presignBody);
+  const put = await putPresigned(presigned, body);
   expect(put.status).to.be.lessThan(300);
   const confirm = await client.post("/api/media/upload/confirm", {
     folderId,
-    resourceKey: presign.data.resourceKey,
+    resourceKey: presigned.resourceKey,
     filename,
   });
   expect(confirm.status).to.equal(HTTP_OK);
-  return confirm.data.asset.id;
+  return readBody(confirm, z.object({ asset: createdBody })).asset.id;
 }
 
 function uploadImage(
@@ -77,7 +76,7 @@ describe("[integration] media transform — crop, rotate, revert", () => {
       name: "Transforms",
     });
     expect(folder.status).to.equal(HTTP_OK);
-    folderId = folder.data.id;
+    folderId = readBody(folder, createdBody).id;
     assetId = await uploadImage(client, folderId, await buildTestImage());
   });
 

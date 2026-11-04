@@ -1,4 +1,8 @@
 import { GetModel } from "@antelopejs/interface-database-decorators";
+import type {
+  MediaAssetDeclaration,
+  MediaFolderDeclaration,
+} from "@antelopejs/interface-dms-media";
 import type { ZodType, ZodTypeDef } from "zod";
 import { isObjectLike, isString } from "../guards";
 import {
@@ -48,7 +52,7 @@ export function declaredModels(tenantId: string): DeclaredModels {
 /** Validates a declaration, naming every refused field. */
 export function parseDeclaration<Output>(
   kind: MediaDeclarationKind,
-  input: unknown,
+  input: MediaFolderDeclaration | MediaAssetDeclaration,
   schema: ZodType<Output, ZodTypeDef, unknown>,
 ): Output {
   const parsed = schema.safeParse(input);

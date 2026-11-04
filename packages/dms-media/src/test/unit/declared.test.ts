@@ -30,6 +30,7 @@ describe("[unit] declared content — declarations", () => {
           tenantId: "default",
           key: "helio.bad",
           name: "a/b",
+          // @ts-expect-error "secret" is outside MediaFolderVisibility, and parseDeclaration must refuse it naming the visibility field
           visibility: "secret",
         },
         declaredFolderSchema,
@@ -63,7 +64,9 @@ describe("[unit] declared content — declarations", () => {
   it("keeps running a key after a failed declaration", async () => {
     const failing = withDeclarationLock("default", "asset", "k", async () => {
       throw new Error("boom");
-    }).catch((error: Error) => error.message);
+    }).catch((error: unknown) =>
+      error instanceof Error ? error.message : String(error),
+    );
     const next = withDeclarationLock("default", "asset", "k", async () => "ok");
     expect(await failing).to.equal("boom");
     expect(await next).to.equal("ok");

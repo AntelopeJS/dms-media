@@ -55,9 +55,9 @@ function matchesFilters(
   row: UploadBatchRow,
   filters: Map<string, Set<string>>,
 ): boolean {
-  const fields: Record<string, unknown> = { ...row };
+  const fields = new Map<string, unknown>(Object.entries(row));
   return [...filters].every(([column, values]) =>
-    values.has(String(fields[column])),
+    values.has(String(fields.get(column))),
   );
 }
 

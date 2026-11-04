@@ -1,0 +1,13 @@
+{
+  "compilerOptions": {
+    "typeRoots": ["../packages/dms-media/node_modules/@types"],
+    "types": ["node"],
+    "target": "esnext",
+    "module": "nodenext",
+    "allowJs": true,
+    "strict": true,
+    "noEmit": true,
+    "lib": ["esnext"]
+  },
+  "include": ["./*.mjs"]
+}

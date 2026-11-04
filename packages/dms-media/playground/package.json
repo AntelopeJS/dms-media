@@ -5,19 +5,24 @@
   "main": "dist/index.js",
   "scripts": {
     "dev": "ajs project run -w",
-    "build": "rimraf dist && tsc",
+    "build": "rimraf dist && tsc -p tsconfig.build.json",
     "frontend:dev": "ajs dms dev"
   },
   "dependencies": {
-    "@antelopejs/dms": ">=0.13.1 <1.0.0",
-    "@antelopejs/interface-api": ">=0.0.15 <1.0.0",
-    "@antelopejs/interface-core": ">=0.2.4 <1.0.0",
-    "@antelopejs/interface-dms": ">=0.9.0 <1.0.0",
-    "@antelopejs/interface-dms-media": "link:../../interface-dms-media"
+    "@antelopejs/dms": ">=0.16.1 <1.0.0",
+    "@antelopejs/interface-api": ">=0.3.0 <1.0.0",
+    "@antelopejs/interface-api-util": ">=0.3.0 <1.0.0",
+    "@antelopejs/interface-core": ">=0.4.0 <1.0.0",
+    "@antelopejs/interface-data-api": ">=0.6.1 <1.0.0",
+    "@antelopejs/interface-database": ">=0.3.0 <1.0.0",
+    "@antelopejs/interface-database-decorators": ">=0.2.0 <1.0.0",
+    "@antelopejs/interface-dms": ">=0.12.0 <1.0.0",
+    "@antelopejs/interface-dms-media": "link:../../interface-dms-media",
+    "zod": "~3.24.2"
   },
   "devDependencies": {
-    "@antelopejs/core": "1.17.1",
-    "@antelopejs/dms-frontend": "0.9.2",
+    "@antelopejs/core": "1.20.0",
+    "@antelopejs/dms-frontend": "0.10.0",
     "@types/node": "^22.14.1",
     "rimraf": "^6.0.1",
     "typescript": "^6.0.3"

@@ -6,7 +6,7 @@
 	"main": "./dms.frontend.ts",
 	"packageManager": "pnpm@10.6.5",
 	"engines": {
-		"@antelopejs/dms-frontend": ">=0.9.2 <0.10.0"
+		"@antelopejs/dms-frontend": ">=0.10.0 <0.11.0"
 	},
 	"scripts": {
 		"dev": "pnpm --dir ../playground frontend:dev",
@@ -26,7 +26,7 @@
 		"zod": "^3.24.2"
 	},
 	"devDependencies": {
-		"@antelopejs/tooling-configs": "^0.2.12",
+		"@antelopejs/tooling-configs": "^0.2.18",
 		"@nuxt/ui": "4.10.0",
 		"@typescript-eslint/parser": "^8.0.0",
 		"@vitejs/plugin-vue": "^6.0.10",

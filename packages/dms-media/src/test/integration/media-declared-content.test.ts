@@ -21,6 +21,7 @@ import {
   MediaFolderModel,
 } from "../../db";
 import { ONE_PIXEL_PNG, PNG_MIMETYPE } from "../helpers/assets";
+import { readBody, urlBody } from "../helpers/bodies";
 import { readFolderAcl } from "../helpers/folders";
 import { authorizedClient } from "../helpers/http";
 import { ensureOwnerSession } from "../helpers/owner";
@@ -336,7 +337,7 @@ describe("[integration] media declared content — folders and files shipped as 
         `/api/media/assets/${first.id}/read-url`,
       );
       expect(readUrl.status).to.equal(HTTP_OK);
-      const stored = await fetch(readUrl.data.url);
+      const stored = await fetch(readBody(readUrl, urlBody).url);
       expect(Buffer.from(await stored.arrayBuffer())).to.deep.equal(
         ONE_PIXEL_PNG,
       );

@@ -1,17 +1,17 @@
 <div align="center">
 
-# @antelopejs/dms-media
+# `@antelopejs/dms-media`
 
-<a href="https://www.npmjs.com/package/@antelopejs/dms-media"><img alt="npm" src="https://img.shields.io/npm/v/@antelopejs/dms-media?style=for-the-badge&labelColor=000000&color=000000"></a>
-<a href="./LICENSE"><img alt="License" src="https://img.shields.io/npm/l/@antelopejs/dms-media?style=for-the-badge&labelColor=000000&color=000000"></a>
-<a href="https://discord.gg/g4pFt6eXqu"><img alt="Discord" src="https://img.shields.io/badge/Discord-18181B?logo=discord&style=for-the-badge&color=000000"></a>
-<a href="https://dms.antelopejs.com/docs/modules/media"><img alt="Documentation" src="https://img.shields.io/badge/Docs-18181B?style=for-the-badge&color=000000"></a>
+<a href="https://www.npmjs.com/package/@antelopejs/dms-media"><img data-illustration alt="npm" src="https://img.shields.io/npm/v/@antelopejs/dms-media?style=for-the-badge&labelColor=000000&color=000000"></a>
+<a href="./LICENSE"><img data-illustration alt="License" src="https://img.shields.io/npm/l/@antelopejs/dms-media?style=for-the-badge&labelColor=000000&color=000000"></a>
+<a href="https://discord.gg/g4pFt6eXqu"><img data-illustration alt="Discord" src="https://img.shields.io/badge/Discord-18181B?logo=discord&style=for-the-badge&color=000000"></a>
+<a href="https://dms.antelopejs.com/docs/modules/media"><img data-illustration alt="Documentation" src="https://img.shields.io/badge/Docs-18181B?style=for-the-badge&color=000000"></a>
 
 A media library for the AntelopeJS DMS: uploads, folders, image sizes and light editing.
 
 </div>
 
-![The Media library explorer: views and folders on the left, the files of a folder in the middle, the selected file's details on the right](https://raw.githubusercontent.com/AntelopeJS/dms-media/main/packages/dms-media/docs/images/library.png)
+![The Media library of the Helio demo: views and folders on the left, the six top-level folders in the middle](./docs/images/captures/library.webp)
 
 ## What it does
 
@@ -34,10 +34,10 @@ ajs project modules add @antelopejs/dms-media
 
 Point the module's links at the API's public URL, and allow the dashboard's origin, since the browser uploads straight to the storage:
 
-```ts
+```ts fragment
 // antelope.config.ts
 "dms-media": {
-  source: { type: "package", package: "@antelopejs/dms-media", version: "^0.5.0" },
+  source: { type: "package", package: "@antelopejs/dms-media", version: "^0.7.0" },
   config: {
     publicBaseUrl: "${@api.API_PUBLIC_BASE_URL}",
   },
@@ -51,7 +51,7 @@ api: {
 
 Restart the backend, then the frontend, and open **Modules › Media** (`/modules/media/overview`). To let members pick files from your own pages, add an asset field:
 
-```ts
+```ts fragment
 import { AssetType } from "@antelopejs/interface-dms-media";
 
 new AssetType({
@@ -66,26 +66,20 @@ new AssetType({
 
 | Package                                     | Supported         | Tested with |
 | ------------------------------------------- | ----------------- | ----------- |
-| `@antelopejs/interface-api`                 | `>=0.0.15 <1.0.0` | `0.0.15`    |
-| `@antelopejs/interface-api-util`            | `>=0.1.3 <1.0.0`  | `0.1.3`     |
-| `@antelopejs/interface-core`                | `>=0.2.4 <1.0.0`  | `0.2.4`     |
-| `@antelopejs/interface-database`            | `>=0.1.11 <1.0.0` | `0.1.11`    |
-| `@antelopejs/interface-database-decorators` | `>=0.1.10 <1.0.0` | `0.1.10`    |
-| `@antelopejs/interface-dms`                 | `>=0.9.0 <1.0.0`  | `0.9.0`     |
+| `@antelopejs/interface-api`                 | `>=0.3.0 <1.0.0`  | `0.3.0`     |
+| `@antelopejs/interface-api-util`            | `>=0.3.0 <1.0.0`  | `0.3.0`     |
+| `@antelopejs/interface-core`                | `>=0.4.0 <1.0.0`  | `0.4.0`     |
+| `@antelopejs/interface-database`            | `>=0.3.0 <1.0.0`  | `0.3.0`     |
+| `@antelopejs/interface-database-decorators` | `>=0.2.0 <1.0.0`  | `0.2.0`     |
+| `@antelopejs/interface-dms`                 | `>=0.12.0 <1.0.0` | `0.12.0`    |
 | `@antelopejs/interface-dms-media`           | `>=0.3.0 <0.4.0`  | `0.3.1`     |
 | `@antelopejs/interface-file-storage`        | `>=0.1.6 <1.0.0`  | `0.1.6`     |
 
 <!-- antelopejs-docs-compat:end -->
 
-| Package | Version |
-| --- | --- |
-| `@antelopejs/dms` | `>=0.13.1 <1.0.0` |
-| `@antelopejs/interface-dms` | `>=0.9.0 <1.0.0` |
-| `@antelopejs/dms-frontend` (renderer) | `>=0.9.2 <0.10.0` |
-| `@antelopejs/interface-dms-media` | `>=0.3.0 <0.4.0` |
-| File storage | an `@antelopejs/interface-file-storage` implementation, such as `@antelopejs/file-storage-local` |
+The module also needs a DMS backend in a release that implements the `@antelopejs/interface-dms` range in the table above, and the `@antelopejs/dms-frontend` renderer in the range its frontend module declares in `engines["@antelopejs/dms-frontend"]` of `frontend-vue/package.json`. The `ajs dms` CLI refuses to build it with a renderer outside that range.
 
-On DMS 0.8, use `@antelopejs/dms-media` 0.3.
+- File storage: an `@antelopejs/interface-file-storage` implementation, such as `@antelopejs/file-storage-local`.
 
 ## Documentation
 

@@ -10,18 +10,29 @@ import { createRequire } from "node:module";
 import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
+import { z } from "zod";
+
+const manifestSchema = z.object({
+  name: z.string(),
+  exports: z.object({}).passthrough().optional(),
+});
 
 const packageRoot = path.resolve(
   path.dirname(fileURLToPath(import.meta.url)),
   "..",
 );
-const manifest = JSON.parse(
-  fs.readFileSync(path.join(packageRoot, "package.json"), "utf8"),
+const manifest = manifestSchema.parse(
+  JSON.parse(fs.readFileSync(path.join(packageRoot, "package.json"), "utf8")),
 );
 const distRoot = path.join(packageRoot, "dist");
 
+/** @type {string[]} */
 const failures = [];
 
+/**
+ * @param {boolean} condition
+ * @param {string} message
+ */
 function check(condition, message) {
   if (!condition) failures.push(message);
 }
@@ -32,6 +43,10 @@ if (!fs.existsSync(distRoot)) {
   );
 }
 
+/**
+ * @param {string} directory
+ * @returns {string[]}
+ */
 function listFiles(directory) {
   return fs.readdirSync(directory, { withFileTypes: true }).flatMap((entry) => {
     const full = path.join(directory, entry.name);
@@ -39,6 +54,7 @@ function listFiles(directory) {
   });
 }
 
+/** @param {string} file */
 function toSubpath(file) {
   const relative = path
     .relative(distRoot, file)

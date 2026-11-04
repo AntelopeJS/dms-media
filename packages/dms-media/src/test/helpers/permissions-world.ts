@@ -1,5 +1,6 @@
 import type { AxiosInstance } from "axios";
 import { assert, expect } from "chai";
+import { z } from "zod";
 import { RegisterAssetBinding } from "@antelopejs/interface-dms-media";
 import {
   configureMediaModule,
@@ -8,6 +9,7 @@ import {
 } from "../../config";
 import { MEDIA_PAGE_PERMISSION } from "../../pages/files";
 import type { AclEntry } from "../../types";
+import { createdBody, readBody } from "../helpers/bodies";
 import {
   type UploadedAsset,
   uploadPixelPng,
@@ -37,25 +39,27 @@ export const STOCK_FOLDER_NAME = "Warehouse stock";
 export const CONTENT_ROOT_NAME = "Content";
 export const ROTATE_QUARTER_TURN = 90;
 
-export interface TreeFolderNode {
-  id: string;
-  name: string;
-  parentId: string | null;
-  shell: boolean;
-  bound: boolean;
-  visibility: string;
-  rights: { read: boolean; write: boolean; manage: boolean };
-}
+const treeFolderNodeBody = z.object({
+  id: z.string(),
+  name: z.string(),
+  parentId: z.string().nullable(),
+  shell: z.boolean(),
+  bound: z.boolean(),
+  visibility: z.string(),
+  rights: z.object({
+    read: z.boolean(),
+    write: z.boolean(),
+    manage: z.boolean(),
+  }),
+});
 
-export interface TreeRootRights {
-  write: boolean;
-  manage: boolean;
-}
+const treeBody = z.object({
+  folders: z.array(treeFolderNodeBody),
+  root: z.object({ write: z.boolean(), manage: z.boolean() }),
+});
 
-export interface TreeResponse {
-  folders: TreeFolderNode[];
-  root: TreeRootRights;
-}
+export type TreeFolderNode = z.infer<typeof treeFolderNodeBody>;
+export type TreeResponse = z.infer<typeof treeBody>;
 
 export interface WorldRoles {
   pageHolder: string;
@@ -103,7 +107,7 @@ export interface WorldAssets {
 export async function fetchTree(client: AxiosInstance): Promise<TreeResponse> {
   const response = await client.get("/api/media/tree");
   expect(response.status, "tree").to.equal(HTTP_OK);
-  return response.data;
+  return readBody(response, treeBody);
 }
 
 export function findByName(
@@ -134,7 +138,7 @@ export async function createFolder(
 ): Promise<string> {
   const response = await owner.post("/api/media/folders", { name, parentId });
   expect(response.status, `create folder ${name}`).to.equal(HTTP_OK);
-  return response.data.id;
+  return readBody(response, createdBody).id;
 }
 
 export function roleEntry(

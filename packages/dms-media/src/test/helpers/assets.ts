@@ -1,5 +1,7 @@
 import axios, { type AxiosInstance } from "axios";
 import { expect } from "chai";
+import { z } from "zod";
+import { presignBody, readBody } from "./bodies";
 import { getBaseUrl } from "./http";
 
 const HTTP_OK = 200;
@@ -12,14 +14,16 @@ export const ONE_PIXEL_PNG = Buffer.from(
   "base64",
 );
 
-export interface UploadedAsset {
-  id: string;
-  folderId: string;
-  name: string;
-  width?: number;
-  height?: number;
-  url: string;
-}
+const uploadedAssetBody = z.object({
+  id: z.string(),
+  folderId: z.string(),
+  name: z.string(),
+  width: z.number().nullish(),
+  height: z.number().nullish(),
+  url: z.string(),
+});
+
+export type UploadedAsset = z.infer<typeof uploadedAssetBody>;
 
 export interface RawRedirectResponse {
   status: number;
@@ -32,6 +36,18 @@ export interface BatchFile {
   mimetype: string;
   body: Buffer;
   batchId?: string;
+}
+
+/** Sends the bytes to the storage URL a presign answered, the way a browser does. */
+export function putPresigned(
+  presign: z.infer<typeof presignBody>,
+  body: Buffer,
+) {
+  return axios.put(presign.uploadUrl, body, {
+    headers: presign.headers,
+    validateStatus: () => true,
+    transformRequest: [(data: Buffer) => data],
+  });
 }
 
 export function uploadAsset(
@@ -57,20 +73,17 @@ export async function uploadAssetInBatch(
     mimetype,
   });
   expect(presign.status, "presign").to.equal(HTTP_OK);
-  const put = await axios.put(presign.data.uploadUrl, body, {
-    headers: presign.data.headers,
-    validateStatus: () => true,
-    transformRequest: [(data) => data],
-  });
+  const presigned = readBody(presign, presignBody);
+  const put = await putPresigned(presigned, body);
   expect(put.status, "storage PUT").to.be.lessThan(HTTP_REDIRECT_BOUNDARY);
   const confirm = await client.post("/api/media/upload/confirm", {
     folderId,
-    resourceKey: presign.data.resourceKey,
+    resourceKey: presigned.resourceKey,
     filename,
     batchId,
   });
   expect(confirm.status, "confirm").to.equal(HTTP_OK);
-  return confirm.data.asset;
+  return readBody(confirm, z.object({ asset: uploadedAssetBody })).asset;
 }
 
 export function uploadPixelPng(

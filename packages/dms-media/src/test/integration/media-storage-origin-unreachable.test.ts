@@ -2,6 +2,7 @@ import type { AxiosInstance } from "axios";
 import { assert, expect } from "chai";
 import sharp from "sharp";
 import { rawGet, uploadAsset } from "../helpers/assets";
+import { createdBody, readBody } from "../helpers/bodies";
 import { authorizedClient, getBaseUrl } from "../helpers/http";
 import { ensureOwnerSession } from "../helpers/owner";
 
@@ -56,7 +57,7 @@ describe("[integration] media when the server cannot reach the storage's public 
       name: "Unreachable storage origin",
     });
     expect(folder.status).to.equal(HTTP_OK);
-    folderId = folder.data.id;
+    folderId = readBody(folder, createdBody).id;
     globalThis.fetch = (input, init) =>
       requestUrl(input).pathname.startsWith(STORAGE_PATH_PREFIX)
         ? Promise.reject(new TypeError("fetch failed: egress blocked"))

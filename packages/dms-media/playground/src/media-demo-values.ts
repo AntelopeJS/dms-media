@@ -11,6 +11,7 @@ import {
 import type { User } from "@antelopejs/interface-dms/auth/db";
 import { AuthUserWithPermission } from "@antelopejs/interface-dms/guards";
 import { getRequestTenantId } from "@antelopejs/interface-dms/request-tenant";
+import { z } from "zod";
 import {
   MEDIA_DEMO_FIELD_IDS,
   MEDIA_DEMO_VALUES_LOCATION,
@@ -24,31 +25,22 @@ const JSON_INDENT = 2;
 export type MediaDemoValue = string | string[] | null;
 export type MediaDemoValues = Record<string, MediaDemoValue>;
 
-function isId(value: unknown): value is string {
-  return typeof value === "string";
-}
-
-function isIdList(value: unknown): value is string[] {
-  return Array.isArray(value) && value.every(isId);
-}
-
-function isDemoValue(value: unknown): value is MediaDemoValue {
-  return value === null || isId(value) || isIdList(value);
-}
-
-function isBody(value: unknown): value is object {
-  return typeof value === "object" && value !== null;
-}
+const demoBodySchema = z.record(
+  z.string(),
+  z
+    .union([z.string(), z.array(z.string()), z.null()])
+    .optional()
+    .catch(undefined),
+);
 
 /** Keeps the fields the form declares, each holding an id, ids or nothing. */
 export function pickDemoValues(
-  body: unknown,
+  body: z.infer<typeof demoBodySchema>,
   fieldIds: readonly string[],
 ): MediaDemoValues {
-  if (!isBody(body)) return {};
   return Object.fromEntries(
     Object.entries(body).flatMap(([id, value]): [string, MediaDemoValue][] =>
-      fieldIds.includes(id) && isDemoValue(value) ? [[id, value]] : [],
+      fieldIds.includes(id) && value !== undefined ? [[id, value]] : [],
     ),
   );
 }
@@ -60,7 +52,11 @@ function valuesFile(tenantId: string): string {
 
 async function readValues(tenantId: string): Promise<MediaDemoValues> {
   const raw = await readFile(valuesFile(tenantId), "utf8").catch(() => "{}");
-  return pickDemoValues(JSON.parse(raw), MEDIA_DEMO_FIELD_IDS);
+  const stored = demoBodySchema.safeParse(JSON.parse(raw));
+  return pickDemoValues(
+    stored.success ? stored.data : {},
+    MEDIA_DEMO_FIELD_IDS,
+  );
 }
 
 async function writeValues(
@@ -96,9 +92,10 @@ export class MediaDemoValuesController extends Controller(
   @Put("/values")
   async save(@JSONBody() body: unknown): Promise<MediaDemoValues> {
     const tenantId = getRequestTenantId(this.ctx);
+    const sent = demoBodySchema.safeParse(body);
     const next = {
       ...(await readValues(tenantId)),
-      ...pickDemoValues(body, MEDIA_DEMO_FIELD_IDS),
+      ...pickDemoValues(sent.success ? sent.data : {}, MEDIA_DEMO_FIELD_IDS),
     };
     await writeValues(tenantId, next);
     return next;

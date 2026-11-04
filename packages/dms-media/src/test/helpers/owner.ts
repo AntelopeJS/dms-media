@@ -1,4 +1,7 @@
+import { z } from "zod";
+import { readBody } from "./bodies";
 import { createClient } from "./http";
+import { SETUP_TOKEN } from "./setup-token";
 
 const OWNER_EMAIL = "owner@test.local";
 const OWNER_PASSWORD = "TestPassw0rd!";
@@ -19,6 +22,7 @@ export async function ensureOwnerSession(): Promise<OwnerSession> {
     lastName: OWNER_LAST_NAME,
     email: OWNER_EMAIL,
     password: OWNER_PASSWORD,
+    setupToken: SETUP_TOKEN,
   });
   const isRegistered = registration.status < HTTP_BAD_REQUEST;
   const isAlreadyRegistered =
@@ -38,5 +42,6 @@ export async function ensureOwnerSession(): Promise<OwnerSession> {
       `Login failed [${login.status}]: ${JSON.stringify(login.data)}`,
     );
   }
-  return { accessToken: login.data.access_token, email: OWNER_EMAIL };
+  const session = readBody(login, z.object({ access_token: z.string() }));
+  return { accessToken: session.access_token, email: OWNER_EMAIL };
 }

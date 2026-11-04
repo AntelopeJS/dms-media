@@ -31,17 +31,20 @@ const folderNodeSchema = z.object({
   name: z.string(),
   parentId: z.string().nullable(),
   binding: z.string().nullable(),
+  bound: z.boolean(),
   acceptsSubfolders: z.boolean(),
   accepts: z.array(z.string()).nullable(),
 });
 
 export type FolderNode = z.infer<typeof folderNodeSchema>;
 
-/** The folders `/api/media/tree` answers, checked against the fields the suites read. */
+/** What `/api/media/tree` answers, checked against the fields the suites read. */
+export const folderTreeBody = z.object({ folders: z.array(folderNodeSchema) });
+
+/** The folders `/api/media/tree` answers. */
 export async function fetchFolderNodes(
   client: AxiosInstance,
 ): Promise<FolderNode[]> {
   const response = await client.get("/api/media/tree");
-  return z.object({ folders: z.array(folderNodeSchema) }).parse(response.data)
-    .folders;
+  return folderTreeBody.parse(response.data).folders;
 }

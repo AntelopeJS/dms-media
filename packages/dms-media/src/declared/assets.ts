@@ -53,10 +53,6 @@ interface PreparedFile {
 
 type Fail = (reason: string) => never;
 
-function describeError(error: unknown): string {
-  return error instanceof Error ? error.message : String(error);
-}
-
 async function loadBytes(
   load: () => Uint8Array | Promise<Uint8Array>,
   fail: Fail,
@@ -64,7 +60,9 @@ async function loadBytes(
   const loaded: unknown = await Promise.resolve()
     .then(load)
     .catch((error: unknown) =>
-      fail(`the source failed to load: ${describeError(error)}`),
+      fail(
+        `the source failed to load: ${error instanceof Error ? error.message : String(error)}`,
+      ),
     );
   if (!(loaded instanceof Uint8Array))
     fail("source.load must return a Uint8Array");
@@ -80,7 +78,9 @@ async function readSource(
   if ("bytes" in source) bytes = Buffer.from(source.bytes);
   else if ("filePath" in source)
     bytes = await readFile(source.filePath).catch((error: unknown) =>
-      fail(`cannot read '${source.filePath}': ${describeError(error)}`),
+      fail(
+        `cannot read '${source.filePath}': ${error instanceof Error ? error.message : String(error)}`,
+      ),
     );
   else bytes = await loadBytes(source.load, fail);
   const size = declaredFileSizeSchema.safeParse(bytes.byteLength);

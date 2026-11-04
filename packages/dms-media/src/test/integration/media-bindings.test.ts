@@ -8,7 +8,8 @@ import { CustomComponent } from "@antelopejs/interface-dms/base/custom";
 import type { AxiosInstance } from "axios";
 import { assert, expect } from "chai";
 import { RegisterAssetBinding } from "@antelopejs/interface-dms-media";
-import { readFolderAcl } from "../helpers/folders";
+import { readBody } from "../helpers/bodies";
+import { folderTreeBody, readFolderAcl } from "../helpers/folders";
 import { authorizedClient } from "../helpers/http";
 import { ensureOwnerSession } from "../helpers/owner";
 
@@ -26,13 +27,6 @@ class PageBoundProbePage extends PageController("page-bound-probe", {
   category: pagesCategory,
 }) {
   static content = CustomComponent("dms-media-page-bound-probe");
-}
-
-interface FolderNode {
-  id: string;
-  name: string;
-  parentId: string | null;
-  bound: boolean;
 }
 
 describe("[integration] media bindings — linked folder provisioning", () => {
@@ -62,7 +56,7 @@ describe("[integration] media bindings — linked folder provisioning", () => {
   it("provisions the content root and the linked folder lazily", async () => {
     const tree = await client.get("/api/media/tree");
     expect(tree.status).to.equal(HTTP_OK);
-    const folders: FolderNode[] = tree.data.folders;
+    const folders = readBody(tree, folderTreeBody).folders;
     const contentRoot = folders.find(
       (folder) => folder.name === "Content" && folder.parentId === null,
     );
@@ -79,8 +73,8 @@ describe("[integration] media bindings — linked folder provisioning", () => {
     const first = await client.get("/api/media/tree");
     const second = await client.get("/api/media/tree");
     expect(second.data.folders.length).to.equal(first.data.folders.length);
-    const bound = second.data.folders.filter(
-      (folder: FolderNode) => folder.name === "Article covers",
+    const bound = readBody(second, folderTreeBody).folders.filter(
+      (folder) => folder.name === "Article covers",
     );
     expect(bound).to.have.length(1);
   });
@@ -101,10 +95,10 @@ describe("[integration] media bindings — linked folder provisioning", () => {
     const pagePermission = GetPermissionId(PageBoundProbePage);
     expect(pagePermission, "probe page permission").to.be.a("string");
     const tree = await client.get("/api/media/tree");
-    const folder = tree.data.folders.find(
-      (node: FolderNode) => node.name === PAGE_BOUND_FOLDER_NAME,
+    const folder = readBody(tree, folderTreeBody).folders.find(
+      (node) => node.name === PAGE_BOUND_FOLDER_NAME,
     );
-    expect(folder, "page-bound folder").to.not.equal(undefined);
+    assert.isDefined(folder, "page-bound folder");
     const entries = await readFolderAcl(folder.id);
     expect(entries).to.deep.include({
       subject: { kind: "permission", id: pagePermission },
@@ -150,8 +144,8 @@ describe("[integration] media bindings — linked folder provisioning", () => {
       expect(response.status).to.equal(HTTP_OK);
     }
     const tree = await client.get("/api/media/tree");
-    const probes = tree.data.folders.filter(
-      (folder: FolderNode) => folder.name === PROBE_NAME,
+    const probes = readBody(tree, folderTreeBody).folders.filter(
+      (folder) => folder.name === PROBE_NAME,
     );
     expect(probes).to.have.length(1);
   });

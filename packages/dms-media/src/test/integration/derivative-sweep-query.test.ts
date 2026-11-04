@@ -28,14 +28,15 @@ describe("[integration] streaming derivative sweep", () => {
     for (const [index, model] of models.entries()) {
       await model.insert([{ ...fixture, _id: TENANTS[index] }]);
     }
-    const visits: string[] = [];
+    const visits: unknown[] = [];
     const restore = patchMethod<Query<unknown>, "cursor">(
       Query.prototype,
       "cursor",
       (readCursor) =>
         async function* (this: Query<unknown>) {
-          const table = this.stages.find((stage) => stage.stage === "table")
-            ?.options?.id;
+          const table: unknown = this.stages.find(
+            (stage) => stage.stage === "table",
+          )?.options?.id;
           if (table === "tenants") {
             for (const _id of TENANTS) yield { _id };
             return;

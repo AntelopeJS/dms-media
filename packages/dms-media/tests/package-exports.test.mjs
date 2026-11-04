@@ -13,19 +13,19 @@ const manifest = readManifest();
  */
 const require = createRequire(path.join(root, "package.json"));
 
-test("the package name resolves to the built entry", () => {
+void test("the package name resolves to the built entry", () => {
   const entry = require.resolve(manifest.name);
   assert.equal(entry, path.join(root, manifest.main));
   assert.ok(existsSync(entry), `${entry} is built`);
 });
 
-test("the exports map names the entry's types", () => {
+void test("the exports map names the entry's types", () => {
   const types = manifest.exports["."].types;
   assert.equal(path.normalize(types), path.normalize(manifest.types));
   assert.ok(existsSync(path.join(root, types)), `${types} is built`);
 });
 
-test("the manifest stays reachable", () => {
+void test("the manifest stays reachable", () => {
   assert.equal(
     require.resolve(`${manifest.name}/package.json`),
     path.join(root, "package.json"),

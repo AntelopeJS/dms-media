@@ -1,6 +1,8 @@
 import type { AxiosInstance } from "axios";
-import axios from "axios";
 import { expect } from "chai";
+import { z } from "zod";
+import { putPresigned } from "../helpers/assets";
+import { createdBody, presignBody, readBody } from "../helpers/bodies";
 import { authorizedClient } from "../helpers/http";
 import { ensureOwnerSession } from "../helpers/owner";
 
@@ -26,18 +28,17 @@ async function waitForMediaApi(client: AxiosInstance): Promise<void> {
   throw new Error("Timed out waiting for the media API to be ready");
 }
 
-async function uploadBytes(
-  uploadUrl: string,
-  headers: Record<string, string>,
-  body: Buffer,
-): Promise<number> {
-  const response = await axios.put(uploadUrl, body, {
-    headers,
-    validateStatus: () => true,
-    transformRequest: [(data) => data],
-  });
-  return response.status;
-}
+const treeBody = z.object({
+  folders: z.array(
+    z.object({
+      id: z.string(),
+      parentId: z.string().nullable(),
+      rights: z
+        .object({ read: z.boolean(), write: z.boolean(), manage: z.boolean() })
+        .strict(),
+    }),
+  ),
+});
 
 describe("[integration] media API — owner lifecycle", () => {
   let client: AxiosInstance;
@@ -64,7 +65,7 @@ describe("[integration] media API — owner lifecycle", () => {
       name: "Brand",
     });
     expect(created.status).to.equal(HTTP_OK);
-    brandFolderId = created.data.id;
+    brandFolderId = readBody(created, createdBody).id;
     expect(brandFolderId).to.be.a("string");
 
     const sub = await client.post("/api/media/folders", {
@@ -72,15 +73,15 @@ describe("[integration] media API — owner lifecycle", () => {
       parentId: brandFolderId,
     });
     expect(sub.status).to.equal(HTTP_OK);
-    subFolderId = sub.data.id;
+    subFolderId = readBody(sub, createdBody).id;
 
     const tree = await client.get("/api/media/tree");
     expect(tree.data.folders).to.have.length(2);
-    const subNode = tree.data.folders.find(
-      (node: { id: string }) => node.id === subFolderId,
+    const subNode = readBody(tree, treeBody).folders.find(
+      (node) => node.id === subFolderId,
     );
-    expect(subNode.parentId).to.equal(brandFolderId);
-    expect(subNode.rights).to.deep.equal({
+    expect(subNode?.parentId).to.equal(brandFolderId);
+    expect(subNode?.rights).to.deep.equal({
       read: true,
       write: true,
       manage: true,
@@ -103,22 +104,19 @@ describe("[integration] media API — owner lifecycle", () => {
       mimetype: FILE_MIMETYPE,
     });
     expect(presign.status).to.equal(HTTP_OK);
-    expect(presign.data.resourceKey).to.be.a("string");
+    const presigned = readBody(presign, presignBody);
+    expect(presigned.resourceKey).to.be.a("string");
 
-    const putStatus = await uploadBytes(
-      presign.data.uploadUrl,
-      presign.data.headers,
-      body,
-    );
+    const putStatus = (await putPresigned(presigned, body)).status;
     expect(putStatus).to.be.lessThan(300);
 
     const confirm = await client.post("/api/media/upload/confirm", {
       folderId: brandFolderId,
-      resourceKey: presign.data.resourceKey,
+      resourceKey: presigned.resourceKey,
       filename: FILE_NAME,
     });
     expect(confirm.status).to.equal(HTTP_OK);
-    assetId = confirm.data.asset.id;
+    assetId = readBody(confirm, z.object({ asset: createdBody })).asset.id;
     expect(confirm.data.asset.name).to.equal(FILE_NAME);
     expect(confirm.data.asset.mimetype).to.equal(FILE_MIMETYPE);
     expect(confirm.data.asset.size).to.equal(body.byteLength);

@@ -15,6 +15,7 @@ import {
   MediaFolderModel,
 } from "../../db";
 import { ONE_PIXEL_PNG, PNG_MIMETYPE } from "../helpers/assets";
+import { createdBody, readBody } from "../helpers/bodies";
 import { type FolderNode, fetchFolderNodes } from "../helpers/folders";
 import { authorizedClient } from "../helpers/http";
 import { ensureOwnerSession } from "../helpers/owner";
@@ -151,11 +152,11 @@ describe("[integration] media linked subfolders — bindings that allow them", (
     });
     const nested = await client.post("/api/media/folders", {
       name: "Roof",
-      parentId: created.data.id,
+      parentId: readBody(created, createdBody).id,
     });
     const presign = (filename: string, mimetype: string) =>
       client.post("/api/media/upload/presign", {
-        folderId: nested.data.id,
+        folderId: readBody(nested, createdBody).id,
         filename,
         size: 4,
         mimetype,
