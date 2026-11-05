@@ -1,6 +1,6 @@
 ---
 name: verify-dms-media
-description: "Drive the AntelopeJS dms-media module (the media library, uploads, delivery links, image sizes, the image editor, folder bindings, asset fields and declared content) the way the platform owner and the members do, inside a DMS with free ports, its own MongoDB database and local file storage, and post a verdict with evidence. Use to prove a change to AntelopeJS/dms-media works before merge, to verify a PR, or to check that a seeded break or a seeded one-way door is caught."
+description: "Drive the AntelopeJS dms-media module (the media library, uploads, delivery links, image sizes, the image editor, folder bindings, asset fields and declared content) the way the platform owner and the members do, inside a DMS with free ports, its own MongoDB database and local file storage, and post a verdict with evidence. Use to prove a change to AntelopeJS/dms-media works before merge, or to verify a PR."
 ---
 
 # Verify dms-media
@@ -14,7 +14,7 @@ C="pnpm --dir packages/dms-media exec dms-control"
 $C                       # lists every command
 ```
 
-Give `seeded`, `doors` and `--skill` absolute paths: the command runs in `packages/dms-media`.
+Give `doors` and `--skill` absolute paths: the command runs in `packages/dms-media`.
 
 ## Launch
 
@@ -69,25 +69,14 @@ $C down "$RUN"
 3. **Every registered journey of a feature in `run` must have run and passed.** Known findings stay as failing journeys (see the feature files' Gotchas): they fail a verdict only when the diff touches their feature.
 4. **Docs.** Judge every `docs:` page of each touched feature against what the journeys showed.
 5. **Formal checks.** `$C formal "$RUN"` runs every formal check whose covered files the diff touches; `formal-asset-files` ([SKILL.md](../formal-asset-files/SKILL.md)) covers how an asset's stored files are written, published and deleted. A check that exits non-zero fails the verdict, `STALE` included: the model must describe the code at HEAD.
-6. **One-way doors.** The section comes right after the result line and is mandatory. `$C doors` prints the `One-way-door:` line for the diff. A Data door is contained only by `folders/delete-takes-only-its-own-files` passing in this run; no journey contains a Format door, so a Format row says so.
+6. **One-way doors.** The section comes right after the result line and is mandatory. `$C doors` prints the `One-way-door:` line for the diff.
 7. **Result.** FAIL if any of rules 1 to 6 fail. PASS+NOTES when something is not verified or needs the owner's attention. PASS otherwise.
 
 Write `$RUN/evidence/judgement.json` (`doors`, `docs`, `notVerified`, `attention`, `verifier`), then `$C verdict "$RUN" --pr <n>` and, from a thread that did not write the change, `$C publish "$RUN" --pr <n>`.
 
 ## Trust
 
-The skill is not Trusted yet. It becomes Trusted when it catches every seeded break and flags every seeded door, passes a shadow run of 10 consecutive agent PRs, and its last maintain pass is newer than the last change to the repository or its `@antelopejs` dependencies and at most 30 days old.
-
-## Seeded breaks and doors
-
-```bash
-$C seeded smoke uploads delivery
-$C doors "$PWD/.agents/skills/verify-dms-media/seeded-doors/data.patch"
-```
-
-`seeded-breaks/<feature>.patch` is one minimal product bug per feature; `seeded` builds a control and a patched worktree, runs the feature's journeys in each, and prints `CAUGHT` with the journeys that caught it, or `MISSED`. A break counts only when a journey that passes in the control fails one of its checks with the patch. `seeded-doors/<kind>.patch` holds one change per door kind.
-
-`seeded-breaks/extra/<id>.patch` holds further breaks of a feature, each caught by that feature's journeys. `seeded` reads only `<feature>.patch`, so `$PWD/.agents/skills/verify-dms-media/seeded-breaks/run-extra.sh <feature> <id>` copies one over it in a scratch copy of the skill and runs `seeded` with `--skill` on that copy. Its output is `seeded`'s.
+The skill is not Trusted yet. It becomes Trusted when it passes a shadow run of 10 consecutive agent PRs, and its last maintain pass is newer than the last change to the repository or its `@antelopejs` dependencies and at most 30 days old.
 
 ## Gotchas
 
@@ -101,8 +90,8 @@ $C doors "$PWD/.agents/skills/verify-dms-media/seeded-doors/data.patch"
 - Uploads through the dashboard go to the dashboard's own origin; `STORAGE_ORIGIN=api` sends them to the API's origin, and `unreachable` to a closed port.
 - No request ages a file or an event. `clock.mjs` moves a row's `createdAt` or `updatedAt` back in the run's database, with the MongoDB driver dms-control resolves, for the 24-hour, 7-day, 30-day and year windows.
 - `mongod` comes from `DMS_CONTROL_MONGOD`, `PATH`, or the mongodb-memory-server cache (`~/.cache/mongodb-binaries`).
-- A step whose check fails because the backend or the dashboard stopped answering ends the journey with a `NOT VERIFIED` error and no failing check (`guard.mjs`), so `seeded` never counts an outage as a catch.
-- Known findings on `origin/main`, each a failing journey with an open issue: `library/the-details-drawer-steps-through-the-files` (#119, the drawer ends on a 500), `uploads/a-live-uploads-page-shows-a-new-batch` (#118, Recent batches does not follow Live), `asset-field/the-pickers-upload-targets-the-linked-folder` (#121, the picker's Upload from a subfolder lands in the subfolder). `overview/own-uploads-keep-moving-while-paused-and-activity-follows` fails now and then (#124, 1 run in 10 on one stack): with Live pressed and checked, a rename made elsewhere sometimes does not show on the Activity page within 20 s. Its failure is not a catch. `files/the-history-lists-every-event` fails on purpose: a file's History stops at 50 events while the docs say it lists every event (draft `dms-media-history-cut-at-50`). `files/a-move-keeps-the-targets-rules` fails on purpose: a move into a linked folder skips the field's types, and a move onto a taken name is allowed (drafts `dms-media-move-ignores-field-types` and `dms-media-move-ignores-taken-names`).
+- A step whose check fails because the backend or the dashboard stopped answering ends the journey with a `NOT VERIFIED` error and no failing check (`guard.mjs`).
+- Known findings on `origin/main`, each a failing journey with an open issue: `library/the-details-drawer-steps-through-the-files` (#119, the drawer ends on a 500), `uploads/a-live-uploads-page-shows-a-new-batch` (#118, Recent batches does not follow Live), `asset-field/the-pickers-upload-targets-the-linked-folder` (#121, the picker's Upload from a subfolder lands in the subfolder). `overview/own-uploads-keep-moving-while-paused-and-activity-follows` fails now and then (#124, 1 run in 10 on one stack): with Live pressed and checked, a rename made elsewhere sometimes does not show on the Activity page within 20 s. `files/the-history-lists-every-event` fails on purpose: a file's History stops at 50 events while the docs say it lists every event (draft `dms-media-history-cut-at-50`). `files/a-move-keeps-the-targets-rules` fails on purpose: a move into a linked folder skips the field's types, and a move onto a taken name is allowed (drafts `dms-media-move-ignores-field-types` and `dms-media-move-ignores-taken-names`).
 - Docs that disagree, where the journeys assert the documented behaviour the code has: the config TSDoc names a request-origin default for `publicBaseUrl` and leaves PHP out of `allowedMimetypes` (#125); Extending says the sizes example is null without a public image, while the Image sizes page and the code fall back to a private one (docs draft `dms-media-docs-example-url-private`).
 
 ## Not driven
