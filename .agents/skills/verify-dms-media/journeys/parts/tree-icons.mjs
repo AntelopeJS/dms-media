@@ -42,6 +42,29 @@ async function rowsOf(tab, ids) {
   return Object.fromEntries(drawn.map(([id = "", glyph, ...markers]) => [id, glyph === undefined ? null : { glyph: digest(glyph), markers: markers.map(digest) }]));
 }
 
+/**
+ * @param {{ link: Row | null, folder: Row | null, opened: Row | null, tooltip: boolean }} seen The linked folder, an unlinked one closed and open, and whether the tooltip showed
+ * @returns {import("../../media.mjs").Check[]} What the linked folder must show
+ */
+function linkedChecks({ link, folder, opened, tooltip }) {
+  return [
+    check("the linked folder's icon is the link, neither the closed nor the open folder icon", link !== null && folder !== null && opened !== null && link.glyph !== "" && link.glyph !== folder.glyph && link.glyph !== opened.glyph, [link?.glyph, folder?.glyph, opened?.glyph]),
+    check("it shows the link again as its marker", link !== null && link.markers.includes(link.glyph), link?.markers),
+    check("the link tooltip says Linked to a field", tooltip, tooltip),
+  ];
+}
+
+/**
+ * @param {{ link: Row | null, folder: Row | null, star: Row | null }} seen The linked folder, an unlinked one and a starred one
+ * @returns {import("../../media.mjs").Check[]} What the other folders must show
+ */
+function otherChecks({ link, folder, star }) {
+  return [
+    check("an unlinked folder shows the folder icon and no marker", folder !== null && folder.glyph !== "" && folder.markers.length === 0, folder),
+    check("a starred folder shows the same folder icon and one marker, not the link", star !== null && folder !== null && star.glyph === folder.glyph && star.markers.length === 1 && link !== null && star.markers[0] !== link.glyph, star),
+  ];
+}
+
 /** @type {{ id: string, title: string, entryPoint: string, run: (ctx: Ctx) => Promise<void> }} */
 const aLinkedFolderShowsTheLinkIconInTheLocationsTree = {
   id: "a-linked-folder-shows-the-link-icon-in-the-locations-tree",
@@ -69,17 +92,18 @@ const aLinkedFolderShowsTheLinkIconInTheLocationsTree = {
     }
     const step = ctx.step("the Locations tree icons");
     await tree.screenshot({ path: join(step, "locations.png") }).catch(() => undefined);
-    writeFileSync(join(step, "icons.json"), `${JSON.stringify(rows, null, 2)}\n`);
+    await tab.goto(`/modules/media/files?folder=${plain.id}`);
+    await tab.visible({ role: "treeitem", name: new RegExp(`^${starredName}`) }, { timeoutMs: 30_000 });
+    await tab.page.waitForTimeout(1000);
+    const opened = (await rowsOf(tab, [plain.id]))[plain.id];
+    writeFileSync(join(step, "icons.json"), `${JSON.stringify({ ...rows, [`${plain.id} (open)`]: opened }, null, 2)}\n`);
     const link = rows[linked];
     const folder = rows[plain.id];
     const star = rows[starred.id];
     ctx.record(step, [
-      check("the three folders are in the tree", link !== null && folder !== null && star !== null, rows),
-      check("the linked folder's icon is the link, not the folder icon", link !== null && folder !== null && link.glyph !== "" && link.glyph !== folder.glyph, [link?.glyph, folder?.glyph]),
-      check("it shows the link again as its marker", link !== null && link.markers.includes(link.glyph), link?.markers),
-      check("the link tooltip says Linked to a field", tooltip, tooltip),
-      check("an unlinked folder shows the folder icon and no marker", folder !== null && folder.glyph !== "" && folder.markers.length === 0, folder),
-      check("a starred folder shows the same folder icon and one marker, not the link", star !== null && folder !== null && star.glyph === folder.glyph && star.markers.length === 1 && link !== null && star.markers[0] !== link.glyph, star),
+      check("the three folders are in the tree", link !== null && folder !== null && star !== null && opened !== null, rows),
+      ...linkedChecks({ link, folder, opened, tooltip }),
+      ...otherChecks({ link, folder, star }),
     ]);
   },
 };
