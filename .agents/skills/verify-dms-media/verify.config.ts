@@ -18,8 +18,21 @@ export interface VerifyConfig {
   smoke: string;
   smokeJourney: string;
   doors: Record<DoorKind, DoorRule | null>;
-  formal: never[];
+  formal: FormalCheck[];
 }
+
+/** A formal check `dms-control formal` runs when a diff touches its covered files or its own `files`. */
+export interface FormalCheck {
+  name: string;
+  covers: string[];
+  files: string[];
+  command: string[];
+  violation: RegExp | null;
+  passing: RegExp | null;
+  behaviour: { kind: "emit" };
+}
+
+import { COVERED_FILES } from "../formal-asset-files/coverage.mjs";
 
 const SKILL = ".agents/skills/verify-dms-media";
 const MODULE = "packages/dms-media";
@@ -95,7 +108,17 @@ const config: VerifyConfig = {
       why: "the package names, their files and the release workflows claim @antelopejs/dms-media and @antelopejs/interface-dms-media in the npm registry",
     },
   },
-  formal: [],
+  formal: [
+    {
+      name: "formal-asset-files",
+      covers: COVERED_FILES,
+      files: [".agents/skills/formal-asset-files/**"],
+      command: ["node", ".agents/skills/formal-asset-files/check.mjs"],
+      violation: /^(?:finding|BROKEN|STALE) (\S+)/gm,
+      passing: /(?<=^holds +(?:\w+, )*)(\w+)(?=,| \()/gm,
+      behaviour: { kind: "emit" },
+    },
+  ],
 };
 
 export default config;

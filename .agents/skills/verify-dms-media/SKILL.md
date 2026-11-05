@@ -68,7 +68,7 @@ $C down "$RUN"
 2. **Unmapped surface fails the verdict.** User-facing code is `packages/dms-media/src/**`, `frontend-vue/**`, `skills/**`, `package.json`, and `packages/interface-dms-media/src/**` and `package.json`, tests and tool configs excluded (`verify.config.ts`). `map` checks the whole tree.
 3. **Every registered journey of a feature in `run` must have run and passed.** Known findings stay as failing journeys (see the feature files' Gotchas): they fail a verdict only when the diff touches their feature.
 4. **Docs.** Judge every `docs:` page of each touched feature against what the journeys showed.
-5. **Formal checks.** None.
+5. **Formal checks.** `$C formal "$RUN"` runs every formal check whose covered files the diff touches; `formal-asset-files` ([SKILL.md](../formal-asset-files/SKILL.md)) covers how an asset's stored files are written, published and deleted. A check that exits non-zero fails the verdict, `STALE` included: the model must describe the code at HEAD.
 6. **One-way doors.** The section comes right after the result line and is mandatory. `$C doors` prints the `One-way-door:` line for the diff. A Data door is contained only by `folders/delete-takes-only-its-own-files` passing in this run; no journey contains a Format door, so a Format row says so.
 7. **Result.** FAIL if any of rules 1 to 6 fail. PASS+NOTES when something is not verified or needs the owner's attention. PASS otherwise.
 
