@@ -26,6 +26,8 @@ The image editor crops and rotates JPEG, PNG, WebP and AVIF images on the server
 - `a-typed-crop-is-a-pending-change`: a crop typed in the W field is a pending change that Save as copy applies.
 - `the-crop-frame-follows-the-pointer`: dragging the crop frame with the mouse moves it, dragging its right handle resizes it, and Save as copy applies the dragged frame.
 - `each-ratio-sets-the-frame-proportions`: each aspect ratio gives the crop frame its proportions: the original ratio, 1:1, 4:5, 4:3, 16:9, 9:16 and 1.91:1.
+- `a-saved-rotation-turns-the-file-and-every-size-clockwise`: a rotation of 90° turns a four-colour image a quarter clockwise, the file and its thumb and preview, rendered before the save, all show the new corners after it, a second turn makes a half turn and Revert brings the first corners back.
+- `the-editors-rotate-buttons-save-the-turn-they-name`: in the editor Rotate right then Save turns the file and its sizes a quarter clockwise, and Rotate left then Save as copy writes a copy turned a quarter counter-clockwise beside an untouched source.
 
 ## How to get to it (user POV)
 
@@ -41,4 +43,5 @@ dms-control journey "$RUN" editor
 
 - The editor hydrates after `load`; `rotateOnce` clicks Rotate right until the rotation is pending.
 - The arrow keys cannot move a frame that spans the whole image: shrink it with Shift+arrow first, then move it.
+- The rotation journeys read the colour at each corner of what the link serves, within a tolerance, because the thumb and the preview are lossy WebP; the test image has one colour per quadrant, so a turn the other way, a mirror or a stale size shows in the corners and not in the size.
 - `the-crop-frame-follows-the-pointer` drags the cropper's `.vue-rectangle-stencil` and its `.vue-handler-wrapper--east` handle with the mouse, after a typed W leaves room to move.

@@ -2,6 +2,7 @@ import { guarded } from "../guard.mjs";
 import { createFolder, dashboardSession, declareFolder, deliveryPath, follow, member, setVisibility, uploaded } from "../library.mjs";
 import { check, image, longText, media, pick, raw, recordRaw, sha256, signedLifetime, SVG, text } from "../media.mjs";
 import { activeContentJourneys } from "./parts/active-content.mjs";
+import { readUrlRenewalJourneys } from "./parts/read-url-renewal.mjs";
 
 /** @typedef {import("../media.mjs").Ctx} Ctx */
 
@@ -182,4 +183,5 @@ export const journeys = guarded([
     },
   },
   ...activeContentJourneys(SVG),
+  ...readUrlRenewalJourneys(),
 ]);

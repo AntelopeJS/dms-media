@@ -23,6 +23,7 @@ A file's link, `/media/<id>/<name>`, names the asset. The module answers it with
 - `a-reader-of-the-folder-opens-a-private-file`: a member whose role holds the permission a folder's ACL grants read opens its private file, and loses it when the ACL is another permission.
 - `a-stale-name-redirects-to-the-canonical-link`: a link with an old or wrong file name redirects to the current one; a rename keeps the id, and a missing name or an unknown asset is 404.
 - `signed-urls-live-an-hour-or-five-minutes`: a public file's signed URL lives one hour and a private one five minutes, and the module hands out the same URL again within half that.
+- `a-private-links-signed-url-is-renewed-after-half-its-life`: a private file's link gives the same signed URL until 150 s of its 300 s are gone and a different one at 151 s, which lives a full five minutes; the first URL is still valid then, and both open the same bytes. It waits 151 s.
 - `visibility-is-the-file-then-the-folder-then-private`: a file takes its own visibility, else its folder's, else private; a change shows on the next request and never changes the link.
 - `the-dashboard-origin-serves-media-links`: a /media link on the dashboard's origin reaches the backend with the member's session, so a private file opens there.
 - `svg-is-served-inline-by-the-api`: an SVG is not redirected: the API streams its bytes inline under a sandbox policy, nosniff, an ETag that answers 304, no byte ranges, and a cache policy that follows its visibility.
@@ -44,4 +45,5 @@ dms-control journey "$RUN" delivery
 - The journeys read with plain `fetch`, redirects not followed, and keep the headers and a SHA-256 of the body in `response.json`.
 - The signed URL's lifetime is read from the local storage's token record (`.antelope/file-storage/tokens/read/<token>.json` of the run's playground).
 - `xml-is-served-as-an-attachment` restarts the backend with `VERIFY_MEDIA_MIMETYPES` and restarts it again without it.
+- Only the delivery link reuses a signed URL (`signedReadUrl`, half its lifetime). `GET /api/media/assets/:id/read-url` mints a new five-minute URL on every call, and the library's previews live 12 hours; neither is renewed, so the renewal journey drives the private link and the one-hour public lifetime stays unwaited.
 - `an-unreadable-stored-file-answers-502` deletes the SVG's stored file in the run's storage.

@@ -29,6 +29,7 @@ Named image sizes: sharp renders each the first time it is requested, the storag
 - `the-sizes-api-gives-copyable-examples`: the sizes list has no example while the library holds no image, an example built on a private image while it is the only one, then an example on the public origin built on the public photo even when a private one is newer, and a preview path; the cache facts give the signed link lifetimes and the config block names every size.
 - `image-sizes-page-shows-each-size`: Settings › Image sizes shows a card per size with its size, format, an example link on the public origin, a preview loaded through the dashboard even for a private image, the cached count, the Cache card and the configuration block.
 - `cover-cropping-is-centred`: a cover size crops around the centre, with no focal point: the square thumb of a red, green and blue banded image is all green, edge to edge.
+- `contain-keeps-the-whole-image-and-cover-fills-the-box`: in a 100 × 50 box a contain size keeps the whole 4:3 image, 67 × 50 on black bars with its top and bottom bands, and a cover size fills the box edge to edge and crops those bands away.
 - `the-default-sizes-use-their-documented-settings`: without a presets option, thumb is 300 × 300 cover WebP 80 and preview 1600 wide inside WebP 82: each rendering is byte for byte what sharp gives with those settings, and differs from a neighbouring quality.
 
 ## How to get to it (user POV)
@@ -46,4 +47,5 @@ dms-control journey "$RUN" presets
 - Renderings are read back with sharp from the module's own dependencies (`sharpOf`).
 - `sizes-refuse-what-they-cannot-render` makes the asset's rendering folder read-only in the run's storage to get a 503, then makes it writable again.
 - `cover-cropping-is-centred` uploads three vertical bands, red, green and blue, and reads three pixels of the `thumb` back with sharp: a centred square holds only green.
+- `contain-keeps-the-whole-image-and-cover-fills-the-box` restarts the backend with `VERIFY_MEDIA_PRESETS` and reads pixels of the PNG renderings: sharp pads a contain size with black, so the bars are black pixels.
 - `the-default-sizes-use-their-documented-settings` renders the documented settings with the sharp the module itself depends on and compares the bytes.

@@ -5,6 +5,8 @@ import { explorerJourneys } from "./parts/explorer.mjs";
 import { layoutJourneys } from "./parts/layout.mjs";
 import { shortcutJourneys } from "./parts/shortcuts.mjs";
 import { libraryWindowJourneys } from "./parts/time-windows.mjs";
+import { treeIconJourneys } from "./parts/tree-icons.mjs";
+import { viewSortJourneys } from "./parts/view-sorts.mjs";
 
 /** @typedef {import("../media.mjs").Ctx} Ctx */
 
@@ -155,4 +157,6 @@ export const journeys = guarded([
   ...shortcutJourneys(),
   ...layoutJourneys(),
   ...libraryWindowJourneys(),
+  ...treeIconJourneys(),
+  ...viewSortJourneys(),
 ]);

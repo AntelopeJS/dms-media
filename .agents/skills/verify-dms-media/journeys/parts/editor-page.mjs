@@ -14,7 +14,7 @@ import { check, image, media, pick, SVG } from "../../media.mjs";
  * @param {(asset: unknown) => boolean} accept Whether the file shows the change
  * @returns {Promise<unknown>} The last read
  */
-async function settled(ctx, id, accept) {
+export async function settled(ctx, id, accept) {
   let asset = pick((await media(ctx, "read the file", "GET", `/assets/${id}`)).body, "asset");
   for (let attempt = 0; attempt < 20 && !accept(asset); attempt += 1) {
     await new Promise((resolve) => setTimeout(resolve, 500));

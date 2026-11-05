@@ -40,6 +40,8 @@ The Library page: views, the folder tree, search, facets, sort, grid, list and c
 - `shortcuts-act-on-files-and-folders`: Ctrl ↑ opens the parent folder, U opens the file picker, Shift N a new folder, F2 renames, M moves, Delete deletes and E opens the image editor.
 - `the-details-panel-follows-the-explorers-width`: when the explorer is at least 1000px wide the details panel sits beside the files (1000, 1200 and 1500 px); at 999 px it leaves the side of the files for the DMS drawer, which the-details-drawer-steps-through-the-files opens.
 - `the-modified-filter-keeps-its-window`: the modification date filter keeps the files changed in the last 7 days, the last 30 days or since 1 January, and every file for any date.
+- `a-linked-folder-shows-the-link-icon-in-the-locations-tree`: in the Locations tree a folder linked to a field shows the link icon in place of the folder icon and again as its marker, with the tooltip Linked to a field; an unlinked folder shows the folder icon and no marker; a starred folder shows one marker that is not the link.
+- `a-sort-replaces-the-order-of-a-largest-or-recent-view`: the Largest files view lists the biggest file first and Recent the newest, and a sort in the query replaces that order, whatever the direction: the ids come back in exactly the order asked.
 
 ## How to get to it (user POV)
 
@@ -57,4 +59,6 @@ dms-control journey "$RUN" library
 - The run's browser is 1280 px wide, so the explorer is narrower than 1000 px and the details open in a drawer; the side-panel steps widen the viewport to 1900 px.
 - `the-details-drawer-steps-through-the-files` fails at the integration head: J, K or closing the drawer ends on a 500 (#119).
 - `the-details-panel-follows-the-explorers-width` measures the explorer's content box, inside its border, which is what its layout follows, and never opens the drawer, which crashes at head (#119).
+- `a-linked-folder-shows-the-link-icon-in-the-locations-tree` compares the SVG path data of the icons in each tree row, because the icons are inline SVG with no name in the DOM: the icon before the folder's name is its glyph, the ones after it are its markers. It saves a crop of the tree and each row's digests in the step's evidence.
+- `a-sort-replaces-the-order-of-a-largest-or-recent-view` stays inside its own folder with `folderId`, because the declared starter file is in every tenant's Largest files view.
 - `the-modified-filter-keeps-its-window` ages files in the run's database with `clock.mjs`.
