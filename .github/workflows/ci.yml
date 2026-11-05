@@ -36,6 +36,7 @@ jobs:
       # against that build.
       extra-commands: pnpm --dir packages/interface-dms-media check:exports
       renovate-sync: false
+      test-job: true
     permissions:
       contents: read
 

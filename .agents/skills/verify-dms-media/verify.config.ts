@@ -1,11 +1,10 @@
 /** A kind of one-way door. */
 export type DoorKind = "data" | "format" | "contract" | "outbound" | "exposure" | "publish";
 
-/** Path rules for one door kind: globs, declared funnel modules, and the journeys, as `feature/journey`, that contain it. */
+/** Path rules for one door kind: globs and declared funnel modules. */
 export interface DoorRule {
   globs: string[];
   funnels: string[];
-  containments: string[];
   why: string;
 }
 
@@ -71,13 +70,11 @@ const config: VerifyConfig = {
         `${MODULE}/src/derivatives.ts`,
       ],
       funnels: [],
-      containments: ["folders/delete-takes-only-its-own-files"],
       why: "these delete stored files, folders and renderings, and overwrite edited images, which a revert of the code does not bring back",
     },
     format: {
       globs: [`${MODULE}/src/db/**`, `${MODULE}/src/presets.ts`, `${MODULE}/src/routes/media/storage-keys.ts`, `${MODULE}/src/declared/records.ts`],
       funnels: [],
-      containments: [],
       why: "the media tables, the storage keys and the declaration registry are read back by the next version of the module",
     },
     contract: {
@@ -91,20 +88,17 @@ const config: VerifyConfig = {
         `${MODULE}/frontend-vue/package.json`,
       ],
       funnels: [],
-      containments: [],
       why: "other modules import the interface, the dashboard and scripts call the HTTP routes, and projects set the config keys and the renderer range",
     },
     outbound: null,
     exposure: {
       globs: [`${MODULE}/src/routes/media/delivery.ts`, `${MODULE}/src/routes/media/delivery-headers.ts`, `${MODULE}/src/routes/media/delivery-stream.ts`, `${MODULE}/src/acl/**`, `${MODULE}/src/guards.ts`, `${MODULE}/src/read-urls.ts`],
       funnels: [],
-      containments: [],
       why: "the delivery links answer without a session for public files, and the folder ACLs decide who reads and writes every file",
     },
     publish: {
       globs: [`${MODULE}/package.json`, `${INTERFACE}/package.json`, `${MODULE}/.release-it.json`, `${INTERFACE}/.release-it.json`, `${MODULE}/changelogen.config.json`, `${INTERFACE}/changelogen.config.json`, ".github/workflows/release.yml", ".github/workflows/release-interface.yml"],
       funnels: [],
-      containments: [],
       why: "the package names, their files and the release workflows claim @antelopejs/dms-media and @antelopejs/interface-dms-media in the npm registry",
     },
   },
