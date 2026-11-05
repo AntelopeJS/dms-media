@@ -118,6 +118,7 @@ List these under `notVerified` in the judgement of every verdict:
 - a binding released when its module unloads and replayed to a reloaded implementation: the run starts the project without module reloads;
 - another tenant using the same declaration key: the run has one tenant;
 - the live toolbar hidden by a role: the Media pages are owner-only and an owner holds every block;
+- the star icon of the Locations tree (icons are not in the accessibility tree; the `starred` flag is driven through the API, the link icon by `tree-icons.mjs`);
 - the frontend server's 413 over 500 MiB and reverse-proxy limits (the dashboard's and the deployment's, not this module's);
 - `ajs project modules add`, `ajs dms`'s renderer range refusal, and the repository playground's commands (developer tooling).
 
