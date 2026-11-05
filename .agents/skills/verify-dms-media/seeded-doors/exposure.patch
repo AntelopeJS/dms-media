@@ -1,0 +1,13 @@
+diff --git a/packages/dms-media/src/routes/media/delivery.ts b/packages/dms-media/src/routes/media/delivery.ts
+index 64a4035..4046575 100644
+--- a/packages/dms-media/src/routes/media/delivery.ts
++++ b/packages/dms-media/src/routes/media/delivery.ts
+@@ -135,7 +135,7 @@ async function resolveDeliverableAsset(
+   const folderModel = GetModel(MediaFolderModel, tenantId);
+   const folder = await folderModel.get(asset.folderId);
+   const visibility = resolveEffectiveVisibility(asset, folder ?? undefined);
+-  if (visibility === "public") {
++  if (visibility === "public" || !user) {
+     return { asset, assetModel, isPublic: true };
+   }
+   if (!user && isPageNavigation(ctx)) throw new SignInRequired(asset);

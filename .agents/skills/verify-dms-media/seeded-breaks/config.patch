@@ -1,0 +1,13 @@
+diff --git a/packages/dms-media/src/config.ts b/packages/dms-media/src/config.ts
+index b1b51e0..0019c01 100644
+--- a/packages/dms-media/src/config.ts
++++ b/packages/dms-media/src/config.ts
+@@ -69,7 +69,7 @@ export function configureMediaModule(config: DmsMediaConfig): void {
+     presets: buildPresetMap(config.presets ?? DEFAULT_PRESETS),
+     storageQuotaBytes: config.storageQuotaBytes,
+     allowedMimetypes: config.allowedMimetypes ?? DEFAULT_ALLOWED_MIMETYPES,
+-    publicBaseUrl: config.publicBaseUrl?.trim() || undefined,
++    publicBaseUrl: undefined,
+   };
+ }
+ 

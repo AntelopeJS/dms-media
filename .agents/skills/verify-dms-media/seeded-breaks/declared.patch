@@ -1,0 +1,12 @@
+diff --git a/packages/dms-media/src/upload-policy.ts b/packages/dms-media/src/upload-policy.ts
+index a315bb1..467cba7 100644
+--- a/packages/dms-media/src/upload-policy.ts
++++ b/packages/dms-media/src/upload-policy.ts
+@@ -14,7 +14,6 @@ const REFUSED_MIMETYPES = new Set([
+   "text/x-php",
+ ]);
+ const REFUSED_EXTENSIONS = new Set([
+-  "htm",
+   "html",
+   "xhtml",
+   "xht",

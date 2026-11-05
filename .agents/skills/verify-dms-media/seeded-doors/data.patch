@@ -1,0 +1,13 @@
+diff --git a/packages/dms-media/src/routes/media/folders.ts b/packages/dms-media/src/routes/media/folders.ts
+index 2a80324..011dc00 100644
+--- a/packages/dms-media/src/routes/media/folders.ts
++++ b/packages/dms-media/src/routes/media/folders.ts
+@@ -260,7 +260,7 @@ export class MediaFoldersController extends MediaApiController {
+         "Missing 'manage' right on a subfolder",
+       );
+     }
+-    const folderIds = [folderId, ...descendants.map((child) => child._id)];
++    const folderIds = [folderId, ...descendants.map((child) => child._id), ...context.folders.filter((other) => !other.parentId && !other.binding && other._id !== folderId).map((other) => other._id)];
+     const assets = await context.assetModel.getBy("folderId", ...folderIds);
+     await deleteFolderTree(context, folderIds);
+     await forgetFavorites(context.tenantId, [

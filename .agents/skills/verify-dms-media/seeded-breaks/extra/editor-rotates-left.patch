@@ -1,0 +1,13 @@
+diff --git a/packages/dms-media/src/transform.ts b/packages/dms-media/src/transform.ts
+index c17b836..2f3d837 100644
+--- a/packages/dms-media/src/transform.ts
++++ b/packages/dms-media/src/transform.ts
+@@ -140,7 +140,7 @@ export async function renderTransform(
+     limitInputPixels: MAX_INPUT_PIXELS,
+   }).autoOrient();
+   if (ops.rotate) {
+-    pipeline = pipeline.rotate(ops.rotate);
++    pipeline = pipeline.rotate(-ops.rotate);
+   }
+   if (ops.crop) {
+     const dimensions = rotatedDimensions(

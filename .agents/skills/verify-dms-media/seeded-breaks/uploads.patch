@@ -1,0 +1,13 @@
+diff --git a/packages/dms-media/frontend-vue/app/components/UploadStrip.vue b/packages/dms-media/frontend-vue/app/components/UploadStrip.vue
+index 699122a..a5a8dcf 100644
+--- a/packages/dms-media/frontend-vue/app/components/UploadStrip.vue
++++ b/packages/dms-media/frontend-vue/app/components/UploadStrip.vue
+@@ -155,7 +155,7 @@ function onFilesChosen(event: Event): void {
+ 				<span v-if="parentPath" class="text-dimmed truncate font-mono text-[11px]">{{ parentPath }}</span>
+ 			</UButton>
+ 			<UButton icon="i-ph-upload-simple" color="neutral" variant="outline" :label="t('dms_media.upload_strip.choose')" @click="chooseFiles" />
+-			<input ref="fileInput" type="file" multiple class="hidden" :accept="acceptAttribute || undefined" @change="onFilesChosen" />
++			<input ref="fileInput" type="file" class="hidden" :accept="acceptAttribute || undefined" @change="onFilesChosen" />
+ 		</div>
+ 		<div v-if="uploads.activeCount.value" class="border-default flex flex-wrap items-center gap-3 border-t pt-3 text-[13px]" role="status">
+ 			<UIcon name="i-ph-circle-notch" class="text-primary size-4 animate-spin" />
