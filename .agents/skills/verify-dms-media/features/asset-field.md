@@ -46,4 +46,4 @@ dms-control journey "$RUN" asset-field
 
 - The field page's form saves through `/api/verify-media/fields/values`, which the journeys read back.
 - The pages render on the server and hydrate after `load`; `openPicker` clicks again until the dialog opens.
-- `the-pickers-upload-targets-the-linked-folder` fails at the integration head: from a subfolder the picker uploads into the subfolder (issue draft `dms-media-picker-upload-into-subfolder`).
+- `the-pickers-upload-targets-the-linked-folder` fails on main: from a subfolder the picker uploads into the subfolder (issue draft `dms-media-picker-upload-into-subfolder`).

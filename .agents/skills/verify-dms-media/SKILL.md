@@ -19,7 +19,7 @@ Give `seeded`, `doors` and `--skill` absolute paths: the command runs in `packag
 ## Launch
 
 ```bash
-RUN=$($C up --prepare --base origin/campaign/integration)   # installs, builds, starts; prints the run folder
+RUN=$($C up --prepare --base origin/main)   # installs, builds, starts; prints the run folder
 ```
 
 `--prepare` runs the `prepare` commands of `verify.config.ts`: the frozen install, the build of the interface and the module, `playwright-core` into this folder, the link of the verification playground's `node_modules` to `packages/dms-media/node_modules`, and the TypeScript build of the playground's fixture module. Without it `up` uses the builds already there, and `doctor` fails on a stale one. `up` reads the playground from `verify.config.ts` (`playground/` in this folder: the DMS, the api, MongoDB, auth, local file storage and mail modules, the module under verification as a `local` source at `packages/dms-media`, and a fixture module of its own) and starts an isolated DMS:
@@ -42,7 +42,7 @@ Do not drive a run that fails doctor.
 ## Drive
 
 ```bash
-$C plan --base origin/campaign/integration   # the diff mapped to features; unmapped surfaces
+$C plan --base origin/main   # the diff mapped to features; unmapped surfaces
 $C journey "$RUN" smoke
 $C journey "$RUN" uploads [journey-id...]
 ```
@@ -87,6 +87,8 @@ $C doors "$PWD/.agents/skills/verify-dms-media/seeded-doors/data.patch"
 
 `seeded-breaks/<feature>.patch` is one minimal product bug per feature; `seeded` builds a control and a patched worktree, runs the feature's journeys in each, and prints `CAUGHT` with the journeys that caught it, or `MISSED`. A break counts only when a journey that passes in the control fails one of its checks with the patch. `seeded-doors/<kind>.patch` holds one change per door kind.
 
+`seeded-breaks/extra/<id>.patch` holds further breaks of a feature, each caught by that feature's journeys. `seeded` reads only `<feature>.patch`, so `$PWD/.agents/skills/verify-dms-media/seeded-breaks/run-extra.sh <feature> <id>` copies one over it in a scratch copy of the skill and runs `seeded` with `--skill` on that copy. Its output is `seeded`'s.
+
 ## Gotchas
 
 - Every dashboard page renders on the server and hydrates after `load`; a click that lands first does nothing. The journeys click again until what the click opens shows (`openPicker`, `clickUntil`, `rotateOnce`, `explorerWithFiles`), and `tab.signIn` waits for the sign-in form to hydrate.
@@ -100,7 +102,7 @@ $C doors "$PWD/.agents/skills/verify-dms-media/seeded-doors/data.patch"
 - No request ages a file or an event. `clock.mjs` moves a row's `createdAt` or `updatedAt` back in the run's database, with the MongoDB driver dms-control resolves, for the 24-hour, 7-day, 30-day and year windows.
 - `mongod` comes from `DMS_CONTROL_MONGOD`, `PATH`, or the mongodb-memory-server cache (`~/.cache/mongodb-binaries`).
 - A step whose check fails because the backend or the dashboard stopped answering ends the journey with a `NOT VERIFIED` error and no failing check (`guard.mjs`), so `seeded` never counts an outage as a catch.
-- Known findings at the integration head, each a failing journey with an open issue: `library/the-details-drawer-steps-through-the-files` (#119, the drawer ends on a 500), `uploads/a-live-uploads-page-shows-a-new-batch` (#118, Recent batches does not follow Live), `asset-field/the-pickers-upload-targets-the-linked-folder` (#121, the picker's Upload from a subfolder lands in the subfolder). `overview/own-uploads-keep-moving-while-paused-and-activity-follows` fails now and then (#124, 1 run in 10 on one stack): with Live pressed and checked, a rename made elsewhere sometimes does not show on the Activity page within 20 s. Its failure is not a catch. `files/the-history-lists-every-event` fails on purpose: a file's History stops at 50 events while the docs say it lists every event (draft `dms-media-history-cut-at-50`). `files/a-move-keeps-the-targets-rules` fails on purpose: a move into a linked folder skips the field's types, and a move onto a taken name is allowed (drafts `dms-media-move-ignores-field-types` and `dms-media-move-ignores-taken-names`).
+- Known findings on `origin/main`, each a failing journey with an open issue: `library/the-details-drawer-steps-through-the-files` (#119, the drawer ends on a 500), `uploads/a-live-uploads-page-shows-a-new-batch` (#118, Recent batches does not follow Live), `asset-field/the-pickers-upload-targets-the-linked-folder` (#121, the picker's Upload from a subfolder lands in the subfolder). `overview/own-uploads-keep-moving-while-paused-and-activity-follows` fails now and then (#124, 1 run in 10 on one stack): with Live pressed and checked, a rename made elsewhere sometimes does not show on the Activity page within 20 s. Its failure is not a catch. `files/the-history-lists-every-event` fails on purpose: a file's History stops at 50 events while the docs say it lists every event (draft `dms-media-history-cut-at-50`). `files/a-move-keeps-the-targets-rules` fails on purpose: a move into a linked folder skips the field's types, and a move onto a taken name is allowed (drafts `dms-media-move-ignores-field-types` and `dms-media-move-ignores-taken-names`).
 - Docs that disagree, where the journeys assert the documented behaviour the code has: the config TSDoc names a request-origin default for `publicBaseUrl` and leaves PHP out of `allowedMimetypes` (#125); Extending says the sizes example is null without a public image, while the Image sizes page and the code fall back to a private one (docs draft `dms-media-docs-example-url-private`).
 
 ## Not driven
@@ -116,7 +118,6 @@ List these under `notVerified` in the judgement of every verdict:
 - a binding released when its module unloads and replayed to a reloaded implementation: the run starts the project without module reloads;
 - another tenant using the same declaration key: the run has one tenant;
 - the live toolbar hidden by a role: the Media pages are owner-only and an owner holds every block;
-- the link and star icons of the Locations tree (icons are not in the accessibility tree; the `bound` and `starred` flags are driven through the API);
 - the frontend server's 413 over 500 MiB and reverse-proxy limits (the dashboard's and the deployment's, not this module's);
 - `ajs project modules add`, `ajs dms`'s renderer range refusal, and the repository playground's commands (developer tooling).
 

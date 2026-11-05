@@ -1,0 +1,23 @@
+diff --git a/packages/dms-media/frontend-vue/app/components/shared/FolderGlyph.vue b/packages/dms-media/frontend-vue/app/components/shared/FolderGlyph.vue
+index ce246e5..6ff55c4 100644
+--- a/packages/dms-media/frontend-vue/app/components/shared/FolderGlyph.vue
++++ b/packages/dms-media/frontend-vue/app/components/shared/FolderGlyph.vue
+@@ -7,13 +7,11 @@ defineProps<{ folder: MediaFolder; open?: boolean }>()
+ <template>
+ 	<UIcon
+ 		:name="
+-			folder.bound
+-				? 'i-ph-link-simple'
+-				: folder.shell
+-					? 'i-ph-folder-dashed'
+-					: open
+-						? 'i-ph-folder-open'
+-						: 'i-ph-folder-simple'
++			folder.shell
++				? 'i-ph-folder-dashed'
++				: open
++					? 'i-ph-folder-open'
++					: 'i-ph-folder-simple'
+ 		"
+ 		class="size-4 shrink-0"
+ 		:class="folder.shell ? 'text-dimmed' : 'text-muted'"

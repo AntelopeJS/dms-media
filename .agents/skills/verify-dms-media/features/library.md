@@ -57,7 +57,7 @@ dms-control journey "$RUN" library
 
 - The explorer hydrates after `load`; `explorerWithFiles` clicks a file until it is selected before it presses keys.
 - The run's browser is 1280 px wide, so the explorer is narrower than 1000 px and the details open in a drawer; the side-panel steps widen the viewport to 1900 px.
-- `the-details-drawer-steps-through-the-files` fails at the integration head: J, K or closing the drawer ends on a 500 (#119).
+- `the-details-drawer-steps-through-the-files` fails on main: J, K or closing the drawer ends on a 500 (#119).
 - `the-details-panel-follows-the-explorers-width` measures the explorer's content box, inside its border, which is what its layout follows, and never opens the drawer, which crashes at head (#119).
 - `a-linked-folder-shows-the-link-icon-in-the-locations-tree` compares the SVG path data of the icons in each tree row, because the icons are inline SVG with no name in the DOM: the icon before the folder's name is its glyph, the ones after it are its markers. It saves a crop of the tree and each row's digests in the step's evidence.
 - `a-sort-replaces-the-order-of-a-largest-or-recent-view` stays inside its own folder with `folderId`, because the declared starter file is in every tenant's Largest files view.
