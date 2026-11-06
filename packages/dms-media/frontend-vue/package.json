@@ -1,41 +1,41 @@
 {
-	"name": "@antelopejs/dms-media-frontend-vue",
-	"version": "0.0.1",
-	"private": true,
-	"type": "module",
-	"main": "./dms.frontend.ts",
-	"packageManager": "pnpm@10.6.5",
-	"engines": {
-		"@antelopejs/dms-frontend": ">=0.10.0 <0.11.0"
-	},
-	"scripts": {
-		"dev": "pnpm --dir ../playground frontend:dev",
-		"build": "pnpm --dir ../playground exec ajs dms build",
-		"typecheck": "pnpm --dir \"${DMS_FRONTEND_WORKSPACE:?Set DMS_FRONTEND_WORKSPACE to the generated Inertia workspace}\" typecheck",
-		"format": "prettier --write .",
-		"lint": "eslint . && node ../node_modules/@antelopejs/dms/frontend-vue/scripts/check-api-error-presentation.mjs app",
-		"lint:fix": "eslint . --fix",
-		"test": "vitest run"
-	},
-	"dependencies": {
-		"@vueuse/core": "^14.3.0",
-		"hookable": "^5.5.3",
-		"tailwind-variants": "^3.1.1",
-		"vue": "^3.5.18",
-		"vue-advanced-cropper": "^2.8.9",
-		"zod": "^3.24.2"
-	},
-	"devDependencies": {
-		"@antelopejs/tooling-configs": "^0.3.1",
-		"@nuxt/ui": "4.10.0",
-		"@typescript-eslint/parser": "^8.0.0",
-		"@vitejs/plugin-vue": "^6.0.10",
-		"eslint": "^9.0.0",
-		"eslint-plugin-vue": "^10.0.0",
-		"prettier": "^3.5.3",
-		"prettier-plugin-tailwindcss": "^0.6.11",
-		"typescript": "^6.0.3",
-		"vite": "^7.3.6",
-		"vitest": "^3.2.4"
-	}
+  "name": "@antelopejs/dms-media-frontend-vue",
+  "version": "0.0.1",
+  "private": true,
+  "type": "module",
+  "main": "./dms.frontend.ts",
+  "packageManager": "pnpm@10.6.5",
+  "engines": {
+    "@antelopejs/dms-frontend": ">=0.10.0 <0.11.0"
+  },
+  "scripts": {
+    "dev": "pnpm --dir ../playground frontend:dev",
+    "build": "pnpm --dir ../playground exec ajs dms build",
+    "typecheck": "pnpm --dir \"${DMS_FRONTEND_WORKSPACE:?Set DMS_FRONTEND_WORKSPACE to the generated Inertia workspace}\" typecheck",
+    "format": "prettier --write .",
+    "lint": "eslint . && node ../node_modules/@antelopejs/dms/frontend-vue/scripts/check-api-error-presentation.mjs app",
+    "lint:fix": "eslint . --fix",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "@vueuse/core": "^14.3.0",
+    "hookable": "^5.5.3",
+    "tailwind-variants": "^3.1.1",
+    "vue": "^3.5.18",
+    "vue-advanced-cropper": "^2.8.9",
+    "zod": "^3.24.2"
+  },
+  "devDependencies": {
+    "@antelopejs/tooling-configs": "^0.3.3",
+    "@nuxt/ui": "4.10.0",
+    "@typescript-eslint/parser": "^8.0.0",
+    "@vitejs/plugin-vue": "^6.0.10",
+    "eslint": "^9.0.0",
+    "eslint-plugin-vue": "^10.0.0",
+    "prettier": "^3.5.3",
+    "prettier-plugin-tailwindcss": "^0.6.11",
+    "typescript": "^6.0.3",
+    "vite": "^7.3.6",
+    "vitest": "^3.2.4"
+  }
 }
