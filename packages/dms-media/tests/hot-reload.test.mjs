@@ -21,6 +21,7 @@ import path from "node:path";
 import { after, before, describe, it } from "node:test";
 import { fileURLToPath } from "node:url";
 import { z } from "zod";
+import STACK_MODULES from "../src/test/stack-modules.json" with { type: "json" };
 
 const PACKAGE_ROOT = path.resolve(
   path.dirname(fileURLToPath(import.meta.url)),
@@ -162,22 +163,31 @@ function projectConfig(mongoUrl, storagePath) {
         },
       },
       mongodb: {
-        ...packageSource("@antelopejs/mongodb", "1.6.2"),
+        ...packageSource(
+          "@antelopejs/mongodb",
+          STACK_MODULES["@antelopejs/mongodb"],
+        ),
         config: { url: mongoUrl, database: "dms-media-reload-test" },
       },
       "auth-jwt": {
-        ...packageSource("@antelopejs/auth-jwt", "1.0.3"),
+        ...packageSource(
+          "@antelopejs/auth-jwt",
+          STACK_MODULES["@antelopejs/auth-jwt"],
+        ),
         config: { secret: JWT_SECRET },
       },
       api: {
-        ...packageSource("@antelopejs/api", "1.7.0"),
+        ...packageSource("@antelopejs/api", STACK_MODULES["@antelopejs/api"]),
         config: {
           servers: [{ protocol: "http", host: "127.0.0.1", port: API_PORT }],
           publicBaseUrl: BASE_URL,
         },
       },
       "file-storage-local": {
-        ...packageSource("@antelopejs/file-storage-local", "0.1.13"),
+        ...packageSource(
+          "@antelopejs/file-storage-local",
+          STACK_MODULES["@antelopejs/file-storage-local"],
+        ),
         config: {
           storagePath,
           baseUrl: BASE_URL,
@@ -185,7 +195,10 @@ function projectConfig(mongoUrl, storagePath) {
         },
       },
       nodemailer: {
-        ...packageSource("@antelopejs/nodemailer", "0.0.6"),
+        ...packageSource(
+          "@antelopejs/nodemailer",
+          STACK_MODULES["@antelopejs/nodemailer"],
+        ),
         config: { host: "127.0.0.1", port: 1, secure: false },
       },
     },

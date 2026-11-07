@@ -6,6 +6,7 @@ import { defineConfig } from "@antelopejs/interface-core/config";
 import { MongoMemoryReplSet } from "mongodb-memory-server-core";
 import { isString } from "../guards";
 import { SETUP_TOKEN } from "./helpers/setup-token";
+import STACK_MODULES from "./stack-modules.json";
 
 const API_PORT = 5019;
 const LOCAL_BUILD_COMMAND = process.env.DMS_PREBUILT ? [] : ["pnpm build"];
@@ -135,14 +136,14 @@ export default defineConfig({
       source: {
         type: "package",
         package: "@antelopejs/mongodb",
-        version: "1.6.2",
+        version: STACK_MODULES["@antelopejs/mongodb"],
       },
     },
     "auth-jwt": {
       source: {
         type: "package",
         package: "@antelopejs/auth-jwt",
-        version: "1.1.0",
+        version: STACK_MODULES["@antelopejs/auth-jwt"],
       },
       config: {
         secret: JWT_SECRET,
@@ -152,7 +153,7 @@ export default defineConfig({
       source: {
         type: "package",
         package: "@antelopejs/api",
-        version: "1.7.0",
+        version: STACK_MODULES["@antelopejs/api"],
       },
       config: {
         servers: [{ protocol: "http", host: "127.0.0.1", port: API_PORT }],
@@ -163,14 +164,14 @@ export default defineConfig({
       source: {
         type: "package",
         package: "@antelopejs/file-storage-local",
-        version: "0.2.0",
+        version: STACK_MODULES["@antelopejs/file-storage-local"],
       },
     },
     nodemailer: {
       source: {
         type: "package",
         package: "@antelopejs/nodemailer",
-        version: "0.0.6",
+        version: STACK_MODULES["@antelopejs/nodemailer"],
       },
       config: {
         host: SMTP_HOST,
