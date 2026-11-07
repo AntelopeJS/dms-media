@@ -47,7 +47,7 @@ async function arm(tab) {
  */
 export async function waitForHydration(tab, timeoutMs) {
   for (let waited = 0; waited < timeoutMs; waited += 500) {
-    const mounted = await tab.page.evaluate(() => [...document.querySelectorAll("body > div")].some((element) => "__vue_app__" in element)).catch(() => false);
+    const mounted = await tab.page.evaluate(() => [...document.querySelectorAll("body div")].some((element) => "__vue_app__" in element)).catch(() => false);
     if (mounted) return true;
     await tab.page.waitForTimeout(500);
   }
