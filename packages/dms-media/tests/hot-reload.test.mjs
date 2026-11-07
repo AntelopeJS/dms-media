@@ -400,6 +400,11 @@ void describe("hot reload keeps dms-media's registrations with dms-media", () =>
     );
     const storagePath = path.join(projectFolder, "storage");
     await fs.mkdir(storagePath);
+    await fs.cp(
+      path.join(PACKAGE_ROOT, "antelope-lock"),
+      path.join(projectFolder, "antelope-lock"),
+      { recursive: true },
+    );
 
     consumerIndex = path.join(projectFolder, "consumer", "index.js");
     await writeConsumer(

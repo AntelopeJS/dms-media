@@ -64,10 +64,12 @@ jobs:
           path: |
             packages/dms-media/.antelope/cache
             ~/.cache/mongodb-binaries
-          key: antelope-${{ runner.os }}-${{ hashFiles('packages/dms-media/src/test/antelope.test.ts', 'packages/dms-media/tests/hot-reload.test.mjs', 'pnpm-lock.yaml') }}
+          key: antelope-${{ runner.os }}-${{ hashFiles('packages/dms-media/src/test/antelope.test.ts', 'packages/dms-media/tests/hot-reload.test.mjs', 'packages/dms-media/src/test/stack-modules.json', 'packages/dms-media/antelope-lock/**', 'pnpm-lock.yaml') }}
           # Both test stacks take `@antelopejs/dms` at the version the lockfile
-          # installs, so the key names every module they load. On a new key,
-          # the last cache still holds the modules that did not change.
+          # installs and the other modules from `stack-modules.json`, and
+          # install each from its record in `antelope-lock/`, so the key names
+          # every module and dependency graph they load. On a new key, the last
+          # cache still holds the modules that did not change.
           restore-keys: antelope-${{ runner.os }}-
 
       - run: pnpm install --frozen-lockfile
@@ -82,6 +84,9 @@ jobs:
       # module itself: dms-media's routes, permissions and pages must stay
       # registered and be evaluated again from the edited files (#26).
       - run: pnpm --dir packages/dms-media test:reload
+      # A test run records a module it installed without a committed record:
+      # commit what this lists, so cached and fresh runs install the same graph.
+      - run: git status --porcelain --untracked-files=all -- packages/dms-media/antelope-lock | (! grep .)
 
   frontend:
     runs-on: ubuntu-latest
