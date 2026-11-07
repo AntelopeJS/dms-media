@@ -12,6 +12,7 @@
  */
 
 import { launch } from "@antelopejs/core";
+import dmsManifest from "@antelopejs/dms/package.json" with { type: "json" };
 import { MongoMemoryReplSet } from "mongodb-memory-server-core";
 import assert from "node:assert/strict";
 import fs from "node:fs/promises";
@@ -153,7 +154,7 @@ function projectConfig(mongoUrl, storagePath) {
         config: {},
       },
       dms: {
-        ...packageSource("@antelopejs/dms", ">=0.11.0 <1.0.0"),
+        ...packageSource("@antelopejs/dms", dmsManifest.version),
         config: {
           /** No frontend server runs here: the dashboard URL is the API. */
           clientBaseUrl: BASE_URL,

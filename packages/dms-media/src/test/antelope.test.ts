@@ -2,6 +2,7 @@ import { mkdtemp, rm } from "node:fs/promises";
 import { createServer, type Server, type Socket } from "node:net";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
+import { version as DMS_VERSION } from "@antelopejs/dms/package.json";
 import { defineConfig } from "@antelopejs/interface-core/config";
 import { MongoMemoryReplSet } from "mongodb-memory-server-core";
 import { isString } from "../guards";
@@ -112,7 +113,7 @@ export default defineConfig({
       source: {
         type: "package",
         package: "@antelopejs/dms",
-        version: ">=0.16.1 <1.0.0",
+        version: DMS_VERSION,
       },
       config: {
         /**

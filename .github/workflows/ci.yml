@@ -65,6 +65,10 @@ jobs:
             packages/dms-media/.antelope/cache
             ~/.cache/mongodb-binaries
           key: antelope-${{ runner.os }}-${{ hashFiles('packages/dms-media/src/test/antelope.test.ts', 'packages/dms-media/tests/hot-reload.test.mjs', 'pnpm-lock.yaml') }}
+          # Both test stacks take `@antelopejs/dms` at the version the lockfile
+          # installs, so the key names every module they load. On a new key,
+          # the last cache still holds the modules that did not change.
+          restore-keys: antelope-${{ runner.os }}-
 
       - run: pnpm install --frozen-lockfile
       - run: pnpm --dir packages/dms-media build
