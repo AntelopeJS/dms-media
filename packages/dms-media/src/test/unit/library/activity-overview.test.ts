@@ -274,4 +274,19 @@ describe("[unit] library/presets-page — image sizes", () => {
     expect(pickExampleImage([svg, photo], () => true)?._id).to.equal("photo");
     expect(pickExampleImage([svg], () => true)).to.equal(undefined);
   });
+
+  it("shows sizes on the newest public photo, else on the newest private one", () => {
+    const oldPublic = asset("old-public", { createdAt: at(1) });
+    const newPrivate = asset("new-private", { createdAt: at(5) });
+    const olderPrivate = asset("older-private", { createdAt: at(3) });
+    const isPublic = (candidate: { _id: string }) =>
+      candidate._id === "old-public";
+    expect(pickExampleImage([newPrivate, oldPublic], isPublic)?._id).to.equal(
+      "old-public",
+    );
+    expect(
+      pickExampleImage([olderPrivate, newPrivate], isPublic)?._id,
+    ).to.equal("new-private");
+    expect(pickExampleImage([], isPublic)).to.equal(undefined);
+  });
 });
