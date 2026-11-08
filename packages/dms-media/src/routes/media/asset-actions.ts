@@ -1,9 +1,12 @@
 import { assert } from "@antelopejs/interface-api-util";
 import { deleteMediaAsset } from "../../asset-lifecycle";
+import { feedingBinding } from "../../bindings";
 import type { MediaAsset, MediaFolder } from "../../db";
+import { bindingAccepts } from "../../library/binding-labels";
 import { recordMediaEvent } from "../../library/events";
 import { forgetFavorites } from "../../library/favorites";
 import type { AssetVisibility } from "../../types";
+import { mimetypeMatches } from "../../upload-policy";
 import { comparableName, MEDIA_ERRORS } from "../../validation/media.schema";
 import {
   assertMediaOwner,
@@ -13,6 +16,7 @@ import {
 import { resolveEffectiveVisibility } from "./dto";
 
 const HTTP_CONFLICT = 409;
+const HTTP_UNSUPPORTED_MEDIA_TYPE = 415;
 
 export interface AssetChanges {
   name?: string;
@@ -92,6 +96,14 @@ export async function moveAsset(
   const sourceFolder = requireFolderRight(context, asset.folderId, "write");
   const targetFolder = requireFolderRight(context, folderId, "write");
   if (sourceFolder._id === targetFolder._id) return;
+  const accepted = bindingAccepts(
+    feedingBinding(targetFolder, context.foldersById),
+  );
+  assert(
+    !accepted || mimetypeMatches(asset.mimetype, accepted),
+    HTTP_UNSUPPORTED_MEDIA_TYPE,
+    MEDIA_ERRORS.fieldType,
+  );
   if (changesEffectiveVisibility(asset, sourceFolder, targetFolder)) {
     assertMediaOwner(context);
   }

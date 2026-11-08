@@ -1086,6 +1086,7 @@
 			"alt_too_long": "The alt text is limited to 255 characters",
 			"asset_not_found": "This file no longer exists: someone may have deleted it",
 			"bound_parent": "A linked folder can't hold subfolders",
+			"field_type": "This folder feeds a field that doesn't take this type of file",
 			"folder_name_taken": "A folder already has this name here",
 			"invalid_request": "The request couldn't be understood. Reload the page and try again.",
 			"name_forbidden": "A name can't contain / \\ < > : \" {'|'} ? or *",

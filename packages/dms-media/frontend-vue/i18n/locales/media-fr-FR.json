@@ -1086,6 +1086,7 @@
 			"alt_too_long": "Le texte alternatif est limité à 255 caractères",
 			"asset_not_found": "Ce fichier n'existe plus : quelqu'un l'a peut-être supprimé",
 			"bound_parent": "Un dossier lié ne peut pas contenir de sous-dossiers",
+			"field_type": "Ce dossier alimente un champ qui n'accepte pas ce type de fichier",
 			"folder_name_taken": "Un dossier porte déjà ce nom ici",
 			"invalid_request": "La demande n'a pas pu être comprise. Rechargez la page et réessayez.",
 			"name_forbidden": "Un nom ne peut pas contenir / \\ < > : \" {'|'} ? ou *",

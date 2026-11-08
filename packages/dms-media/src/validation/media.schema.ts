@@ -17,6 +17,7 @@ export const MEDIA_ERRORS = {
   nameTaken: `${ERRORS}.name_taken`,
   folderNameTaken: `${ERRORS}.folder_name_taken`,
   boundParent: `${ERRORS}.bound_parent`,
+  fieldType: `${ERRORS}.field_type`,
   altTooLong: `${ERRORS}.alt_too_long`,
 } as const;
 
