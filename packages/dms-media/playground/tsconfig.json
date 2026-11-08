@@ -13,7 +13,13 @@
     "emitDecoratorMetadata": true,
     "useDefineForClassFields": true,
     "types": ["node"],
-    "noEmit": true
+    "noEmit": true,
+    "paths": {
+      "@antelopejs/interface-dms": ["./node_modules/@antelopejs/interface-dms"],
+      "@antelopejs/interface-dms/*": [
+        "./node_modules/@antelopejs/interface-dms/dist/*"
+      ]
+    }
   },
   "include": ["./src/**/*.ts", "./antelope.config.ts"]
 }
