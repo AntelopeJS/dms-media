@@ -96,7 +96,7 @@ function onContentDrop(event: DragEvent): void {
 	const files = Array.from(event.dataTransfer?.files ?? [])
 	if (files.length === 0) return
 	event.preventDefault()
-	const folder = library.currentFolder.value
+	const folder = props.scopeFolderId ? library.tree.foldersById.value.get(props.scopeFolderId) : library.currentFolder.value
 	if (folder?.rights.write) return enqueue(files, folder)
 	void chooseDropDestination(files)
 }
@@ -207,7 +207,7 @@ definePageShortcuts(
 defineExpose({
 	library,
 	navigate,
-	upload: () => commands.upload(),
+	upload: () => commands.upload(props.scopeFolderId),
 	focusSearch: () => toolbar.value?.focusSearch(),
 })
 </script>

@@ -29,7 +29,7 @@ docs:
 - `the-picker-shows-what-the-field-accepts`: the picker says what the field accepts, shows a file of another type but refuses it, lets a PDF be chosen, and the form stores the asset id, never a URL.
 - `uploads-from-the-field-land-in-its-folder`: the field's Upload button and a drop on the field send the file to the field's linked folder.
 - `a-members-picker-shows-only-what-they-can-read`: a member opening a field's picker sees only the folders they can read, and a linked field's picker opens on its folder and lists its subfolders.
-- `the-pickers-upload-targets-the-linked-folder`: a linked field's picker browsed into a subfolder still uploads into the linked folder itself.
+- `the-pickers-upload-targets-the-linked-folder`: a linked field's picker browsed into a subfolder still sends its Upload and a drop on it to the linked folder itself.
 - `a-refusal-speaks-the-members-language`: a member whose language is French sees a refused file explained in French.
 
 ## How to get to it (user POV)
@@ -46,4 +46,3 @@ dms-control journey "$RUN" asset-field
 
 - The field page's form saves through `/api/verify-media/fields/values`, which the journeys read back.
 - The pages render on the server and hydrate after `load`; `openPicker` clicks again until the dialog opens.
-- `the-pickers-upload-targets-the-linked-folder` fails on main: from a subfolder the picker uploads into the subfolder (issue draft `dms-media-picker-upload-into-subfolder`).
