@@ -3,7 +3,7 @@ import { openFilePicker } from "../chooser.mjs";
 import { createFolder, declareFolder, folderAssets, member, uploaded } from "../library.mjs";
 import { check, fixture, image, pick, text } from "../media.mjs";
 import { boundFolder } from "./folders.mjs";
-import { dragFile } from "./parts/drag-file.mjs";
+import { dragFile, landed } from "./parts/picker-files.mjs";
 
 /**
  * @typedef {import("../media.mjs").Ctx} Ctx
@@ -188,20 +188,8 @@ export const journeys = guarded([
       const inside = await tab.visible({ role: "heading", name: "Chantier Nord", level: 2 }, { timeoutMs: 10_000 });
       const fromPicker = await openFilePicker(tab, () => pickerDialog.getByRole("button", { name: "Upload", exact: true }).click({ timeout: 10_000 }).catch(() => undefined), 20_000);
       await fromPicker.choose([{ name: "depuis-le-picker.png", mimeType: "image/png", buffer: await image(ctx, { width: 6, height: 6 }) }]);
-      /** @returns {Promise<{ bound: string[], sub: string[] }>} */
-      const where = async () => ({
-        bound: (await folderAssets(ctx, projects, { as: "picker" })).assets.map((asset) => text(asset, "name")),
-        sub: (await folderAssets(ctx, sub.id, { as: "picker" })).assets.map((asset) => text(asset, "name")),
-      });
       /** @param {string} name */
-      const settled = async (name) => {
-        let found = await where();
-        for (let attempt = 0; attempt < 20 && ![...found.bound, ...found.sub].includes(name); attempt += 1) {
-          await tab.page.waitForTimeout(1000);
-          found = await where();
-        }
-        return found;
-      };
+      const settled = (name) => landed(ctx, { bound: projects, sub: sub.id }, name, "picker");
       const afterUpload = await settled("depuis-le-picker.png");
       await ctx.verify("its Upload targets the linked folder even from a subfolder", [inside, check("the file is in the linked folder itself, not the subfolder", afterUpload.bound.includes("depuis-le-picker.png") && !afterUpload.sub.includes("depuis-le-picker.png"), afterUpload)]);
       await pickerDialog.getByRole("button", { name: /^Chantier Nord/ }).dblclick({ timeout: 10_000 }).catch(() => undefined);
@@ -215,9 +203,9 @@ export const journeys = guarded([
     },
   },
   {
-    id: "a-read-only-linked-folder-asks-where-a-drop-goes",
-    title: "a picker whose linked folder the member cannot write asks where a drop goes, as its Upload does, even from a writable subfolder",
-    entryPoint: "/verify-fields, Projects picker bound read-only, writable Chantier Sud, a drop",
+    id: "a-read-only-linked-folder-uploads-into-the-writable-folder-shown",
+    title: "a picker whose linked folder the member cannot write sends its Upload and a drop to the writable subfolder it shows, without asking where",
+    entryPoint: "/verify-fields, Projects picker bound read-only, writable Chantier Sud, a drop and Upload",
     async run(/** @type {Ctx} */ ctx) {
       await fixture(ctx, "RegisterAssetBinding verify.projects read-only", "POST", "/binding", { id: "verify.projects", folderName: "Verify projects", subfolders: true, permissionMapping: { write: [] }, permissionsFromPage: "fields" });
       const projects = await boundFolder(ctx, "verify.projects");
@@ -232,14 +220,18 @@ export const journeys = guarded([
       const pickerDialog = tab.page.getByRole("dialog", { name: "Choose from the library" });
       await pickerDialog.getByRole("button", { name: /^Chantier Sud/ }).dblclick({ timeout: 10_000 }).catch(() => undefined);
       const inside = await tab.visible({ role: "heading", name: "Chantier Sud", level: 2 }, { timeoutMs: 10_000 });
-      await dragFile(pickerDialog.getByRole("main"), "lecteur-depose.png", await image(ctx, { width: 8, height: 8 }), ["dragenter", "dragover", "drop"]);
-      const asked = await tab.visible({ role: "heading", name: "Where should the files go?" }, { timeoutMs: 10_000 });
-      await tab.page.waitForTimeout(3000);
-      const listed = {
-        bound: (await folderAssets(ctx, projects, { as: "lecteur" })).assets.map((asset) => text(asset, "name")),
-        sub: (await folderAssets(ctx, sub, { as: "lecteur" })).assets.map((asset) => text(asset, "name")),
-      };
-      await ctx.verify("the drop asks where the files go and uploads nothing on its own", [inside, asked, check("no folder holds the dropped file before a choice", ![...listed.bound, ...listed.sub].includes("lecteur-depose.png"), listed)]);
+      /** @param {string} name */
+      const settled = (name) => landed(ctx, { bound: projects, sub }, name, "lecteur");
+      await dragFile(pickerDialog.getByRole("main"), "lecteur-depose.png", await image(ctx, { width: 8, height: 8 }), ["dragenter", "dragover"]);
+      const named = tab.shows(/Drop 1 file to upload to Chantier Sud/, { timeoutMs: 5000 });
+      await dragFile(pickerDialog.getByRole("main"), "lecteur-depose.png", await image(ctx, { width: 8, height: 8 }), ["drop"]);
+      const afterDrop = await settled("lecteur-depose.png");
+      const unasked = await tab.visible({ role: "heading", name: "Where should the files go?" }, { hidden: true, timeoutMs: 2000 });
+      await ctx.verify("a drop goes to the writable subfolder shown, with no question", [inside, named, unasked, check("the dropped file is in Chantier Sud", afterDrop.sub.includes("lecteur-depose.png") && !afterDrop.bound.includes("lecteur-depose.png"), afterDrop)]);
+      const fromPicker = await openFilePicker(tab, () => pickerDialog.getByRole("button", { name: "Upload", exact: true }).click({ timeout: 10_000 }).catch(() => undefined), 20_000);
+      await fromPicker.choose([{ name: "lecteur-bouton.png", mimeType: "image/png", buffer: await image(ctx, { width: 9, height: 9 }) }]);
+      const afterUpload = await settled("lecteur-bouton.png");
+      await ctx.verify("Upload goes there too", [check("the uploaded file is in Chantier Sud", afterUpload.sub.includes("lecteur-bouton.png") && !afterUpload.bound.includes("lecteur-bouton.png"), afterUpload)]);
     },
   },
   {
