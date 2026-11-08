@@ -35,8 +35,8 @@ export interface DmsMediaConfig {
   allowedMimetypes?: string[];
   /**
    * Public URL of the API, the origin serving `/media`: copied links and the
-   * file page's delivery tab start with it. Defaults to the origin the API
-   * request came on.
+   * file page's delivery tab start with it. Defaults to the DMS `apiBaseUrl`.
+   * With neither set, links stay relative.
    */
   publicBaseUrl?: string;
 }
