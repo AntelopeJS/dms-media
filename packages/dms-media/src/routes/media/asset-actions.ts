@@ -30,14 +30,15 @@ function changesEffectiveVisibility(
   );
 }
 
-/** Refuses a name another file of the folder already has, regardless of case. */
+/** Refuses a name another file of `folderId` already has, regardless of case. */
 async function assertFreeAssetName(
   context: MediaRequestContext,
   asset: MediaAsset,
+  folderId: string,
   name: string,
 ): Promise<void> {
   const wanted = comparableName(name);
-  const siblings = await context.assetModel.getBy("folderId", asset.folderId);
+  const siblings = await context.assetModel.getBy("folderId", folderId);
   const clash = siblings.some(
     (sibling) =>
       sibling._id !== asset._id &&
@@ -54,7 +55,14 @@ export async function updateAssetDetails(
 ): Promise<void> {
   requireFolderRight(context, asset.folderId, "write");
   const isRename = changes.name !== undefined && changes.name !== asset.name;
-  if (isRename) await assertFreeAssetName(context, asset, changes.name ?? "");
+  if (isRename) {
+    await assertFreeAssetName(
+      context,
+      asset,
+      asset.folderId,
+      changes.name ?? "",
+    );
+  }
   await context.assetModel.update(asset._id, changes);
   const isAltChange = changes.alt !== undefined && changes.alt !== asset.alt;
   if (isRename) {
@@ -87,6 +95,7 @@ export async function moveAsset(
   if (changesEffectiveVisibility(asset, sourceFolder, targetFolder)) {
     assertMediaOwner(context);
   }
+  await assertFreeAssetName(context, asset, folderId, asset.name);
   await context.assetModel.update(asset._id, { folderId });
   await recordMediaEvent(context, {
     kind: "asset.move",

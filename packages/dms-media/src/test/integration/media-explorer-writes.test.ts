@@ -159,6 +159,28 @@ describe("[integration] media explorer writes — names, linked folders, zips", 
     expect(sameNameElsewhere.status).to.equal(HTTP_OK);
   });
 
+  it("refuses to move a file onto a name the target folder already holds, regardless of case", async () => {
+    const held = await uploadTextAsset(client, otherId, "Report.txt");
+    const mover = await uploadTextAsset(client, rootId, "report.txt");
+    const moved = await client.post(`/api/media/assets/${mover.id}/move`, {
+      folderId: otherId,
+    });
+    expect(moved.status).to.equal(HTTP_CONFLICT);
+    expect(moved.data).to.equal(`${ERRORS}.name_taken`);
+    const bulk = await client.post("/api/media/assets/bulk/move", {
+      ids: [mover.id],
+      folderId: otherId,
+    });
+    expect(bulk.data.done).to.deep.equal([]);
+    expect(bulk.data.refused).to.deep.equal([
+      { id: mover.id, status: HTTP_CONFLICT, message: `${ERRORS}.name_taken` },
+    ]);
+    const detail = await client.get(`/api/media/assets/${mover.id}`);
+    expect(detail.data.asset.folderId).to.equal(rootId);
+    await client.delete(`/api/media/assets/${held.id}`);
+    await client.delete(`/api/media/assets/${mover.id}`);
+  });
+
   it("answers validation errors with i18n keys instead of zod dumps", async () => {
     const asset = await uploadPixelPng(client, rootId);
     const tooLong = await client.post(`/api/media/assets/${asset.id}/update`, {
