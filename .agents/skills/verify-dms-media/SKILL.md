@@ -1,6 +1,6 @@
 ---
 name: verify-dms-media
-description: "Drive the AntelopeJS dms-media module (the media library, uploads, delivery links, image sizes, the image editor, folder bindings, asset fields and declared content) the way the platform owner and the members do, inside a DMS with free ports, its own MongoDB database and local file storage, and post a verdict with evidence. Use to prove a change to AntelopeJS/dms-media works before merge, or to verify a PR."
+description: "Drive the AntelopeJS dms-media module (the media library, uploads, delivery links, image sizes, the image editor, folder bindings, asset fields and declared content) the way the platform owner and the members do, inside a DMS with free ports, its own MongoDB database and local file storage, and report a verdict with evidence. Use to prove a change to AntelopeJS/dms-media works before merge, or to verify a PR."
 ---
 
 # Verify dms-media
@@ -72,7 +72,7 @@ $C down "$RUN"
 6. **One-way doors.** The section comes right after the result line and is mandatory. `$C doors` prints the `One-way-door:` line for the diff.
 7. **Result.** FAIL if any of rules 1 to 6 fail. PASS+NOTES when something is not verified or needs the owner's attention. PASS otherwise.
 
-Write `$RUN/evidence/judgement.json` (`doors`, `docs`, `notVerified`, `attention`, `verifier`), then `$C verdict "$RUN" --pr <n>` and, from a thread that did not write the change, `$C publish "$RUN" --pr <n>`.
+Write `$RUN/evidence/judgement.json` (`doors`, `docs`, `notVerified`, `attention`, `verifier`), then `$C verdict "$RUN" --pr <n>`, which writes `$RUN/evidence/verdict.md`. Report the verdict and what you saw in your own reply.
 
 ## Trust
 
