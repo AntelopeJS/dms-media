@@ -1,8 +1,9 @@
 import { guarded } from "../guard.mjs";
 import { openFilePicker } from "../chooser.mjs";
-import { createFolder, folderAssets, member, uploaded } from "../library.mjs";
+import { createFolder, declareFolder, folderAssets, member, uploaded } from "../library.mjs";
 import { check, fixture, image, pick, text } from "../media.mjs";
 import { boundFolder } from "./folders.mjs";
+import { dragFile } from "./parts/drag-file.mjs";
 
 /**
  * @typedef {import("../media.mjs").Ctx} Ctx
@@ -206,16 +207,39 @@ export const journeys = guarded([
       await pickerDialog.getByRole("button", { name: /^Chantier Nord/ }).dblclick({ timeout: 10_000 }).catch(() => undefined);
       const stillInside = await tab.visible({ role: "heading", name: "Chantier Nord", level: 2 }, { timeoutMs: 10_000 });
       const dropped = await image(ctx, { width: 7, height: 7 });
-      await pickerDialog.getByRole("main").evaluate((element, base64) => {
-        const binary = atob(base64);
-        const bytes = new Uint8Array(binary.length);
-        for (let index = 0; index < binary.length; index += 1) bytes[index] = binary.charCodeAt(index);
-        const transfer = new DataTransfer();
-        transfer.items.add(new File([bytes], "depose-dans-le-picker.png", { type: "image/png" }));
-        for (const type of ["dragenter", "dragover", "drop"]) element.dispatchEvent(new DragEvent(type, { bubbles: true, cancelable: true, dataTransfer: transfer }));
-      }, dropped.toString("base64"));
+      await dragFile(pickerDialog.getByRole("main"), "depose-dans-le-picker.png", dropped, ["dragenter", "dragover"]);
+      await ctx.verify("the drop overlay names the linked folder", [tab.shows(/Drop 1 file to upload to Verify projects/, { timeoutMs: 5000 }), tab.shows(/Drop 1 file to upload to Chantier Nord/, { not: true, timeoutMs: 1000 })]);
+      await dragFile(pickerDialog.getByRole("main"), "depose-dans-le-picker.png", dropped, ["drop"]);
       const afterDrop = await settled("depose-dans-le-picker.png");
       await ctx.verify("a drop on the picker targets the linked folder even from a subfolder", [stillInside, check("the dropped file is in the linked folder itself, not the subfolder", afterDrop.bound.includes("depose-dans-le-picker.png") && !afterDrop.sub.includes("depose-dans-le-picker.png"), afterDrop)]);
+    },
+  },
+  {
+    id: "a-read-only-linked-folder-asks-where-a-drop-goes",
+    title: "a picker whose linked folder the member cannot write asks where a drop goes, as its Upload does, even from a writable subfolder",
+    entryPoint: "/verify-fields, Projects picker bound read-only, writable Chantier Sud, a drop",
+    async run(/** @type {Ctx} */ ctx) {
+      await fixture(ctx, "RegisterAssetBinding verify.projects read-only", "POST", "/binding", { id: "verify.projects", folderName: "Verify projects", subfolders: true, permissionMapping: { write: [] }, permissionsFromPage: "fields" });
+      const projects = await boundFolder(ctx, "verify.projects");
+      const declared = await declareFolder(ctx, { key: ctx.unique("verify.sud"), name: "Chantier Sud", parent: { binding: "verify.projects" }, acl: [{ subject: { kind: "permission", id: "verify.sud.write" }, rights: ["write"] }] });
+      const sub = text(declared.body, "result", "id");
+      await member(ctx, "lecteur", ["page:fields", "verify.sud.write"]);
+      const tab = await ctx.tab("lecteur");
+      await tab.signIn("lecteur");
+      await tab.goto("/verify-fields");
+      const opened = await openPicker(tab, "Projects");
+      await ctx.verify("the picker opens", [check("the dialog", opened, opened)]);
+      const pickerDialog = tab.page.getByRole("dialog", { name: "Choose from the library" });
+      await pickerDialog.getByRole("button", { name: /^Chantier Sud/ }).dblclick({ timeout: 10_000 }).catch(() => undefined);
+      const inside = await tab.visible({ role: "heading", name: "Chantier Sud", level: 2 }, { timeoutMs: 10_000 });
+      await dragFile(pickerDialog.getByRole("main"), "lecteur-depose.png", await image(ctx, { width: 8, height: 8 }), ["dragenter", "dragover", "drop"]);
+      const asked = await tab.visible({ role: "heading", name: "Where should the files go?" }, { timeoutMs: 10_000 });
+      await tab.page.waitForTimeout(3000);
+      const listed = {
+        bound: (await folderAssets(ctx, projects, { as: "lecteur" })).assets.map((asset) => text(asset, "name")),
+        sub: (await folderAssets(ctx, sub, { as: "lecteur" })).assets.map((asset) => text(asset, "name")),
+      };
+      await ctx.verify("the drop asks where the files go and uploads nothing on its own", [inside, asked, check("no folder holds the dropped file before a choice", ![...listed.bound, ...listed.sub].includes("lecteur-depose.png"), listed)]);
     },
   },
   {

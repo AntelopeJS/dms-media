@@ -29,7 +29,8 @@ docs:
 - `the-picker-shows-what-the-field-accepts`: the picker says what the field accepts, shows a file of another type but refuses it, lets a PDF be chosen, and the form stores the asset id, never a URL.
 - `uploads-from-the-field-land-in-its-folder`: the field's Upload button and a drop on the field send the file to the field's linked folder.
 - `a-members-picker-shows-only-what-they-can-read`: a member opening a field's picker sees only the folders they can read, and a linked field's picker opens on its folder and lists its subfolders.
-- `the-pickers-upload-targets-the-linked-folder`: a linked field's picker browsed into a subfolder still sends its Upload and a drop on it to the linked folder itself.
+- `the-pickers-upload-targets-the-linked-folder`: a linked field's picker browsed into a subfolder still sends its Upload and a drop on it to the linked folder itself, and its drop overlay names that folder.
+- `a-read-only-linked-folder-asks-where-a-drop-goes`: a picker whose linked folder the member cannot write asks where a drop goes, as its Upload does, even from a subfolder the member can write.
 - `a-refusal-speaks-the-members-language`: a member whose language is French sees a refused file explained in French.
 
 ## How to get to it (user POV)
