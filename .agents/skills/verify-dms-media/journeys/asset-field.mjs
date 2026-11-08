@@ -171,8 +171,8 @@ export const journeys = guarded([
   },
   {
     id: "the-pickers-upload-targets-the-linked-folder",
-    title: "a linked field's picker browsed into a subfolder still uploads into the linked folder itself",
-    entryPoint: "/verify-fields, Projects picker, Chantier Nord, Upload",
+    title: "a linked field's picker browsed into a subfolder still sends its Upload and a drop on it to the linked folder itself",
+    entryPoint: "/verify-fields, Projects picker, Chantier Nord, Upload and a drop",
     async run(/** @type {Ctx} */ ctx) {
       const projects = await boundFolder(ctx, "verify.projects");
       const sub = await createFolder(ctx, "Chantier Nord", { parentId: projects });
@@ -192,12 +192,30 @@ export const journeys = guarded([
         bound: (await folderAssets(ctx, projects, { as: "picker" })).assets.map((asset) => text(asset, "name")),
         sub: (await folderAssets(ctx, sub.id, { as: "picker" })).assets.map((asset) => text(asset, "name")),
       });
-      let found = await where();
-      for (let attempt = 0; attempt < 20 && ![...found.bound, ...found.sub].includes("depuis-le-picker.png"); attempt += 1) {
-        await tab.page.waitForTimeout(1000);
-        found = await where();
-      }
-      await ctx.verify("its Upload targets the linked folder even from a subfolder", [inside, check("the file is in the linked folder itself, not the subfolder", found.bound.includes("depuis-le-picker.png") && !found.sub.includes("depuis-le-picker.png"), found)]);
+      /** @param {string} name */
+      const settled = async (name) => {
+        let found = await where();
+        for (let attempt = 0; attempt < 20 && ![...found.bound, ...found.sub].includes(name); attempt += 1) {
+          await tab.page.waitForTimeout(1000);
+          found = await where();
+        }
+        return found;
+      };
+      const afterUpload = await settled("depuis-le-picker.png");
+      await ctx.verify("its Upload targets the linked folder even from a subfolder", [inside, check("the file is in the linked folder itself, not the subfolder", afterUpload.bound.includes("depuis-le-picker.png") && !afterUpload.sub.includes("depuis-le-picker.png"), afterUpload)]);
+      await pickerDialog.getByRole("button", { name: /^Chantier Nord/ }).dblclick({ timeout: 10_000 }).catch(() => undefined);
+      const stillInside = await tab.visible({ role: "heading", name: "Chantier Nord", level: 2 }, { timeoutMs: 10_000 });
+      const dropped = await image(ctx, { width: 7, height: 7 });
+      await pickerDialog.getByRole("main").evaluate((element, base64) => {
+        const binary = atob(base64);
+        const bytes = new Uint8Array(binary.length);
+        for (let index = 0; index < binary.length; index += 1) bytes[index] = binary.charCodeAt(index);
+        const transfer = new DataTransfer();
+        transfer.items.add(new File([bytes], "depose-dans-le-picker.png", { type: "image/png" }));
+        for (const type of ["dragenter", "dragover", "drop"]) element.dispatchEvent(new DragEvent(type, { bubbles: true, cancelable: true, dataTransfer: transfer }));
+      }, dropped.toString("base64"));
+      const afterDrop = await settled("depose-dans-le-picker.png");
+      await ctx.verify("a drop on the picker targets the linked folder even from a subfolder", [stillInside, check("the dropped file is in the linked folder itself, not the subfolder", afterDrop.bound.includes("depose-dans-le-picker.png") && !afterDrop.sub.includes("depose-dans-le-picker.png"), afterDrop)]);
     },
   },
   {
