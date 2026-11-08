@@ -185,6 +185,15 @@ describe("[integration] media linked subfolders — bindings that allow them", (
     });
     expect(single.status).to.equal(HTTP_UNSUPPORTED_MEDIA_TYPE);
     expect(single.data).to.equal(`${ERRORS}.field_type`);
+    const subfolder = await client.post("/api/media/folders", {
+      name: "Project D",
+      parentId: linked.id,
+    });
+    const intoSubfolder = await client.post(
+      `/api/media/assets/${notes.id}/move`,
+      { folderId: readBody(subfolder, createdBody).id },
+    );
+    expect(intoSubfolder.status).to.equal(HTTP_UNSUPPORTED_MEDIA_TYPE);
     const bulk = await client.post("/api/media/assets/bulk/move", {
       ids: [notes.id, photo.id],
       folderId: linked.id,
