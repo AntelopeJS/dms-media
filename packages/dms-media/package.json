@@ -57,7 +57,8 @@
     "prepack": "pnpm run build",
     "knip": "knip --dependencies",
     "knip:all": "knip",
-    "test:exports": "node --test tests/package-exports.test.mjs"
+    "test:exports": "node --test tests/package-exports.test.mjs",
+    "test:playground": "[ -n \"$DMS_PREBUILT\" ] || pnpm run build && pnpm --dir playground install --frozen-lockfile --ignore-workspace && pnpm --dir playground build"
   },
   "dependencies": {
     "@antelopejs/interface-api": ">=0.3.0 <1.0.0",
