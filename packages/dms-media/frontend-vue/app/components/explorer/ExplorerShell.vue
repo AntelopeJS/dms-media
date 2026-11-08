@@ -82,7 +82,10 @@ const { uploads, enqueue } = useExplorerUploads(library, { accept: props.accept,
 const drop = createExplorerDrop(library, (files, folder: MediaFolder) => enqueue(files, folder))
 provideExplorerDrop(drop)
 const uploadLimit = computed(() => format.formatBytes(uploads.maxUploadBytes.value))
-const uploadFolder = computed(() => (props.scopeFolderId ? library.tree.foldersById.value.get(props.scopeFolderId) : library.currentFolder.value))
+const uploadFolder = computed(() => {
+	const linked = props.scopeFolderId ? library.tree.foldersById.value.get(props.scopeFolderId) : undefined
+	return linked?.rights.write ? linked : library.currentFolder.value
+})
 
 function onFilesChosen(event: Event): void {
 	const input = event.target as HTMLInputElement
@@ -106,7 +109,7 @@ function onContentDrop(event: DragEvent): void {
 async function chooseDropDestination(files: File[]): Promise<void> {
 	droppedFiles = files
 	try {
-		await commands.upload(props.scopeFolderId)
+		await commands.upload()
 	} finally {
 		droppedFiles = []
 	}
@@ -208,7 +211,7 @@ definePageShortcuts(
 defineExpose({
 	library,
 	navigate,
-	upload: () => commands.upload(props.scopeFolderId),
+	upload: () => commands.upload(uploadFolder.value?.id),
 	focusSearch: () => toolbar.value?.focusSearch(),
 })
 </script>
