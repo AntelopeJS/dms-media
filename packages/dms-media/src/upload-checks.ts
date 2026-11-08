@@ -48,11 +48,11 @@ export class UploadRefusedError extends Error {
   }
 }
 
+/** An image's displayed size and decoded format, each absent when unknown. */
 export interface ImageProbe {
   width?: number;
   height?: number;
   format?: string;
-  isReadable: boolean;
 }
 
 /** Displayed size: sharp reports stored pixels, EXIF orientations 5-8 swap them. */
@@ -62,36 +62,40 @@ function orientedSize(metadata: sharp.Metadata): ImageProbe {
     width: isSwapped ? metadata.height : metadata.width,
     height: isSwapped ? metadata.width : metadata.height,
     format: metadata.format,
-    isReadable: true,
   };
 }
 
-/** Reads an image's displayed size; any other file is readable as is. */
-export async function probeImageBytes(
-  read: () => Promise<Buffer | undefined>,
-  mimetype: string,
-  size: number,
-): Promise<ImageProbe> {
-  if (!mimetype.startsWith("image/") || size > MAX_PROBE_SIZE_BYTES)
-    return { isReadable: true };
+async function readMetadata(
+  read: () => Promise<Buffer>,
+): Promise<sharp.Metadata | undefined> {
   try {
-    const buffer = await read();
-    if (!buffer) return { isReadable: true };
-    return orientedSize(await sharp(buffer).metadata());
+    return await sharp(await read()).metadata();
   } catch {
-    return { isReadable: false };
+    return undefined;
   }
 }
 
-/** A file declared as a raster type sharp decodes must actually decode. */
-export function assertReadableImage(probe: ImageProbe, mimetype: string): void {
-  const isDecodable = Boolean(expectedImageFormat(mimetype));
-  if (isDecodable && (!probe.isReadable || !probe.format))
+/**
+ * Reads an image's displayed size. A file declared as a raster type sharp
+ * decodes must decode; any other file, and an image too large to probe, has
+ * no size.
+ */
+export async function probeImage(
+  read: () => Promise<Buffer>,
+  mimetype: string,
+  size: number,
+): Promise<ImageProbe> {
+  if (!mimetypeMatches(mimetype, ["image/*"]) || size > MAX_PROBE_SIZE_BYTES)
+    return {};
+  const metadata = await readMetadata(read);
+  if (metadata?.format) return orientedSize(metadata);
+  if (expectedImageFormat(mimetype))
     throw new UploadRefusedError(
       HTTP_UNPROCESSABLE_ENTITY,
       "invalid_image",
       "This file is not a readable image",
     );
+  return {};
 }
 
 /** The library's types, then those of the asset field the folder feeds. */
