@@ -14,7 +14,12 @@ import {
   MediaDeclarationModel,
   MediaFolderModel,
 } from "../../db";
-import { ONE_PIXEL_PNG, PNG_MIMETYPE } from "../helpers/assets";
+import {
+  ONE_PIXEL_PNG,
+  PNG_MIMETYPE,
+  uploadPixelPng,
+  uploadTextAsset,
+} from "../helpers/assets";
 import { createdBody, readBody } from "../helpers/bodies";
 import { type FolderNode, fetchFolderNodes } from "../helpers/folders";
 import { authorizedClient } from "../helpers/http";
@@ -165,6 +170,45 @@ describe("[integration] media linked subfolders — bindings that allow them", (
     expect(text.status).to.equal(HTTP_UNSUPPORTED_MEDIA_TYPE);
     expect(text.data.reason).to.equal("field_type");
     expect((await presign("photo.png", "image/png")).status).to.equal(HTTP_OK);
+  });
+
+  it("refuses to move a file into a linked folder whose field does not take its type", async () => {
+    const linked = await treeFolder(OPEN_BINDING_ID);
+    const library = await client.post("/api/media/folders", {
+      name: "Loose files",
+    });
+    const libraryId = readBody(library, createdBody).id;
+    const notes = await uploadTextAsset(client, libraryId, "notes.txt");
+    const photo = await uploadPixelPng(client, libraryId);
+    const single = await client.post(`/api/media/assets/${notes.id}/move`, {
+      folderId: linked.id,
+    });
+    expect(single.status).to.equal(HTTP_UNSUPPORTED_MEDIA_TYPE);
+    expect(single.data).to.equal(`${ERRORS}.field_type`);
+    const subfolder = await client.post("/api/media/folders", {
+      name: "Project D",
+      parentId: linked.id,
+    });
+    const intoSubfolder = await client.post(
+      `/api/media/assets/${notes.id}/move`,
+      { folderId: readBody(subfolder, createdBody).id },
+    );
+    expect(intoSubfolder.status).to.equal(HTTP_UNSUPPORTED_MEDIA_TYPE);
+    const bulk = await client.post("/api/media/assets/bulk/move", {
+      ids: [notes.id, photo.id],
+      folderId: linked.id,
+    });
+    expect(bulk.data.done).to.deep.equal([photo.id]);
+    expect(bulk.data.refused).to.deep.equal([
+      {
+        id: notes.id,
+        status: HTTP_UNSUPPORTED_MEDIA_TYPE,
+        message: `${ERRORS}.field_type`,
+      },
+    ]);
+    const assetModel = GetModel(MediaAssetModel, DEFAULT_TENANT_ID);
+    expect((await assetModel.get(notes.id))?.folderId).to.equal(libraryId);
+    await client.delete(`/api/media/folders/${libraryId}`);
   });
 
   it("declares per-record folders under a linked folder that allows them", async () => {
