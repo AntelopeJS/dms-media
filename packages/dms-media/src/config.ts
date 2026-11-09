@@ -30,7 +30,8 @@ export interface DmsMediaConfig {
   storageQuotaBytes?: number;
   /**
    * File types members may upload, as mimetypes (`image/*` matches a prefix).
-   * HTML and XHTML stay refused whatever this list says.
+   * HTML, XHTML and PHP stay refused, by type or by extension, whatever this
+   * list says.
    */
   allowedMimetypes?: string[];
   /**
