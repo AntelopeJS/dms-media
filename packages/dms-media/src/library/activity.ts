@@ -316,10 +316,14 @@ function deletedAssets(events: MediaEvent[]): Set<string> {
   );
 }
 
-/** Newest first, with one entry per upload batch and per bulk action. */
+/**
+ * Newest first, with one entry per upload batch and per bulk action.
+ *
+ * @param limit The most entries to keep; every entry when left out.
+ */
 export function buildActivityItems(
   source: ActivitySource,
-  limit: number,
+  limit?: number,
 ): ActivityFeedItem[] {
   const context: ActivityContext = {
     ...source,

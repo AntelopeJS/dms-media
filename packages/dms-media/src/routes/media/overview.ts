@@ -208,10 +208,11 @@ export class MediaOverviewController extends MediaApiController {
       MediaEventModel,
       context.tenantId,
     ).listByAsset(assetId);
-    const items = buildActivityItems(
-      { events, foldersById: context.foldersById, foldsBulkActions: false },
-      MAX_FEED_LENGTH,
-    );
+    const items = buildActivityItems({
+      events,
+      foldersById: context.foldersById,
+      foldsBulkActions: false,
+    });
     return { items: unlinkCurrentFile(items, assetId) };
   }
 }
