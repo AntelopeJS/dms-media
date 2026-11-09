@@ -20,7 +20,7 @@ const history = TableView.fromSource({
   caption: `${TEXTS}.history.title`,
   fetchUrl: "/api/media/upload/batches",
   realtimeTopic: MEDIA_LIBRARY_TOPIC,
-  liveHold: true,
+  liveHold: { whileOnScreen: false },
   layout: "full",
   density: "compact",
   pageSize: HISTORY_PAGE_SIZE,

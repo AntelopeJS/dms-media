@@ -71,7 +71,7 @@ new AssetType({
 | `@antelopejs/interface-core`                | `>=0.4.0 <1.0.0`  | `0.4.0`     |
 | `@antelopejs/interface-database`            | `>=0.3.0 <1.0.0`  | `0.3.0`     |
 | `@antelopejs/interface-database-decorators` | `>=0.2.0 <1.0.0`  | `0.2.0`     |
-| `@antelopejs/interface-dms`                 | `>=0.12.0 <1.0.0` | `0.12.0`    |
+| `@antelopejs/interface-dms`                 | `>=0.13.0 <1.0.0` | `0.13.0`    |
 | `@antelopejs/interface-dms-media`           | `>=0.3.0 <0.4.0`  | `0.3.2`     |
 | `@antelopejs/interface-file-storage`        | `>=0.1.6 <1.0.0`  | `0.1.6`     |
 

@@ -67,4 +67,3 @@ dms-control journey "$RUN" uploads
 
 - `chooseFiles` (`parts/upload-page.mjs`) clicks the Upload button and answers the browser's file chooser with in-memory files.
 - `a-storage-that-refuses-the-origin-is-named` opens the dashboard on `http://localhost:<port>`: the DMS adds its own `clientBaseUrl` (127.0.0.1) to the API's CORS origins, so only another origin is refused. It sets `VERIFY_MEDIA_STORAGE_ORIGIN=api` so the browser PUTs to the API's origin, not through the dashboard's proxy.
-- `a-live-uploads-page-shows-a-new-batch` fails on main: Recent batches does not follow Live (issue draft `dms-media-uploads-page-not-live`).
