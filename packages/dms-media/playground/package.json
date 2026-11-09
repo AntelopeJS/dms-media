@@ -9,14 +9,14 @@
     "frontend:dev": "ajs dms dev"
   },
   "dependencies": {
-    "@antelopejs/dms": "file:../../../.tgz-deps/antelopejs-dms-a8fc510.tgz",
+    "@antelopejs/dms": ">=0.19.0 <1.0.0",
     "@antelopejs/interface-api": ">=0.3.0 <1.0.0",
     "@antelopejs/interface-api-util": ">=0.3.0 <1.0.0",
     "@antelopejs/interface-core": ">=0.4.0 <1.0.0",
     "@antelopejs/interface-data-api": ">=0.6.1 <1.0.0",
     "@antelopejs/interface-database": ">=0.3.0 <1.0.0",
     "@antelopejs/interface-database-decorators": ">=0.2.0 <1.0.0",
-    "@antelopejs/interface-dms": "file:../../../.tgz-deps/antelopejs-interface-dms-a8fc510.tgz",
+    "@antelopejs/interface-dms": ">=0.13.0 <1.0.0",
     "@antelopejs/interface-dms-media": "link:../../interface-dms-media",
     "zod": "~3.24.2"
   },
@@ -28,18 +28,6 @@
     "typescript": "^6.0.3"
   },
   "packageManager": "pnpm@10.2.0",
-  "pnpm": {
-    "overrides": {
-      "@antelopejs/interface-dms": "file:../../../.tgz-deps/antelopejs-interface-dms-a8fc510.tgz",
-      "@antelopejs/dms": "file:../../../.tgz-deps/antelopejs-dms-a8fc510.tgz",
-      "@antelopejs/dms>@antelopejs/interface-api": "0.3.0",
-      "@antelopejs/dms>@antelopejs/interface-api-util": "0.3.0",
-      "@antelopejs/dms>@antelopejs/interface-core": "0.4.0",
-      "@antelopejs/dms>@antelopejs/interface-data-api": "0.6.1",
-      "@antelopejs/dms>@antelopejs/interface-database": "0.3.0",
-      "@antelopejs/dms>@antelopejs/interface-database-decorators": "0.2.0"
-    }
-  },
   "antelopeJs": {
     "baseUrl": "dist",
     "paths": {

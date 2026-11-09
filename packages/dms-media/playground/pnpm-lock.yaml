@@ -4,23 +4,13 @@ settings:
   autoInstallPeers: true
   excludeLinksFromLockfile: false
 
-overrides:
-  '@antelopejs/interface-dms': file:../../../.tgz-deps/antelopejs-interface-dms-a8fc510.tgz
-  '@antelopejs/dms': file:../../../.tgz-deps/antelopejs-dms-a8fc510.tgz
-  '@antelopejs/dms>@antelopejs/interface-api': 0.3.0
-  '@antelopejs/dms>@antelopejs/interface-api-util': 0.3.0
-  '@antelopejs/dms>@antelopejs/interface-core': 0.4.0
-  '@antelopejs/dms>@antelopejs/interface-data-api': 0.6.1
-  '@antelopejs/dms>@antelopejs/interface-database': 0.3.0
-  '@antelopejs/dms>@antelopejs/interface-database-decorators': 0.2.0
-
 importers:
 
   .:
     dependencies:
       '@antelopejs/dms':
-        specifier: file:../../../.tgz-deps/antelopejs-dms-a8fc510.tgz
-        version: file:../../../.tgz-deps/antelopejs-dms-a8fc510.tgz(@antelopejs/core@1.21.0)(bare-buffer@3.7.1)
+        specifier: '>=0.19.0 <1.0.0'
+        version: 0.19.0(@antelopejs/core@1.21.0)(bare-buffer@3.7.1)
       '@antelopejs/interface-api':
         specifier: '>=0.3.0 <1.0.0'
         version: 0.3.0(@antelopejs/interface-core@0.4.0)
@@ -40,8 +30,8 @@ importers:
         specifier: '>=0.2.0 <1.0.0'
         version: 0.2.0(@antelopejs/interface-api@0.3.0(@antelopejs/interface-core@0.4.0))(@antelopejs/interface-core@0.4.0)(@antelopejs/interface-database@0.3.0(@antelopejs/interface-core@0.4.0))
       '@antelopejs/interface-dms':
-        specifier: file:../../../.tgz-deps/antelopejs-interface-dms-a8fc510.tgz
-        version: file:../../../.tgz-deps/antelopejs-interface-dms-a8fc510.tgz(833667e0361b748c30c1594c31bfb0f4)
+        specifier: '>=0.13.0 <1.0.0'
+        version: 0.13.0(833667e0361b748c30c1594c31bfb0f4)
       '@antelopejs/interface-dms-media':
         specifier: link:../../interface-dms-media
         version: link:../../interface-dms-media
@@ -82,9 +72,8 @@ packages:
     peerDependencies:
       '@antelopejs/core': '>=1.16.0 <2'
 
-  '@antelopejs/dms@file:../../../.tgz-deps/antelopejs-dms-a8fc510.tgz':
-    resolution: {integrity: sha512-elkNepfdtBltTg+2FUwhi++G7BnWuACRWxSRrSvRGXyHQSrnmqdjUZaL1jPFtenP+CCKhFQwv5xt/f+DLJDupQ==, tarball: file:../../../.tgz-deps/antelopejs-dms-a8fc510.tgz}
-    version: 0.18.1
+  '@antelopejs/dms@0.19.0':
+    resolution: {integrity: sha512-zDxo0oTnEwmTJMoFrguG8O4mEexH6TI1FOM6B47zkb7AcGSmcWLiz6ke8bhV9pFmRIG+t+YzaEJ6jftaAWNybQ==}
     hasBin: true
     peerDependencies:
       '@antelopejs/core': '>=1.21.0 <2'
@@ -132,9 +121,8 @@ packages:
     peerDependencies:
       '@antelopejs/interface-core': '>=0.2.4 <1.0.0'
 
-  '@antelopejs/interface-dms@file:../../../.tgz-deps/antelopejs-interface-dms-a8fc510.tgz':
-    resolution: {integrity: sha512-M2XvyBvOdv5VUlv3Rcy5pvsSK9tRGZL1K44Uq9vq7oKB+bpv7RuC7WEpAbwhKpEGnrq2hTbWU2aa+55v01KOMw==, tarball: file:../../../.tgz-deps/antelopejs-interface-dms-a8fc510.tgz}
-    version: 0.12.0
+  '@antelopejs/interface-dms@0.13.0':
+    resolution: {integrity: sha512-KujyrbQtujuWLocaS+BM5PBQSS8SXnDfp/IESa5v6fVB3xUAtGi+bxEVDnoX1+6OdZoMdsVptDmJAj++RzmptA==}
     peerDependencies:
       '@antelopejs/interface-api': '>=0.3.0 <1.0.0'
       '@antelopejs/interface-api-util': '>=0.1.3 <1.0.0'
@@ -199,12 +187,14 @@ packages:
     engines: {node: ^20.19.0 || >=22.12.0}
     cpu: [arm64]
     os: [linux]
+    libc: [glibc]
 
   '@oxc-parser/binding-linux-x64-gnu@0.95.0':
     resolution: {integrity: sha512-8huzHlK/N98wrnYKxIcYsK8ZGBWomQchu/Mzi6m+CtbhjWOv9DmK0jQ2fUWImtluQVpTwS0uZT06d3g7XIkJrA==}
     engines: {node: ^20.19.0 || >=22.12.0}
     cpu: [x64]
     os: [linux]
+    libc: [glibc]
 
   '@oxc-parser/binding-win32-x64-msvc@0.95.0':
     resolution: {integrity: sha512-BQpgl7rDjFvCIHudmUR0dCwc4ylBYZl4CPVinlD3NhkMif4WD5dADckoo5ES/KOpFyvwcbKZX+grP63cjHi26g==}
@@ -735,6 +725,11 @@ packages:
     resolution: {integrity: sha512-Wj9G85wJCpIgHq7xd0g4/IDjrA51pxmd+m9AbTiC6zRmWzVC6jOJIUyf92r7/B2+NE6zwqZIz0BZr85xkc3/Sg==}
     engines: {node: '>=8'}
 
+  playwright-core@1.56.1:
+    resolution: {integrity: sha512-hutraynyn31F+Bifme+Ps9Vq59hKuUCz7H1kDOcBs+2oGguKkWTU50bBWrtz34OUWmIwpBTWDxaRPXrIXkgvmQ==}
+    engines: {node: '>=18'}
+    hasBin: true
+
   process-nextick-args@2.0.1:
     resolution: {integrity: sha512-3ouUOpQhtgrbOa17J7+uxOTpITYWaGP7/AhoR3+A+/1e9skrzelGi/dXzEYyvbxubEF6Wn2ypscTKiKJFFn1ag==}
 
@@ -1036,7 +1031,7 @@ snapshots:
       '@oxc-parser/binding-linux-x64-gnu': 0.95.0
       '@oxc-parser/binding-win32-x64-msvc': 0.95.0
 
-  '@antelopejs/dms@file:../../../.tgz-deps/antelopejs-dms-a8fc510.tgz(@antelopejs/core@1.21.0)(bare-buffer@3.7.1)':
+  '@antelopejs/dms@0.19.0(@antelopejs/core@1.21.0)(bare-buffer@3.7.1)':
     dependencies:
       2fa: 0.1.2
       '@antelopejs/interface-api': 0.3.0(@antelopejs/interface-core@0.4.0)
@@ -1045,7 +1040,7 @@ snapshots:
       '@antelopejs/interface-data-api': 0.6.1(@antelopejs/interface-api-util@0.3.0(@antelopejs/interface-api@0.3.0(@antelopejs/interface-core@0.4.0))(@antelopejs/interface-core@0.4.0))(@antelopejs/interface-api@0.3.0(@antelopejs/interface-core@0.4.0))(@antelopejs/interface-core@0.4.0)(@antelopejs/interface-database-decorators@0.2.0(@antelopejs/interface-api@0.3.0(@antelopejs/interface-core@0.4.0))(@antelopejs/interface-core@0.4.0)(@antelopejs/interface-database@0.3.0(@antelopejs/interface-core@0.4.0)))(@antelopejs/interface-database@0.3.0(@antelopejs/interface-core@0.4.0))
       '@antelopejs/interface-database': 0.3.0(@antelopejs/interface-core@0.4.0)
       '@antelopejs/interface-database-decorators': 0.2.0(@antelopejs/interface-api@0.3.0(@antelopejs/interface-core@0.4.0))(@antelopejs/interface-core@0.4.0)(@antelopejs/interface-database@0.3.0(@antelopejs/interface-core@0.4.0))
-      '@antelopejs/interface-dms': file:../../../.tgz-deps/antelopejs-interface-dms-a8fc510.tgz(833667e0361b748c30c1594c31bfb0f4)
+      '@antelopejs/interface-dms': 0.13.0(833667e0361b748c30c1594c31bfb0f4)
       '@antelopejs/interface-email': 0.1.1(@antelopejs/interface-core@0.4.0)
       '@antelopejs/interface-file-storage': 0.1.7(@antelopejs/interface-core@0.4.0)
       archiver: 7.0.1(bare-buffer@3.7.1)
@@ -1063,6 +1058,7 @@ snapshots:
       '@antelopejs/core': 1.21.0
       '@antelopejs/interface-dms-automation': 0.6.1(@antelopejs/interface-core@0.4.0)
       '@antelopejs/interface-redis': 0.0.9(@antelopejs/interface-core@0.4.0)
+      playwright-core: 1.56.1
     transitivePeerDependencies:
       - bare-abort-controller
       - bare-buffer
@@ -1107,7 +1103,7 @@ snapshots:
       '@antelopejs/interface-core': 0.4.0
     optional: true
 
-  '@antelopejs/interface-dms@file:../../../.tgz-deps/antelopejs-interface-dms-a8fc510.tgz(833667e0361b748c30c1594c31bfb0f4)':
+  '@antelopejs/interface-dms@0.13.0(833667e0361b748c30c1594c31bfb0f4)':
     dependencies:
       '@antelopejs/interface-api': 0.3.0(@antelopejs/interface-core@0.4.0)
       '@antelopejs/interface-api-util': 0.3.0(@antelopejs/interface-api@0.3.0(@antelopejs/interface-core@0.4.0))(@antelopejs/interface-core@0.4.0)
@@ -1723,6 +1719,9 @@ snapshots:
   picocolors@1.1.1: {}
 
   pipe-io@4.0.1: {}
+
+  playwright-core@1.56.1:
+    optional: true
 
   process-nextick-args@2.0.1: {}
 
