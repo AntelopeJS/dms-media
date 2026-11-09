@@ -1,5 +1,5 @@
 import { createFolder, setVisibility, uploaded } from "../../library.mjs";
-import { openFilePicker } from "../../chooser.mjs";
+import { openFilePicker, waitForHydration } from "../../chooser.mjs";
 import { check, image, list, media, pick } from "../../media.mjs";
 
 /** @typedef {import("../../media.mjs").Ctx} Ctx */
@@ -133,13 +133,14 @@ export function activityJourneys() {
         }
         await ctx.verify("the paused page's own upload went through", [check("the file landed", list(listed.body, "assets").length === 1, listed.body), tab.visible({ role: "button", name: "Pause", pressed: true })]);
         await tab.goto("/modules/media/activity");
+        const hydrated = await waitForHydration(tab, 60_000);
         const live = tab.page.getByRole("button", { name: "Live" });
         await live.waitFor({ timeout: 30_000 }).catch(() => undefined);
         for (let attempt = 0; attempt < 10 && (await live.getAttribute("aria-pressed").catch(() => "")) !== "true"; attempt += 1) {
           await live.click({ timeout: 10_000 }).catch(() => undefined);
           await tab.page.waitForTimeout(1000);
         }
-        await ctx.verify("the Activity page is live before anything changes", [tab.visible({ role: "button", name: "Live", pressed: true }, { timeoutMs: 10_000 })]);
+        await ctx.verify("the Activity page is live before anything changes", [check("the page hydrated, so Live is the stored choice and not the server's", hydrated, tab.page.url()), tab.visible({ role: "button", name: "Live", pressed: true }, { timeoutMs: 10_000 })]);
         await media(ctx, "rename the folder elsewhere", "POST", `/folders/${folder.id}/rename`, { body: { name: `${name} bis` } });
         await ctx.verify("the Activity feed follows", [tab.shows(new RegExp(`renamed[\\s\\S]*${name} bis|${name} bis[\\s\\S]*renamed`, "i"), { timeoutMs: 20_000 })]);
       },
