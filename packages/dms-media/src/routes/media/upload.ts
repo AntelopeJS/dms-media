@@ -19,11 +19,10 @@ import { ORIGINAL_FILENAME_METADATA_KEY } from "../../constants";
 import { MediaUploadModel } from "../../db";
 import { loadAssetsInFolders } from "../../library/listing";
 import {
-  assertReadableImage,
   assertUploadTypeAllowed,
   assertWithinQuota,
   type ImageProbe,
-  probeImageBytes,
+  probeImage,
   UploadRefusedError,
 } from "../../upload-checks";
 import { suggestFreeNames } from "../../upload-names";
@@ -73,13 +72,11 @@ async function readImage(
   metadata: FileMetadata,
 ): Promise<ImageProbe> {
   const storage = getMediaConfig().storage;
-  const probe = await probeImageBytes(
+  return probeImage(
     () => readStoredFile(resourceKey, storage),
     metadata.mimetype,
     metadata.size,
   );
-  assertReadableImage(probe, metadata.mimetype);
-  return probe;
 }
 
 async function assertUploadAccepted(

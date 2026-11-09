@@ -8,6 +8,7 @@ import {
   UnregisterAssetBinding,
 } from "@antelopejs/interface-dms-media";
 import sharp from "sharp";
+import { z } from "zod";
 import { CONTENT_ROOT_BINDING } from "../../bindings";
 import {
   configureMediaModule,
@@ -31,6 +32,16 @@ const PDF_BINDING_ID = "upload-policy.pdf-only";
 const PDF_FOLDER_NAME = "PDF only uploads";
 const PURGE_HORIZON_MS = 25 * 60 * 60 * 1000;
 const EXIF_ROTATED_RIGHT = 6;
+const LARGER_THAN_PROBE_BYTES = 33 * 1024 * 1024;
+
+const confirmedBody = z.object({
+  asset: z.object({
+    mimetype: z.string(),
+    size: z.number(),
+    width: z.number().nullish(),
+    height: z.number().nullish(),
+  }),
+});
 
 interface StagedUpload {
   resourceKey: string;
@@ -210,20 +221,44 @@ describe("[integration] media upload policy — types, quota, real content and s
     }
   });
 
-  it("refuses a fake image at confirm and deletes its staged file", async () => {
-    const staged = await stage(
-      "fake.png",
-      "image/png",
-      Buffer.from("this is not a png"),
-    );
+  it("refuses a fake image at confirm, whatever the case of its type, and deletes its staged file", async () => {
+    for (const mimetype of ["image/png", "Image/PNG"]) {
+      const staged = await stage(
+        "fake.png",
+        mimetype,
+        Buffer.from("this is not a png"),
+      );
+      const confirm = await client.post("/api/media/upload/confirm", {
+        folderId,
+        resourceKey: staged.resourceKey,
+        filename: "fake.png",
+      });
+      expect(confirm.status, mimetype).to.equal(HTTP_UNPROCESSABLE_ENTITY);
+      expect(confirm.data.reason, mimetype).to.equal("invalid_image");
+      expect(await FileExists(staged.resourceKey), mimetype).to.equal(false);
+    }
+  });
+
+  it("stores an image too large to probe, without its size", async function () {
+    this.timeout(60_000);
+    const jpeg = await sharp({
+      create: { width: 8, height: 6, channels: 3, background: "#808080" },
+    })
+      .jpeg()
+      .toBuffer();
+    const large = Buffer.concat([jpeg, Buffer.alloc(LARGER_THAN_PROBE_BYTES)]);
+    const staged = await stage("large.jpg", "image/jpeg", large);
     const confirm = await client.post("/api/media/upload/confirm", {
       folderId,
       resourceKey: staged.resourceKey,
-      filename: "fake.png",
+      filename: "large.jpg",
     });
-    expect(confirm.status).to.equal(HTTP_UNPROCESSABLE_ENTITY);
-    expect(confirm.data.reason).to.equal("invalid_image");
-    expect(await FileExists(staged.resourceKey)).to.equal(false);
+    expect(confirm.status, JSON.stringify(confirm.data)).to.equal(HTTP_OK);
+    const { asset } = readBody(confirm, confirmedBody);
+    expect(asset.mimetype).to.equal("image/jpeg");
+    expect(asset.size).to.equal(large.byteLength);
+    expect(asset.width ?? undefined).to.equal(undefined);
+    expect(asset.height ?? undefined).to.equal(undefined);
   });
 
   it("confirms a text file declared with the name of an Object.prototype member", async () => {

@@ -11,11 +11,10 @@ import type { MediaAsset, MediaFolder } from "../db";
 import { uploadStorageBytes } from "../derivatives";
 import { recordMediaEvent } from "../library/events";
 import {
-  assertReadableImage,
   assertUploadTypeAllowed,
   assertWithinQuota,
   type ImageProbe,
-  probeImageBytes,
+  probeImage,
   UploadRefusedError,
 } from "../upload-checks";
 import { mimetypeOfFormat } from "../upload-policy";
@@ -122,12 +121,11 @@ async function prepareFile(
 ): Promise<PreparedFile> {
   assertUploadTypeAllowed(fieldBinding, declaration.name, declaration.mimetype);
   await assertWithinQuota(models.assetModel, bytes.byteLength);
-  const image = await probeImageBytes(
+  const image = await probeImage(
     async () => bytes,
     declaration.mimetype,
     bytes.byteLength,
   );
-  assertReadableImage(image, declaration.mimetype);
   return {
     bytes,
     mimetype: mimetypeOfFormat(image.format) ?? declaration.mimetype,
