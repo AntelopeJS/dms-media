@@ -1,5 +1,58 @@
 # Changelog
 
+## v0.3.3
+
+[compare changes](https://github.com/AntelopeJS/dms-media/compare/interface-v0.3.2...v0.3.3)
+
+### 🚀 Enhancements
+
+- **skills:** Add the verify-dms-media verification skill ([#113](https://github.com/AntelopeJS/dms-media/pull/113))
+
+### 🔥 Performance
+
+- **verify:** Detect the dashboard's hydration under its wrapper div ([#145](https://github.com/AntelopeJS/dms-media/pull/145))
+
+### 🩹 Fixes
+
+- **test:** Pin the test stacks' modules and install them from committed lock records ([#146](https://github.com/AntelopeJS/dms-media/pull/146))
+- **verify:** Wait for the Activity page to hydrate before checking Live ([#159](https://github.com/AntelopeJS/dms-media/pull/159))
+- **playground:** Build against one interface-dms copy ([#149](https://github.com/AntelopeJS/dms-media/pull/149))
+- **docs:** Document GET /api/media/previews?ids= and check the HTTP surface against the routes ([#150](https://github.com/AntelopeJS/dms-media/pull/150))
+- **history:** List every event of a file, not the latest 50 ([#156](https://github.com/AntelopeJS/dms-media/pull/156))
+- **media:** Refuse moving a file onto a name the target folder holds ([#158](https://github.com/AntelopeJS/dms-media/pull/158))
+- **upload:** Store an image over 32 MiB without its size instead of refusing it ([#148](https://github.com/AntelopeJS/dms-media/pull/148))
+- **dms-media:** Refuse moving a file into a linked folder whose field does not take its type ([#157](https://github.com/AntelopeJS/dms-media/pull/157))
+- **picker:** Send a linked field's picker uploads and drops to its linked folder ([#152](https://github.com/AntelopeJS/dms-media/pull/152))
+- **dms-media:** Name the real publicBaseUrl default in its TSDoc ([#147](https://github.com/AntelopeJS/dms-media/pull/147))
+- **uploads:** Show a batch finished elsewhere in Recent batches while Live ([#151](https://github.com/AntelopeJS/dms-media/pull/151))
+
+### 📖 Documentation
+
+- Sync the README with the released interface version ([#137](https://github.com/AntelopeJS/dms-media/pull/137))
+- **extending:** Say the size example falls back to a private photo ([#155](https://github.com/AntelopeJS/dms-media/pull/155))
+- **verify:** Drop the details drawer known finding now that dms 0.19.0 fixes it ([#160](https://github.com/AntelopeJS/dms-media/pull/160))
+- **dms-media:** Name PHP among the types allowedMimetypes never admits ([#154](https://github.com/AntelopeJS/dms-media/pull/154))
+- **readme:** Open with the AntelopeJS DMS module kit ([#162](https://github.com/AntelopeJS/dms-media/pull/162))
+
+### 📦 Build
+
+- **deps:** Bump @antelopejs packages to the 2026-11-06 releases ([#142](https://github.com/AntelopeJS/dms-media/pull/142))
+- **deps:** Bump @antelopejs/dms to 0.18.2 and drop verify publish ([#161](https://github.com/AntelopeJS/dms-media/pull/161))
+
+### 🏡 Chore
+
+- Remove the .amp directory ([#138](https://github.com/AntelopeJS/dms-media/pull/138))
+- **verify:** Remove seeded runs from the verification skill ([#139](https://github.com/AntelopeJS/dms-media/pull/139))
+- **ci:** Remove the weekly mutation caller ([#140](https://github.com/AntelopeJS/dms-media/pull/140))
+
+### 🤖 CI
+
+- Call ci-node.yml@v1 ([#141](https://github.com/AntelopeJS/dms-media/pull/141))
+
+### ❤️ Contributors
+
+- Antony Rizzitelli ([@Upd4ting](http://github.com/Upd4ting))
+
 ## v0.3.2
 
 [compare changes](https://github.com/AntelopeJS/dms-media/compare/interface-v0.3.1...v0.3.2)
