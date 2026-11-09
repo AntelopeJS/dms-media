@@ -92,7 +92,7 @@ The skill is not Trusted yet. It becomes Trusted when it passes a shadow run of 
 - No request ages a file or an event. `clock.mjs` moves a row's `createdAt` or `updatedAt` back in the run's database, with the MongoDB driver dms-control resolves, for the 24-hour, 7-day, 30-day and year windows.
 - `mongod` comes from `DMS_CONTROL_MONGOD`, `PATH`, or the mongodb-memory-server cache (`~/.cache/mongodb-binaries`).
 - A step whose check fails because the backend or the dashboard stopped answering ends the journey with a `NOT VERIFIED` error and no failing check (`guard.mjs`).
-- Known findings on `origin/main`, each a failing journey with an open issue: `library/the-details-drawer-steps-through-the-files` (#119, the drawer ends on a 500), `uploads/a-live-uploads-page-shows-a-new-batch` (#118, Recent batches does not follow Live), `asset-field/the-pickers-upload-targets-the-linked-folder` (#121, the picker's Upload from a subfolder lands in the subfolder).
+- Known findings on `origin/main`, each a failing journey with an open issue: `library/the-details-drawer-steps-through-the-files` (#119, the drawer ends on a 500) and `uploads/a-live-uploads-page-shows-a-new-batch` (#118, Recent batches does not follow Live).
 - Docs that disagree, where the journeys assert the documented behaviour the code has: the config TSDoc names a request-origin default for `publicBaseUrl` and leaves PHP out of `allowedMimetypes` (#125); Extending says the sizes example is null without a public image, while the Image sizes page and the code fall back to a private one (docs draft `dms-media-docs-example-url-private`).
 
 ## Not driven

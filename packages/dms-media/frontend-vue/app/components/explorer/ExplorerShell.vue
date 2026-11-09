@@ -82,6 +82,10 @@ const { uploads, enqueue } = useExplorerUploads(library, { accept: props.accept,
 const drop = createExplorerDrop(library, (files, folder: MediaFolder) => enqueue(files, folder))
 provideExplorerDrop(drop)
 const uploadLimit = computed(() => format.formatBytes(uploads.maxUploadBytes.value))
+const uploadFolder = computed(() => {
+	const linked = props.scopeFolderId ? library.tree.foldersById.value.get(props.scopeFolderId) : undefined
+	return linked?.rights.write ? linked : library.currentFolder.value
+})
 
 function onFilesChosen(event: Event): void {
 	const input = event.target as HTMLInputElement
@@ -96,7 +100,7 @@ function onContentDrop(event: DragEvent): void {
 	const files = Array.from(event.dataTransfer?.files ?? [])
 	if (files.length === 0) return
 	event.preventDefault()
-	const folder = library.currentFolder.value
+	const folder = uploadFolder.value
 	if (folder?.rights.write) return enqueue(files, folder)
 	void chooseDropDestination(files)
 }
@@ -207,7 +211,7 @@ definePageShortcuts(
 defineExpose({
 	library,
 	navigate,
-	upload: () => commands.upload(),
+	upload: () => commands.upload(uploadFolder.value?.id),
 	focusSearch: () => toolbar.value?.focusSearch(),
 })
 </script>
@@ -256,14 +260,14 @@ defineExpose({
 			<DmsIconWell icon="i-ph-cloud-arrow-up" tone="primary" size="lg" />
 			<p class="text-highlighted text-base font-semibold">
 				{{
-					library.currentFolder.value?.rights.write
-						? t('dms_media.drop.title', { count: drop.fileCount.value, name: library.currentFolder.value.name }, drop.fileCount.value)
+					uploadFolder?.rights.write
+						? t('dms_media.drop.title', { count: drop.fileCount.value, name: uploadFolder.name }, drop.fileCount.value)
 						: t('dms_media.drop.pick_folder')
 				}}
 			</p>
-			<p v-if="library.currentFolder.value?.rights.write" class="text-muted text-sm">
-				{{ folderPathLabel(library.currentFolder.value, library.tree.foldersById.value) }} ·
-				{{ t(`dms_media.visibility.${library.currentFolder.value.visibility}`) }}
+			<p v-if="uploadFolder?.rights.write" class="text-muted text-sm">
+				{{ folderPathLabel(uploadFolder, library.tree.foldersById.value) }} ·
+				{{ t(`dms_media.visibility.${uploadFolder.visibility}`) }}
 			</p>
 			<p class="text-dimmed font-mono text-xs">{{ t('dms_media.drop.limit', { size: uploadLimit }) }}</p>
 		</div>
