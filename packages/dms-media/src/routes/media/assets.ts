@@ -23,7 +23,7 @@ import {
   assetVisibilitySchema,
   MEDIA_ERRORS,
   moveAssetSchema,
-  parseBody,
+  rejectInvalid,
   previewIdsSchema,
   updateAssetSchema,
 } from "../../validation/media.schema";
@@ -134,7 +134,9 @@ export class MediaAssetsController extends MediaApiController {
 
   @Get("/previews")
   async previews(@MultiParameter("ids", "query") queryIds: string[]) {
-    const { ids } = parseBody({ ids: queryIds }, previewIdsSchema);
+    const { ids } = rejectInvalid(() =>
+      previewIdsSchema.parse({ ids: queryIds }),
+    );
     const context = await this.resolveContext();
     const { presets } = getMediaConfig();
     const thumb = presets.get(THUMB_PRESET_ID);
@@ -212,7 +214,7 @@ export class MediaAssetsController extends MediaApiController {
     @Parameter("assetId", "param") assetId: string,
     @JSONBody() body: unknown,
   ) {
-    const changes = parseBody(body, updateAssetSchema);
+    const changes = rejectInvalid(() => updateAssetSchema.parse(body));
     const context = await this.resolveContext();
     const asset = await requireReadableAsset(context, assetId);
     await updateAssetDetails(context, asset, changes);
@@ -224,7 +226,7 @@ export class MediaAssetsController extends MediaApiController {
     @Parameter("assetId", "param") assetId: string,
     @JSONBody() body: unknown,
   ) {
-    const { folderId } = parseBody(body, moveAssetSchema);
+    const { folderId } = rejectInvalid(() => moveAssetSchema.parse(body));
     const context = await this.resolveContext();
     const asset = await requireReadableAsset(context, assetId);
     await moveAsset(context, asset, folderId);
@@ -236,7 +238,9 @@ export class MediaAssetsController extends MediaApiController {
     @Parameter("assetId", "param") assetId: string,
     @JSONBody() body: unknown,
   ) {
-    const { visibility } = parseBody(body, assetVisibilitySchema);
+    const { visibility } = rejectInvalid(() =>
+      assetVisibilitySchema.parse(body),
+    );
     const context = await this.resolveContext();
     const asset = await requireReadableAsset(context, assetId);
     await setAssetVisibility(context, asset, visibility);

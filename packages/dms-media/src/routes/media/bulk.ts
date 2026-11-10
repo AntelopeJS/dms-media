@@ -14,7 +14,7 @@ import {
   bulkMoveSchema,
   bulkVisibilitySchema,
 } from "../../validation/library.schema";
-import { parseBody } from "../../validation/media.schema";
+import { rejectInvalid } from "../../validation/media.schema";
 import { moveAsset, removeAsset, setAssetVisibility } from "./asset-actions";
 import { requireReadableAsset } from "./assets";
 import { MediaApiController } from "./controller";
@@ -195,7 +195,7 @@ function zipResponse(entries: ZipEntry[], filename: string): HTTPResult {
 export class MediaBulkController extends MediaApiController {
   @Post("/assets/bulk/move")
   async bulkMove(@JSONBody() body: unknown) {
-    const { ids, folderId } = parseBody(body, bulkMoveSchema);
+    const { ids, folderId } = rejectInvalid(() => bulkMoveSchema.parse(body));
     const context = await this.resolveContext();
     return applyToEach(context, ids, (ctx, asset) =>
       moveAsset(ctx, asset, folderId),
@@ -204,7 +204,9 @@ export class MediaBulkController extends MediaApiController {
 
   @Post("/assets/bulk/visibility")
   async bulkVisibility(@JSONBody() body: unknown) {
-    const { ids, visibility } = parseBody(body, bulkVisibilitySchema);
+    const { ids, visibility } = rejectInvalid(() =>
+      bulkVisibilitySchema.parse(body),
+    );
     const context = await this.resolveContext();
     return applyToEach(context, ids, (ctx, asset) =>
       setAssetVisibility(ctx, asset, visibility),
@@ -213,14 +215,14 @@ export class MediaBulkController extends MediaApiController {
 
   @Post("/assets/bulk/delete")
   async bulkDelete(@JSONBody() body: unknown) {
-    const { ids } = parseBody(body, bulkIdsSchema);
+    const { ids } = rejectInvalid(() => bulkIdsSchema.parse(body));
     const context = await this.resolveContext();
     return applyToEach(context, ids, removeAsset);
   }
 
   @Post("/assets/zip")
   async zip(@JSONBody() body: unknown) {
-    const { ids } = parseBody(body, bulkIdsSchema);
+    const { ids } = rejectInvalid(() => bulkIdsSchema.parse(body));
     const context = await this.resolveContext();
     return zipResponse(await loadZipAssets(context, ids), ZIP_FILENAME);
   }
