@@ -1,0 +1,15 @@
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "composite": true,
+    "emitDeclarationOnly": true,
+    "outDir": "node_modules/.cache/tsconfig-tools",
+    "tsBuildInfoFile": "node_modules/.cache/tsconfig-tools/.tsbuildinfo",
+    "typeRoots": ["packages/dms-media/node_modules/@types"],
+    "types": ["node"]
+  },
+  "files": [
+    "packages/dms-media/knip.config.ts",
+    "packages/interface-dms-media/knip.config.ts"
+  ]
+}

@@ -27,19 +27,23 @@ export async function dragFile(target, name, buffer, types) {
 }
 
 /**
- * Lists the files of each folder as one account sees them, again for up to 20 s until one of them holds the file.
+ * Lists the files of a linked folder and of its subfolder as one account sees them, again for up to 20 s until one of them holds the file.
  *
- * @template {string} Key
  * @param {Ctx} ctx The journey
- * @param {Record<Key, string>} folders The folder ids, by the name the result uses
+ * @param {{ bound: string, sub: string }} folders The linked folder's id and its subfolder's id
  * @param {string} name The file's name
  * @param {string} as The account
- * @returns {Promise<Record<Key, string[]>>} The file names in each folder
+ * @returns {Promise<{ bound: string[], sub: string[] }>} The file names in each folder
  */
 export async function landed(ctx, folders, name, as) {
-  const list = async () => /** @type {Record<Key, string[]>} */ (Object.fromEntries(await Promise.all(Object.entries(folders).map(async ([key, id]) => [key, (await folderAssets(ctx, String(id), { as })).assets.map((asset) => text(asset, "name"))]))));
+  /** @param {string} id */
+  const names = async (id) => (await folderAssets(ctx, id, { as })).assets.map((asset) => text(asset, "name"));
+  const list = async () => {
+    const [bound, sub] = await Promise.all([names(folders.bound), names(folders.sub)]);
+    return { bound, sub };
+  };
   let listed = await list();
-  for (let attempt = 0; attempt < 20 && !Object.values(listed).flat().includes(name); attempt += 1) {
+  for (let attempt = 0; attempt < 20 && ![...listed.bound, ...listed.sub].includes(name); attempt += 1) {
     await new Promise((resolve) => setTimeout(resolve, 1000));
     listed = await list();
   }
