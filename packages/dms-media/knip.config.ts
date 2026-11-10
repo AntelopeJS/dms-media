@@ -1,6 +1,7 @@
 import { antelopeKnipConfig } from "@antelopejs/tooling-configs/knip";
+import type { KnipConfig } from "knip";
 
-export default antelopeKnipConfig({
+const config: KnipConfig = antelopeKnipConfig({
   /**
    * The front end is a project of its own, with its own manifest and
    * lockfile. The `node --test` script enables Knip's node test runner
@@ -9,3 +10,5 @@ export default antelopeKnipConfig({
    */
   ignore: ["frontend-vue/**"],
 });
+
+export default config;

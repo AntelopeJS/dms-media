@@ -46,7 +46,7 @@
   "scripts": {
     "build": "rimraf dist && tsc",
     "typecheck": "tsc --noEmit",
-    "release": "pnpm run build && pnpm --dir ../.. run lint && pnpm run check:exports && release-it",
+    "release": "pnpm run typecheck && pnpm run build && pnpm --dir ../.. run lint && pnpm run check:exports && release-it",
     "prepack": "pnpm run build",
     "check:exports": "node scripts/check-exports.mjs",
     "knip": "knip --dependencies",
@@ -63,7 +63,7 @@
     "@antelopejs/interface-database": ">=0.3.0 <1.0.0",
     "@antelopejs/interface-database-decorators": ">=0.2.0 <1.0.0",
     "@antelopejs/interface-dms": ">=0.13.0 <1.0.0",
-    "@antelopejs/tooling-configs": "^0.3.3",
+    "@antelopejs/tooling-configs": "^0.5.0",
     "@types/node": "^24.0.0",
     "knip": "^6.34.0",
     "release-it": "^19.2.4",

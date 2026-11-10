@@ -3,6 +3,7 @@
   // `extends` resolves relative paths against the file that declares them, so
   // `rootDir`, `outDir` and `tsBuildInfoFile` stay in the package configs.
   "files": [],
+  "references": [{ "path": "./tsconfig.tools.json" }],
   "compilerOptions": {
     "target": "esnext",
     "module": "commonjs",
