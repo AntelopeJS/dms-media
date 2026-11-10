@@ -1,6 +1,7 @@
-import { assertValidation } from "@antelopejs/interface-api-util";
+import { HTTPResult } from "@antelopejs/interface-api";
 import { z, ZodError } from "zod";
 
+const HTTP_BAD_REQUEST = 400;
 const MAX_NAME_LENGTH = 255;
 const MIN_PRINTABLE_CHAR_CODE = 32;
 const PATH_SEPARATORS = new Set(["/", "\\"]);
@@ -62,21 +63,19 @@ export function comparableName(name: string): string {
 }
 
 /**
- * Parses a request body, answering 400 with the first validation message when
- * it is an i18n key and a generic one otherwise.
+ * Runs a schema parse of a request body, answering 400 with the first
+ * validation message when it is an i18n key and a generic one otherwise.
  */
-export function parseBody<Output>(
-  body: unknown,
-  schema: z.ZodType<Output, z.ZodTypeDef, unknown>,
-): Output {
-  return assertValidation(
-    body,
-    (value) => schema.parse(value),
-    (error) => {
-      const message = error instanceof ZodError ? error.issues[0]?.message : "";
-      return message?.startsWith("$") ? message : MEDIA_ERRORS.invalidRequest;
-    },
-  );
+export function rejectInvalid<Output>(parse: () => Output): Output {
+  try {
+    return parse();
+  } catch (error) {
+    const message = error instanceof ZodError ? error.issues[0]?.message : "";
+    throw new HTTPResult(
+      HTTP_BAD_REQUEST,
+      message?.startsWith("$") ? message : MEDIA_ERRORS.invalidRequest,
+    );
+  }
 }
 
 export const createFolderSchema = z.object({

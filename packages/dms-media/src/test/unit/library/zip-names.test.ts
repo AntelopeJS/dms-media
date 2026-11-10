@@ -4,7 +4,7 @@ import { z } from "zod";
 import { portableName, uniqueEntryName } from "../../../library/zip";
 import {
   comparableName,
-  parseBody,
+  rejectInvalid,
   updateAssetSchema,
 } from "../../../validation/media.schema";
 
@@ -56,16 +56,18 @@ describe("[unit] library/zip — entry names and name rules", () => {
       throw new Error("expected the body to be refused");
     };
     const forbidden = refused(() =>
-      parseBody({ name: "a|b.png" }, updateAssetSchema),
+      rejectInvalid(() => updateAssetSchema.parse({ name: "a|b.png" })),
     );
     expect(forbidden.getStatus()).to.equal(HTTP_BAD_REQUEST);
     expect(forbidden.getBody()).to.equal("$dms_media.errors.name_forbidden");
     const crashed = refused(() =>
-      parseBody(
-        {},
-        z.unknown().transform(() => {
-          throw new Error("boom");
-        }),
+      rejectInvalid(() =>
+        z
+          .unknown()
+          .transform(() => {
+            throw new Error("boom");
+          })
+          .parse({}),
       ),
     );
     expect(crashed.getStatus()).to.equal(HTTP_BAD_REQUEST);

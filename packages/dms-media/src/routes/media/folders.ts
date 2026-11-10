@@ -11,7 +11,7 @@ import {
   folderVisibilitySchema,
   MEDIA_ERRORS,
   moveFolderSchema,
-  parseBody,
+  rejectInvalid,
   renameFolderSchema,
 } from "../../validation/media.schema";
 import {
@@ -156,7 +156,9 @@ export function isMoveInsideSubtree(
 export class MediaFoldersController extends MediaApiController {
   @Post("/folders")
   async createFolder(@JSONBody() body: unknown) {
-    const { name, parentId } = parseBody(body, createFolderSchema);
+    const { name, parentId } = rejectInvalid(() =>
+      createFolderSchema.parse(body),
+    );
     const context = await this.resolveContext();
     const parent = assertCanPlaceUnder(context, parentId);
     assertUniqueSiblingName(context, name, parentId);
@@ -180,7 +182,7 @@ export class MediaFoldersController extends MediaApiController {
     @Parameter("folderId", "param") folderId: string,
     @JSONBody() body: unknown,
   ) {
-    const { name } = parseBody(body, renameFolderSchema);
+    const { name } = rejectInvalid(() => renameFolderSchema.parse(body));
     const context = await this.resolveContext();
     const folder = requireFolderRight(context, folderId, "manage");
     assertNotBound(folder);
@@ -205,7 +207,7 @@ export class MediaFoldersController extends MediaApiController {
     @Parameter("folderId", "param") folderId: string,
     @JSONBody() body: unknown,
   ) {
-    const { parentId } = parseBody(body, moveFolderSchema);
+    const { parentId } = rejectInvalid(() => moveFolderSchema.parse(body));
     const context = await this.resolveContext();
     const folder = requireFolderRight(context, folderId, "manage");
     assertNotBound(folder);
@@ -232,7 +234,9 @@ export class MediaFoldersController extends MediaApiController {
     @Parameter("folderId", "param") folderId: string,
     @JSONBody() body: unknown,
   ) {
-    const { visibility } = parseBody(body, folderVisibilitySchema);
+    const { visibility } = rejectInvalid(() =>
+      folderVisibilitySchema.parse(body),
+    );
     const context = await this.resolveContext();
     const folder = requireFolderRight(context, folderId, "manage");
     assertMediaOwner(context);

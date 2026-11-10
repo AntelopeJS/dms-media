@@ -1,6 +1,7 @@
 {
   "rules": {
-    "anti-slop/no-chained-type-assertions": 0
+    "anti-slop/no-chained-type-assertions": 0,
+    "antelopejs/no-read-then-insert": 1
   },
   "tsExpectError": 4,
   "tsIgnore": 0,

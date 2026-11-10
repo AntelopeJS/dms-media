@@ -94,6 +94,7 @@ async function createFolder(
       declaration.key,
       `a folder named '${declaration.name}' already exists there`,
     );
+  // oxlint-disable-next-line antelopejs/no-read-then-insert -- EnsureMediaFolder runs only from Hook.TENANT_BEING_PROVISIONED, which the DMS fires once per tenant, and withDeclarationLock serializes declarations within the process; fixed-id upsert if that changes: https://github.com/AntelopeJS/dms-media/issues/165
   const [folderId] = await models.folderModel.insert({
     name: declaration.name,
     parentId: parent?._id,
