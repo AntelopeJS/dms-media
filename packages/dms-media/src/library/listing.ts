@@ -33,19 +33,39 @@ interface AssetsTableModel {
   table: MediaAssetModel["table"];
 }
 
+/** What the library tree counts of each asset. */
+export type AssetCountFields = Pick<
+  MediaAsset,
+  "_id" | "folderId" | "size" | "mimetype" | "alt"
+>;
+
+function liveAssetsIn(model: AssetsTableModel, folderIds: string[]) {
+  return model.table
+    .getAll(folderIds.length === 1 ? folderIds[0] : folderIds, "folderId")
+    .filter((row) => row.key("isDeleting").default(false).eq(false));
+}
+
 /** Every live asset stored in the given folders. */
 export async function loadAssetsInFolders(
   model: AssetsTableModel,
   folderIds: string[],
 ): Promise<MediaAsset[]> {
   if (folderIds.length === 0) return [];
-  const rows = await model.table
-    .getAll(folderIds.length === 1 ? folderIds[0] : folderIds, "folderId")
-    .filter((row) => row.key("isDeleting").default(false).eq(false))
-    .run();
+  const rows = await liveAssetsIn(model, folderIds).run();
   return rows
     .map((row) => MediaAssetModel.fromDatabase(row))
     .filter((row): row is MediaAsset => row !== undefined);
+}
+
+/** The fields the tree counts, of every live asset stored in the given folders. */
+export async function loadAssetCountFields(
+  model: AssetsTableModel,
+  folderIds: string[],
+): Promise<AssetCountFields[]> {
+  if (folderIds.length === 0) return [];
+  return liveAssetsIn(model, folderIds)
+    .pluck("_id", "folderId", "size", "mimetype", "alt")
+    .run();
 }
 
 /** Bytes the tenant's live assets keep in storage, edited originals included. */

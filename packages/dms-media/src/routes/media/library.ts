@@ -13,7 +13,9 @@ import {
 } from "../../library/favorites";
 import { computeFolderStats } from "../../library/folder-stats";
 import {
+  type AssetCountFields,
   countByTypeGroup,
+  loadAssetCountFields,
   loadAssetsInFolders,
   pageAssets,
 } from "../../library/listing";
@@ -73,6 +75,10 @@ const SMART_VIEW_DEFAULT_SORTS: Partial<Record<SmartView, ViewSort>> = {
   largest: { sort: "size", direction: "desc" },
 };
 
+function isMissingAlt(asset: Pick<MediaAsset, "mimetype" | "alt">): boolean {
+  return isDescribableImage(asset.mimetype) && !asset.alt?.trim();
+}
+
 const SMART_VIEW_FILTERS: Record<SmartView, SmartViewFilter> = {
   recent: (assets) =>
     [...assets]
@@ -82,25 +88,11 @@ const SMART_VIEW_FILTERS: Record<SmartView, SmartViewFilter> = {
       .slice(0, RECENT_VIEW_LIMIT),
   starred: (assets, { starredAssetIds }) =>
     assets.filter((asset) => starredAssetIds.has(asset._id)),
-  "missing-alt": (assets) =>
-    assets.filter(
-      (asset) => isDescribableImage(asset.mimetype) && !asset.alt?.trim(),
-    ),
+  "missing-alt": (assets) => assets.filter(isMissingAlt),
   largest: (assets) => assets,
   public: (assets, { visibilityOf }) =>
     assets.filter((asset) => visibilityOf(asset) === "public"),
 };
-
-function readableAssets(context: MediaRequestContext): Promise<MediaAsset[]> {
-  return loadAssetsInFolders(context.assetModel, [...context.access.readable]);
-}
-
-function countMissingAlt(assets: MediaAsset[]): number {
-  return SMART_VIEW_FILTERS["missing-alt"](assets, {
-    starredAssetIds: new Set(),
-    visibilityOf: () => "private",
-  }).length;
-}
 
 function folderPathName(
   context: MediaRequestContext,
@@ -154,7 +146,7 @@ function treeViewScope(
 }
 
 function countViews(
-  assets: MediaAsset[],
+  assets: AssetCountFields[],
   starred: StarredTargets,
   scope: Set<string> | undefined,
 ) {
@@ -165,7 +157,7 @@ function countViews(
     starred:
       scoped.filter((asset) => starred.assetIds.has(asset._id)).length +
       starredFolders,
-    missingAlt: countMissingAlt(scoped),
+    missingAlt: scoped.filter(isMissingAlt).length,
   };
 }
 
@@ -198,7 +190,7 @@ export class MediaLibraryController extends MediaApiController {
   async tree() {
     const context = await this.resolveContext();
     const [assets, starred] = await Promise.all([
-      readableAssets(context),
+      loadAssetCountFields(context.assetModel, [...context.access.readable]),
       loadStarredTargets(this.owner(context)),
     ]);
     const stats = computeFolderStats(context.folders, assets);

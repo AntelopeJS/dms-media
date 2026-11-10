@@ -16,7 +16,7 @@ function emptyStats(): FolderStats {
 /** Recursive file counts and sizes of every folder, from one pass over the assets. */
 export function computeFolderStats(
   folders: MediaFolder[],
-  assets: MediaAsset[],
+  assets: Pick<MediaAsset, "folderId" | "size">[],
 ): Map<string, FolderStats> {
   const stats = new Map(folders.map((folder) => [folder._id, emptyStats()]));
   const foldersById = new Map(folders.map((folder) => [folder._id, folder]));
