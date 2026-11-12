@@ -1,9 +1,21 @@
 import type { MediaAsset } from "../../db";
+import { isObject, isString } from "../../guards";
+
+function isStringMap(value: unknown): value is Record<string, string> {
+  return (
+    isObject(value) &&
+    !Array.isArray(value) &&
+    Object.values(value).every(isString)
+  );
+}
 
 export function parseDerivatives(asset: MediaAsset): Record<string, string> {
   if (!asset.json_derivatives) return {};
-  // SAFETY: json_derivatives is written only as "" or the JSON.stringify of a map from cache key to storage key (transform.ts, derivatives.ts, crons/sweep-derivatives.ts), so a non-empty value is that string map; a schema parse of a stored row on read is excluded by ruling.
-  return JSON.parse(asset.json_derivatives) as Record<string, string>;
+  const parsed: unknown = JSON.parse(asset.json_derivatives);
+  if (isStringMap(parsed)) return parsed;
+  throw new Error(
+    `Media asset '${asset._id}' has image sizes that are not a map of storage keys`,
+  );
 }
 
 export function collectAssetStorageKeys(asset: MediaAsset): string[] {
