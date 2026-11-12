@@ -43,6 +43,43 @@ const activityBody = z.object({
   items: z.array(z.object({ title: z.string(), to: z.string().optional() })),
 });
 
+function reportRetriedBatch(
+  client: AxiosInstance,
+  folderId: string,
+  uploaded: number,
+  failed: number,
+) {
+  return client.post("/api/media/upload/batches", {
+    batchId: BATCH_ID,
+    folderId,
+    total: 2,
+    uploaded,
+    failed,
+    size: 10,
+    failures: failed
+      ? [{ name: "overview-b.txt", reason: "Network error" }]
+      : [],
+  });
+}
+
+async function flaggedFailures(client: AxiosInstance): Promise<number> {
+  const rows = await client.get("/api/media/upload/batches", {
+    params: { filter_attention: "is:yes" },
+  });
+  return readBody(rows, batchesBody).results.reduce(
+    (total, row) => total + row.failed,
+    0,
+  );
+}
+
+async function countedFailures(client: AxiosInstance): Promise<number> {
+  const attention = await client.get("/api/media/stats/attention");
+  const item = readBody(attention, attentionBody).items.find(
+    (entry) => entry.id === "failed-uploads",
+  );
+  return item?.value ?? 0;
+}
+
 describe("[integration] media activity and overview — figures, upload history and module catalog", () => {
   let client: AxiosInstance;
   let folderId: string;
@@ -74,17 +111,7 @@ describe("[integration] media activity and overview — figures, upload history 
   it("keeps the newest report of a retried batch only", async () => {
     await uploadAsset(client, folderId, "overview-a.txt", TEXT_MIMETYPE, BODY);
     const report = (uploaded: number, failed: number) =>
-      client.post("/api/media/upload/batches", {
-        batchId: BATCH_ID,
-        folderId,
-        total: 2,
-        uploaded,
-        failed,
-        size: 10,
-        failures: failed
-          ? [{ name: "overview-b.txt", reason: "Network error" }]
-          : [],
-      });
+      reportRetriedBatch(client, folderId, uploaded, failed);
     expect((await report(1, 1)).status).to.equal(HTTP_OK);
     const failedOnly = await client.get("/api/media/upload/batches", {
       params: { filter_result: "is:partial,failed" },
@@ -121,22 +148,8 @@ describe("[integration] media activity and overview — figures, upload history 
       failed: 3,
       size: 0,
     });
-    const flagged = async () => {
-      const rows = await client.get("/api/media/upload/batches", {
-        params: { filter_attention: "is:yes" },
-      });
-      return readBody(rows, batchesBody).results.reduce(
-        (total, row) => total + row.failed,
-        0,
-      );
-    };
-    const counted = async () => {
-      const attention = await client.get("/api/media/stats/attention");
-      const item = readBody(attention, attentionBody).items.find(
-        (entry) => entry.id === "failed-uploads",
-      );
-      return item?.value ?? 0;
-    };
+    const flagged = () => flaggedFailures(client);
+    const counted = () => countedFailures(client);
     const before = await counted();
     expect(before).to.equal(await flagged());
     expect(before).to.be.at.least(3);

@@ -12,16 +12,4 @@ export default defineConfig({
     "packages/dms-media/frontend-vue/**",
   ],
   options: { typeAware: true, maxWarnings: 0 },
-  overrides: [
-    {
-      files: [
-        "packages/dms-media/src/test/**/*.test.ts",
-        "packages/dms-media/tests/**/*.test.mjs",
-      ],
-      rules: {
-        "eslint/max-lines": "off",
-        "eslint/max-lines-per-function": "off",
-      },
-    },
-  ],
 });

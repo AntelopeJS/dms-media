@@ -55,118 +55,10 @@ async function rejectionOf(promise: Promise<unknown>): Promise<Error> {
   throw new Error("Expected the declaration to be refused");
 }
 
-describe("[integration] media declared content — folders and files shipped as code", () => {
-  let client: AxiosInstance;
-  let tempDir: string;
+let client: AxiosInstance;
+let tempDir: string;
 
-  before(async function () {
-    this.timeout(40_000);
-    RegisterAssetBinding({
-      id: BINDING_ID,
-      folderName: "Declared covers",
-      field: { mimetypes: ["image/*"] },
-    });
-    const session = await ensureOwnerSession();
-    client = authorizedClient(session.accessToken);
-    tempDir = await mkdtemp(join(tmpdir(), "dms-media-declared-"));
-  });
-
-  after(async () => {
-    await rm(tempDir, { recursive: true, force: true });
-  });
-
-  it("rejects missing or blank tenants before changing the default library", async () => {
-    const declarationModel = GetModel(MediaDeclarationModel, DEFAULT_TENANT_ID);
-    const eventModel = GetModel(MediaEventModel, DEFAULT_TENANT_ID);
-    const before = {
-      folders: await folders().getAll(),
-      assets: await assets().getAll(),
-      declarations: await declarationModel.getAll(),
-      events: await eventModel.getAll(),
-    };
-    const folder = {
-      key: "declared.invalid-tenant",
-      name: "No implicit tenant",
-    };
-    const file = {
-      key: "declared.invalid-tenant-file",
-      folder: { binding: BINDING_ID },
-      name: "invalid-tenant.png",
-      mimetype: PNG_MIMETYPE,
-      source: { bytes: ONE_PIXEL_PNG },
-    };
-    // @ts-expect-error A JavaScript caller can omit the required tenantId; this call stops compiling if the public contract makes it optional.
-    expect((await rejectionOf(EnsureMediaFolder(folder))).message).to.contain(
-      "tenantId",
-    );
-    // @ts-expect-error A JavaScript caller can omit the required tenantId; this call stops compiling if the public contract makes it optional.
-    expect((await rejectionOf(ImportMediaAsset(file))).message).to.contain(
-      "tenantId",
-    );
-    for (const tenantId of ["", " \t\n "]) {
-      expect(
-        (await rejectionOf(EnsureMediaFolder({ ...folder, tenantId }))).message,
-      ).to.contain("tenantId");
-      expect(
-        (await rejectionOf(ImportMediaAsset({ ...file, tenantId }))).message,
-      ).to.contain("tenantId");
-    }
-    expect(
-      (
-        await rejectionOf(
-          ImportMediaAsset({
-            ...file,
-            tenantId: "",
-            source: { filePath: join(tempDir, "does-not-exist.png") },
-          }),
-        )
-      ).message,
-      "validation precedes source reads, not only the final database write",
-    ).to.contain("tenantId");
-    expect({
-      folders: await folders().getAll(),
-      assets: await assets().getAll(),
-      declarations: await declarationModel.getAll(),
-      events: await eventModel.getAll(),
-    }).to.deep.equal(before);
-  });
-
-  it("isolates the same declaration keys in two tenant instances", async () => {
-    const tenantId = "declared-isolation";
-    const schema = Schema.get(TENANT_SCHEMA_NAME);
-    if (!schema) throw new Error("Tenant schema is missing");
-    await schema.createInstance(tenantId).run();
-    try {
-      const folder = {
-        tenantId: DEFAULT_TENANT_ID,
-        key: "declared.isolated",
-        name: "Isolated",
-      };
-      const firstFolder = await EnsureMediaFolder(folder);
-      const secondFolder = await EnsureMediaFolder({ ...folder, tenantId });
-      expect(firstFolder.id).to.not.equal(secondFolder.id);
-      const file = {
-        tenantId: DEFAULT_TENANT_ID,
-        key: folder.key,
-        folder: { key: folder.key },
-        name: "isolated.txt",
-        mimetype: "text/plain",
-        source: { bytes: Buffer.from("Initial") },
-      };
-      const firstFile = await ImportMediaAsset(file);
-      const secondFile = await ImportMediaAsset({ ...file, tenantId });
-      expect(firstFile.id).to.not.equal(secondFile.id);
-      expect((await EnsureMediaFolder(folder)).status).to.equal("kept");
-      expect((await ImportMediaAsset(file)).status).to.equal("kept");
-      expect(
-        await GetModel(MediaAssetModel, tenantId).get(firstFile.id),
-      ).to.equal(undefined);
-      expect(await assets().get(secondFile.id)).to.equal(undefined);
-    } finally {
-      await schema.destroyInstance(tenantId).run();
-    }
-  });
-
+function describeFolderDeclarations(): void {
   describe("folders", () => {
     it("rejects self-parenting without blocking later declarations of the key", async () => {
       const key = "declared.self-parent";
@@ -256,7 +148,11 @@ describe("[integration] media declared content — folders and files shipped as 
         ),
       ).to.have.length(1);
     });
+  });
+}
 
+function describeKeptFoldersAndRefusals(): void {
+  describe("folders already declared, and refusals", () => {
     it("never changes a folder declared before, even renamed by a member", async () => {
       const declared = await EnsureMediaFolder({
         tenantId: DEFAULT_TENANT_ID,
@@ -306,8 +202,10 @@ describe("[integration] media declared content — folders and files shipped as 
       expect(taken.message).to.contain("already exists");
     });
   });
+}
 
-  describe("files", () => {
+function describeFileImports(): void {
+  describe("file imports", () => {
     it("imports bytes once, with their dimensions and an upload event", async () => {
       const declaration = {
         tenantId: DEFAULT_TENANT_ID,
@@ -385,7 +283,11 @@ describe("[integration] media declared content — folders and files shipped as 
       );
       expect(refused.message).to.contain("only accepts image/*");
     });
+  });
+}
 
+function describeKeptFilesAndRefusals(): void {
+  describe("files kept, lazy and refused", () => {
     it("names the key when a lazy source fails or returns no bytes", async () => {
       const declaration = {
         tenantId: DEFAULT_TENANT_ID,
@@ -498,4 +400,119 @@ describe("[integration] media declared content — folders and files shipped as 
       expect(missing.message).to.contain("cannot read");
     });
   });
+}
+
+describe("[integration] media declared content — folders and files shipped as code", () => {
+  before(async function () {
+    this.timeout(40_000);
+    RegisterAssetBinding({
+      id: BINDING_ID,
+      folderName: "Declared covers",
+      field: { mimetypes: ["image/*"] },
+    });
+    const session = await ensureOwnerSession();
+    client = authorizedClient(session.accessToken);
+    tempDir = await mkdtemp(join(tmpdir(), "dms-media-declared-"));
+  });
+
+  after(async () => {
+    await rm(tempDir, { recursive: true, force: true });
+  });
+
+  it("rejects missing or blank tenants before changing the default library", async () => {
+    const declarationModel = GetModel(MediaDeclarationModel, DEFAULT_TENANT_ID);
+    const eventModel = GetModel(MediaEventModel, DEFAULT_TENANT_ID);
+    const before = {
+      folders: await folders().getAll(),
+      assets: await assets().getAll(),
+      declarations: await declarationModel.getAll(),
+      events: await eventModel.getAll(),
+    };
+    const folder = {
+      key: "declared.invalid-tenant",
+      name: "No implicit tenant",
+    };
+    const file = {
+      key: "declared.invalid-tenant-file",
+      folder: { binding: BINDING_ID },
+      name: "invalid-tenant.png",
+      mimetype: PNG_MIMETYPE,
+      source: { bytes: ONE_PIXEL_PNG },
+    };
+    // @ts-expect-error A JavaScript caller can omit the required tenantId; this call stops compiling if the public contract makes it optional.
+    expect((await rejectionOf(EnsureMediaFolder(folder))).message).to.contain(
+      "tenantId",
+    );
+    // @ts-expect-error A JavaScript caller can omit the required tenantId; this call stops compiling if the public contract makes it optional.
+    expect((await rejectionOf(ImportMediaAsset(file))).message).to.contain(
+      "tenantId",
+    );
+    for (const tenantId of ["", " \t\n "]) {
+      expect(
+        (await rejectionOf(EnsureMediaFolder({ ...folder, tenantId }))).message,
+      ).to.contain("tenantId");
+      expect(
+        (await rejectionOf(ImportMediaAsset({ ...file, tenantId }))).message,
+      ).to.contain("tenantId");
+    }
+    expect(
+      (
+        await rejectionOf(
+          ImportMediaAsset({
+            ...file,
+            tenantId: "",
+            source: { filePath: join(tempDir, "does-not-exist.png") },
+          }),
+        )
+      ).message,
+      "validation precedes source reads, not only the final database write",
+    ).to.contain("tenantId");
+    expect({
+      folders: await folders().getAll(),
+      assets: await assets().getAll(),
+      declarations: await declarationModel.getAll(),
+      events: await eventModel.getAll(),
+    }).to.deep.equal(before);
+  });
+
+  it("isolates the same declaration keys in two tenant instances", async () => {
+    const tenantId = "declared-isolation";
+    const schema = Schema.get(TENANT_SCHEMA_NAME);
+    if (!schema) throw new Error("Tenant schema is missing");
+    await schema.createInstance(tenantId).run();
+    try {
+      const folder = {
+        tenantId: DEFAULT_TENANT_ID,
+        key: "declared.isolated",
+        name: "Isolated",
+      };
+      const firstFolder = await EnsureMediaFolder(folder);
+      const secondFolder = await EnsureMediaFolder({ ...folder, tenantId });
+      expect(firstFolder.id).to.not.equal(secondFolder.id);
+      const file = {
+        tenantId: DEFAULT_TENANT_ID,
+        key: folder.key,
+        folder: { key: folder.key },
+        name: "isolated.txt",
+        mimetype: "text/plain",
+        source: { bytes: Buffer.from("Initial") },
+      };
+      const firstFile = await ImportMediaAsset(file);
+      const secondFile = await ImportMediaAsset({ ...file, tenantId });
+      expect(firstFile.id).to.not.equal(secondFile.id);
+      expect((await EnsureMediaFolder(folder)).status).to.equal("kept");
+      expect((await ImportMediaAsset(file)).status).to.equal("kept");
+      expect(
+        await GetModel(MediaAssetModel, tenantId).get(firstFile.id),
+      ).to.equal(undefined);
+      expect(await assets().get(secondFile.id)).to.equal(undefined);
+    } finally {
+      await schema.destroyInstance(tenantId).run();
+    }
+  });
+
+  describeFolderDeclarations();
+  describeKeptFoldersAndRefusals();
+  describeFileImports();
+  describeKeptFilesAndRefusals();
 });

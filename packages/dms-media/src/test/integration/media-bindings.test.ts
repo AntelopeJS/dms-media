@@ -29,6 +29,22 @@ class PageBoundProbePage extends PageController("page-bound-probe", {
   static content = CustomComponent("dms-media-page-bound-probe");
 }
 
+function registerProbeBindings(): void {
+  RegisterAssetBinding({
+    id: BINDING_ID,
+    folderName: "Article covers",
+    permissionMapping: {
+      read: ["articles.page"],
+      write: ["articles.page.table.edit"],
+    },
+  });
+  RegisterAssetBinding({
+    id: PAGE_BOUND_BINDING_ID,
+    folderName: PAGE_BOUND_FOLDER_NAME,
+    permissionsFromPage: PageBoundProbePage,
+  });
+}
+
 describe("[integration] media bindings — linked folder provisioning", () => {
   let client: AxiosInstance;
   let contentRootId: string;
@@ -36,19 +52,7 @@ describe("[integration] media bindings — linked folder provisioning", () => {
 
   before(async function () {
     this.timeout(40_000);
-    RegisterAssetBinding({
-      id: BINDING_ID,
-      folderName: "Article covers",
-      permissionMapping: {
-        read: ["articles.page"],
-        write: ["articles.page.table.edit"],
-      },
-    });
-    RegisterAssetBinding({
-      id: PAGE_BOUND_BINDING_ID,
-      folderName: PAGE_BOUND_FOLDER_NAME,
-      permissionsFromPage: PageBoundProbePage,
-    });
+    registerProbeBindings();
     const session = await ensureOwnerSession();
     client = authorizedClient(session.accessToken);
   });

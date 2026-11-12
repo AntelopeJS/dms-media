@@ -40,12 +40,12 @@ const treeBody = z.object({
   ),
 });
 
-describe("[integration] media API — owner lifecycle", () => {
-  let client: AxiosInstance;
-  let brandFolderId: string;
-  let subFolderId: string;
-  let assetId: string;
+let client: AxiosInstance;
+let brandFolderId: string;
+let subFolderId: string;
+let assetId: string;
 
+describe("[integration] media API — owner lifecycle: folders", () => {
   before(async function () {
     this.timeout(READY_TIMEOUT_MS + 10_000);
     const session = await ensureOwnerSession();
@@ -94,7 +94,9 @@ describe("[integration] media API — owner lifecycle", () => {
     });
     expect(duplicate.status).to.equal(409);
   });
+});
 
+describe("[integration] media API — owner lifecycle: asset", () => {
   it("uploads a file through presign, PUT and confirm", async () => {
     const body = Buffer.from(FILE_CONTENT);
     const presign = await client.post("/api/media/upload/presign", {
@@ -163,7 +165,9 @@ describe("[integration] media API — owner lifecycle", () => {
     expect(detail.data.asset.folderId).to.equal(subFolderId);
     expect(detail.data.asset.effectiveVisibility).to.equal("public");
   });
+});
 
+describe("[integration] media API — owner lifecycle: teardown", () => {
   it("moves and renames folders with cycle protection", async () => {
     const renamed = await client.post(
       `/api/media/folders/${subFolderId}/rename`,

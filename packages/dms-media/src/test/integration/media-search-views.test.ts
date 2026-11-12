@@ -26,6 +26,44 @@ const assetsBody = z.object({
   ),
 });
 
+async function seedFacetFolders(
+  client: AxiosInstance,
+): Promise<{ rootId: string; childId: string }> {
+  const rootId = readBody(
+    await client.post("/api/media/folders", { name: "Facets Été 2026" }),
+    createdBody,
+  ).id;
+  const childId = readBody(
+    await client.post("/api/media/folders", {
+      name: "Facets Produits",
+      parentId: rootId,
+    }),
+    createdBody,
+  ).id;
+  await uploadAsset(
+    client,
+    rootId,
+    "Été à Liège – vacances (1).txt",
+    TEXT_MIMETYPE,
+    MEDIUM_BODY,
+  );
+  await uploadAsset(
+    client,
+    childId,
+    "facets-photo-14.txt",
+    TEXT_MIMETYPE,
+    SMALL_BODY,
+  );
+  await uploadAsset(
+    client,
+    childId,
+    "facets-photo-01.txt",
+    TEXT_MIMETYPE,
+    LARGE_BODY,
+  );
+  return { rootId, childId };
+}
+
 describe("[integration] media search views — search, smart views and folder counts", () => {
   let client: AxiosInstance;
   let rootId: string;
@@ -35,38 +73,7 @@ describe("[integration] media search views — search, smart views and folder co
     this.timeout(30_000);
     const session = await ensureOwnerSession();
     client = authorizedClient(session.accessToken);
-    rootId = readBody(
-      await client.post("/api/media/folders", { name: "Facets Été 2026" }),
-      createdBody,
-    ).id;
-    childId = readBody(
-      await client.post("/api/media/folders", {
-        name: "Facets Produits",
-        parentId: rootId,
-      }),
-      createdBody,
-    ).id;
-    await uploadAsset(
-      client,
-      rootId,
-      "Été à Liège – vacances (1).txt",
-      TEXT_MIMETYPE,
-      MEDIUM_BODY,
-    );
-    await uploadAsset(
-      client,
-      childId,
-      "facets-photo-14.txt",
-      TEXT_MIMETYPE,
-      SMALL_BODY,
-    );
-    await uploadAsset(
-      client,
-      childId,
-      "facets-photo-01.txt",
-      TEXT_MIMETYPE,
-      LARGE_BODY,
-    );
+    ({ rootId, childId } = await seedFacetFolders(client));
   });
 
   after(async () => {

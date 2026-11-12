@@ -146,12 +146,334 @@ function assetPath(asset: UploadedAsset, preset?: string): string {
     : `/media/${asset.id}/${name}`;
 }
 
-describe("[integration] media delivery and editing — cache, orientation, active content, copies", () => {
-  let client: AxiosInstance;
-  let token: string;
-  let folderId: string;
-  let jpeg: UploadedAsset;
+let client: AxiosInstance;
+let token: string;
+let folderId: string;
+let jpeg: UploadedAsset;
 
+function describeDeliveryLinks(): void {
+  describe("delivery links and caching", () => {
+    it("redirects members to a signed URL that is never cached", async () => {
+      const auth = { Authorization: `Bearer ${token}` };
+      const first = await deliver(assetPath(jpeg), auth);
+      expect(first.status).to.equal(HTTP_FOUND);
+      expect(first.headers.get("cache-control")).to.equal("no-store");
+      const again = await deliver(assetPath(jpeg), auth);
+      expect(again.headers.get("location")).to.equal(
+        first.headers.get("location"),
+      );
+    });
+
+    it("answers a bare 401 to scripts and sends browsers to the file page", async () => {
+      const anonymous = await deliver(assetPath(jpeg));
+      expect(anonymous.status).to.equal(HTTP_UNAUTHORIZED);
+      const browser = await deliver(assetPath(jpeg), { Accept: "text/html" });
+      const location = browser.headers.get("location") ?? "";
+      const isFilePageRedirect =
+        browser.status === HTTP_FOUND &&
+        location.endsWith(`/modules/media/file?asset=${jpeg.id}`);
+      const isSignInPage =
+        browser.status === HTTP_UNAUTHORIZED &&
+        (browser.headers.get("content-type") ?? "").startsWith("text/html");
+      expect(isFilePageRedirect || isSignInPage).to.equal(true);
+    });
+
+    it("sends stale or empty file names to the canonical URL", async () => {
+      const auth = { Authorization: `Bearer ${token}` };
+      const renamed = await deliver(`/media/${jpeg.id}/other.exe`, auth);
+      expect(renamed.status).to.equal(HTTP_FOUND);
+      expect(renamed.headers.get("location")).to.equal(assetPath(jpeg));
+      const derivative = await deliver(`/media/${jpeg.id}/thumb/x.jpg`, auth);
+      expect(derivative.headers.get("location")).to.equal(
+        assetPath(jpeg, "thumb"),
+      );
+      const empty = await deliver(`/media/${jpeg.id}/thumb/`, auth);
+      expect(empty.status).to.equal(HTTP_NOT_FOUND);
+    });
+
+    it("names derivatives readably and leaves updatedAt alone when rendering them", async () => {
+      const auth = { Authorization: `Bearer ${token}` };
+      const before = await client.get(`/api/media/assets/${jpeg.id}`);
+      const thumb = await follow(assetPath(jpeg, "thumb"), auth);
+      expect(thumb.status).to.equal(HTTP_OK);
+      expect(thumb.headers.get("content-disposition")).to.contain(
+        'filename="photo-thumb.webp"',
+      );
+      const after = await client.get(`/api/media/assets/${jpeg.id}`);
+      expect(after.data.asset.updatedAt).to.equal(before.data.asset.updatedAt);
+    });
+
+    it("redirects public files without caching the redirect, and opens CORS", async () => {
+      const flip = await client.post(
+        `/api/media/folders/${folderId}/visibility`,
+        { visibility: "public" },
+      );
+      expect(flip.status).to.equal(HTTP_OK);
+      const first = await deliver(assetPath(jpeg, "thumb"), {
+        Origin: FOREIGN_ORIGIN,
+      });
+      expect(first.status).to.equal(HTTP_FOUND);
+      expect(first.headers.get("cache-control")).to.equal("no-cache");
+      expect(first.headers.get("access-control-allow-origin")).to.equal("*");
+      const second = await deliver(assetPath(jpeg, "thumb"));
+      expect(second.headers.get("location")).to.equal(
+        first.headers.get("location"),
+      );
+      await client.post(`/api/media/folders/${folderId}/visibility`, {
+        visibility: "private",
+      });
+    });
+  });
+}
+
+function describeRenderedImages(): void {
+  describe("edited and rendered images", () => {
+    it("points the same link at the edited image right after an edit", async () => {
+      const auth = { Authorization: `Bearer ${token}` };
+      const before = await deliver(assetPath(jpeg, "thumb"), auth);
+      const edit = await client.post(`/api/media/assets/${jpeg.id}/transform`, {
+        rotate: 90,
+      });
+      expect(edit.status).to.equal(HTTP_OK);
+      const after = await follow(assetPath(jpeg), auth);
+      const metadata = await sharp(after.body).metadata();
+      expect([metadata.width, metadata.height]).to.deep.equal([
+        PHOTO_HEIGHT,
+        PHOTO_WIDTH,
+      ]);
+      const thumb = await deliver(assetPath(jpeg, "thumb"), auth);
+      expect(thumb.headers.get("location")).to.not.equal(
+        before.headers.get("location"),
+      );
+      await client.post(`/api/media/assets/${jpeg.id}/revert`);
+    });
+
+    it("renders derivatives upright for EXIF-rotated photos", async () => {
+      const rotated = await sharp(await photo())
+        .withMetadata({ orientation: EXIF_ROTATED_RIGHT })
+        .jpeg()
+        .toBuffer();
+      const asset = await uploadAsset(
+        client,
+        folderId,
+        "phone.jpg",
+        "image/jpeg",
+        rotated,
+      );
+      const preview = await follow(assetPath(asset, "preview"), {
+        Authorization: `Bearer ${token}`,
+      });
+      const metadata = await sharp(preview.body).metadata();
+      expect([metadata.width, metadata.height]).to.deep.equal([
+        PHOTO_HEIGHT,
+        PHOTO_WIDTH,
+      ]);
+    });
+
+    it("keeps animation, rasterizes vectors sharply and sandboxes SVG", async () => {
+      const auth = { Authorization: `Bearer ${token}` };
+      const gif = await uploadAsset(
+        client,
+        folderId,
+        "loop.gif",
+        "image/gif",
+        await animatedGif(),
+      );
+      const preview = await follow(assetPath(gif, "preview"), auth);
+      expect((await sharp(preview.body).metadata()).pages).to.equal(3);
+      const svg = await uploadAsset(
+        client,
+        folderId,
+        "logo.svg",
+        "image/svg+xml",
+        Buffer.from(SVG_SOURCE),
+      );
+      const thumb = await follow(assetPath(svg, "thumb"), auth);
+      expect((await sharp(thumb.body).metadata()).width).to.equal(300);
+      const original = await deliver(assetPath(svg), auth);
+      expect(original.status).to.equal(HTTP_OK);
+      expect(original.headers.get("content-security-policy")).to.equal(
+        "sandbox",
+      );
+      const etag = original.headers.get("etag");
+      assert.isNotNull(etag, "etag");
+      const revalidated = await deliver(assetPath(svg), {
+        ...auth,
+        "If-None-Match": etag,
+      });
+      expect(revalidated.status).to.equal(HTTP_NOT_MODIFIED);
+    });
+  });
+}
+
+function describeUnusualFiles(): void {
+  describe("vectors and unreadable files", () => {
+    it("fits a wide vector inside its library thumbnail instead of cropping it", async () => {
+      const logo = await uploadAsset(
+        client,
+        folderId,
+        "wide-logo.svg",
+        "image/svg+xml",
+        Buffer.from(WIDE_SVG_SOURCE),
+      );
+      const banner = await uploadAsset(
+        client,
+        folderId,
+        "wide-banner.png",
+        "image/png",
+        await sharp({
+          create: {
+            /** Larger than the thumb both ways, so its square crop shows. */
+            width: WIDE_SVG_WIDTH * 2,
+            height: WIDE_SVG_HEIGHT * 2,
+            channels: 3,
+            background: { r: 240, g: 160, b: 0 },
+          },
+        })
+          .png()
+          .toBuffer(),
+      );
+      const answer = await client.get(
+        `/api/media/previews?ids=${logo.id}&ids=${banner.id}`,
+      );
+      expect(answer.status).to.equal(HTTP_OK);
+      const { previews } = readBody(answer, previewsBody);
+      const [vector, raster] = await Promise.all(
+        [logo.id, banner.id].map(async (id) => {
+          const preview = previews.get(id);
+          assert.isDefined(preview, `preview of ${id}`);
+          const response = await fetch(preview);
+          return sharp(Buffer.from(await response.arrayBuffer())).metadata();
+        }),
+      );
+      expect((vector.width ?? 0) / (vector.height ?? 1)).to.be.closeTo(
+        WIDE_SVG_WIDTH / WIDE_SVG_HEIGHT,
+        0.05,
+      );
+      expect(raster.width).to.equal(raster.height);
+    });
+
+    it("never serves an HTML file inline", async () => {
+      const id = await insertStoredAsset(
+        folderId,
+        "page.html",
+        "text/html",
+        Buffer.from("<script>alert(1)</script>"),
+      );
+      const page = await deliver(`/media/${id}/page.html`, {
+        Authorization: `Bearer ${token}`,
+      });
+      expect(page.status).to.equal(HTTP_OK);
+      expect(page.headers.get("content-disposition")).to.match(/^attachment;/);
+      expect(page.headers.get("content-security-policy")).to.equal("sandbox");
+    });
+
+    it("answers 422 instead of 500 for an unreadable image", async () => {
+      const id = await insertStoredAsset(
+        folderId,
+        "broken.png",
+        "image/png",
+        Buffer.from("not an image"),
+      );
+      const auth = { Authorization: `Bearer ${token}` };
+      const thumb = await deliver(`/media/${id}/thumb/broken.png`, auth);
+      expect(thumb.status).to.equal(HTTP_UNPROCESSABLE_ENTITY);
+      const again = await deliver(`/media/${id}/thumb/broken.png`, auth);
+      expect(again.status).to.equal(HTTP_UNPROCESSABLE_ENTITY);
+    });
+
+    it("hides storage keys when a size cannot be rendered for another reason", async () => {
+      const id = await GetModel(MediaAssetModel, DEFAULT_TENANT_ID).insert({
+        folderId,
+        mediaRevision: randomUUID(),
+        json_retiredFiles: "[]",
+        name: "gone.png",
+        mimetype: "image/png",
+        size: 1,
+        storageKey: `delivery-tests/missing-${randomUUID()}.png`,
+        visibility: "inherit",
+        createdBy: "delivery-tests",
+      });
+      const auth = { Authorization: `Bearer ${token}` };
+      for (const attempt of [1, 2]) {
+        const thumb = await deliver(`/media/${id[0]}/thumb/gone.png`, auth);
+        expect(thumb.status, `attempt ${attempt}`).to.equal(
+          HTTP_SERVICE_UNAVAILABLE,
+        );
+        expect(thumb.body.toString()).to.not.contain("delivery-tests/");
+      }
+    });
+  });
+}
+
+function describeEdits(): void {
+  describe("copies, successive edits and replaced versions", () => {
+    it("saves an edit as a copy next to the untouched source", async () => {
+      const copy = await client.post(
+        `/api/media/assets/${jpeg.id}/transform/copy`,
+        { crop: { x: 0, y: 0, width: 0.5, height: 1 } },
+      );
+      expect(copy.status).to.equal(HTTP_OK);
+      expect(copy.data.asset.name).to.equal("photo (2).jpg");
+      expect(copy.data.asset.folderId).to.equal(folderId);
+      expect([copy.data.asset.width, copy.data.asset.height]).to.deep.equal([
+        PHOTO_WIDTH / 2,
+        PHOTO_HEIGHT,
+      ]);
+      const source = await client.get(`/api/media/assets/${jpeg.id}`);
+      expect(source.data.asset.width).to.equal(PHOTO_WIDTH);
+      expect(source.data.asset.hasOriginal).to.equal(false);
+    });
+
+    it("renders successive edits from the original and resets on revert", async () => {
+      const model = GetModel(MediaAssetModel, DEFAULT_TENANT_ID);
+      const transform = (body: ImageTransformOps) =>
+        client.post(`/api/media/assets/${jpeg.id}/transform`, body);
+      expect((await transform({ rotate: 90 })).status).to.equal(HTTP_OK);
+      const cropped = await transform({
+        crop: { x: 0, y: 0, width: 1, height: 0.5 },
+      });
+      expect([
+        cropped.data.asset.width,
+        cropped.data.asset.height,
+      ]).to.deep.equal([PHOTO_HEIGHT, PHOTO_WIDTH / 2]);
+      const edited = await model.get(jpeg.id);
+      expect(edited?.json_transform).to.be.a("string").and.not.equal("");
+      expect(edited?.originalSize).to.be.greaterThan(0);
+      const reverted = await client.post(`/api/media/assets/${jpeg.id}/revert`);
+      expect(reverted.data.asset.width).to.equal(PHOTO_WIDTH);
+      const restored = await model.get(jpeg.id);
+      expect(restored?.json_transform).to.equal("");
+      expect(restored?.originalSize).to.equal(0);
+    });
+
+    it("refuses an edit rendered from a version someone replaced", async () => {
+      const model = GetModel(MediaAssetModel, DEFAULT_TENANT_ID);
+      const stale = await model.get(jpeg.id);
+      const edit = await client.post(`/api/media/assets/${jpeg.id}/transform`, {
+        rotate: 180,
+      });
+      expect(edit.status).to.equal(HTTP_OK);
+      const outcome = await applyImageTransform(model, stale!, {
+        rotate: 90,
+      }).catch((error: unknown) => error);
+      expect(outcome).to.be.instanceOf(MediaAssetChangedError);
+      const both = await Promise.all(
+        [90, 270].map((rotate) =>
+          client.post(`/api/media/assets/${jpeg.id}/transform`, { rotate }),
+        ),
+      );
+      const statuses = both.map((response) => response.status);
+      expect(statuses).to.include(HTTP_OK);
+      expect(
+        statuses.every((s) => s === HTTP_OK || s === HTTP_CONFLICT),
+      ).to.equal(true);
+      await client.post(`/api/media/assets/${jpeg.id}/revert`);
+    });
+  });
+}
+
+describe("[integration] media delivery and editing — cache, orientation, active content, copies", () => {
   before(async function () {
     this.timeout(40_000);
     const session = await ensureOwnerSession();
@@ -175,306 +497,8 @@ describe("[integration] media delivery and editing — cache, orientation, activ
     await client.delete(`/api/media/folders/${folderId}`);
   });
 
-  it("redirects members to a signed URL that is never cached", async () => {
-    const auth = { Authorization: `Bearer ${token}` };
-    const first = await deliver(assetPath(jpeg), auth);
-    expect(first.status).to.equal(HTTP_FOUND);
-    expect(first.headers.get("cache-control")).to.equal("no-store");
-    const again = await deliver(assetPath(jpeg), auth);
-    expect(again.headers.get("location")).to.equal(
-      first.headers.get("location"),
-    );
-  });
-
-  it("answers a bare 401 to scripts and sends browsers to the file page", async () => {
-    const anonymous = await deliver(assetPath(jpeg));
-    expect(anonymous.status).to.equal(HTTP_UNAUTHORIZED);
-    const browser = await deliver(assetPath(jpeg), { Accept: "text/html" });
-    const location = browser.headers.get("location") ?? "";
-    const isFilePageRedirect =
-      browser.status === HTTP_FOUND &&
-      location.endsWith(`/modules/media/file?asset=${jpeg.id}`);
-    const isSignInPage =
-      browser.status === HTTP_UNAUTHORIZED &&
-      (browser.headers.get("content-type") ?? "").startsWith("text/html");
-    expect(isFilePageRedirect || isSignInPage).to.equal(true);
-  });
-
-  it("sends stale or empty file names to the canonical URL", async () => {
-    const auth = { Authorization: `Bearer ${token}` };
-    const renamed = await deliver(`/media/${jpeg.id}/other.exe`, auth);
-    expect(renamed.status).to.equal(HTTP_FOUND);
-    expect(renamed.headers.get("location")).to.equal(assetPath(jpeg));
-    const derivative = await deliver(`/media/${jpeg.id}/thumb/x.jpg`, auth);
-    expect(derivative.headers.get("location")).to.equal(
-      assetPath(jpeg, "thumb"),
-    );
-    const empty = await deliver(`/media/${jpeg.id}/thumb/`, auth);
-    expect(empty.status).to.equal(HTTP_NOT_FOUND);
-  });
-
-  it("names derivatives readably and leaves updatedAt alone when rendering them", async () => {
-    const auth = { Authorization: `Bearer ${token}` };
-    const before = await client.get(`/api/media/assets/${jpeg.id}`);
-    const thumb = await follow(assetPath(jpeg, "thumb"), auth);
-    expect(thumb.status).to.equal(HTTP_OK);
-    expect(thumb.headers.get("content-disposition")).to.contain(
-      'filename="photo-thumb.webp"',
-    );
-    const after = await client.get(`/api/media/assets/${jpeg.id}`);
-    expect(after.data.asset.updatedAt).to.equal(before.data.asset.updatedAt);
-  });
-
-  it("redirects public files without caching the redirect, and opens CORS", async () => {
-    const flip = await client.post(
-      `/api/media/folders/${folderId}/visibility`,
-      { visibility: "public" },
-    );
-    expect(flip.status).to.equal(HTTP_OK);
-    const first = await deliver(assetPath(jpeg, "thumb"), {
-      Origin: FOREIGN_ORIGIN,
-    });
-    expect(first.status).to.equal(HTTP_FOUND);
-    expect(first.headers.get("cache-control")).to.equal("no-cache");
-    expect(first.headers.get("access-control-allow-origin")).to.equal("*");
-    const second = await deliver(assetPath(jpeg, "thumb"));
-    expect(second.headers.get("location")).to.equal(
-      first.headers.get("location"),
-    );
-    await client.post(`/api/media/folders/${folderId}/visibility`, {
-      visibility: "private",
-    });
-  });
-
-  it("points the same link at the edited image right after an edit", async () => {
-    const auth = { Authorization: `Bearer ${token}` };
-    const before = await deliver(assetPath(jpeg, "thumb"), auth);
-    const edit = await client.post(`/api/media/assets/${jpeg.id}/transform`, {
-      rotate: 90,
-    });
-    expect(edit.status).to.equal(HTTP_OK);
-    const after = await follow(assetPath(jpeg), auth);
-    const metadata = await sharp(after.body).metadata();
-    expect([metadata.width, metadata.height]).to.deep.equal([
-      PHOTO_HEIGHT,
-      PHOTO_WIDTH,
-    ]);
-    const thumb = await deliver(assetPath(jpeg, "thumb"), auth);
-    expect(thumb.headers.get("location")).to.not.equal(
-      before.headers.get("location"),
-    );
-    await client.post(`/api/media/assets/${jpeg.id}/revert`);
-  });
-
-  it("renders derivatives upright for EXIF-rotated photos", async () => {
-    const rotated = await sharp(await photo())
-      .withMetadata({ orientation: EXIF_ROTATED_RIGHT })
-      .jpeg()
-      .toBuffer();
-    const asset = await uploadAsset(
-      client,
-      folderId,
-      "phone.jpg",
-      "image/jpeg",
-      rotated,
-    );
-    const preview = await follow(assetPath(asset, "preview"), {
-      Authorization: `Bearer ${token}`,
-    });
-    const metadata = await sharp(preview.body).metadata();
-    expect([metadata.width, metadata.height]).to.deep.equal([
-      PHOTO_HEIGHT,
-      PHOTO_WIDTH,
-    ]);
-  });
-
-  it("keeps animation, rasterizes vectors sharply and sandboxes SVG", async () => {
-    const auth = { Authorization: `Bearer ${token}` };
-    const gif = await uploadAsset(
-      client,
-      folderId,
-      "loop.gif",
-      "image/gif",
-      await animatedGif(),
-    );
-    const preview = await follow(assetPath(gif, "preview"), auth);
-    expect((await sharp(preview.body).metadata()).pages).to.equal(3);
-    const svg = await uploadAsset(
-      client,
-      folderId,
-      "logo.svg",
-      "image/svg+xml",
-      Buffer.from(SVG_SOURCE),
-    );
-    const thumb = await follow(assetPath(svg, "thumb"), auth);
-    expect((await sharp(thumb.body).metadata()).width).to.equal(300);
-    const original = await deliver(assetPath(svg), auth);
-    expect(original.status).to.equal(HTTP_OK);
-    expect(original.headers.get("content-security-policy")).to.equal("sandbox");
-    const etag = original.headers.get("etag");
-    assert.isNotNull(etag, "etag");
-    const revalidated = await deliver(assetPath(svg), {
-      ...auth,
-      "If-None-Match": etag,
-    });
-    expect(revalidated.status).to.equal(HTTP_NOT_MODIFIED);
-  });
-
-  it("fits a wide vector inside its library thumbnail instead of cropping it", async () => {
-    const logo = await uploadAsset(
-      client,
-      folderId,
-      "wide-logo.svg",
-      "image/svg+xml",
-      Buffer.from(WIDE_SVG_SOURCE),
-    );
-    const banner = await uploadAsset(
-      client,
-      folderId,
-      "wide-banner.png",
-      "image/png",
-      await sharp({
-        create: {
-          /** Larger than the thumb both ways, so its square crop shows. */
-          width: WIDE_SVG_WIDTH * 2,
-          height: WIDE_SVG_HEIGHT * 2,
-          channels: 3,
-          background: { r: 240, g: 160, b: 0 },
-        },
-      })
-        .png()
-        .toBuffer(),
-    );
-    const answer = await client.get(
-      `/api/media/previews?ids=${logo.id}&ids=${banner.id}`,
-    );
-    expect(answer.status).to.equal(HTTP_OK);
-    const { previews } = readBody(answer, previewsBody);
-    const [vector, raster] = await Promise.all(
-      [logo.id, banner.id].map(async (id) => {
-        const preview = previews.get(id);
-        assert.isDefined(preview, `preview of ${id}`);
-        const response = await fetch(preview);
-        return sharp(Buffer.from(await response.arrayBuffer())).metadata();
-      }),
-    );
-    expect((vector.width ?? 0) / (vector.height ?? 1)).to.be.closeTo(
-      WIDE_SVG_WIDTH / WIDE_SVG_HEIGHT,
-      0.05,
-    );
-    expect(raster.width).to.equal(raster.height);
-  });
-
-  it("never serves an HTML file inline", async () => {
-    const id = await insertStoredAsset(
-      folderId,
-      "page.html",
-      "text/html",
-      Buffer.from("<script>alert(1)</script>"),
-    );
-    const page = await deliver(`/media/${id}/page.html`, {
-      Authorization: `Bearer ${token}`,
-    });
-    expect(page.status).to.equal(HTTP_OK);
-    expect(page.headers.get("content-disposition")).to.match(/^attachment;/);
-    expect(page.headers.get("content-security-policy")).to.equal("sandbox");
-  });
-
-  it("answers 422 instead of 500 for an unreadable image", async () => {
-    const id = await insertStoredAsset(
-      folderId,
-      "broken.png",
-      "image/png",
-      Buffer.from("not an image"),
-    );
-    const auth = { Authorization: `Bearer ${token}` };
-    const thumb = await deliver(`/media/${id}/thumb/broken.png`, auth);
-    expect(thumb.status).to.equal(HTTP_UNPROCESSABLE_ENTITY);
-    const again = await deliver(`/media/${id}/thumb/broken.png`, auth);
-    expect(again.status).to.equal(HTTP_UNPROCESSABLE_ENTITY);
-  });
-
-  it("hides storage keys when a size cannot be rendered for another reason", async () => {
-    const id = await GetModel(MediaAssetModel, DEFAULT_TENANT_ID).insert({
-      folderId,
-      mediaRevision: randomUUID(),
-      json_retiredFiles: "[]",
-      name: "gone.png",
-      mimetype: "image/png",
-      size: 1,
-      storageKey: `delivery-tests/missing-${randomUUID()}.png`,
-      visibility: "inherit",
-      createdBy: "delivery-tests",
-    });
-    const auth = { Authorization: `Bearer ${token}` };
-    for (const attempt of [1, 2]) {
-      const thumb = await deliver(`/media/${id[0]}/thumb/gone.png`, auth);
-      expect(thumb.status, `attempt ${attempt}`).to.equal(
-        HTTP_SERVICE_UNAVAILABLE,
-      );
-      expect(thumb.body.toString()).to.not.contain("delivery-tests/");
-    }
-  });
-
-  it("saves an edit as a copy next to the untouched source", async () => {
-    const copy = await client.post(
-      `/api/media/assets/${jpeg.id}/transform/copy`,
-      { crop: { x: 0, y: 0, width: 0.5, height: 1 } },
-    );
-    expect(copy.status).to.equal(HTTP_OK);
-    expect(copy.data.asset.name).to.equal("photo (2).jpg");
-    expect(copy.data.asset.folderId).to.equal(folderId);
-    expect([copy.data.asset.width, copy.data.asset.height]).to.deep.equal([
-      PHOTO_WIDTH / 2,
-      PHOTO_HEIGHT,
-    ]);
-    const source = await client.get(`/api/media/assets/${jpeg.id}`);
-    expect(source.data.asset.width).to.equal(PHOTO_WIDTH);
-    expect(source.data.asset.hasOriginal).to.equal(false);
-  });
-
-  it("renders successive edits from the original and resets on revert", async () => {
-    const model = GetModel(MediaAssetModel, DEFAULT_TENANT_ID);
-    const transform = (body: ImageTransformOps) =>
-      client.post(`/api/media/assets/${jpeg.id}/transform`, body);
-    expect((await transform({ rotate: 90 })).status).to.equal(HTTP_OK);
-    const cropped = await transform({
-      crop: { x: 0, y: 0, width: 1, height: 0.5 },
-    });
-    expect([cropped.data.asset.width, cropped.data.asset.height]).to.deep.equal(
-      [PHOTO_HEIGHT, PHOTO_WIDTH / 2],
-    );
-    const edited = await model.get(jpeg.id);
-    expect(edited?.json_transform).to.be.a("string").and.not.equal("");
-    expect(edited?.originalSize).to.be.greaterThan(0);
-    const reverted = await client.post(`/api/media/assets/${jpeg.id}/revert`);
-    expect(reverted.data.asset.width).to.equal(PHOTO_WIDTH);
-    const restored = await model.get(jpeg.id);
-    expect(restored?.json_transform).to.equal("");
-    expect(restored?.originalSize).to.equal(0);
-  });
-
-  it("refuses an edit rendered from a version someone replaced", async () => {
-    const model = GetModel(MediaAssetModel, DEFAULT_TENANT_ID);
-    const stale = await model.get(jpeg.id);
-    const edit = await client.post(`/api/media/assets/${jpeg.id}/transform`, {
-      rotate: 180,
-    });
-    expect(edit.status).to.equal(HTTP_OK);
-    const outcome = await applyImageTransform(model, stale!, {
-      rotate: 90,
-    }).catch((error: unknown) => error);
-    expect(outcome).to.be.instanceOf(MediaAssetChangedError);
-    const both = await Promise.all(
-      [90, 270].map((rotate) =>
-        client.post(`/api/media/assets/${jpeg.id}/transform`, { rotate }),
-      ),
-    );
-    const statuses = both.map((response) => response.status);
-    expect(statuses).to.include(HTTP_OK);
-    expect(
-      statuses.every((s) => s === HTTP_OK || s === HTTP_CONFLICT),
-    ).to.equal(true);
-    await client.post(`/api/media/assets/${jpeg.id}/revert`);
-  });
+  describeDeliveryLinks();
+  describeRenderedImages();
+  describeUnusualFiles();
+  describeEdits();
 });
