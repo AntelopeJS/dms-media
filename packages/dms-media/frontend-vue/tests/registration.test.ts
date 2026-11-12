@@ -25,3 +25,8 @@ it('registers every block under the DmsMedia prefix by its file name', async () 
 	}
 	expect(new Set(names).size).toBe(names.length)
 })
+
+it('names the explorer block by the name the DMS serves it under', async () => {
+	const { default: Explorer } = await import('../app/components/Explorer.vue')
+	expect(Explorer.name).toBe(`${frontendModule.componentPrefix}Explorer`)
+})
