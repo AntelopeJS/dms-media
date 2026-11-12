@@ -1,5 +1,22 @@
 # Changelog
 
+## v0.7.3
+
+[compare changes](https://github.com/AntelopeJS/dms-media/compare/v0.7.2...v0.7.3)
+
+### 🔥 Performance
+
+- **dms-media:** Read only the counted fields of each asset for the library tree ([#164](https://github.com/AntelopeJS/dms-media/pull/164))
+
+### 📦 Build
+
+- **deps:** Move to @antelopejs/tooling-configs 0.5.0 ([#163](https://github.com/AntelopeJS/dms-media/pull/163))
+- **deps:** Bump @antelopejs/tooling-configs to 0.5.1 ([#166](https://github.com/AntelopeJS/dms-media/pull/166))
+
+### ❤️ Contributors
+
+- Antony Rizzitelli ([@Upd4ting](http://github.com/Upd4ting))
+
 ## v0.7.2
 
 [compare changes](https://github.com/AntelopeJS/dms-media/compare/v0.7.1...v0.7.2)
