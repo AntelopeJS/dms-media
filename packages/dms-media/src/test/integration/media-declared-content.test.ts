@@ -288,7 +288,7 @@ function describeFileImports(): void {
 
 function describeKeptFilesAndRefusals(): void {
   describe("files kept, lazy and refused", () => {
-    it("names the key when a lazy source fails or returns no bytes", async () => {
+    it("names the key when a lazy source fails", async () => {
       const declaration = {
         tenantId: DEFAULT_TENANT_ID,
         folder: { key: ROOT_KEY },
@@ -309,17 +309,6 @@ function describeKeptFilesAndRefusals(): void {
       expect(thrown.message)
         .to.contain("declared.lazy-throws")
         .and.contain("renderer crashed");
-      const wrong = await rejectionOf(
-        ImportMediaAsset({
-          ...declaration,
-          key: "declared.lazy-wrong",
-          source: {
-            // @ts-expect-error A JavaScript caller can return something else.
-            load: () => "text",
-          },
-        }),
-      );
-      expect(wrong.message).to.contain("must return a Uint8Array");
     });
 
     it("never changes a file declared before, nor reads its source again", async () => {
@@ -419,7 +408,7 @@ describe("[integration] media declared content — folders and files shipped as 
     await rm(tempDir, { recursive: true, force: true });
   });
 
-  it("rejects missing or blank tenants before changing the default library", async () => {
+  it("rejects blank tenants before changing the default library", async () => {
     const declarationModel = GetModel(MediaDeclarationModel, DEFAULT_TENANT_ID);
     const eventModel = GetModel(MediaEventModel, DEFAULT_TENANT_ID);
     const before = {
@@ -439,14 +428,6 @@ describe("[integration] media declared content — folders and files shipped as 
       mimetype: PNG_MIMETYPE,
       source: { bytes: ONE_PIXEL_PNG },
     };
-    // @ts-expect-error A JavaScript caller can omit the required tenantId; this call stops compiling if the public contract makes it optional.
-    expect((await rejectionOf(EnsureMediaFolder(folder))).message).to.contain(
-      "tenantId",
-    );
-    // @ts-expect-error A JavaScript caller can omit the required tenantId; this call stops compiling if the public contract makes it optional.
-    expect((await rejectionOf(ImportMediaAsset(file))).message).to.contain(
-      "tenantId",
-    );
     for (const tenantId of ["", " \t\n "]) {
       expect(
         (await rejectionOf(EnsureMediaFolder({ ...folder, tenantId }))).message,

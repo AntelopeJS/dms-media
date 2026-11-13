@@ -8,5 +8,5 @@
     "types": ["node", "mocha"],
     "tsBuildInfoFile": "dist/.tsbuildinfo"
   },
-  "include": ["./src/**/*.ts"]
+  "include": ["./src/**/*.ts", "./src/**/*.untyped.spec.js"]
 }

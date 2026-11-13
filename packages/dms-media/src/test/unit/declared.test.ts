@@ -1,10 +1,6 @@
 import { setTimeout as delay } from "node:timers/promises";
 import { expect } from "chai";
-import {
-  MediaDeclarationError,
-  parseDeclaration,
-  withDeclarationLock,
-} from "../../declared/records";
+import { parseDeclaration, withDeclarationLock } from "../../declared/records";
 import { declaredFolderSchema } from "../../validation/declared.schema";
 
 describe("[unit] declared content — declarations", () => {
@@ -20,24 +16,6 @@ describe("[unit] declared content — declarations", () => {
       visibility: "private",
       tenantId: "default",
     });
-  });
-
-  it("names the key and every refused field in English", () => {
-    const parse = () =>
-      parseDeclaration(
-        "folder",
-        {
-          tenantId: "default",
-          key: "helio.bad",
-          name: "a/b",
-          // @ts-expect-error "secret" is outside MediaFolderVisibility, and parseDeclaration must refuse it naming the visibility field
-          visibility: "secret",
-        },
-        declaredFolderSchema,
-      );
-    expect(parse).to.throw(MediaDeclarationError, "Media folder 'helio.bad'");
-    expect(parse).to.throw(/name: a name can't contain/);
-    expect(parse).to.throw(/visibility/);
   });
 
   it("runs the declarations of one key one after another", async () => {
