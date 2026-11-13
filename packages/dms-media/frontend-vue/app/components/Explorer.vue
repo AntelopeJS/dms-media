@@ -5,6 +5,8 @@ import ExplorerShell from './explorer/ExplorerShell.vue'
 
 type RouteQuery = Record<string, string>
 
+defineOptions({ name: 'DmsMediaExplorer' })
+
 const route = useDmsRoute()
 const router = useDmsRouter()
 const shell = useTemplateRef<InstanceType<typeof ExplorerShell>>('shell')
