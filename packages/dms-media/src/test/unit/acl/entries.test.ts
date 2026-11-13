@@ -38,6 +38,29 @@ describe("[unit] acl/entries — parseFolderAcl", () => {
   it("fails closed on JSON that is not an array", () => {
     expect(parseFolderAcl(folderWithAcl('{"subject":"x"}'))).to.deep.equal([]);
   });
+
+  it("fails closed on an array holding something other than ACL entries", () => {
+    for (const stored of [
+      [{ subject: { kind: "group", id: "editors" }, rights: ["read"] }],
+      [{ subject: { kind: "role", id: 7 }, rights: ["read"] }],
+      [{ subject: { kind: "role", id: "editors" }, rights: ["own"] }],
+      ["editors"],
+    ]) {
+      expect(
+        parseFolderAcl(folderWithAcl(JSON.stringify(stored))),
+      ).to.deep.equal([]);
+    }
+  });
+
+  it("reads back an entry with no rights as the module writes it", () => {
+    const entry: AclEntry = {
+      subject: { kind: "permission", id: "p" },
+      rights: [],
+    };
+    expect(parseFolderAcl(folderWithAcl(serializeAcl([entry])))).to.deep.equal([
+      entry,
+    ]);
+  });
 });
 
 describe("[unit] acl/entries — serializeAcl", () => {

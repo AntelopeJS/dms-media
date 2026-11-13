@@ -1,3 +1,5 @@
+import { isObject } from "./guards";
+
 export interface CropRegion {
   x: number;
   y: number;
@@ -73,8 +75,36 @@ export function composeTransforms(
   };
 }
 
+function isNumber(value: unknown): value is number {
+  return typeof value === "number";
+}
+
+function isCropRegion(value: unknown): value is CropRegion {
+  return (
+    isObject(value) &&
+    "x" in value &&
+    isNumber(value.x) &&
+    "y" in value &&
+    isNumber(value.y) &&
+    "width" in value &&
+    isNumber(value.width) &&
+    "height" in value &&
+    isNumber(value.height)
+  );
+}
+
+function isTransformOps(value: unknown): value is ImageTransformOps {
+  return (
+    isObject(value) &&
+    !Array.isArray(value) &&
+    (!("crop" in value) || isCropRegion(value.crop)) &&
+    (!("rotate" in value) || isNumber(value.rotate))
+  );
+}
+
 export function parseTransform(json: string | undefined): ImageTransformOps {
   if (!json) return {};
-  // SAFETY: json_transform is written only as "" or the JSON.stringify of the cumulative ImageTransformOps (transform.ts), so a non-empty value is that object; a schema parse of a stored row on read is excluded by ruling.
-  return JSON.parse(json) as ImageTransformOps;
+  const parsed: unknown = JSON.parse(json);
+  if (isTransformOps(parsed)) return parsed;
+  throw new Error("Stored image edits are not crop and rotate operations");
 }
