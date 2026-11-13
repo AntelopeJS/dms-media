@@ -1,4 +1,5 @@
 import { expect, it, vi } from 'vitest'
+import Explorer from '../app/components/Explorer.vue'
 import frontendModule from '../dms.frontend'
 
 it('registers every block under the DmsMedia prefix by its file name', async () => {
@@ -26,7 +27,6 @@ it('registers every block under the DmsMedia prefix by its file name', async () 
 	expect(new Set(names).size).toBe(names.length)
 })
 
-it('names the explorer block by the name the DMS serves it under', async () => {
-	const { default: Explorer } = await import('../app/components/Explorer.vue')
+it('names the explorer block by the name the DMS serves it under', () => {
 	expect(Explorer.name).toBe(`${frontendModule.componentPrefix}Explorer`)
 })
