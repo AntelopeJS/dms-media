@@ -84,17 +84,212 @@ async function removeLinkedFolders(): Promise<void> {
   if (children.length === 0) await folderModel.delete(contentRoot._id);
 }
 
+let client: AxiosInstance;
+
+async function treeFolder(binding: string): Promise<FolderNode> {
+  const folder = (await fetchFolderNodes(client)).find(
+    (entry) => entry.binding === binding,
+  );
+  if (!folder) throw new Error(`No folder linked to ${binding}`);
+  return folder;
+}
+
+function describeSubfolderCreation(): void {
+  describe("subfolders of a linked folder", () => {
+    it("tells the explorer which linked folders take subfolders", async () => {
+      expect((await treeFolder(OPEN_BINDING_ID)).acceptsSubfolders).to.equal(
+        true,
+      );
+      expect((await treeFolder(LOCKED_BINDING_ID)).acceptsSubfolders).to.equal(
+        false,
+      );
+      expect(
+        (await treeFolder(CONTENT_ROOT_BINDING)).acceptsSubfolders,
+      ).to.equal(false);
+    });
+
+    it("lets an owner create a subfolder where the binding allows it, and keeps the linked folder locked", async () => {
+      const linked = await treeFolder(OPEN_BINDING_ID);
+      const created = await client.post("/api/media/folders", {
+        name: "Project A",
+        parentId: linked.id,
+      });
+      expect(created.status).to.equal(HTTP_OK);
+      const locked = await treeFolder(LOCKED_BINDING_ID);
+      const refused = await client.post("/api/media/folders", {
+        name: "Project A",
+        parentId: locked.id,
+      });
+      expect(refused.status).to.equal(HTTP_FORBIDDEN);
+      expect(refused.data).to.equal(`${ERRORS}.bound_parent`);
+      const rename = await client.post(
+        `/api/media/folders/${linked.id}/rename`,
+        {
+          name: "Renamed",
+        },
+      );
+      expect(rename.status).to.equal(HTTP_FORBIDDEN);
+      const subfolder = (await fetchFolderNodes(client)).find(
+        (folder) => folder.id === created.data.id,
+      );
+      expect(subfolder?.acceptsSubfolders).to.equal(true);
+      expect(subfolder?.accepts).to.deep.equal(["image/*"]);
+    });
+
+    it("applies the field's types to uploads into a subfolder", async () => {
+      const linked = await treeFolder(OPEN_BINDING_ID);
+      const created = await client.post("/api/media/folders", {
+        name: "Project B",
+        parentId: linked.id,
+      });
+      const nested = await client.post("/api/media/folders", {
+        name: "Roof",
+        parentId: readBody(created, createdBody).id,
+      });
+      const presign = (filename: string, mimetype: string) =>
+        client.post("/api/media/upload/presign", {
+          folderId: readBody(nested, createdBody).id,
+          filename,
+          size: 4,
+          mimetype,
+        });
+      const text = await presign("notes.txt", "text/plain");
+      expect(text.status).to.equal(HTTP_UNSUPPORTED_MEDIA_TYPE);
+      expect(text.data.reason).to.equal("field_type");
+      expect((await presign("photo.png", "image/png")).status).to.equal(
+        HTTP_OK,
+      );
+    });
+  });
+}
+
+function describeAssetMoves(): void {
+  describe("moving files into a linked folder", () => {
+    it("refuses to move a file into a linked folder whose field does not take its type", async () => {
+      const linked = await treeFolder(OPEN_BINDING_ID);
+      const library = await client.post("/api/media/folders", {
+        name: "Loose files",
+      });
+      const libraryId = readBody(library, createdBody).id;
+      const notes = await uploadTextAsset(client, libraryId, "notes.txt");
+      const photo = await uploadPixelPng(client, libraryId);
+      const single = await client.post(`/api/media/assets/${notes.id}/move`, {
+        folderId: linked.id,
+      });
+      expect(single.status).to.equal(HTTP_UNSUPPORTED_MEDIA_TYPE);
+      expect(single.data).to.equal(`${ERRORS}.field_type`);
+      const subfolder = await client.post("/api/media/folders", {
+        name: "Project D",
+        parentId: linked.id,
+      });
+      const intoSubfolder = await client.post(
+        `/api/media/assets/${notes.id}/move`,
+        { folderId: readBody(subfolder, createdBody).id },
+      );
+      expect(intoSubfolder.status).to.equal(HTTP_UNSUPPORTED_MEDIA_TYPE);
+      const bulk = await client.post("/api/media/assets/bulk/move", {
+        ids: [notes.id, photo.id],
+        folderId: linked.id,
+      });
+      expect(bulk.data.done).to.deep.equal([photo.id]);
+      expect(bulk.data.refused).to.deep.equal([
+        {
+          id: notes.id,
+          status: HTTP_UNSUPPORTED_MEDIA_TYPE,
+          message: `${ERRORS}.field_type`,
+        },
+      ]);
+      const assetModel = GetModel(MediaAssetModel, DEFAULT_TENANT_ID);
+      expect((await assetModel.get(notes.id))?.folderId).to.equal(libraryId);
+      await client.delete(`/api/media/folders/${libraryId}`);
+    });
+  });
+}
+
+function describeDeclaredFolders(): void {
+  describe("declared subfolders", () => {
+    it("declares per-record folders under a linked folder that allows them", async () => {
+      const linked = await treeFolder(OPEN_BINDING_ID);
+      const project = await EnsureMediaFolder({
+        tenantId: DEFAULT_TENANT_ID,
+        key: "subfolders.project-c",
+        name: "Project C",
+        parent: { binding: OPEN_BINDING_ID },
+      });
+      expect(project.status).to.equal("created");
+      expect((await folders().get(project.id))?.parentId).to.equal(linked.id);
+      const again = await EnsureMediaFolder({
+        tenantId: DEFAULT_TENANT_ID,
+        key: "subfolders.project-c",
+        name: "Project C",
+        parent: { binding: OPEN_BINDING_ID },
+      });
+      expect(again).to.deep.equal({ status: "kept", id: project.id });
+      const nested = await EnsureMediaFolder({
+        tenantId: DEFAULT_TENANT_ID,
+        key: "subfolders.project-c.roof",
+        name: "Roof",
+        parent: { key: "subfolders.project-c" },
+      });
+      expect(nested.status).to.equal("created");
+      const sameParent = await EnsureMediaFolder({
+        tenantId: DEFAULT_TENANT_ID,
+        key: "subfolders.project-c.roof",
+        name: "Roof",
+        parent: "subfolders.project-c",
+      });
+      expect(
+        sameParent,
+        "a declared parent named by its key alone is the same declaration",
+      ).to.deep.equal({ status: "kept", id: nested.id });
+      const photo = await ImportMediaAsset({
+        tenantId: DEFAULT_TENANT_ID,
+        key: "subfolders.project-c.roof.photo",
+        folder: { key: "subfolders.project-c.roof" },
+        name: "roof.png",
+        mimetype: PNG_MIMETYPE,
+        source: { bytes: ONE_PIXEL_PNG },
+      });
+      expect(photo.status).to.equal("created");
+      const notes = await rejectionOf(
+        ImportMediaAsset({
+          tenantId: DEFAULT_TENANT_ID,
+          key: "subfolders.project-c.roof.notes",
+          folder: { key: "subfolders.project-c.roof" },
+          name: "notes.txt",
+          mimetype: "text/plain",
+          source: { bytes: Buffer.from("notes") },
+        }),
+      );
+      expect(notes.message).to.contain("only accepts image/*");
+    });
+
+    it("refuses a declared subfolder under a linked folder that does not allow them", async () => {
+      const locked = await rejectionOf(
+        EnsureMediaFolder({
+          tenantId: DEFAULT_TENANT_ID,
+          key: "subfolders.locked-child",
+          name: "Child",
+          parent: { binding: LOCKED_BINDING_ID },
+        }),
+      );
+      expect(locked.message)
+        .to.contain("subfolders.locked-child")
+        .and.contain("cannot hold subfolders");
+      const unknown = await rejectionOf(
+        EnsureMediaFolder({
+          tenantId: DEFAULT_TENANT_ID,
+          key: "subfolders.unknown-child",
+          name: "Child",
+          parent: { binding: "subfolders.never-registered" },
+        }),
+      );
+      expect(unknown.message).to.contain("no folder is bound");
+    });
+  });
+}
+
 describe("[integration] media linked subfolders — bindings that allow them", () => {
-  let client: AxiosInstance;
-
-  async function treeFolder(binding: string): Promise<FolderNode> {
-    const folder = (await fetchFolderNodes(client)).find(
-      (entry) => entry.binding === binding,
-    );
-    if (!folder) throw new Error(`No folder linked to ${binding}`);
-    return folder;
-  }
-
   before(async () => {
     RegisterAssetBinding({
       id: OPEN_BINDING_ID,
@@ -112,181 +307,7 @@ describe("[integration] media linked subfolders — bindings that allow them", (
     await removeLinkedFolders();
   });
 
-  it("tells the explorer which linked folders take subfolders", async () => {
-    expect((await treeFolder(OPEN_BINDING_ID)).acceptsSubfolders).to.equal(
-      true,
-    );
-    expect((await treeFolder(LOCKED_BINDING_ID)).acceptsSubfolders).to.equal(
-      false,
-    );
-    expect((await treeFolder(CONTENT_ROOT_BINDING)).acceptsSubfolders).to.equal(
-      false,
-    );
-  });
-
-  it("lets an owner create a subfolder where the binding allows it, and keeps the linked folder locked", async () => {
-    const linked = await treeFolder(OPEN_BINDING_ID);
-    const created = await client.post("/api/media/folders", {
-      name: "Project A",
-      parentId: linked.id,
-    });
-    expect(created.status).to.equal(HTTP_OK);
-    const locked = await treeFolder(LOCKED_BINDING_ID);
-    const refused = await client.post("/api/media/folders", {
-      name: "Project A",
-      parentId: locked.id,
-    });
-    expect(refused.status).to.equal(HTTP_FORBIDDEN);
-    expect(refused.data).to.equal(`${ERRORS}.bound_parent`);
-    const rename = await client.post(`/api/media/folders/${linked.id}/rename`, {
-      name: "Renamed",
-    });
-    expect(rename.status).to.equal(HTTP_FORBIDDEN);
-    const subfolder = (await fetchFolderNodes(client)).find(
-      (folder) => folder.id === created.data.id,
-    );
-    expect(subfolder?.acceptsSubfolders).to.equal(true);
-    expect(subfolder?.accepts).to.deep.equal(["image/*"]);
-  });
-
-  it("applies the field's types to uploads into a subfolder", async () => {
-    const linked = await treeFolder(OPEN_BINDING_ID);
-    const created = await client.post("/api/media/folders", {
-      name: "Project B",
-      parentId: linked.id,
-    });
-    const nested = await client.post("/api/media/folders", {
-      name: "Roof",
-      parentId: readBody(created, createdBody).id,
-    });
-    const presign = (filename: string, mimetype: string) =>
-      client.post("/api/media/upload/presign", {
-        folderId: readBody(nested, createdBody).id,
-        filename,
-        size: 4,
-        mimetype,
-      });
-    const text = await presign("notes.txt", "text/plain");
-    expect(text.status).to.equal(HTTP_UNSUPPORTED_MEDIA_TYPE);
-    expect(text.data.reason).to.equal("field_type");
-    expect((await presign("photo.png", "image/png")).status).to.equal(HTTP_OK);
-  });
-
-  it("refuses to move a file into a linked folder whose field does not take its type", async () => {
-    const linked = await treeFolder(OPEN_BINDING_ID);
-    const library = await client.post("/api/media/folders", {
-      name: "Loose files",
-    });
-    const libraryId = readBody(library, createdBody).id;
-    const notes = await uploadTextAsset(client, libraryId, "notes.txt");
-    const photo = await uploadPixelPng(client, libraryId);
-    const single = await client.post(`/api/media/assets/${notes.id}/move`, {
-      folderId: linked.id,
-    });
-    expect(single.status).to.equal(HTTP_UNSUPPORTED_MEDIA_TYPE);
-    expect(single.data).to.equal(`${ERRORS}.field_type`);
-    const subfolder = await client.post("/api/media/folders", {
-      name: "Project D",
-      parentId: linked.id,
-    });
-    const intoSubfolder = await client.post(
-      `/api/media/assets/${notes.id}/move`,
-      { folderId: readBody(subfolder, createdBody).id },
-    );
-    expect(intoSubfolder.status).to.equal(HTTP_UNSUPPORTED_MEDIA_TYPE);
-    const bulk = await client.post("/api/media/assets/bulk/move", {
-      ids: [notes.id, photo.id],
-      folderId: linked.id,
-    });
-    expect(bulk.data.done).to.deep.equal([photo.id]);
-    expect(bulk.data.refused).to.deep.equal([
-      {
-        id: notes.id,
-        status: HTTP_UNSUPPORTED_MEDIA_TYPE,
-        message: `${ERRORS}.field_type`,
-      },
-    ]);
-    const assetModel = GetModel(MediaAssetModel, DEFAULT_TENANT_ID);
-    expect((await assetModel.get(notes.id))?.folderId).to.equal(libraryId);
-    await client.delete(`/api/media/folders/${libraryId}`);
-  });
-
-  it("declares per-record folders under a linked folder that allows them", async () => {
-    const linked = await treeFolder(OPEN_BINDING_ID);
-    const project = await EnsureMediaFolder({
-      tenantId: DEFAULT_TENANT_ID,
-      key: "subfolders.project-c",
-      name: "Project C",
-      parent: { binding: OPEN_BINDING_ID },
-    });
-    expect(project.status).to.equal("created");
-    expect((await folders().get(project.id))?.parentId).to.equal(linked.id);
-    const again = await EnsureMediaFolder({
-      tenantId: DEFAULT_TENANT_ID,
-      key: "subfolders.project-c",
-      name: "Project C",
-      parent: { binding: OPEN_BINDING_ID },
-    });
-    expect(again).to.deep.equal({ status: "kept", id: project.id });
-    const nested = await EnsureMediaFolder({
-      tenantId: DEFAULT_TENANT_ID,
-      key: "subfolders.project-c.roof",
-      name: "Roof",
-      parent: { key: "subfolders.project-c" },
-    });
-    expect(nested.status).to.equal("created");
-    const sameParent = await EnsureMediaFolder({
-      tenantId: DEFAULT_TENANT_ID,
-      key: "subfolders.project-c.roof",
-      name: "Roof",
-      parent: "subfolders.project-c",
-    });
-    expect(
-      sameParent,
-      "a declared parent named by its key alone is the same declaration",
-    ).to.deep.equal({ status: "kept", id: nested.id });
-    const photo = await ImportMediaAsset({
-      tenantId: DEFAULT_TENANT_ID,
-      key: "subfolders.project-c.roof.photo",
-      folder: { key: "subfolders.project-c.roof" },
-      name: "roof.png",
-      mimetype: PNG_MIMETYPE,
-      source: { bytes: ONE_PIXEL_PNG },
-    });
-    expect(photo.status).to.equal("created");
-    const notes = await rejectionOf(
-      ImportMediaAsset({
-        tenantId: DEFAULT_TENANT_ID,
-        key: "subfolders.project-c.roof.notes",
-        folder: { key: "subfolders.project-c.roof" },
-        name: "notes.txt",
-        mimetype: "text/plain",
-        source: { bytes: Buffer.from("notes") },
-      }),
-    );
-    expect(notes.message).to.contain("only accepts image/*");
-  });
-
-  it("refuses a declared subfolder under a linked folder that does not allow them", async () => {
-    const locked = await rejectionOf(
-      EnsureMediaFolder({
-        tenantId: DEFAULT_TENANT_ID,
-        key: "subfolders.locked-child",
-        name: "Child",
-        parent: { binding: LOCKED_BINDING_ID },
-      }),
-    );
-    expect(locked.message)
-      .to.contain("subfolders.locked-child")
-      .and.contain("cannot hold subfolders");
-    const unknown = await rejectionOf(
-      EnsureMediaFolder({
-        tenantId: DEFAULT_TENANT_ID,
-        key: "subfolders.unknown-child",
-        name: "Child",
-        parent: { binding: "subfolders.never-registered" },
-      }),
-    );
-    expect(unknown.message).to.contain("no folder is bound");
-  });
+  describeSubfolderCreation();
+  describeAssetMoves();
+  describeDeclaredFolders();
 });

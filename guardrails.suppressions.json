@@ -1,16 +1,16 @@
 {
   "rules": {
-    "anti-slop/no-chained-type-assertions": 0,
-    "antelopejs/no-read-then-insert": 1
+    "antelopejs/no-read-then-insert": 1,
+    "anti-slop/no-chained-type-assertions": 0
   },
   "tsExpectError": 4,
   "tsIgnore": 0,
   "safety": 4,
   "config": {
-    "eslint/max-lines for packages/dms-media/src/test/**/*.test.ts": 1,
-    "eslint/max-lines for packages/dms-media/tests/**/*.test.mjs": 1,
-    "eslint/max-lines-per-function for packages/dms-media/src/test/**/*.test.ts": 1,
-    "eslint/max-lines-per-function for packages/dms-media/tests/**/*.test.mjs": 1,
+    "eslint/max-lines for packages/dms-media/src/test/**/*.test.ts": 0,
+    "eslint/max-lines for packages/dms-media/tests/**/*.test.mjs": 0,
+    "eslint/max-lines-per-function for packages/dms-media/src/test/**/*.test.ts": 0,
+    "eslint/max-lines-per-function for packages/dms-media/tests/**/*.test.mjs": 0,
     "vue/multi-word-component-names for packages/dms-media/frontend-vue/**/*.vue": 1
   },
   "agentFiles": true

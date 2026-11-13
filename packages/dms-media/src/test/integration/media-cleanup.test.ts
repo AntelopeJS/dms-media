@@ -64,12 +64,12 @@ async function insertAsset(model: MediaAssetModel): Promise<MediaAsset> {
   return (await model.get(_id))!;
 }
 
-describe("[integration] replayable media cleanup", () => {
-  let model: MediaAssetModel;
-  let asset: MediaAsset;
-  let compare: MediaAssetModel["compareMedia"];
-  let restoreMutation: () => void = () => undefined;
+let model: MediaAssetModel;
+let asset: MediaAsset;
+let compare: MediaAssetModel["compareMedia"];
+let restoreMutation: () => void = () => undefined;
 
+function useCleanupFixture(): void {
   beforeEach(async () => {
     model = GetModel(MediaAssetModel, TENANT);
     asset = await insertAsset(model);
@@ -82,6 +82,10 @@ describe("[integration] replayable media cleanup", () => {
     restoreMutation();
     await deleteMediaAsset(model, asset._id);
   });
+}
+
+describe("[integration] replayable media cleanup — competing publications", () => {
+  useCleanupFixture();
 
   it("allows exactly one competing revision and keeps creation/update modifiers", async () => {
     const patches = [{ alt: "first" }, { alt: "second" }];
@@ -142,6 +146,10 @@ describe("[integration] replayable media cleanup", () => {
     });
     expect(await storage.FileExists(key)).to.equal(true);
   });
+});
+
+describe("[integration] replayable media cleanup — sweep and replay", () => {
+  useCleanupFixture();
 
   it("stops on unknown write acknowledgement and replays durable cleanup later", async () => {
     const key = await upload();
@@ -242,6 +250,10 @@ describe("[integration] replayable media cleanup", () => {
     await cleanupAssetFiles(model, asset._id);
     expect(retiredFiles((await model.get(asset._id))!)).to.deep.equal([]);
   });
+});
+
+describe("[integration] replayable media cleanup — deletion and replacement", () => {
+  useCleanupFixture();
 
   it("tombstones before external deletion and rejects late publication", async () => {
     await deleteMediaAsset(model, asset._id, async () => {

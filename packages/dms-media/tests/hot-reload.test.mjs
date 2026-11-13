@@ -373,6 +373,42 @@ async function ownerToken() {
   return loginAnswerSchema.parse(await login.json()).access_token;
 }
 
+/**
+ * Lays out the project: its storage, the locked modules, the consumer and the config.
+ * @param {string} projectFolder
+ * @param {string} mongoUri
+ */
+async function populateProject(projectFolder, mongoUri) {
+  const storagePath = path.join(projectFolder, "storage");
+  await fs.mkdir(storagePath);
+  await fs.cp(
+    path.join(PACKAGE_ROOT, "antelope-lock"),
+    path.join(projectFolder, "antelope-lock"),
+    { recursive: true },
+  );
+  await writeConsumer(
+    path.join(projectFolder, "consumer"),
+    {
+      name: "reload-consumer",
+      dependencies: {
+        ...CONSUMER_INTERFACES,
+        "@antelopejs/interface-dms-media": ">=0.1.0 <1.0.0",
+      },
+    },
+    consumerSource(
+      "@antelopejs/interface-dms-media",
+      CONSUMER_BINDING,
+      CONSUMER_FOLDER,
+      1,
+    ),
+  );
+  const config = projectConfig(mongoUri, storagePath);
+  await fs.writeFile(
+    path.join(projectFolder, "antelope.config.ts"),
+    `export default ${JSON.stringify(config, null, 2)};\n`,
+  );
+}
+
 void describe("hot reload keeps dms-media's registrations with dms-media", () => {
   /** @type {MongoMemoryReplSet | undefined} */
   let mongo;
@@ -398,36 +434,8 @@ void describe("hot reload keeps dms-media's registrations with dms-media", () =>
     projectFolder = await fs.mkdtemp(
       path.join(os.tmpdir(), "dms-media-reload-"),
     );
-    const storagePath = path.join(projectFolder, "storage");
-    await fs.mkdir(storagePath);
-    await fs.cp(
-      path.join(PACKAGE_ROOT, "antelope-lock"),
-      path.join(projectFolder, "antelope-lock"),
-      { recursive: true },
-    );
-
     consumerIndex = path.join(projectFolder, "consumer", "index.js");
-    await writeConsumer(
-      path.join(projectFolder, "consumer"),
-      {
-        name: "reload-consumer",
-        dependencies: {
-          ...CONSUMER_INTERFACES,
-          "@antelopejs/interface-dms-media": ">=0.1.0 <1.0.0",
-        },
-      },
-      consumerSource(
-        "@antelopejs/interface-dms-media",
-        CONSUMER_BINDING,
-        CONSUMER_FOLDER,
-        1,
-      ),
-    );
-    const config = projectConfig(mongo.getUri(), storagePath);
-    await fs.writeFile(
-      path.join(projectFolder, "antelope.config.ts"),
-      `export default ${JSON.stringify(config, null, 2)};\n`,
-    );
+    await populateProject(projectFolder, mongo.getUri());
     process.env.DMS_SETUP_TOKEN = SETUP_TOKEN;
     manager = await launch(projectFolder, "default", { watch: true });
   });

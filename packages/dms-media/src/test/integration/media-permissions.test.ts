@@ -30,18 +30,9 @@ const namedAssetsBody = z.object({
   assets: z.array(z.object({ name: z.string() })),
 });
 
-describe("[integration] media permissions — multi-actor ACL enforcement", () => {
-  let stockAssetId: string;
+let stockAssetId: string;
 
-  before(async function () {
-    this.timeout(SETUP_TIMEOUT_MS);
-    await setUpPermissionsWorld();
-  });
-
-  after(async () => {
-    await tearDownPermissionsWorld();
-  });
-
+function describeTreeVisibility(): void {
   describe("tree visibility", () => {
     it("shows nothing to a member with no roles", async () => {
       const tree = await fetchTree(sessions.outsider.client);
@@ -146,7 +137,9 @@ describe("[integration] media permissions — multi-actor ACL enforcement", () =
       ).to.equal(undefined);
     });
   });
+}
 
+function describeReadPaths(): void {
   describe("listing, search and read paths", () => {
     it("hides unreadable folder listings behind 404", async () => {
       const listing = await sessions.viewer.client.get(
@@ -232,8 +225,10 @@ describe("[integration] media permissions — multi-actor ACL enforcement", () =
       expect(previews.data.previews[assets.secretPng.id]).to.equal(undefined);
     });
   });
+}
 
-  describe("write rights", () => {
+function describeUploadRights(): void {
+  describe("upload rights", () => {
     it("refuses presign without the write right", async () => {
       const denied = await sessions.viewer.client.post(
         "/api/media/upload/presign",
@@ -295,7 +290,11 @@ describe("[integration] media permissions — multi-actor ACL enforcement", () =
       );
       stockAssetId = stockAsset.id;
     });
+  });
+}
 
+function describeAssetWriteRights(): void {
+  describe("asset write rights", () => {
     it("requires write to update or delete an asset", async () => {
       const denied = await sessions.viewer.client.post(
         `/api/media/assets/${assets.notes.id}/update`,
@@ -372,7 +371,9 @@ describe("[integration] media permissions — multi-actor ACL enforcement", () =
       expect(move.status).to.equal(HTTP_OK);
     });
   });
+}
 
+function describeTransformRights(): void {
   describe("transform rights", () => {
     it("requires the write right to transform an image", async () => {
       const denied = await sessions.viewer.client.post(
@@ -407,9 +408,9 @@ describe("[integration] media permissions — multi-actor ACL enforcement", () =
       expect(denied.status).to.equal(HTTP_NOT_FOUND);
     });
   });
+}
 
-  folderManagementSuites();
-
+function describeDelivery(): void {
   describe("delivery", () => {
     it("enforces folder read rights on the private delivery route", async () => {
       const path = `/media/${assets.secretPng.id}/pixel.png`;
@@ -437,6 +438,24 @@ describe("[integration] media permissions — multi-actor ACL enforcement", () =
       expect(allowed.cacheControl).to.equal("no-store");
     });
   });
+}
 
+describe("[integration] media permissions — multi-actor ACL enforcement", () => {
+  before(async function () {
+    this.timeout(SETUP_TIMEOUT_MS);
+    await setUpPermissionsWorld();
+  });
+
+  after(async () => {
+    await tearDownPermissionsWorld();
+  });
+
+  describeTreeVisibility();
+  describeReadPaths();
+  describeUploadRights();
+  describeAssetWriteRights();
+  describeTransformRights();
+  folderManagementSuites();
+  describeDelivery();
   laterPermissionSuites();
 });

@@ -75,7 +75,7 @@ const articlesPermissionAcl: AclEntry[] = [
   },
 ];
 
-describe("[unit] acl/resolver — resolveFolderAccess", () => {
+describe("[unit] acl/resolver — resolveFolderAccess: owner wildcard and root ACL", () => {
   it("grants everything everywhere to the owner wildcard", () => {
     const folders = [
       buildFolder({ id: "a" }),
@@ -119,7 +119,9 @@ describe("[unit] acl/resolver — resolveFolderAccess", () => {
     expect(manager.writable.has("root")).to.equal(true);
     expect(manager.manageable.has("root")).to.equal(true);
   });
+});
 
+describe("[unit] acl/resolver — resolveFolderAccess: inheritance and overrides", () => {
   it("propagates the parent's effective rights when a child has no ACL", () => {
     const folders = [
       buildFolder({ id: "parent", acl: editorsRoleAcl }),
@@ -174,7 +176,9 @@ describe("[unit] acl/resolver — resolveFolderAccess", () => {
     );
     expect(outsider.readable.has("articles-assets")).to.equal(false);
   });
+});
 
+describe("[unit] acl/resolver — resolveFolderAccess: shells and unreachable folders", () => {
   it("returns non-readable ancestors of readable folders as shells", () => {
     const folders = [
       buildFolder({ id: "top", acl: [] }),
@@ -223,7 +227,9 @@ describe("[unit] acl/resolver — resolveFolderAccess", () => {
     expect(reader.manageable.size).to.equal(0);
     expect(reader.shells.size).to.equal(0);
   });
+});
 
+describe("[unit] acl/resolver — resolveRootRights and the owner wildcard", () => {
   it("grants members nothing at the root by default", () => {
     const folders = [buildFolder({ id: "root" })];
     const actor = buildActor([MEDIA_PAGE_PERMISSION]);
@@ -266,7 +272,9 @@ describe("[unit] acl/resolver — resolveFolderAccess", () => {
     expect(rights.has("write")).to.equal(true);
     expect(rights.has("manage")).to.equal(false);
   });
+});
 
+describe("[unit] acl/resolver — resolveFolderAccess: malformed and cyclic input", () => {
   it("fails closed instead of inheriting when a stored ACL is malformed", () => {
     const folders = [
       buildFolder({ id: "root", acl: editorsRoleAcl }),

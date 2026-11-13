@@ -1,5 +1,5 @@
 import { randomUUID } from "node:crypto";
-import type { AxiosInstance } from "axios";
+import type { AxiosInstance, AxiosResponse } from "axios";
 import { expect } from "chai";
 import { putPresigned } from "../helpers/assets";
 import { createdBody, presignBody, readBody } from "../helpers/bodies";
@@ -11,6 +11,44 @@ const HTTP_BAD_REQUEST = 400;
 const HTTP_UNAUTHORIZED = 401;
 const HTTP_NOT_FOUND = 404;
 
+function anonymousAttempts(anonymous: AxiosInstance): Promise<AxiosResponse>[] {
+  return [
+    anonymous.get("/api/media/tree"),
+    anonymous.get("/api/media/assets"),
+    anonymous.get("/api/media/assets/search?q=x"),
+    anonymous.get("/api/media/assets/any"),
+    anonymous.get("/api/media/assets/any/read-url"),
+    anonymous.post("/api/media/assets/any/update", { alt: "x" }),
+    anonymous.post("/api/media/assets/any/move", { folderId: "any" }),
+    anonymous.post("/api/media/assets/any/visibility", {
+      visibility: "public",
+    }),
+    anonymous.post("/api/media/assets/any/transform", { rotate: 90 }),
+    anonymous.post("/api/media/assets/any/revert"),
+    anonymous.delete("/api/media/assets/any"),
+    anonymous.post("/api/media/folders", { name: "Sneaky" }),
+    anonymous.get("/api/media/folders/any/assets"),
+    anonymous.post("/api/media/folders/any/rename", { name: "X" }),
+    anonymous.post("/api/media/folders/any/move", { parentId: null }),
+    anonymous.post("/api/media/folders/any/visibility", {
+      visibility: "public",
+    }),
+    anonymous.delete("/api/media/folders/any"),
+    anonymous.post("/api/media/upload/presign", {
+      folderId: "any",
+      filename: "x.txt",
+      size: 1,
+      mimetype: "text/plain",
+    }),
+    anonymous.post("/api/media/upload/confirm", {
+      folderId: "any",
+      resourceKey: "media/any/key.txt",
+      filename: "x.txt",
+    }),
+    anonymous.get(`/api/media/previews?ids=${randomUUID()}`),
+  ];
+}
+
 describe("[integration] media guards — every endpoint requires auth and rights", () => {
   let owner: AxiosInstance;
 
@@ -21,43 +59,7 @@ describe("[integration] media guards — every endpoint requires auth and rights
   });
 
   it("rejects every anonymous media API call", async () => {
-    const anonymous = createClient();
-    const attempts = [
-      anonymous.get("/api/media/tree"),
-      anonymous.get("/api/media/assets"),
-      anonymous.get("/api/media/assets/search?q=x"),
-      anonymous.get("/api/media/assets/any"),
-      anonymous.get("/api/media/assets/any/read-url"),
-      anonymous.post("/api/media/assets/any/update", { alt: "x" }),
-      anonymous.post("/api/media/assets/any/move", { folderId: "any" }),
-      anonymous.post("/api/media/assets/any/visibility", {
-        visibility: "public",
-      }),
-      anonymous.post("/api/media/assets/any/transform", { rotate: 90 }),
-      anonymous.post("/api/media/assets/any/revert"),
-      anonymous.delete("/api/media/assets/any"),
-      anonymous.post("/api/media/folders", { name: "Sneaky" }),
-      anonymous.get("/api/media/folders/any/assets"),
-      anonymous.post("/api/media/folders/any/rename", { name: "X" }),
-      anonymous.post("/api/media/folders/any/move", { parentId: null }),
-      anonymous.post("/api/media/folders/any/visibility", {
-        visibility: "public",
-      }),
-      anonymous.delete("/api/media/folders/any"),
-      anonymous.post("/api/media/upload/presign", {
-        folderId: "any",
-        filename: "x.txt",
-        size: 1,
-        mimetype: "text/plain",
-      }),
-      anonymous.post("/api/media/upload/confirm", {
-        folderId: "any",
-        resourceKey: "media/any/key.txt",
-        filename: "x.txt",
-      }),
-      anonymous.get(`/api/media/previews?ids=${randomUUID()}`),
-    ];
-    const responses = await Promise.all(attempts);
+    const responses = await Promise.all(anonymousAttempts(createClient()));
     for (const [index, response] of responses.entries()) {
       expect(response.status, `attempt #${index}`).to.equal(HTTP_UNAUTHORIZED);
     }
