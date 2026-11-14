@@ -1,8 +1,10 @@
 import { createHash } from "node:crypto";
+import { IsDuplicateKeyError } from "@antelopejs/interface-database";
 import { GetPermissionId } from "@antelopejs/interface-dms/page";
 import type { AssetBindingConfig } from "@antelopejs/interface-dms-media";
 import { serializeAcl } from "./acl";
 import type { MediaFolder, MediaFolderModel } from "./db";
+import { fixedId } from "./fixed-id";
 import type { AclEntry } from "./types";
 
 export const CONTENT_ROOT_BINDING = "dms-media.content-root";
@@ -101,37 +103,39 @@ export function buildBindingAcl(config: AssetBindingConfig): AclEntry[] {
   ];
 }
 
-async function ensureContentRoot(
+/**
+ * The id of the folder linked to `binding` in a tenant, the content root
+ * included, the same in every process: two processes provisioning one tenant
+ * at once write one folder instead of two.
+ */
+export function bindingFolderId(tenantId: string, binding: string): string {
+  return fixedId("dms-media:binding-folder", tenantId, binding);
+}
+
+/** Inserts `folder` under its fixed id. False when another process inserted it first. */
+async function insertOnce(
   folderModel: MediaFolderModel,
-  foldersByBinding: Map<string, MediaFolder>,
-): Promise<string> {
-  const existing = foldersByBinding.get(CONTENT_ROOT_BINDING);
-  if (existing) return existing._id;
-  const [id] = await folderModel.insert({
-    name: CONTENT_ROOT_NAME,
-    path: [],
-    binding: CONTENT_ROOT_BINDING,
-    json_acl: EMPTY_ACL,
-    visibility: "private",
-  });
-  return id;
+  folder: Parameters<MediaFolderModel["insert"]>[0],
+): Promise<boolean> {
+  try {
+    await folderModel.insert(folder);
+    return true;
+  } catch (error) {
+    if (!IsDuplicateKeyError(error)) throw error;
+    return false;
+  }
 }
 
 async function ensureBindingFolder(
+  tenantId: string,
   folderModel: MediaFolderModel,
-  foldersByBinding: Map<string, MediaFolder>,
   contentRootId: string,
   config: AssetBindingConfig,
 ): Promise<void> {
+  const id = bindingFolderId(tenantId, config.id);
   const acl = serializeAcl(buildBindingAcl(config)) ?? EMPTY_ACL;
-  const existing = foldersByBinding.get(config.id);
-  if (existing) {
-    if (existing.json_acl !== acl) {
-      await folderModel.update(existing._id, { json_acl: acl });
-    }
-    return;
-  }
-  await folderModel.insert({
+  const inserted = await insertOnce(folderModel, {
+    _id: id,
     name: config.folderName ?? config.id,
     parentId: contentRootId,
     path: [contentRootId],
@@ -139,6 +143,11 @@ async function ensureBindingFolder(
     json_acl: acl,
     visibility: "private",
   });
+  if (inserted) return;
+  const existing = await folderModel.get(id);
+  if (existing && existing.json_acl !== acl) {
+    await folderModel.update(id, { json_acl: acl });
+  }
 }
 
 async function provisionTenant(
@@ -147,23 +156,17 @@ async function provisionTenant(
   fingerprint: string,
 ): Promise<void> {
   if (registeredBindings.size > 0) {
-    const folders = await folderModel.getAll();
-    const foldersByBinding = new Map(
-      folders.flatMap((folder): [string, MediaFolder][] =>
-        folder.binding ? [[folder.binding, folder]] : [],
-      ),
-    );
-    const contentRootId = await ensureContentRoot(
-      folderModel,
-      foldersByBinding,
-    );
+    const contentRootId = bindingFolderId(tenantId, CONTENT_ROOT_BINDING);
+    await insertOnce(folderModel, {
+      _id: contentRootId,
+      name: CONTENT_ROOT_NAME,
+      path: [],
+      binding: CONTENT_ROOT_BINDING,
+      json_acl: EMPTY_ACL,
+      visibility: "private",
+    });
     for (const config of registeredBindings.values()) {
-      await ensureBindingFolder(
-        folderModel,
-        foldersByBinding,
-        contentRootId,
-        config,
-      );
+      await ensureBindingFolder(tenantId, folderModel, contentRootId, config);
     }
   }
   provisionedTenants.set(tenantId, fingerprint);
