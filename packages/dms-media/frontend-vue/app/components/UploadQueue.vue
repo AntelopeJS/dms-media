@@ -162,7 +162,7 @@ onBeforeUnmount(() => {
 			</p>
 		</div>
 		<p class="sr-only" role="status" aria-live="polite">{{ items.length ? liveSummary : '' }}</p>
-		<DmsBanner
+		<DmsNoticeBanner
 			v-if="counts.failed && !isBannerDismissed"
 			tone="error"
 			icon="i-ph-cloud-slash"
@@ -181,8 +181,8 @@ onBeforeUnmount(() => {
 					@click="uploads.retryFailed()"
 				/>
 			</template>
-		</DmsBanner>
-		<DmsCard v-if="items.length" :title="t('dms_media.queue.current')">
+		</DmsNoticeBanner>
+		<DmsCardPanel v-if="items.length" :title="t('dms_media.queue.current')">
 			<template #actions>
 				<UBadge v-for="name in destinations" :key="name" icon="i-ph-folder-simple" color="neutral" variant="outline" :label="name" class="max-sm:hidden" />
 				<UButton
@@ -237,7 +237,7 @@ onBeforeUnmount(() => {
 					<UploadQueueRow v-for="item in items" :key="item.id" :item="item" />
 				</ul>
 			</div>
-		</DmsCard>
+		</DmsCardPanel>
 		<DmsEmptyState
 			v-else
 			icon="i-ph-cloud-arrow-up"

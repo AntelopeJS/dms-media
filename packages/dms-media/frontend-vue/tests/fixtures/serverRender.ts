@@ -82,14 +82,14 @@ for (const load of Object.values(own))
 // The DMS's and Nuxt UI's components the module's templates use: each renders
 // its default slot, its props as attributes.
 const UI_COMPONENTS = [
-	'DmsCard',
+	'DmsCardPanel',
 	'DmsCopyButton',
 	'DmsEmptyState',
-	'DmsEyebrow',
+	'DmsEyebrowLabel',
 	'DmsFieldRow',
 	'DmsIconWell',
+	'DmsInputTextarea',
 	'DmsSaveStatus',
-	'DmsTextarea',
 	'UBadge',
 	'UButton',
 	'UFormField',

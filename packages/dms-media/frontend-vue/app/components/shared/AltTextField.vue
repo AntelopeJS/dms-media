@@ -45,7 +45,7 @@ async function commit(): Promise<void> {
 <template>
 	<DmsFieldRow :label="t('dms_media.alt.label')" :label-for="inputId" layout="stack" :inset="false" spacing="list">
 		<template v-if="compact" #label>
-			<DmsEyebrow :label="t('dms_media.alt.label')" tone="muted" />
+			<DmsEyebrowLabel :label="t('dms_media.alt.label')" tone="muted" />
 		</template>
 		<template #label-extra>
 			<UBadge v-if="asset.alt" :label="t('dms_media.alt.set')" color="success" variant="subtle" size="sm" />
@@ -55,7 +55,7 @@ async function commit(): Promise<void> {
 			<DmsSaveStatus :state="saveState" @retry="commit" />
 		</template>
 		<UFormField>
-			<DmsTextarea
+			<DmsInputTextarea
 				:id="inputId"
 				v-model="draft"
 				:rows="compact ? 3 : 2"

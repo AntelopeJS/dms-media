@@ -160,7 +160,7 @@ function onTreeFocus(event: FocusEvent): void {
 				</li>
 			</ul>
 			<div class="mt-4 mb-1 flex items-center justify-between px-2.5">
-				<DmsEyebrow :label="t('dms_media.explorer.locations')" tone="muted" />
+				<DmsEyebrowLabel :label="t('dms_media.explorer.locations')" tone="muted" />
 				<UTooltip v-if="canCreateAtRoot && !layout.scopeFolderId" :text="t('dms_media.actions.new_folder_root')">
 					<UButton
 						icon="i-ph-folder-plus"
@@ -219,7 +219,7 @@ function onTreeFocus(event: FocusEvent): void {
 			</p>
 		</div>
 		<div v-if="tree && !layout.scopeFolderId" class="border-default border-t p-3">
-			<DmsMeter
+			<DmsMeterBar
 				v-if="tree.quotaBytes"
 				:label="t('dms_media.explorer.storage')"
 				:value="tree.root.size"

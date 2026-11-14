@@ -355,7 +355,7 @@ definePageShortcuts(() => ({
 			</div>
 			<aside class="border-default flex flex-col border-s max-lg:border-s-0 max-lg:border-t">
 				<section class="border-default border-b p-4">
-					<DmsEyebrow :label="t('dms_media.editor.aspect_ratio')" tone="muted" class="mb-2" />
+					<DmsEyebrowLabel :label="t('dms_media.editor.aspect_ratio')" tone="muted" class="mb-2" />
 					<div ref="aspectGroup" class="grid grid-cols-3 gap-1.5" role="radiogroup" :aria-label="t('dms_media.editor.aspect_ratio')" @keydown="moveAspect">
 						<button
 							v-for="option in aspects"
@@ -376,7 +376,7 @@ definePageShortcuts(() => ({
 					</div>
 				</section>
 				<section v-if="change" class="border-default border-b p-4">
-					<DmsEyebrow :label="t('dms_media.editor.crop_area')" tone="muted" class="mb-2" />
+					<DmsEyebrowLabel :label="t('dms_media.editor.crop_area')" tone="muted" class="mb-2" />
 					<div class="grid grid-cols-4 gap-1.5">
 						<label v-for="field in cropFields" :key="field.key" class="flex flex-col gap-0.5">
 							<span class="text-dimmed font-mono text-[10px]">{{ field.label }}</span>
@@ -392,7 +392,7 @@ definePageShortcuts(() => ({
 					</div>
 				</section>
 				<section class="border-default border-b p-4">
-					<DmsEyebrow :label="t('dms_media.editor.pending')" tone="muted" class="mb-2" />
+					<DmsEyebrowLabel :label="t('dms_media.editor.pending')" tone="muted" class="mb-2" />
 					<ul v-if="pending.length" class="flex flex-col gap-1.5 text-[13px]">
 						<li v-for="item in pending" :key="item.label" class="flex items-center gap-2">
 							<UIcon :name="item.icon" class="text-primary size-4" />
@@ -403,7 +403,7 @@ definePageShortcuts(() => ({
 					<p v-else class="text-dimmed text-[13px]">{{ t('dms_media.editor.no_changes') }}</p>
 				</section>
 				<section v-if="change && presetPreviews.length" class="border-default border-b p-4">
-					<DmsEyebrow :label="t('dms_media.editor.sizes')" tone="muted" class="mb-2" />
+					<DmsEyebrowLabel :label="t('dms_media.editor.sizes')" tone="muted" class="mb-2" />
 					<div class="flex flex-wrap gap-3">
 						<div v-for="preview in presetPreviews" :key="preview.id" class="flex flex-col gap-1">
 							<Preview :width="preview.width" :height="preview.height" :image="change.image" :coordinates="preview.coordinates" class="rounded-md" />
@@ -412,7 +412,7 @@ definePageShortcuts(() => ({
 					</div>
 				</section>
 				<section v-if="asset" class="border-default border-b p-4">
-					<DmsEyebrow :label="t('dms_media.editor.original')" tone="muted" class="mb-2" />
+					<DmsEyebrowLabel :label="t('dms_media.editor.original')" tone="muted" class="mb-2" />
 					<p class="text-muted flex items-start gap-2 text-[13px]">
 						<UIcon name="i-ph-shield-check" class="text-success mt-0.5 size-4 shrink-0" />
 						{{ asset.hasOriginal ? t('dms_media.editor.original_kept') : t('dms_media.editor.original_first') }}
