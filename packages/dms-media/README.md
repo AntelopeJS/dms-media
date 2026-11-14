@@ -37,7 +37,7 @@ Point the module's links at the API's public URL, and allow the dashboard's orig
 ```ts fragment
 // antelope.config.ts
 "dms-media": {
-  source: { type: "package", package: "@antelopejs/dms-media", version: "^0.7.0" },
+  source: { type: "package", package: "@antelopejs/dms-media", version: "^0.8.0" },
   config: {
     publicBaseUrl: "${@api.API_PUBLIC_BASE_URL}",
   },
