@@ -1,3 +1,5 @@
+import { createHash } from "node:crypto";
+import { IsDuplicateKeyError } from "@antelopejs/interface-database";
 import { GetModel } from "@antelopejs/interface-database-decorators";
 import type {
   MediaAssetDeclaration,
@@ -105,12 +107,50 @@ export async function settlePendingDeclaration(
   await pendingDeclarations.get(lockKey(tenantId, kind, key));
 }
 
-/** Remembers the folder or file a declaration created, under its kind and key. */
+/**
+ * The id of the folder or file declared under `key`, the same in every
+ * process: two processes declaring one key at once write one row and one
+ * record instead of two. The tenant is part of it because ids are unique
+ * across tenant instances. Shaped as a version 8 UUID, like the ids the
+ * database gives other rows.
+ */
+export function declaredId(
+  tenantId: string,
+  kind: MediaDeclarationKind,
+  key: string,
+): string {
+  const hex = createHash("sha256")
+    .update(JSON.stringify([`dms-media:declared-${kind}`, tenantId, key]))
+    .digest("hex");
+  const variant = ((Number.parseInt(hex.charAt(16), 16) % 4) + 8).toString(16);
+  return [
+    hex.slice(0, 8),
+    hex.slice(8, 12),
+    `8${hex.slice(13, 16)}`,
+    `${variant}${hex.slice(17, 20)}`,
+    hex.slice(20, 32),
+  ].join("-");
+}
+
+/**
+ * Records the folder or file declared under `key`. The record takes the
+ * target's fixed id, so a record another process wrote first is this same
+ * record.
+ */
 export async function rememberDeclaration(
   models: DeclaredModels,
   kind: MediaDeclarationKind,
   key: string,
   targetId: string,
 ): Promise<void> {
-  await models.declarationModel.insert({ kind, key, targetId });
+  try {
+    await models.declarationModel.insert({
+      _id: targetId,
+      kind,
+      key,
+      targetId,
+    });
+  } catch (error) {
+    if (!IsDuplicateKeyError(error)) throw error;
+  }
 }

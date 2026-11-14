@@ -3,7 +3,7 @@ import { DEFAULT_TENANT_ID } from "@antelopejs/interface-dms/constants";
 import { EnsureMediaFolder } from "@antelopejs/interface-dms-media";
 import { expect } from "chai";
 import { MediaDeclarationModel, MediaFolderModel } from "../../db";
-import { declaredFolderId } from "../../declared/folders";
+import { declaredId } from "../../declared/records";
 
 const KEY = "declared.race.reports";
 const NAME = "Race reports";
@@ -17,7 +17,7 @@ function declarationModel() {
 }
 
 describe("[integration] media declared folders — two processes declaring one key", () => {
-  const id = declaredFolderId(DEFAULT_TENANT_ID, KEY);
+  const id = declaredId(DEFAULT_TENANT_ID, "folder", KEY);
 
   after(async () => {
     await folderModel().delete(id);

@@ -1,5 +1,6 @@
 import { randomUUID } from "node:crypto";
 import { readFile } from "node:fs/promises";
+import { IsDuplicateKeyError } from "@antelopejs/interface-database";
 import { DeleteFile } from "@antelopejs/interface-file-storage";
 import type {
   MediaAssetDeclaration,
@@ -7,7 +8,7 @@ import type {
 } from "@antelopejs/interface-dms-media";
 import { feedingBinding } from "../bindings";
 import { getMediaConfig } from "../config";
-import type { MediaAsset, MediaFolder } from "../db";
+import type { MediaFolder } from "../db";
 import { uploadStorageBytes } from "../derivatives";
 import { recordMediaEvent } from "../library/events";
 import {
@@ -27,6 +28,7 @@ import {
 import { findBoundFolder, findDeclaredFolder } from "./folders";
 import {
   DECLARED_CONTENT_AUTHOR,
+  declaredId,
   type DeclaredModels,
   declaredModels,
   MediaDeclarationError,
@@ -146,50 +148,65 @@ function writeFile(
   );
 }
 
+/** Inserts the asset under its fixed id. False when another process inserted it first. */
 async function insertAsset(
   { models, declaration, folder }: AssetTarget,
+  id: string,
   file: PreparedFile,
   storageKey: string,
-): Promise<MediaAsset | undefined> {
-  const [assetId] = await models.assetModel.insert({
-    folderId: folder._id,
-    mediaRevision: randomUUID(),
-    json_retiredFiles: "[]",
-    name: declaration.name,
-    mimetype: file.mimetype,
-    size: file.bytes.byteLength,
-    storageKey,
-    storage: getMediaConfig().storage,
-    width: file.image.width,
-    height: file.image.height,
-    alt: declaration.alt,
-    visibility: "inherit",
-    createdBy: DECLARED_CONTENT_AUTHOR._id,
-  });
-  return models.assetModel.get(assetId);
+): Promise<boolean> {
+  try {
+    await models.assetModel.insert({
+      _id: id,
+      folderId: folder._id,
+      mediaRevision: randomUUID(),
+      json_retiredFiles: "[]",
+      name: declaration.name,
+      mimetype: file.mimetype,
+      size: file.bytes.byteLength,
+      storageKey,
+      storage: getMediaConfig().storage,
+      width: file.image.width,
+      height: file.image.height,
+      alt: declaration.alt,
+      visibility: "inherit",
+      createdBy: DECLARED_CONTENT_AUTHOR._id,
+    });
+    return true;
+  } catch (error) {
+    if (!IsDuplicateKeyError(error)) throw error;
+    return false;
+  }
 }
 
+/**
+ * Stores the file and inserts its asset. A process that loses the insert to
+ * another one importing the same key deletes its own file and keeps theirs.
+ */
 async function createAsset(
   target: AssetTarget,
   file: PreparedFile,
-): Promise<MediaAsset> {
+): Promise<MediaDeclarationResult> {
+  const { models, declaration } = target;
+  const id = declaredId(models.tenantId, "asset", declaration.key);
   const storageKey = await writeFile(target, file);
   const discardFile = () =>
     DeleteFile(storageKey, getMediaConfig().storage).catch(() => undefined);
-  const asset = await insertAsset(target, file, storageKey).catch(
+  const inserted = await insertAsset(target, id, file, storageKey).catch(
     async (error: unknown) => {
       await discardFile();
       throw error;
     },
   );
-  if (!asset) {
-    await discardFile();
+  const asset = await models.assetModel.get(id);
+  if (!inserted || !asset) await discardFile();
+  if (!asset)
     throw new MediaDeclarationError(
       "asset",
-      target.declaration.key,
+      declaration.key,
       "the file could not be created",
     );
-  }
+  if (!inserted) return { status: "kept", id };
   await recordMediaEvent(
     { tenantId: target.models.tenantId, user: DECLARED_CONTENT_AUTHOR },
     {
@@ -200,7 +217,7 @@ async function createAsset(
       size: asset.size,
     },
   );
-  return asset;
+  return { status: "created", id };
 }
 
 async function applyAssetDeclaration(
@@ -223,9 +240,9 @@ async function applyAssetDeclaration(
     fieldBinding: await fieldBindingOf(models, folder),
   };
   const file = await prepareFile(target, await readSource(declaration, fail));
-  const asset = await createAsset(target, file);
-  await rememberDeclaration(models, "asset", declaration.key, asset._id);
-  return { status: "created", id: asset._id };
+  const result = await createAsset(target, file);
+  await rememberDeclaration(models, "asset", declaration.key, result.id);
+  return result;
 }
 
 /** Implements `ImportMediaAsset`. */

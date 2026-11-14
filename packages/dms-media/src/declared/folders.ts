@@ -12,40 +12,20 @@ import {
   type DeclaredFolderInput,
 } from "../validation/declared.schema";
 import { IsDuplicateKeyError } from "@antelopejs/interface-database";
-import { createHash } from "node:crypto";
 import {
   DECLARED_CONTENT_AUTHOR,
+  declaredId,
   type DeclaredModels,
   declaredModels,
   MediaDeclarationError,
   parseDeclaration,
+  rememberDeclaration,
   settlePendingDeclaration,
   withDeclarationLock,
 } from "./records";
 import { isString } from "../guards";
 
 type ParentTarget = NonNullable<DeclaredFolderInput["parent"]>;
-
-/**
- * The id of the folder declared under `key`, the same in every process: two
- * processes declaring one key at once write one folder and one record instead
- * of two. The tenant is part of it because ids are unique across tenant
- * instances. Shaped as a version 8 UUID, like the ids the database gives
- * other rows.
- */
-export function declaredFolderId(tenantId: string, key: string): string {
-  const hex = createHash("sha256")
-    .update(JSON.stringify(["dms-media:declared-folder", tenantId, key]))
-    .digest("hex");
-  const variant = ((Number.parseInt(hex.charAt(16), 16) % 4) + 8).toString(16);
-  return [
-    hex.slice(0, 8),
-    hex.slice(8, 12),
-    `8${hex.slice(13, 16)}`,
-    `${variant}${hex.slice(17, 20)}`,
-    hex.slice(20, 32),
-  ].join("-");
-}
 
 /** The declared folder key a parent names, written as a string or as `{ key }`. */
 function parentKeyOf(parent: ParentTarget | undefined): string | undefined {
@@ -109,7 +89,7 @@ async function createFolder(
   declaration: DeclaredFolderInput,
   parent: MediaFolder | undefined,
 ): Promise<MediaDeclarationResult> {
-  const id = declaredFolderId(models.tenantId, declaration.key);
+  const id = declaredId(models.tenantId, "folder", declaration.key);
   const missing = new MediaDeclarationError(
     "folder",
     declaration.key,
@@ -166,29 +146,8 @@ async function applyFolderDeclaration(
     ? await findParentFolder(models, declaration.parent, fail)
     : undefined;
   const result = await createFolder(models, declaration, parent);
-  await rememberDeclaredFolder(models, declaration.key, result.id);
+  await rememberDeclaration(models, "folder", declaration.key, result.id);
   return result;
-}
-
-/**
- * Records the declared folder under its key. The record takes the folder's
- * fixed id, so a record another process wrote first is this same record.
- */
-async function rememberDeclaredFolder(
-  models: DeclaredModels,
-  key: string,
-  folderId: string,
-): Promise<void> {
-  try {
-    await models.declarationModel.insert({
-      _id: folderId,
-      kind: "folder",
-      key,
-      targetId: folderId,
-    });
-  } catch (error) {
-    if (!IsDuplicateKeyError(error)) throw error;
-  }
 }
 
 /** Implements `EnsureMediaFolder`. */
