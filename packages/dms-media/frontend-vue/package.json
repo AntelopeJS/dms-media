@@ -13,7 +13,7 @@
     "build": "pnpm --dir ../playground exec ajs dms build",
     "typecheck": "pnpm --dir \"${DMS_FRONTEND_WORKSPACE:?Set DMS_FRONTEND_WORKSPACE to the generated Inertia workspace}\" typecheck",
     "format": "prettier --write .",
-    "lint": "eslint . && node ../node_modules/@antelopejs/dms/frontend-vue/scripts/check-api-error-presentation.mjs app",
+    "lint": "eslint . && node ../node_modules/@antelopejs/dms/frontend-vue/scripts/check-api-error-presentation.mjs app && node --input-type=module -e \"import { assertDmsComponents } from '@antelopejs/dms/checks/dms-components'; await assertDmsComponents({ layer: '.', sources: ['../src'] });\"",
     "lint:fix": "eslint . --fix",
     "test": "vitest run"
   },
