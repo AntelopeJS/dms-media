@@ -25,9 +25,10 @@ hot-reload test and the playground also move to `mongodb` 1.4.2
 `api` 1.3.3 and `file-storage-local` 0.1.6.
 
 **Q1.2 Why `<1.0.0` and not `<0.5.0` on the interface?**
-`antelopejs-check-interface-ranges` (run by `pnpm lint`) refuses an interface
-range that stops before the next major, so every module of a project resolves
-one copy. The DMS caps its own range; that is enough.
+The range check of that time refused an interface range that stops before the
+next major, so every module of a project resolves one copy. The DMS caps its
+own range; that is enough. The `dependency:ranges` step of `pnpm run checks`
+now checks the `@antelopejs/*` ranges in its place.
 
 **Q1.3 What breaks in the frontend layer?**
 - Components are prefixed (`dms-frontend` 0.5): the layer declares
