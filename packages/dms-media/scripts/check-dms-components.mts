@@ -1,5 +1,5 @@
 import { readdirSync, readFileSync, realpathSync } from "node:fs";
-import { basename, join, relative } from "node:path";
+import { basename, join, relative, sep } from "node:path";
 
 /**
  * Every `Dms…` and `dms-…` component tag in the module's `.vue` templates
@@ -50,7 +50,9 @@ function dmsComponents(): Set<string> {
   const layers = join(DMS_FRONTEND, "layers");
   return new Set(
     vueFiles(layers)
-      .filter((file) => COMPONENT_DIRECTORY.test(relative(layers, file)))
+      .filter((file) =>
+        COMPONENT_DIRECTORY.test(relative(layers, file).split(sep).join("/")),
+      )
       .map((file) => DMS_PREFIX + pascalCase(basename(file, ".vue"))),
   );
 }
