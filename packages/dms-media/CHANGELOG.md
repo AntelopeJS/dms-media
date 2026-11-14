@@ -1,5 +1,47 @@
 # Changelog
 
+## v0.8.0
+
+[compare changes](https://github.com/AntelopeJS/dms-media/compare/v0.7.3...v0.8.0)
+
+### 🩹 Fixes
+
+- **dms-media:** Key declared folders by a fixed id so two processes write one row ([#170](https://github.com/AntelopeJS/dms-media/pull/170))
+- **dms-media:** Check the shape of stored JSON columns when reading them ([#171](https://github.com/AntelopeJS/dms-media/pull/171))
+- **dms-media:** Key imported assets by a fixed id so two processes write one row ([#173](https://github.com/AntelopeJS/dms-media/pull/173))
+- **dms-media:** Key binding folders by a fixed id so two processes write one row ([#174](https://github.com/AntelopeJS/dms-media/pull/174))
+- **dms-media:** Name the dms 0.20 components the layer renders ([#177](https://github.com/AntelopeJS/dms-media/pull/177))
+
+### 💅 Refactors
+
+- **dms-media:** Name the Explorer block by the name the DMS serves it under ([#169](https://github.com/AntelopeJS/dms-media/pull/169))
+- **dms-media:** Derive declared ids with the shared fixedId ([#175](https://github.com/AntelopeJS/dms-media/pull/175))
+
+### 📦 Build
+
+- **playground:** Mark the playground package private ([#167](https://github.com/AntelopeJS/dms-media/pull/167))
+- **dms-media:** ⚠️  Move to interface-dms 0.14, dms 0.20 and the rest of the released line ([#176](https://github.com/AntelopeJS/dms-media/pull/176))
+
+### 🏡 Chore
+
+- **release:** @antelopejs/interface-dms-media v0.4.0 ([ce09f2f](https://github.com/AntelopeJS/dms-media/commit/ce09f2f))
+
+### ✅ Tests
+
+- **dms-media:** Split test callbacks over the function length limit ([#168](https://github.com/AntelopeJS/dms-media/pull/168))
+
+### 🤖 CI
+
+- Run the CI on Windows through ci-node.yml ([#172](https://github.com/AntelopeJS/dms-media/pull/172))
+
+#### ⚠️ Breaking Changes
+
+- **dms-media:** ⚠️  Move to interface-dms 0.14, dms 0.20 and the rest of the released line ([#176](https://github.com/AntelopeJS/dms-media/pull/176))
+
+### ❤️ Contributors
+
+- Antony Rizzitelli ([@Upd4ting](http://github.com/Upd4ting))
+
 ## v0.7.3
 
 [compare changes](https://github.com/AntelopeJS/dms-media/compare/v0.7.2...v0.7.3)
