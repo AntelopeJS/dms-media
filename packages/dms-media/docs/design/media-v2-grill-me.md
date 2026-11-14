@@ -39,9 +39,9 @@ one copy. The DMS caps its own range; that is enough.
   `app/types`. 304 type errors of the old layer came from that and from the
   legacy Finder; both are gone (Q3.6).
 - `build/` components of the DMS are private: the layer only uses public ones
-  (`DmsCard`, `DmsEmptyState`, `DmsBanner`, `DmsStatusPill`, `DmsIconWell`,
-  `DmsSectionHeader`, `DmsEyebrow`, `DmsCopyButton`, `DmsMeter`,
-  `DmsSegmented`, `DmsKeyValueList`) and public composables (`useAuthFetch`,
+  (`DmsCardPanel`, `DmsEmptyState`, `DmsNoticeBanner`, `DmsStatusPill`, `DmsIconWell`,
+  `DmsSectionHeader`, `DmsEyebrowLabel`, `DmsCopyButton`, `DmsMeterBar`,
+  `DmsSegmentedControl`, `DmsKeyValueList`) and public composables (`useAuthFetch`,
   `useConfirm` with `color`, `useToast`, `useRegionalFormat`).
 
 **Q1.4 What breaks in the backend?**

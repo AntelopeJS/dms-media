@@ -25,7 +25,7 @@ const groups = computed(() =>
 	>
 		<div class="grid gap-x-8 gap-y-5 sm:grid-cols-2">
 			<section v-for="group in groups" :key="group.label">
-				<DmsEyebrow :label="group.label" tone="muted" class="mb-2" />
+				<DmsEyebrowLabel :label="group.label" tone="muted" class="mb-2" />
 				<ul class="flex flex-col gap-1.5">
 					<li
 						v-for="shortcut in group.shortcuts"

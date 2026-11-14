@@ -40,7 +40,7 @@ const size = computed(() => props.assets.reduce((total, asset) => total + asset.
 					{{ t('dms_media.dialogs.delete_files.more', { count: assets.length - SHOWN }) }}
 				</li>
 			</ul>
-			<DmsBanner
+			<DmsNoticeBanner
 				v-if="publicAssets.length"
 				tone="warning"
 				size="sm"

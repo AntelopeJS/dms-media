@@ -42,7 +42,7 @@ function onKeydown(event: KeyboardEvent): void {
 
 <template>
 	<section v-if="folders.length" class="flex flex-col gap-2">
-		<DmsEyebrow :label="`${t('dms_media.explorer.folders')} · ${folders.length}`" tone="muted" />
+		<DmsEyebrowLabel :label="`${t('dms_media.explorer.folders')} · ${folders.length}`" tone="muted" />
 		<div class="grid grid-cols-[repeat(auto-fill,minmax(200px,1fr))] gap-2" role="list" :aria-label="t('dms_media.explorer.folders')" @keydown="onKeydown">
 			<UContextMenu v-for="(folder, index) in folders" :key="folder.id" :items="commands.folderMenu(folder)">
 				<div

@@ -76,7 +76,7 @@ const canConfirm = computed(() => Boolean(choice.value) && !(isFolder.value && c
 				:aria-label="title"
 				:ui="CARDS_UI"
 			/>
-			<DmsBanner
+			<DmsNoticeBanner
 				v-if="becomesPublic"
 				tone="warning"
 				size="sm"

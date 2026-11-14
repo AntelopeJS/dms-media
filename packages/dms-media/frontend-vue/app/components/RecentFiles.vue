@@ -20,7 +20,7 @@ const foldersById = computed(() => new Map((tree.value?.folders ?? []).map((fold
 </script>
 
 <template>
-	<DmsCard v-if="isLoading || isFailed || assets.length > 0" :title="t('dms_media.recent.title')">
+	<DmsCardPanel v-if="isLoading || isFailed || assets.length > 0" :title="t('dms_media.recent.title')">
 		<template #actions>
 			<UButton variant="link" size="xs" trailing-icon="i-ph-arrow-right" :label="t('dms_media.recent.view_all')" :to="`${MEDIA_ROUTES.files}?view=recent`" />
 		</template>
@@ -49,5 +49,5 @@ const foldersById = computed(() => new Map((tree.value?.folders ?? []).map((fold
 				</ULink>
 			</li>
 		</ul>
-	</DmsCard>
+	</DmsCardPanel>
 </template>

@@ -134,7 +134,7 @@ async function changeVisibility(visibility: AssetVisibility): Promise<void> {
 			<UButton icon="i-ph-trash" color="error" variant="ghost" size="sm" :label="t('dms_media.file.delete')" @click="remove" />
 			<span class="text-dimmed ms-auto text-[12px]">{{ t('dms_media.file.autosave') }}</span>
 		</div>
-		<DmsEyebrow :label="t('dms_media.file.information')" tone="muted" class="-mb-3" />
+		<DmsEyebrowLabel :label="t('dms_media.file.information')" tone="muted" class="-mb-3" />
 	</div>
 	<div v-else-if="!file.error.value" class="flex flex-col gap-4">
 		<USkeleton v-for="index in 3" :key="index" class="h-10 w-full" />

@@ -106,7 +106,7 @@ function saveAlt(alt: string): Promise<boolean> {
 				<AltTextField :asset="asset" :can-edit="canEdit" :save="saveAlt" compact />
 			</div>
 			<dl class="grid grid-cols-[auto_minmax(0,1fr)] gap-x-4 gap-y-2 p-3 text-[13px]">
-				<DmsEyebrow :label="t('dms_media.explorer.details')" tone="muted" class="col-span-2 mb-1" />
+				<DmsEyebrowLabel :label="t('dms_media.explorer.details')" tone="muted" class="col-span-2 mb-1" />
 				<dt class="text-muted">{{ t('dms_media.columns.type') }}</dt>
 				<dd class="text-highlighted">{{ typeLabel }}</dd>
 				<dt class="text-muted">{{ t('dms_media.columns.size') }}</dt>

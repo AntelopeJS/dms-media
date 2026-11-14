@@ -16,7 +16,7 @@ const columns = computed(() => {
 
 <template>
 	<section v-if="assets.length" class="flex flex-col gap-2">
-		<DmsEyebrow :label="t('dms_media.explorer.files')" tone="muted" />
+		<DmsEyebrowLabel :label="t('dms_media.explorer.files')" tone="muted" />
 		<div
 			class="grid gap-2"
 			role="listbox"
