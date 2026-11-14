@@ -1,4 +1,4 @@
-import { existsSync, readdirSync, readFileSync } from "node:fs";
+import { existsSync, readdirSync, readFileSync, writeFileSync } from "node:fs";
 import { join, relative } from "node:path";
 
 /**
@@ -7,7 +7,8 @@ import { join, relative } from "node:path";
  * at the next minor, so `^0.5.0` installs 0.5.x and never 0.6. Every example of
  * this module in the READMEs, the docs and the skills of the workspace must
  * name a caret range that admits the version of this package. Prints the
- * violations only; exits 1 when there are any.
+ * violations only; exits 1 when there are any. With `--write`, rewrites every
+ * example to `^<version>` instead; the release runs it after the bump.
  */
 
 const PACKAGE_ROOT = join(import.meta.dirname, "..");
@@ -96,10 +97,21 @@ if (current === undefined || rest.length > 0) {
   throw new Error(`package.json: ${manifest.version} is not major.minor.patch`);
 }
 
+const write = process.argv.includes("--write");
 const errors: string[] = [];
 let examples = 0;
 for (const file of scannedFiles()) {
   const text = readFileSync(file, "utf8");
+  if (write) {
+    const synced = text.replace(SOURCE, (whole, spec: string) =>
+      whole.replace(`"${spec}"`, `"^${manifest.version}"`),
+    );
+    if (synced !== text) {
+      writeFileSync(file, synced);
+    }
+    examples += [...text.matchAll(SOURCE)].length;
+    continue;
+  }
   for (const match of text.matchAll(SOURCE)) {
     examples += 1;
     const spec = match.groups?.spec ?? "";
