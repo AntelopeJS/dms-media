@@ -17,8 +17,9 @@ concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
-# The checks job runs the guardrail pack's `pnpm run checks`. The backend and
-# frontend jobs run what `checks` does not, in parallel with it. The branch
+# The shared workflow runs the guardrail pack's `pnpm run checks`, the
+# frontend unit tests and the extra commands in parallel jobs, each on Linux
+# and on Windows. The extra commands run what `checks` does not. The branch
 # rulesets require the `ubuntu` check, which aggregates them.
 jobs:
   ci:
@@ -32,89 +33,38 @@ jobs:
         packages/interface-dms-media/README.md
         packages/interface-dms-media/docs
       docs-typescript-project: packages/interface-dms-media/docs/tsconfig.json
-      # `typecheck` builds the interface, so this checks the exports map
-      # against that build.
-      extra-commands: pnpm --dir packages/interface-dms-media check:exports
+      # The module build also builds the interface: it is the only build of
+      # the job, so the test scripts skip their own rebuild (DMS_PREBUILT).
+      # The unit and integration suites run in one boot of the DMS stack: a
+      # second boot for the integration folder alone would cost more than its
+      # tests. `test:reload` boots a real project in watch mode and reloads a
+      # consumer and the module itself (#26). The last command fails when a
+      # test run recorded a module it installed without a committed record in
+      # `antelope-lock/`: commit what it lists, so every run installs the same
+      # graph. `test:frontend` typechecks the frontend layer against the DMS
+      # layer from the `@antelopejs/dms` devDependency.
+      extra-commands: |
+        export DMS_PREBUILT=1
+        pnpm --dir packages/dms-media build
+        pnpm --dir packages/interface-dms-media check:exports
+        pnpm --dir packages/dms-media test:exports
+        pnpm --dir packages/dms-media test:playground
+        pnpm --dir packages/dms-media test
+        pnpm --dir packages/dms-media test:reload
+        git status --porcelain --untracked-files=all -- packages/dms-media/antelope-lock | (! grep .)
+        pnpm --dir packages/dms-media test:frontend
+      extra-commands-job: true
       renovate-sync: false
       test-job: true
+      windows: true
     permissions:
       contents: read
-
-  backend:
-    runs-on: ubuntu-latest
-    timeout-minutes: 20
-    env:
-      # The build step below is the only build of the job: the test scripts
-      # and the test harness `installCommand` skip their own rebuild.
-      DMS_PREBUILT: "1"
-    steps:
-      - uses: actions/checkout@v4
-      - uses: pnpm/action-setup@v4
-      - uses: actions/setup-node@v4
-        with:
-          node-version-file: .nvmrc
-          cache: pnpm
-          cache-dependency-path: pnpm-lock.yaml
-
-      # The AntelopeJS modules the harness packs and installs (dms, mongodb,
-      # api...) and the MongoDB binary both tests start. Without them every
-      # run downloads the whole stack before the first test.
-      - uses: actions/cache@v4
-        with:
-          path: |
-            packages/dms-media/.antelope/cache
-            ~/.cache/mongodb-binaries
-          key: antelope-${{ runner.os }}-${{ hashFiles('packages/dms-media/src/test/antelope.test.ts', 'packages/dms-media/tests/hot-reload.test.mjs', 'packages/dms-media/src/test/stack-modules.json', 'packages/dms-media/antelope-lock/**', 'pnpm-lock.yaml') }}
-          # Both test stacks take `@antelopejs/dms` at the version the lockfile
-          # installs and the other modules from `stack-modules.json`, and
-          # install each from its record in `antelope-lock/`, so the key names
-          # every module and dependency graph they load. On a new key, the last
-          # cache still holds the modules that did not change.
-          restore-keys: antelope-${{ runner.os }}-
-
-      - run: pnpm install --frozen-lockfile
-      - run: pnpm --dir packages/dms-media build
-      # The package entry resolves through its exports map, as a runtime
-      # embedding the module resolves it (AntelopeJS core's resolvePackage).
-      - run: pnpm --dir packages/dms-media test:exports
-      - run: pnpm --dir packages/dms-media test:playground
-      # Unit and integration suites in one boot of the DMS stack: a second
-      # boot for the integration folder alone would cost more than its tests.
-      - run: pnpm --dir packages/dms-media test
-      # Boots a real project in watch mode and reloads a consumer and the
-      # module itself: dms-media's routes, permissions and pages must stay
-      # registered and be evaluated again from the edited files (#26).
-      - run: pnpm --dir packages/dms-media test:reload
-      # A test run records a module it installed without a committed record:
-      # commit what this lists, so cached and fresh runs install the same graph.
-      - run: git status --porcelain --untracked-files=all -- packages/dms-media/antelope-lock | (! grep .)
-
-  frontend:
-    runs-on: ubuntu-latest
-    timeout-minutes: 20
-    steps:
-      - uses: actions/checkout@v4
-      - uses: pnpm/action-setup@v4
-      - uses: actions/setup-node@v4
-        with:
-          node-version-file: .nvmrc
-          cache: pnpm
-          cache-dependency-path: |
-            pnpm-lock.yaml
-            packages/dms-media/frontend-vue/pnpm-lock.yaml
-
-      - run: pnpm install --frozen-lockfile
-
-      # Typechecks the frontend layer against the DMS layer from the
-      # `@antelopejs/dms` devDependency: no running backend needed. The
-      # frontend unit tests run in `checks`.
-      - run: pnpm --dir packages/dms-media test:frontend
 
   # The single check the branch rulesets require: green only when every job
   # above succeeded.
   ubuntu:
     if: always()
-    needs: [ci, backend, frontend]
+    needs: [ci]
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:
