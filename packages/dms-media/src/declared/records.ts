@@ -1,4 +1,3 @@
-import { createHash } from "node:crypto";
 import { IsDuplicateKeyError } from "@antelopejs/interface-database";
 import { GetModel } from "@antelopejs/interface-database-decorators";
 import type {
@@ -6,6 +5,7 @@ import type {
   MediaFolderDeclaration,
 } from "@antelopejs/interface-dms-media";
 import type { ZodType, ZodTypeDef } from "zod";
+import { fixedId } from "../fixed-id";
 import { isObjectLike, isString } from "../guards";
 import {
   MediaAssetModel,
@@ -111,25 +111,14 @@ export async function settlePendingDeclaration(
  * The id of the folder or file declared under `key`, the same in every
  * process: two processes declaring one key at once write one row and one
  * record instead of two. The tenant is part of it because ids are unique
- * across tenant instances. Shaped as a version 8 UUID, like the ids the
- * database gives other rows.
+ * across tenant instances.
  */
 export function declaredId(
   tenantId: string,
   kind: MediaDeclarationKind,
   key: string,
 ): string {
-  const hex = createHash("sha256")
-    .update(JSON.stringify([`dms-media:declared-${kind}`, tenantId, key]))
-    .digest("hex");
-  const variant = ((Number.parseInt(hex.charAt(16), 16) % 4) + 8).toString(16);
-  return [
-    hex.slice(0, 8),
-    hex.slice(8, 12),
-    `8${hex.slice(13, 16)}`,
-    `${variant}${hex.slice(17, 20)}`,
-    hex.slice(20, 32),
-  ].join("-");
+  return fixedId(`dms-media:declared-${kind}`, tenantId, key);
 }
 
 /**
