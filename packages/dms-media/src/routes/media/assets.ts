@@ -12,6 +12,7 @@ import {
   MultiParameter,
   Parameter,
   Post,
+  type QueryValue,
 } from "@antelopejs/interface-api";
 import { assert } from "@antelopejs/interface-api-util";
 import { CreateReadUrl } from "@antelopejs/interface-file-storage";
@@ -40,6 +41,11 @@ const MAX_SEARCH_RESULTS = 100;
 const MAX_LISTING_RESULTS = 1000;
 const THUMB_PRESET_ID = "thumb";
 const UNCROPPED_PRESET_ID = "preview";
+
+/** The text of a query value: `?name` and `?name=` give `true`, which reads as empty, like an absent value. */
+function queryText(value: QueryValue): string {
+  return value === true ? "" : (value ?? "");
+}
 
 /** The presets library thumbnails are rendered with: the square crop, and an uncropped size when configured. */
 interface PreviewPresets {
@@ -156,11 +162,12 @@ export class MediaAssetsController extends MediaApiController {
 
   @Get("/assets/search")
   async search(
-    @Parameter("q", "query") q?: string,
-    @Parameter("mime", "query") mime?: string,
-    @Parameter("folderId", "query") folderId?: string,
+    @Parameter("q", "query") q: QueryValue,
+    @Parameter("mime", "query") mime: QueryValue,
+    @Parameter("folderId", "query") folderIdQuery: QueryValue,
   ) {
     const context = await this.resolveContext();
+    const folderId = queryText(folderIdQuery);
     const searchedFolders = folderId
       ? [requireFolderRight(context, folderId, "read")._id]
       : [...context.access.readable];
@@ -169,8 +176,8 @@ export class MediaAssetsController extends MediaApiController {
       searchedFolders.length === 1 ? searchedFolders[0] : searchedFolders,
       "folderId",
     );
-    const term = (q ?? "").trim().toLowerCase();
-    const mimePrefix = (mime ?? "").trim().toLowerCase();
+    const term = queryText(q).trim().toLowerCase();
+    const mimePrefix = queryText(mime).trim().toLowerCase();
     const assets: ReturnType<typeof buildAssetDto>[] = [];
     for await (const row of candidates) {
       const asset = MediaAssetModel.fromDatabase(row);
@@ -191,8 +198,9 @@ export class MediaAssetsController extends MediaApiController {
   @Get("/assets/:assetId/read-url")
   async readUrl(
     @Parameter("assetId", "param") assetId: string,
-    @Parameter("preset", "query") presetId?: string,
+    @Parameter("preset", "query") preset: QueryValue,
   ) {
+    const presetId = queryText(preset);
     const context = await this.resolveContext();
     const asset = await requireReadableAsset(context, assetId);
     let storageKey = asset.storageKey;

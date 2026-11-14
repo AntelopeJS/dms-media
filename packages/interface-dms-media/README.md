@@ -72,11 +72,11 @@ The interface needs a `@antelopejs/dms-media` release that implements this versi
 
 <!-- antelopejs-docs-compat:start -->
 
-| Package                      | Supported         | Tested with |
-| ---------------------------- | ----------------- | ----------- |
-| `@antelopejs/interface-api`  | `>=0.0.15 <1.0.0` | `0.3.0`     |
-| `@antelopejs/interface-core` | `>=0.2.4 <1.0.0`  | `0.4.0`     |
-| `@antelopejs/interface-dms`  | `>=0.9.0 <1.0.0`  | `0.13.0`    |
+| Package                      | Supported          | Tested with |
+| ---------------------------- | ------------------ | ----------- |
+| `@antelopejs/interface-api`  | `>=0.3.3 <0.4.0`   | `0.3.3`     |
+| `@antelopejs/interface-core` | `>=0.5.1 <0.6.0`   | `0.5.1`     |
+| `@antelopejs/interface-dms`  | `>=0.14.0 <0.15.0` | `0.14.0`    |
 
 <!-- antelopejs-docs-compat:end -->
 

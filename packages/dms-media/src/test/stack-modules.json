@@ -1,7 +1,7 @@
 {
-  "@antelopejs/mongodb": "1.6.2",
-  "@antelopejs/auth-jwt": "1.1.0",
-  "@antelopejs/api": "1.7.0",
-  "@antelopejs/file-storage-local": "0.2.0",
-  "@antelopejs/nodemailer": "0.0.6"
+  "@antelopejs/mongodb": "1.8.1",
+  "@antelopejs/auth-jwt": "1.1.2",
+  "@antelopejs/api": "1.7.4",
+  "@antelopejs/file-storage-local": "0.2.1",
+  "@antelopejs/nodemailer": "0.0.12"
 }

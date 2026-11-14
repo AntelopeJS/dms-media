@@ -94,7 +94,11 @@ describe("[integration] streaming asset search", () => {
         },
     );
     try {
-      const result = await controller(model).search(" İ ", " IMAGE/ ");
+      const result = await controller(model).search(
+        " İ ",
+        " IMAGE/ ",
+        undefined,
+      );
       expect(result.assets.map((row) => row.id)).to.deep.equal(
         expected.map((row) => row._id),
       );
@@ -107,14 +111,26 @@ describe("[integration] streaming asset search", () => {
   });
 
   it("retains empty and non-matching searches", async () => {
-    expect((await controller(model).search()).assets).to.have.length(LIMIT);
-    expect((await controller(model).search("absent")).assets).to.deep.equal([]);
-    expect((await controller(model).search("", "text/")).assets).to.deep.equal(
-      [],
-    );
-    expect((await controller(model, []).search()).assets).to.deep.equal([]);
     expect(
-      (await controller(other).search("İ")).assets.map((row) => row.id),
+      (await controller(model).search(undefined, undefined, undefined)).assets,
+    ).to.have.length(LIMIT);
+    expect(
+      (await controller(model).search(true, true, true)).assets,
+    ).to.have.length(LIMIT);
+    expect(
+      (await controller(model).search("absent", undefined, undefined)).assets,
+    ).to.deep.equal([]);
+    expect(
+      (await controller(model).search("", "text/", undefined)).assets,
+    ).to.deep.equal([]);
+    expect(
+      (await controller(model, []).search(undefined, undefined, undefined))
+        .assets,
+    ).to.deep.equal([]);
+    expect(
+      (await controller(other).search("İ", undefined, undefined)).assets.map(
+        (row) => row.id,
+      ),
     ).to.deep.equal(["other"]);
   });
 });
