@@ -72,7 +72,7 @@ const canUpload = computed(() => {
 	const tree = library.value?.tree
 	if (!tree) return false
 	if (tree.folders.value.some((folder) => folder.rights.write)) return true
-	return !tree.scopeFolder.value && Boolean(tree.tree.value?.root.write)
+	return !tree.scopeFolder.value && Boolean(tree.tree.value?.root.manage)
 })
 const confirmLabel = computed(() => {
 	const noun = isImageField.value ? 'images' : 'files'

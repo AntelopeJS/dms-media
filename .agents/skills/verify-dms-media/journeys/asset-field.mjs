@@ -1,7 +1,7 @@
 import { guarded } from "../guard.mjs";
 import { openFilePicker } from "../chooser.mjs";
-import { createFolder, declareFolder, folderAssets, member, uploaded } from "../library.mjs";
-import { check, fixture, image, pick, text } from "../media.mjs";
+import { createFolder, declareFolder, folderAssets, member, tree, uploaded, withConfig } from "../library.mjs";
+import { check, fixture, image, media, pick, text } from "../media.mjs";
 import { boundFolder } from "./folders.mjs";
 import { dragFile, landed } from "./parts/picker-files.mjs";
 
@@ -294,6 +294,39 @@ export const journeys = guarded([
         tab.shows(/You can't upload to any of these folders/, { timeoutMs: 10_000 }),
         tab.visible({ role: "heading", name: "Where should the files go?" }, { hidden: true, timeoutMs: 2000 }),
       ]);
+    },
+  },
+  {
+    id: "root-write-alone-offers-no-upload-in-an-unscoped-picker",
+    title: "an unscoped picker for a member who can write the root but not manage it, with no writable folder, offers no Upload",
+    entryPoint: "/verify-fields, Attachment picker, root ACL write only, every writable folder deleted",
+    async run(/** @type {Ctx} */ ctx) {
+      await withConfig(ctx, { VERIFY_MEDIA_ROOT_ACL: "permission:verify.root:write" }, async () => {
+        await fixture(ctx, "RegisterAssetBinding verify.projects read-only", "POST", "/binding", { id: "verify.projects", folderName: "Verify projects", subfolders: true, permissionMapping: { write: [] }, permissionsFromPage: "fields" });
+        await fixture(ctx, "RegisterAssetBinding verify.cover read-only", "POST", "/binding", { id: "verify.cover", folderName: "Verify covers", permissionMapping: { write: [] }, permissionsFromPage: "fields" });
+        await boundFolder(ctx, "verify.projects");
+        await boundFolder(ctx, "verify.cover");
+        await member(ctx, "racine", ["page:fields", "verify.root"]);
+        const before = await tree(ctx, "racine");
+        for (const folder of before.folders) {
+          if (pick(folder, "rights", "write") === true) await media(ctx, `owner deletes ${text(folder, "name")}`, "DELETE", `/folders/${text(folder, "id")}`);
+        }
+        const after = await tree(ctx, "racine");
+        const writable = after.folders.filter((folder) => pick(folder, "rights", "write") === true).map((folder) => pick(folder, "name"));
+        const tab = await ctx.tab("racine");
+        await tab.signIn("racine");
+        await tab.goto("/verify-fields");
+        const opened = await openPicker(tab, "Attachment");
+        const pickerDialog = tab.page.getByRole("dialog", { name: "Choose from the library" });
+        await tab.page.waitForTimeout(3000);
+        const uploadButtons = await pickerDialog.getByRole("button", { name: "Upload", exact: true }).count();
+        await ctx.verify("the picker offers no Upload", [
+          check("the member writes the root but cannot manage it", pick(after.answer.body, "root", "write") === true && pick(after.answer.body, "root", "manage") === false, pick(after.answer.body, "root")),
+          check("no writable folder", writable.length === 0, writable),
+          check("the dialog", opened, opened),
+          check("no Upload button in the picker", uploadButtons === 0, uploadButtons),
+        ]);
+      });
     },
   },
   {
