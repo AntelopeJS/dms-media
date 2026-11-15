@@ -113,7 +113,7 @@ pnpm run checks     # typecheck, lint, format, knip, tests, size, suppressions a
 - The frontend entry is `frontend-vue/dms.frontend.ts`. It declares the `DmsMedia` component prefix and registers the blocks of `app/components/*.vue` by file name (`Explorer` is served as `DmsMediaExplorer`). The parts in subfolders are imported by path. `dms.frontend.build.ts` auto-imports `app/composables` and `app/utils`. Use relative imports for module-local files, because the renderer copies the frontend separately from the backend.
 - The blocks read the data they render with the DMS's `useApiData`, and the explorer's file listing with `useApiPagedData`. Writes, downloads, the asset field's entries, the dialogs and the image editor's canvas stay `$authFetch` calls in the browser.
 - The backend serves the file links (`/media/<id>/<name>`). The module declares `/media/**` as a backend prefix with the session (`backendProxies`), so a private file opens for a signed-in member.
-- Release the interface first (`release-interface.yml`), then the module (`release.yml`), which checks that the interface version in the tree is already on npm. `pnpm --dir packages/dms-media test:reload` checks the hot reload of a consumer and of the module in a real project.
+- `release.yml` releases both packages. A push to `next` publishes a preview of each under the npm dist-tag `next`, and the release train dispatches it once per package for a stable release. Release the interface before the module. `pnpm --dir packages/dms-media test:reload` checks the hot reload of a consumer and of the module in a real project.
 
 </details>
 
@@ -125,8 +125,7 @@ This module installs into [AntelopeJS DMS](https://github.com/AntelopeJS/dms), t
 
 | Module                                                           | What it adds                                                                             |
 | ---------------------------------------------------------------- | ---------------------------------------------------------------------------------------- |
-| [`dms-builder`](https://github.com/AntelopeJS/dms-builder)       | Edit pages, tables and data sources by clicking, as TypeScript that compiles             |
-| [`dms-ai`](https://github.com/AntelopeJS/dms-ai)                 | An assistant chat in the dashboard, on your own Claude Code or Codex                     |
+| [`dms-assistant`](https://github.com/AntelopeJS/dms-assistant)   | An assistant chat in the dashboard and its onboarding, on your own Claude Code or Codex  |
 | [`dms-database`](https://github.com/AntelopeJS/dms-database)     | Schemas, relation diagrams, a data browser and a query console                           |
 | [`dms-api`](https://github.com/AntelopeJS/dms-api)               | API health, request logs, per-route statistics and a request tester                      |
 | [`dms-automation`](https://github.com/AntelopeJS/dms-automation) | Node-graph automations on schedules, webhooks and DMS events, with a trace for every run |

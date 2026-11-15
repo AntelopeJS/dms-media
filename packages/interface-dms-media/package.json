@@ -63,7 +63,7 @@
     "@antelopejs/interface-database": ">=0.4.0 <0.5.0",
     "@antelopejs/interface-database-decorators": ">=0.5.2 <0.6.0",
     "@antelopejs/interface-dms": ">=0.14.0 <0.15.0",
-    "@antelopejs/tooling-configs": "^0.7.1",
+    "@antelopejs/tooling-configs": "^0.8.0",
     "@types/node": "^24.0.0",
     "knip": "^6.34.0",
     "release-it": "^19.2.4",
