@@ -2,7 +2,7 @@
 
 ## Layout
 
-A pnpm workspace with two published packages. The root holds the tool configs, the CI workflows and the orb setup; the code lives in the packages.
+A pnpm workspace with two published packages. The root holds the tool configs and the CI workflows; the code lives in the packages.
 
 | Path                                  | What it is                                                                                                                                  |
 | ------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -33,10 +33,6 @@ Run a package script from its own directory: `pnpm --dir packages/dms-media <scr
 - `pnpm --dir packages/dms-media knip:all` and `pnpm --dir packages/interface-dms-media knip:all`. `pnpm knip` checks dependencies only; `knip:all` also reports unused files and exports. Confirm each finding before you remove the code.
 
 The documentation check runs in CI only. Its TypeScript project, `packages/interface-dms-media/docs/tsconfig.json`, maps the interface onto `src`, so it needs no build.
-
-## Orb
-
-`.agents/setup` belongs to the guardrail pack. `.agents/playground` switches the system Node to the `.nvmrc` major, installs the AntelopeJS CLI and MongoDB, builds the module and installs the playground. The `dms-media-backend` service runs it before it starts.
 
 <!-- antelopejs-guardrails:start -->
 <!-- Managed by @antelopejs/tooling-configs. `antelopejs-sync` rewrites everything between these markers; write repository-specific guidance outside them. -->
