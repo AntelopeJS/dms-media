@@ -918,6 +918,7 @@
 		"toasts": {
 			"alt_failed": "Le texte alternatif n'a pas été enregistré",
 			"delete_failed": "Suppression impossible",
+			"destination_unavailable": "Ce dossier n'est plus disponible. Relancez l'import et choisissez un autre dossier.",
 			"deleted": "{count} fichier supprimé | {count} fichiers supprimés",
 			"download_failed": "Téléchargement impossible",
 			"folder_create_failed": "Impossible de créer le dossier",

@@ -12,6 +12,8 @@ const props = defineProps<{
 	mode?: 'upload' | 'pick'
 	/** Types the files must be, for a picker's field: a remembered folder that refuses them is not offered first. */
 	accept?: string[]
+	/** The folder a picker is kept inside: only it and its subfolders are offered. */
+	scopeFolderId?: string
 }>()
 const emit = defineEmits<{ close: [string | null] }>()
 const { t } = useI18n()
@@ -19,11 +21,11 @@ const api = useMediaApi()
 const { presentError } = useApiErrorPresenter()
 const format = useMediaFormat()
 const nameDialog = useOverlay().create(NameDialog)
-const { tree, refresh: reload } = useLibraryTree()
+const { tree, folders: libraryFolders, scopeFolder, refresh: reload } = useLibraryTree({ scopeFolderId: props.scopeFolderId })
 const pickerRoot = useTemplateRef<HTMLElement>('pickerRoot')
 const isCreating = ref(false)
 
-const folders = computed(() => tree.value?.folders ?? props.folders)
+const folders = computed(() => (tree.value ? libraryFolders.value : props.folders))
 const foldersById = computed(() => new Map(folders.value.map((folder) => [folder.id, folder])))
 const target = ref<string | null | undefined>(
 	props.folders.find((folder) => folder.id === props.initialId && isFitting(folder))?.id,
@@ -34,7 +36,9 @@ function isFitting(folder: MediaFolder): boolean {
 
 const targetFolder = computed(() => (target.value ? foldersById.value.get(target.value) : undefined))
 const canCreate = computed(() =>
-	targetFolder.value ? targetFolder.value.rights.manage && targetFolder.value.acceptsSubfolders : Boolean(tree.value?.root.manage),
+	targetFolder.value
+		? targetFolder.value.rights.manage && targetFolder.value.acceptsSubfolders
+		: !scopeFolder.value && Boolean(tree.value?.root.manage),
 )
 const acceptedLabel = computed(() =>
 	targetFolder.value?.accepts?.length ? fieldTypesLabel(targetFolder.value.accepts, t) || targetFolder.value.accepts.join(', ') : '',

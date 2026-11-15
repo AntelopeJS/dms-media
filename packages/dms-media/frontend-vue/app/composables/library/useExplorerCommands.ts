@@ -241,9 +241,14 @@ export function useExplorerCommands(library: MediaLibrary, handlers: ExplorerHan
 			folders: library.tree.folders.value,
 			initialId: prefs.value.lastFolderId,
 			accept: library.accept,
+			scopeFolderId: library.scopeFolderId,
 		})
-		const destination = chosen ? await folderById(chosen) : undefined
-		if (!destination) return
+		if (!chosen) return
+		const destination = await folderById(chosen)
+		if (!destination) {
+			library.toast.add({ title: t('dms_media.toasts.destination_unavailable'), color: 'error', icon: 'i-ph-warning' })
+			return
+		}
 		updatePrefs({ lastFolderId: destination.id })
 		handlers.pickFiles(destination.id, destination.name)
 	}

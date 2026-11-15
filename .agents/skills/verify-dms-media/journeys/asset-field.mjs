@@ -235,6 +235,38 @@ export const journeys = guarded([
     },
   },
   {
+    id: "a-pickers-destination-dialog-offers-only-its-scope",
+    title: "a picker whose linked folder the member cannot write asks where its Upload goes among the linked folder's subfolders only, and the file lands in the one chosen",
+    entryPoint: "/verify-fields, Projects picker bound read-only, writable Chantier Sud inside and Ailleurs outside, Upload",
+    async run(/** @type {Ctx} */ ctx) {
+      await fixture(ctx, "RegisterAssetBinding verify.projects read-only", "POST", "/binding", { id: "verify.projects", folderName: "Verify projects", subfolders: true, permissionMapping: { write: [] }, permissionsFromPage: "fields" });
+      const projects = await boundFolder(ctx, "verify.projects");
+      const declared = await declareFolder(ctx, { key: ctx.unique("verify.sud"), name: "Chantier Sud", parent: { binding: "verify.projects" }, acl: [{ subject: { kind: "permission", id: "verify.sud.write" }, rights: ["write"] }] });
+      const sub = text(declared.body, "result", "id");
+      const elsewhere = await declareFolder(ctx, { key: ctx.unique("verify.ailleurs"), name: "Ailleurs", acl: [{ subject: { kind: "permission", id: "verify.sud.write" }, rights: ["write"] }] });
+      await member(ctx, "portee", ["page:fields", "verify.sud.write"]);
+      const tab = await ctx.tab("portee");
+      await tab.signIn("portee");
+      await tab.goto("/verify-fields");
+      const opened = await openPicker(tab, "Projects");
+      await ctx.verify("the picker opens on its read-only linked folder", [check("the dialog", opened, opened), check("Ailleurs is declared outside the linked folder", text(elsewhere.body, "result", "id") !== "", elsewhere.body), tab.visible({ role: "heading", name: "Verify projects", level: 2 }, { timeoutMs: 10_000 })]);
+      const pickerDialog = tab.page.getByRole("dialog", { name: "Choose from the library" });
+      await pickerDialog.getByRole("button", { name: "Upload", exact: true }).click({ timeout: 10_000 }).catch(() => undefined);
+      const destination = tab.page.getByRole("dialog", { name: "Where should the files go?" });
+      await ctx.verify("the destination dialog lists only the linked folder and its subfolders", [
+        tab.visible({ role: "heading", name: "Where should the files go?" }, { timeoutMs: 10_000 }),
+        tab.visible({ role: "treeitem", name: /^Chantier Sud/ }, { timeoutMs: 10_000 }),
+        tab.visible({ role: "treeitem", name: /^Ailleurs/ }, { hidden: true, timeoutMs: 2000 }),
+        tab.visible({ role: "treeitem", name: /^Content/ }, { hidden: true, timeoutMs: 2000 }),
+      ]);
+      await destination.getByRole("treeitem", { name: /^Chantier Sud/ }).click({ timeout: 10_000 }).catch(() => undefined);
+      const chooser = await openFilePicker(tab, () => destination.getByRole("button", { name: "Choose files", exact: true }).click({ timeout: 10_000 }).catch(() => undefined), 20_000);
+      await chooser.choose([{ name: "portee-bouton.png", mimeType: "image/png", buffer: await image(ctx, { width: 10, height: 10 }) }]);
+      const afterUpload = await landed(ctx, { bound: projects, sub }, "portee-bouton.png", "portee");
+      await ctx.verify("the file lands in the folder chosen", [check("portee-bouton.png is in Chantier Sud", afterUpload.sub.includes("portee-bouton.png") && !afterUpload.bound.includes("portee-bouton.png"), afterUpload)]);
+    },
+  },
+  {
     id: "a-refusal-speaks-the-members-language",
     title: "a member whose language is French sees a refused file explained in French",
     entryPoint: "/verify-fields as a fr-FR member, Cover field upload of a PDF",
