@@ -267,6 +267,36 @@ export const journeys = guarded([
     },
   },
   {
+    id: "a-picker-with-nothing-writable-in-scope-offers-no-upload",
+    title: "a picker with no folder the member can write inside its scope offers no Upload, and a drop on it says why instead of asking where",
+    entryPoint: "/verify-fields, Projects picker bound read-only, read-only Lecture inside, writable Ailleurs outside, Upload and a drop",
+    async run(/** @type {Ctx} */ ctx) {
+      await fixture(ctx, "RegisterAssetBinding verify.projects read-only", "POST", "/binding", { id: "verify.projects", folderName: "Verify projects", subfolders: true, permissionMapping: { write: [] }, permissionsFromPage: "fields" });
+      await boundFolder(ctx, "verify.projects");
+      await declareFolder(ctx, { key: ctx.unique("verify.lecture"), name: "Lecture", parent: { binding: "verify.projects" } });
+      const elsewhere = await declareFolder(ctx, { key: ctx.unique("verify.ailleurs"), name: "Ailleurs", acl: [{ subject: { kind: "permission", id: "verify.ail.write" }, rights: ["write"] }] });
+      await member(ctx, "impasse", ["page:fields", "verify.ail.write"]);
+      const tab = await ctx.tab("impasse");
+      await tab.signIn("impasse");
+      await tab.goto("/verify-fields");
+      const opened = await openPicker(tab, "Projects");
+      const pickerDialog = tab.page.getByRole("dialog", { name: "Choose from the library" });
+      const shown = await tab.visible({ role: "heading", name: "Verify projects", level: 2 }, { timeoutMs: 10_000 });
+      const uploadButtons = await pickerDialog.getByRole("button", { name: "Upload", exact: true }).count();
+      await ctx.verify("the picker offers no Upload", [
+        check("the dialog", opened, opened),
+        check("Ailleurs is declared outside the linked folder", text(elsewhere.body, "result", "id") !== "", elsewhere.body),
+        shown,
+        check("no Upload button in the picker", uploadButtons === 0, uploadButtons),
+      ]);
+      await dragFile(pickerDialog.getByRole("main"), "impasse.png", await image(ctx, { width: 6, height: 6 }), ["dragenter", "dragover", "drop"]);
+      await ctx.verify("a drop says no folder here takes files, and asks nothing", [
+        tab.shows(/You can't upload to any of these folders/, { timeoutMs: 10_000 }),
+        tab.visible({ role: "heading", name: "Where should the files go?" }, { hidden: true, timeoutMs: 2000 }),
+      ]);
+    },
+  },
+  {
     id: "a-refusal-speaks-the-members-language",
     title: "a member whose language is French sees a refused file explained in French",
     entryPoint: "/verify-fields as a fr-FR member, Cover field upload of a PDF",

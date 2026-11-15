@@ -69,10 +69,10 @@ const isImageField = computed(() => {
 })
 const acceptedTypes = computed(() => fieldTypesLabel(props.accept ?? [], t))
 const canUpload = computed(() => {
-	const tree = library.value?.tree.tree.value
-	return Boolean(
-		tree?.root.write || tree?.folders.some((folder) => folder.rights.write),
-	)
+	const tree = library.value?.tree
+	if (!tree) return false
+	if (tree.folders.value.some((folder) => folder.rights.write)) return true
+	return !tree.scopeFolder.value && Boolean(tree.tree.value?.root.write)
 })
 const confirmLabel = computed(() => {
 	const noun = isImageField.value ? 'images' : 'files'
