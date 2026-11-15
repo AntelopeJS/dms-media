@@ -101,7 +101,7 @@ const stopFocusing = watch(pickerRoot, (root) => {
 		@dismiss="emit('close', null)"
 	>
 		<div ref="pickerRoot" class="flex flex-col gap-2">
-			<FolderPickerTree v-model="target" :folders="folders" :is-allowed="isAllowed" />
+			<FolderPickerTree v-model="target" :folders="folders" :is-allowed="isAllowed" :reveal-id="scopeFolderId" />
 			<p v-if="acceptedLabel" class="text-muted flex items-center gap-1.5 text-[13px]">
 				<UIcon name="i-ph-link-simple" class="size-3.5 shrink-0" />
 				{{ t('dms_media.dialogs.destination.accepts', { name: targetFolder!.name, types: acceptedLabel }) }}
