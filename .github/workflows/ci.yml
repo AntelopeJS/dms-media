@@ -1,15 +1,13 @@
 name: ci
 
 on:
-  push:
-    branches:
-      - main
-  # No branch filter: the lint wave stacks pull requests on top of each other,
-  # and a filter on `main` left every intermediate step ungated -- only the
-  # secret scanner ran.
   pull_request:
-
-  workflow_dispatch: null
+    types: [opened, synchronize, reopened, ready_for_review]
+  push:
+    branches: [next]
+  schedule:
+    - cron: "17 2 * * *"
+  workflow_dispatch:
 permissions:
   contents: read
 
@@ -18,12 +16,14 @@ concurrency:
   cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 # The shared workflow runs the guardrail pack's `pnpm run checks`, the
-# frontend unit tests and the extra commands in parallel jobs, each on Linux
-# and on Windows. The extra commands run what `checks` does not. The branch
-# rulesets require the `ubuntu` check, which aggregates them.
+# frontend unit tests and the extra commands in parallel jobs, at the tier the
+# event picks: Linux only, and Windows too in the nightly. A draft pull request
+# runs lint and typecheck only and fails `ci / checks`. The extra commands run
+# what `checks` does not. The branch rulesets require the `ubuntu` check, which
+# aggregates them.
 jobs:
   ci:
-    uses: AntelopeJS/.github/.github/workflows/ci-node.yml@v1
+    uses: AntelopeJS/.github/.github/workflows/ci-node.yml@v2
     with:
       docs-files: |
         README.md
@@ -56,7 +56,6 @@ jobs:
       extra-commands-job: true
       renovate-sync: false
       test-job: true
-      windows: true
     permissions:
       contents: read
 
@@ -76,4 +75,4 @@ jobs:
     permissions:
       contents: write
       actions: write
-    uses: AntelopeJS/.github/.github/workflows/ci-renovate-sync.yml@v1
+    uses: AntelopeJS/.github/.github/workflows/ci-renovate-sync.yml@v2
