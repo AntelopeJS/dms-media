@@ -256,8 +256,8 @@ export const journeys = guarded([
       await ctx.verify("the destination dialog lists only the linked folder and its subfolders", [
         tab.visible({ role: "heading", name: "Where should the files go?" }, { timeoutMs: 10_000 }),
         tab.visible({ role: "treeitem", name: /^Chantier Sud/ }, { timeoutMs: 10_000 }),
-        tab.visible({ role: "treeitem", name: /^Ailleurs/ }, { hidden: true, timeoutMs: 2000 }),
-        tab.visible({ role: "treeitem", name: /^Content/ }, { hidden: true, timeoutMs: 2000 }),
+        tab.visible({ role: "treeitem", name: /Ailleurs/ }, { hidden: true, timeoutMs: 2000 }),
+        tab.visible({ role: "treeitem", name: /Content/ }, { hidden: true, timeoutMs: 2000 }),
       ]);
       await destination.getByRole("treeitem", { name: /^Chantier Sud/ }).click({ timeout: 10_000 }).catch(() => undefined);
       const chooser = await openFilePicker(tab, () => destination.getByRole("button", { name: "Choose files", exact: true }).click({ timeout: 10_000 }).catch(() => undefined), 20_000);
