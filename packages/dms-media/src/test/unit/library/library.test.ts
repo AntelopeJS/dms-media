@@ -95,43 +95,15 @@ describe("[unit] library — search", () => {
   const assets = [
     asset("oak-desk"),
     asset("walnut", { alt: "An OAK finish" }),
-    asset("old", { updatedAt: new Date("2020-01-01") }),
+    asset("pine"),
   ];
 
-  it("matches names first, then alt text, and applies the filters", () => {
-    const hits = searchAssets(assets, {
-      query: {
-        q: "oak",
-        offset: 0,
-        limit: 10,
-        sort: "name",
-        direction: "asc",
-        visibility: "any",
-        modified: "any",
-        orientation: "any",
-      },
-      now: new Date("2026-06-01"),
-      visibilityOf: () => "private",
-    });
+  it("matches names first, then alt text", () => {
+    const hits = searchAssets(assets, "oak");
     expect(hits.map((hit) => [hit.asset._id, hit.matchedOn])).to.deep.equal([
       ["oak-desk", "name"],
       ["walnut", "alt"],
     ]);
-    const recent = searchAssets(assets, {
-      query: {
-        q: "",
-        offset: 0,
-        limit: 10,
-        sort: "name",
-        direction: "asc",
-        visibility: "private",
-        modified: "year",
-        orientation: "any",
-      },
-      now: new Date("2026-06-01"),
-      visibilityOf: () => "private",
-    });
-    expect(recent.map((hit) => hit.asset._id)).to.not.include("old");
   });
 
   it("matches folder names without a term only when one is given", () => {

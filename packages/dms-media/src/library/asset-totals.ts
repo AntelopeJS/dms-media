@@ -49,7 +49,8 @@ function liveAssetsIn(model: AssetsTableModel, folderIds: string[]) {
     .filter((row) => row.key("isDeleting").default(false).eq(false));
 }
 
-function isMissingAlt(row: AssetRow) {
+/** Images, vectors included, whose alt text is empty once trimmed. */
+export function isMissingAlt(row: AssetRow) {
   return row
     .key("mimetype")
     .downcase()

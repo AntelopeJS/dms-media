@@ -1,3 +1,4 @@
+import { ValueProxy } from "@antelopejs/interface-database";
 import type { MediaAsset } from "../db";
 import type { FolderVisibility } from "../types";
 import type {
@@ -10,6 +11,11 @@ const MS_PER_DAY = 24 * 60 * 60 * 1000;
 const WEEK_DAYS = 7;
 const MONTH_DAYS = 30;
 
+/** A condition on one asset row, run in the database query. */
+export type AssetPredicate = (
+  row: ValueProxy<MediaAsset>,
+) => ValueProxy<boolean>;
+
 type ModifiedSince = (now: Date) => Date | undefined;
 
 const MODIFIED_SINCE: Record<ModifiedWindow, ModifiedSince> = {
@@ -19,43 +25,81 @@ const MODIFIED_SINCE: Record<ModifiedWindow, ModifiedSince> = {
   year: (now) => new Date(now.getFullYear(), 0, 1),
 };
 
-type OrientationTest = (width: number, height: number) => boolean;
+type Dimension = ValueProxy<number>;
 
 const ORIENTATION_TESTS: Record<
   Exclude<OrientationFilter, "any">,
-  OrientationTest
+  (width: Dimension, height: Dimension) => ValueProxy<boolean>
 > = {
-  landscape: (width, height) => width > height,
-  portrait: (width, height) => width < height,
-  square: (width, height) => width === height,
+  landscape: (width, height) => width.gt(height),
+  portrait: (width, height) => width.lt(height),
+  square: (width, height) => width.eq(height),
 };
+
+/** True when `value` is one of `options`, tested as one flat `$in` whatever the option count. */
+export function isOneOf(
+  value: ValueProxy<string>,
+  options: Iterable<string>,
+): ValueProxy<boolean> {
+  return ValueProxy.constant([...options]).includes(value);
+}
+
+function dimension(row: ValueProxy<MediaAsset>, key: "width" | "height") {
+  return row.key(key).default(0);
+}
+
+function orientationPredicate(
+  orientation: Exclude<OrientationFilter, "any">,
+): AssetPredicate {
+  return (row) =>
+    dimension(row, "width")
+      .ne(0)
+      .and(dimension(row, "height").ne(0))
+      .and(
+        ORIENTATION_TESTS[orientation](
+          dimension(row, "width"),
+          dimension(row, "height"),
+        ),
+      );
+}
+
+/** Assets whose visibility, or whose folder's when they inherit it, is `visibility`. */
+export function effectiveVisibilityPredicate(
+  visibility: FolderVisibility,
+  folderVisibilities: ReadonlyMap<string, FolderVisibility>,
+): AssetPredicate {
+  const inheritingFolders = [...folderVisibilities]
+    .filter(([, folderVisibility]) => folderVisibility === visibility)
+    .map(([folderId]) => folderId);
+  return (row) => {
+    const own = row.key("visibility").eq(visibility);
+    const inherited = isOneOf(row.key("folderId"), inheritingFolders);
+    return own.or(row.key("visibility").eq("inherit").and(inherited));
+  };
+}
 
 export interface AssetFilterContext {
   query: AssetFilterQuery;
   now: Date;
-  visibilityOf: (asset: MediaAsset) => FolderVisibility;
+  /** The visibility of each folder in scope; an asset that inherits takes it. */
+  folderVisibilities: ReadonlyMap<string, FolderVisibility>;
 }
 
-function matchesOrientation(
-  asset: MediaAsset,
-  orientation: OrientationFilter,
-): boolean {
-  if (orientation === "any") return true;
-  if (!asset.width || !asset.height) return false;
-  return ORIENTATION_TESTS[orientation](asset.width, asset.height);
-}
-
-/** Keeps the assets matching the visibility, modified and orientation facets. */
-export function filterAssets(
-  assets: MediaAsset[],
+/** The conditions of the visibility, modified and orientation facets. */
+export function assetFilterPredicates(
   filter: AssetFilterContext,
-): MediaAsset[] {
+): AssetPredicate[] {
+  const predicates: AssetPredicate[] = [];
   const since = MODIFIED_SINCE[filter.query.modified](filter.now);
-  const visibility = filter.query.visibility;
-  return assets.filter(
-    (asset) =>
-      (!since || asset.updatedAt >= since) &&
-      (visibility === "any" || filter.visibilityOf(asset) === visibility) &&
-      matchesOrientation(asset, filter.query.orientation),
-  );
+  if (since) predicates.push((row) => row.key("updatedAt").ge(since));
+  if (filter.query.visibility !== "any")
+    predicates.push(
+      effectiveVisibilityPredicate(
+        filter.query.visibility,
+        filter.folderVisibilities,
+      ),
+    );
+  if (filter.query.orientation !== "any")
+    predicates.push(orientationPredicate(filter.query.orientation));
+  return predicates;
 }
