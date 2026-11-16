@@ -32,6 +32,7 @@ export interface FormalCheck {
 }
 
 import { COVERED_FILES } from "../formal-asset-files/coverage.mjs";
+import { COVERED_FILES as DECLARED_ROWS_COVERED_FILES } from "../formal-declared-rows/coverage.mjs";
 
 const SKILL = ".agents/skills/verify-dms-media";
 const MODULE = "packages/dms-media";
@@ -108,6 +109,15 @@ const config: VerifyConfig = {
       covers: COVERED_FILES,
       files: [".agents/skills/formal-asset-files/**"],
       command: ["node", ".agents/skills/formal-asset-files/check.mjs"],
+      violation: /^(?:finding|BROKEN|STALE) (\S+)/gm,
+      passing: /(?<=^holds +(?:\w+, )*)(\w+)(?=,| \()/gm,
+      behaviour: { kind: "emit" },
+    },
+    {
+      name: "formal-declared-rows",
+      covers: DECLARED_ROWS_COVERED_FILES,
+      files: [".agents/skills/formal-declared-rows/**"],
+      command: ["node", ".agents/skills/formal-declared-rows/check.mjs"],
       violation: /^(?:finding|BROKEN|STALE) (\S+)/gm,
       passing: /(?<=^holds +(?:\w+, )*)(\w+)(?=,| \()/gm,
       behaviour: { kind: "emit" },
