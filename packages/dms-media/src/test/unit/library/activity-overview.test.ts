@@ -6,18 +6,20 @@ import {
 } from "../../../library/batches";
 import { fileLink, folderLink } from "../../../library/links";
 import {
+  sumLibraryTotals,
+  totalsByTypeGroup,
+} from "../../../library/asset-totals";
+import {
   buildAttentionItems,
   buildKpiItems,
   buildStorageMeter,
-  storedSize,
 } from "../../../library/overview";
 import {
   nextDailyRun,
-  pickExampleImage,
   usesDefaultPresets,
 } from "../../../library/presets-page";
 import { DEFAULT_PRESETS } from "../../../presets";
-import { asset, event, folder } from "./fixtures";
+import { event, folder } from "./fixtures";
 
 const folders = new Map([
   ["root", folder("root")],
@@ -220,20 +222,36 @@ describe("[unit] library/activity — feed", () => {
 });
 
 describe("[unit] library/overview — figures", () => {
-  const edited = asset("edited", {
-    size: 3000,
-    originalKey: "originals/edited.jpg",
-    originalSize: 280000,
-  });
+  const both = { folderId: "root", files: 2, size: 4000, originalSize: 280000 };
+  const plain = { folderId: "root", files: 1, size: 1000, originalSize: 0 };
+  const counts = {
+    all: [both],
+    subsets: {
+      inherited: [both],
+      missingAlt: [plain],
+      missingAltInherited: [plain],
+    },
+  };
   const input = {
-    assets: [edited, asset("plain", { size: 1000, alt: "A plain photo" })],
-    visibilityOf: () => "private" as const,
-    now: new Date("2026-01-02"),
+    totals: sumLibraryTotals(counts, folders),
+    byTypeGroup: totalsByTypeGroup([
+      { mimetype: "image/jpeg", files: 2, storedSize: 284000 },
+    ]),
   };
 
   it("counts the original kept by an edit in the storage", () => {
-    expect(storedSize(edited)).to.equal(283000);
     expect(buildStorageMeter(input).value).to.equal(284000);
+  });
+
+  it("resolves inherited files from their folder's visibility", () => {
+    const shared = new Map([
+      ["root", folder("root", undefined, [], { visibility: "public" })],
+    ]);
+    expect(sumLibraryTotals(counts, shared)).to.include({
+      publicFiles: 2,
+      publicMissingAlt: 1,
+    });
+    expect(input.totals).to.include({ publicFiles: 0, publicMissingAlt: 0 });
   });
 
   it("links every figure somewhere", () => {
@@ -263,30 +281,5 @@ describe("[unit] library/presets-page — image sizes", () => {
     const next = nextDailyRun("0 4 * * *", now);
     expect(next.getDate()).to.equal(2);
     expect(next.getHours()).to.equal(4);
-  });
-
-  it("shows sizes on a photo, never on a vector", () => {
-    const svg = asset("xss", {
-      mimetype: "image/svg+xml",
-      createdAt: at(5),
-    });
-    const photo = asset("photo", { mimetype: "image/png", createdAt: at(1) });
-    expect(pickExampleImage([svg, photo], () => true)?._id).to.equal("photo");
-    expect(pickExampleImage([svg], () => true)).to.equal(undefined);
-  });
-
-  it("shows sizes on the newest public photo, else on the newest private one", () => {
-    const oldPublic = asset("old-public", { createdAt: at(1) });
-    const newPrivate = asset("new-private", { createdAt: at(5) });
-    const olderPrivate = asset("older-private", { createdAt: at(3) });
-    const isPublic = (candidate: { _id: string }) =>
-      candidate._id === "old-public";
-    expect(pickExampleImage([newPrivate, oldPublic], isPublic)?._id).to.equal(
-      "old-public",
-    );
-    expect(
-      pickExampleImage([olderPrivate, newPrivate], isPublic)?._id,
-    ).to.equal("new-private");
-    expect(pickExampleImage([], isPublic)).to.equal(undefined);
   });
 });

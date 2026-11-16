@@ -11,11 +11,18 @@ import {
   setStarred,
   type StarredTargets,
 } from "../../library/favorites";
-import { computeFolderStats } from "../../library/folder-stats";
 import {
-  type AssetCountFields,
+  countLiveAssets,
+  countPublicFiles,
+  type FolderCounts,
+  loadFolderCounts,
+  subsetRows,
+  sumFiles,
+  sumSize,
+} from "../../library/asset-totals";
+import { assetContent, computeFolderStats } from "../../library/folder-stats";
+import {
   countByTypeGroup,
-  loadAssetCountFields,
   loadAssetsInFolders,
   pageAssets,
 } from "../../library/listing";
@@ -127,7 +134,7 @@ function buildFolderDtos(
   assets: MediaAsset[],
   starredIds: Set<string>,
 ) {
-  const stats = computeFolderStats(context.folders, assets);
+  const stats = computeFolderStats(context.folders, assets.map(assetContent));
   return folders.map((folder) =>
     buildFolderDto(context, folder, {
       stats: stats.get(folder._id),
@@ -145,19 +152,24 @@ function treeViewScope(
   return new Set(searchScope(context, folderId));
 }
 
-function countViews(
-  assets: AssetCountFields[],
+async function countViews(
+  context: MediaRequestContext,
+  counts: FolderCounts,
   starred: StarredTargets,
   scope: Set<string> | undefined,
 ) {
   const inScope = (folderId: string) => !scope || scope.has(folderId);
-  const scoped = assets.filter((asset) => inScope(asset.folderId));
   const starredFolders = [...starred.folderIds].filter(inScope).length;
+  const starredFiles = await countLiveAssets(
+    context.assetModel,
+    [...starred.assetIds],
+    [...(scope ?? context.access.readable)],
+  );
   return {
-    starred:
-      scoped.filter((asset) => starred.assetIds.has(asset._id)).length +
-      starredFolders,
-    missingAlt: scoped.filter(isMissingAlt).length,
+    starred: starredFiles + starredFolders,
+    missingAlt: sumFiles(
+      subsetRows(counts, "missingAlt").filter((row) => inScope(row.folderId)),
+    ),
   };
 }
 
@@ -189,21 +201,26 @@ export class MediaLibraryController extends MediaApiController {
   @Get("/tree")
   async tree() {
     const context = await this.resolveContext();
-    const [assets, starred] = await Promise.all([
-      loadAssetCountFields(context.assetModel, [...context.access.readable]),
+    const [counts, starred] = await Promise.all([
+      loadFolderCounts(
+        context.assetModel,
+        [...context.access.readable],
+        ["missingAlt"],
+      ),
       loadStarredTargets(this.owner(context)),
     ]);
-    const stats = computeFolderStats(context.folders, assets);
+    const stats = computeFolderStats(context.folders, counts.all);
     return {
       folders: listVisibleFolders(context, stats, starred.folderIds),
       root: {
         write: context.rootRights.has("write"),
         manage: context.rootRights.has("manage"),
-        fileCount: assets.length,
-        size: assets.reduce((total, asset) => total + asset.size, 0),
+        fileCount: sumFiles(counts.all),
+        size: sumSize(counts.all),
       },
-      views: countViews(
-        assets,
+      views: await countViews(
+        context,
+        counts,
         starred,
         treeViewScope(context, this.readQuery().folderId),
       ),
@@ -380,19 +397,19 @@ export class MediaLibraryController extends MediaApiController {
     const folder = requireVisibleFolder(context, folderId);
     const subfolders = getDescendantFolders(context, folderId);
     const folderIds = [folder._id, ...subfolders.map((child) => child._id)];
-    const assets = await loadAssetsInFolders(context.assetModel, folderIds);
-    const publicFiles = assets.filter(
-      (asset) =>
-        resolveEffectiveVisibility(
-          asset,
-          context.foldersById.get(asset.folderId),
-        ) === "public",
-    ).length;
+    const counts = await loadFolderCounts(context.assetModel, folderIds, [
+      "ownPublic",
+      "inherited",
+    ]);
     return {
       subfolders: subfolders.length,
-      files: assets.length,
-      size: assets.reduce((total, asset) => total + asset.size, 0),
-      publicFiles,
+      files: sumFiles(counts.all),
+      size: sumSize(counts.all),
+      publicFiles: countPublicFiles(
+        subsetRows(counts, "ownPublic"),
+        subsetRows(counts, "inherited"),
+        context.foldersById,
+      ),
       linkedSubfolders: subfolders.filter((child) => Boolean(child.binding))
         .length,
     };

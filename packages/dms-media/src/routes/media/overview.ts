@@ -4,17 +4,24 @@ import { assert } from "@antelopejs/interface-api-util";
 import { HasPermission } from "@antelopejs/interface-dms/permissions";
 import type { ActivityFeedItem } from "@antelopejs/interface-dms/base/activity-feed";
 import { getMediaConfig } from "../../config";
-import { type MediaAsset, type MediaEvent, MediaEventModel } from "../../db";
+import { type MediaEvent, MediaEventModel } from "../../db";
 import { buildActivityItems, isActivityFilter } from "../../library/activity";
+import {
+  LIBRARY_SUBSETS,
+  loadFolderCounts,
+  loadMimetypeTotals,
+  sumLibraryTotals,
+  totalsByTypeGroup,
+} from "../../library/asset-totals";
 import { countFailedUploads } from "../../library/batches";
 import { fileLink } from "../../library/links";
-import { loadAssetsInFolders } from "../../library/listing";
+import { loadNewestAssets } from "../../library/listing";
 import {
   buildAttentionItems,
   buildKpiItems,
   buildStorageMeter,
   type OverviewInput,
-  recentAssets,
+  recentUploadsSince,
 } from "../../library/overview";
 import { libraryVersion } from "../../library/realtime";
 import { loadUploadHistoryEvents } from "../../library/upload-history";
@@ -22,7 +29,7 @@ import { MEDIA_PAGE_PERMISSION } from "../../pages/files";
 import { requireReadableAsset } from "./assets";
 import { MediaApiController } from "./controller";
 import type { MediaRequestContext } from "./context";
-import { buildAssetDto, resolveEffectiveVisibility } from "./dto";
+import { buildAssetDto } from "./dto";
 
 const HTTP_FORBIDDEN = 403;
 const EVENTS_SCANNED = 400;
@@ -32,15 +39,15 @@ const DEFAULT_FEED_LENGTH = 12;
 const MAX_FEED_LENGTH = 50;
 const RECENT_FILES = 6;
 /** The overview blocks read the library together: one read serves them all. */
-const ASSETS_CACHE_TTL_MS = 5000;
+const FIGURES_CACHE_TTL_MS = 5000;
 
-interface CachedAssets {
+interface CachedFigures {
   version: number;
   readAt: number;
-  assets: Promise<MediaAsset[]>;
+  figures: Promise<OverviewInput>;
 }
 
-const assetsCache = new Map<string, CachedAssets>();
+const figuresCache = new Map<string, CachedFigures>();
 
 function isEventVisible(
   context: MediaRequestContext,
@@ -81,29 +88,51 @@ function clampFeedLength(raw: string | undefined): number {
   return Math.min(Math.floor(parsed), MAX_FEED_LENGTH);
 }
 
-function pruneAssetsCache(now: number): void {
-  for (const [key, entry] of assetsCache) {
-    if (now - entry.readAt >= ASSETS_CACHE_TTL_MS) assetsCache.delete(key);
+function pruneFiguresCache(now: number): void {
+  for (const [key, entry] of figuresCache) {
+    if (now - entry.readAt >= FIGURES_CACHE_TTL_MS) figuresCache.delete(key);
   }
 }
 
-function readableAssets(context: MediaRequestContext): Promise<MediaAsset[]> {
+async function loadFigures(
+  context: MediaRequestContext,
+  now: Date,
+): Promise<OverviewInput> {
+  const folderIds = [...context.access.readable];
+  const [counts, mimetypeRows] = await Promise.all([
+    loadFolderCounts(
+      context.assetModel,
+      folderIds,
+      LIBRARY_SUBSETS,
+      recentUploadsSince(now),
+    ),
+    loadMimetypeTotals(context.assetModel, folderIds),
+  ]);
+  return {
+    totals: sumLibraryTotals(counts, context.foldersById),
+    byTypeGroup: totalsByTypeGroup(mimetypeRows),
+    quotaBytes: getMediaConfig().storageQuotaBytes,
+  };
+}
+
+function readableFigures(
+  context: MediaRequestContext,
+  now: Date,
+): Promise<OverviewInput> {
   const key = `${context.tenantId}:${context.user._id}`;
-  const now = Date.now();
-  pruneAssetsCache(now);
-  const cached = assetsCache.get(key);
+  const readAt = now.getTime();
+  pruneFiguresCache(readAt);
+  const cached = figuresCache.get(key);
   if (
     cached &&
     cached.version === libraryVersion() &&
-    now - cached.readAt < ASSETS_CACHE_TTL_MS
+    readAt - cached.readAt < FIGURES_CACHE_TTL_MS
   )
-    return cached.assets;
-  const assets = loadAssetsInFolders(context.assetModel, [
-    ...context.access.readable,
-  ]);
-  assetsCache.set(key, { version: libraryVersion(), readAt: now, assets });
-  assets.catch(() => assetsCache.delete(key));
-  return assets;
+    return cached.figures;
+  const figures = loadFigures(context, now);
+  figuresCache.set(key, { version: libraryVersion(), readAt, figures });
+  figures.catch(() => figuresCache.delete(key));
+  return figures;
 }
 
 /** A file's own history links nowhere it already is. */
@@ -133,41 +162,29 @@ export class MediaOverviewController extends MediaApiController {
     return context;
   }
 
-  private async overviewInput(
-    context: MediaRequestContext,
-  ): Promise<OverviewInput> {
-    return {
-      assets: await readableAssets(context),
-      visibilityOf: (asset: MediaAsset) =>
-        resolveEffectiveVisibility(
-          asset,
-          context.foldersById.get(asset.folderId),
-        ),
-      quotaBytes: getMediaConfig().storageQuotaBytes,
-      now: new Date(),
-    };
-  }
-
   @Get("/stats/kpis")
   async kpis() {
     const context = await this.ownerContext();
-    return { items: buildKpiItems(await this.overviewInput(context)) };
+    return {
+      items: buildKpiItems(await readableFigures(context, new Date())),
+    };
   }
 
   @Get("/stats/storage")
   async storage() {
     const context = await this.ownerContext();
-    return buildStorageMeter(await this.overviewInput(context));
+    return buildStorageMeter(await readableFigures(context, new Date()));
   }
 
   @Get("/stats/attention")
   async attention() {
     const context = await this.ownerContext();
-    const input = await this.overviewInput(context);
+    const now = new Date();
+    const figures = await readableFigures(context, now);
     return {
       items: buildAttentionItems({
-        ...input,
-        failedUploads: await countTodayFailures(context, input.now),
+        ...figures,
+        failedUploads: await countTodayFailures(context, now),
       }),
     };
   }
@@ -175,11 +192,13 @@ export class MediaOverviewController extends MediaApiController {
   @Get("/stats/recent")
   async recent() {
     const context = await this.ownerContext();
-    const assets = await readableAssets(context);
+    const assets = await loadNewestAssets(
+      context.assetModel,
+      [...context.access.readable],
+      RECENT_FILES,
+    );
     return {
-      assets: recentAssets(assets, RECENT_FILES).map((asset) =>
-        buildAssetDto(context, asset),
-      ),
+      assets: assets.map((asset) => buildAssetDto(context, asset)),
     };
   }
 

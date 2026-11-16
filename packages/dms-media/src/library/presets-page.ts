@@ -1,7 +1,8 @@
 import type { KeyValueListItem } from "@antelopejs/interface-dms/base/key-value-list";
 import type { ComposedTextDateFormat } from "@antelopejs/interface-dms/base/types";
 import type { SweepReport } from "../crons";
-import type { MediaAsset } from "../db";
+import { ValueProxy } from "@antelopejs/interface-database";
+import { type MediaAsset, MediaAssetModel } from "../db";
 import { DEFAULT_PRESETS, type MediaPresetConfig } from "../presets";
 import { composedText, countParam } from "./composed-text";
 
@@ -113,15 +114,60 @@ const EXAMPLE_MIMETYPES: ReadonlySet<string> = new Set([
   "image/avif",
 ]);
 
-/** The image shown rendered by each size: the newest public photo, else the newest photo. */
-export function pickExampleImage(
-  assets: MediaAsset[],
-  isPublic: (asset: MediaAsset) => boolean,
-): MediaAsset | undefined {
-  const images = assets
-    .filter((asset) => EXAMPLE_MIMETYPES.has(asset.mimetype.toLowerCase()))
-    .sort(
-      (left, right) => right.createdAt.getTime() - left.createdAt.getTime(),
-    );
-  return images.find(isPublic) ?? images[0];
+interface AssetsTableModel {
+  table: MediaAssetModel["table"];
+}
+
+async function newestPhoto(
+  model: AssetsTableModel,
+  folderIds: string[],
+  publicFolderIds: string[] | undefined,
+): Promise<MediaAsset | undefined> {
+  const [row] = await model.table
+    .getAll(folderIds.length === 1 ? folderIds[0] : folderIds, "folderId")
+    .filter((asset) => {
+      const photo = asset
+        .key("isDeleting")
+        .default(false)
+        .eq(false)
+        .and(
+          ValueProxy.constant([...EXAMPLE_MIMETYPES]).includes(
+            asset.key("mimetype").downcase(),
+          ),
+        );
+      if (!publicFolderIds) return photo;
+      return photo.and(
+        asset
+          .key("visibility")
+          .eq("public")
+          .or(
+            asset
+              .key("visibility")
+              .eq("inherit")
+              .and(
+                ValueProxy.constant(publicFolderIds).includes(
+                  asset.key("folderId"),
+                ),
+              ),
+          ),
+      );
+    })
+    .orderBy("createdAt", "desc")
+    .slice(0, 1)
+    .run();
+  return row ? MediaAssetModel.fromDatabase(row) : undefined;
+}
+
+/** The image shown rendered by each size: the newest public photo of the folders, else their newest photo. */
+export async function loadExampleImage(
+  model: AssetsTableModel,
+  folderIds: string[],
+  publicFolderIds: string[],
+): Promise<MediaAsset | undefined> {
+  if (folderIds.length === 0) return undefined;
+  const [publicPhoto, anyPhoto] = await Promise.all([
+    newestPhoto(model, folderIds, publicFolderIds),
+    newestPhoto(model, folderIds, undefined),
+  ]);
+  return publicPhoto ?? anyPhoto;
 }

@@ -17,7 +17,7 @@ import { feedingBinding } from "../../bindings";
 import { getMediaConfig } from "../../config";
 import { ORIGINAL_FILENAME_METADATA_KEY } from "../../constants";
 import { MediaUploadModel } from "../../db";
-import { loadAssetsInFolders } from "../../library/listing";
+import { loadNamesContaining } from "../../library/listing";
 import {
   assertUploadTypeAllowed,
   assertWithinQuota,
@@ -25,7 +25,7 @@ import {
   probeImage,
   UploadRefusedError,
 } from "../../upload-checks";
-import { suggestFreeNames } from "../../upload-names";
+import { copyStem, suggestFreeNames } from "../../upload-names";
 import { mimetypeOfFormat } from "../../upload-policy";
 import {
   confirmUploadSchema,
@@ -135,13 +135,12 @@ export class MediaUploadController extends MediaApiController {
     );
     const context = await this.resolveContext();
     requireFolderRight(context, folderId, "write");
-    const assets = await loadAssetsInFolders(context.assetModel, [folderId]);
-    return {
-      names: suggestFreeNames(
-        assets.map((asset) => asset.name),
-        filenames,
-      ),
-    };
+    const existing = await loadNamesContaining(
+      context.assetModel,
+      folderId,
+      filenames.map(copyStem),
+    );
+    return { names: suggestFreeNames(existing, filenames) };
   }
 
   @Post("/upload/abort")

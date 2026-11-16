@@ -2,7 +2,10 @@ import { expect } from "chai";
 import { addAssetBinding, removeAssetBinding } from "../../../bindings";
 import { filterAssets } from "../../../library/asset-filters";
 import { bindingAccepts } from "../../../library/binding-labels";
-import { computeFolderStats } from "../../../library/folder-stats";
+import {
+  assetContent,
+  computeFolderStats,
+} from "../../../library/folder-stats";
 import {
   matchAsset,
   normalizeSearchText,
@@ -116,11 +119,14 @@ describe("[unit] library — listing facets and folder counts", () => {
 
   it("keeps direct and recursive counts apart", () => {
     const folders = [folder("demo"), folder("covers", "demo", ["demo"])];
-    const stats = computeFolderStats(folders, [
-      asset("a", { folderId: "demo", size: 10 }),
-      asset("b", { folderId: "covers", size: 20 }),
-      asset("c", { folderId: "covers", size: 30 }),
-    ]);
+    const stats = computeFolderStats(
+      folders,
+      [
+        asset("a", { folderId: "demo", size: 10 }),
+        asset("b", { folderId: "covers", size: 20 }),
+        asset("c", { folderId: "covers", size: 30 }),
+      ].map(assetContent),
+    );
     expect(stats.get("demo")).to.include({
       fileCount: 3,
       directFileCount: 1,

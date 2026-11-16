@@ -1,4 +1,5 @@
 import { type MediaAsset, MediaAssetModel } from "../db";
+import { literalPattern } from "./asset-totals";
 import type {
   AssetSortKey,
   PageQuery,
@@ -33,12 +34,6 @@ interface AssetsTableModel {
   table: MediaAssetModel["table"];
 }
 
-/** What the library tree counts of each asset. */
-export type AssetCountFields = Pick<
-  MediaAsset,
-  "_id" | "folderId" | "size" | "mimetype" | "alt"
->;
-
 function liveAssetsIn(model: AssetsTableModel, folderIds: string[]) {
   return model.table
     .getAll(folderIds.length === 1 ? folderIds[0] : folderIds, "folderId")
@@ -57,15 +52,39 @@ export async function loadAssetsInFolders(
     .filter((row): row is MediaAsset => row !== undefined);
 }
 
-/** The fields the tree counts, of every live asset stored in the given folders. */
-export async function loadAssetCountFields(
+/**
+ * The names of the folder's live assets that hold one of the fragments,
+ * ignoring case, filtered in the query. Every name that collides with a
+ * fragment's copy names ("photo (2).jpg" for "photo") is among them.
+ */
+export async function loadNamesContaining(
+  model: AssetsTableModel,
+  folderId: string,
+  fragments: string[],
+): Promise<string[]> {
+  if (fragments.length === 0) return [];
+  const pattern = `(?i)${fragments.map(literalPattern).join("|")}`;
+  const rows = await liveAssetsIn(model, [folderId])
+    .filter((row) => row.key("name").match(pattern))
+    .pluck("name")
+    .run();
+  return rows.map((row) => row.name);
+}
+
+/** The newest live assets of the given folders, sorted and cut in the query. */
+export async function loadNewestAssets(
   model: AssetsTableModel,
   folderIds: string[],
-): Promise<AssetCountFields[]> {
+  limit: number,
+): Promise<MediaAsset[]> {
   if (folderIds.length === 0) return [];
-  return liveAssetsIn(model, folderIds)
-    .pluck("_id", "folderId", "size", "mimetype", "alt")
+  const rows = await liveAssetsIn(model, folderIds)
+    .orderBy("createdAt", "desc")
+    .slice(0, limit)
     .run();
+  return rows
+    .map((row) => MediaAssetModel.fromDatabase(row))
+    .filter((row): row is MediaAsset => row !== undefined);
 }
 
 /** Bytes the tenant's live assets keep in storage, edited originals included. */
