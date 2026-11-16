@@ -918,6 +918,8 @@
 		"toasts": {
 			"alt_failed": "Alt text wasn't saved",
 			"delete_failed": "Couldn't delete",
+			"no_writable_folder": "You can't upload to any of these folders. Ask for write access to one of them.",
+			"destination_unavailable": "That folder is no longer available. Upload again and choose another folder.",
 			"deleted": "{count} file deleted | {count} files deleted",
 			"download_failed": "Couldn't download",
 			"folder_create_failed": "Couldn't create the folder",
