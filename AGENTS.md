@@ -16,7 +16,7 @@ Run a package script from its own directory: `pnpm --dir packages/dms-media <scr
 
 ## Versioning
 
-- The module implements the interface, so it caps the interface range below the next minor (`>=<floor> <0.<minor+1>.0`), and that range accepts the interface version in the tree. The `dependency:ranges` step of `pnpm run checks` caps every other `@antelopejs/*` range below the next minor of its floor.
+- The module implements the interface and names it with `workspace:^`, so `pnpm pack` writes `^<interface version>` and no release hook rewrites it. The `dependency:ranges` step of `pnpm run checks` caps every other `@antelopejs/*` range below the next minor of its floor.
 - `release.yml` releases both packages: a preview of each on a push to `next`, and one stable package per dispatch of the release train. Release the interface before the module, since the module's floor on the interface must be on npm for the module to install.
 - `frontend-vue/package.json` pins the `@antelopejs/dms-frontend` minor it builds against in `engines`. Move it together with the `@antelopejs/dms-frontend` versions in `packages/dms-media/package.json` and `playground/package.json` and the compatibility table in `packages/dms-media/README.md`.
 - Both published packages compile to CommonJS in `dist`. Of the root and those two, only the private root sets `"type": "module"`, for its tool configs. `frontend-vue` is ESM source and keeps its own `"type": "module"`.
