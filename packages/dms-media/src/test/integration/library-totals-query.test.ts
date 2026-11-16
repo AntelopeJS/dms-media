@@ -433,4 +433,29 @@ describe("[integration] library rows the overview, presets and name checks read"
       }
     }
   });
+
+  it("checks a full batch of long names and names holding a NUL", async () => {
+    const incoming = [
+      ...Array.from(
+        { length: 499 },
+        (_, index) => `${String(index).padStart(3, "0")}${"x".repeat(247)}.jpg`,
+      ),
+      "PHOTO.jpg",
+      "x\u0000y.jpg",
+    ];
+    const all = assets
+      .filter((asset) => asset.folderId === "root")
+      .map((asset) => asset.name);
+    const colliding = await loadNamesContaining(
+      model,
+      "root",
+      incoming.map(copyStem),
+    );
+    expect(suggestFreeNames(colliding, incoming)).to.deep.equal(
+      suggestFreeNames(all, incoming),
+    );
+    expect(suggestFreeNames(colliding, incoming).at(-2)).to.equal(
+      "PHOTO (3).jpg",
+    );
+  });
 });

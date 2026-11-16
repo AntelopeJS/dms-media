@@ -192,7 +192,9 @@ export async function countLiveAssets(
 
 /** A pattern that matches `text` literally. */
 export function literalPattern(text: string): string {
-  return text.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  return text
+    .replace(/[.*+?^${}()|[\]\\]/g, "\\$&")
+    .replaceAll("\u0000", "\\x00");
 }
 
 /** How many live assets of the folders hold a rendered image size under each cache key, counted in the query. */

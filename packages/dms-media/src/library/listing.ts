@@ -62,13 +62,35 @@ export async function loadNamesContaining(
   folderId: string,
   fragments: string[],
 ): Promise<string[]> {
-  if (fragments.length === 0) return [];
-  const pattern = `(?i)${fragments.map(literalPattern).join("|")}`;
-  const rows = await liveAssetsIn(model, [folderId])
-    .filter((row) => row.key("name").match(pattern))
-    .pluck("name")
-    .run();
-  return rows.map((row) => row.name);
+  const matches = await Promise.all(
+    namePatterns(fragments).map((pattern) =>
+      liveAssetsIn(model, [folderId])
+        .filter((row) => row.key("name").match(pattern))
+        .pluck("name")
+        .run(),
+    ),
+  );
+  return [...new Set(matches.flat().map((row) => row.name))];
+}
+
+/** Keeps each pattern well under the length MongoDB accepts for a regular expression. */
+const MAX_PATTERN_LENGTH = 4000;
+
+/** Case-insensitive patterns that together match a name holding any of the fragments. */
+function namePatterns(fragments: string[]): string[] {
+  const patterns: string[][] = [];
+  let length = 0;
+  for (const fragment of new Set(fragments.map(literalPattern))) {
+    const current = patterns.at(-1);
+    if (!current || length + fragment.length > MAX_PATTERN_LENGTH) {
+      patterns.push([fragment]);
+      length = fragment.length;
+    } else {
+      current.push(fragment);
+      length += fragment.length + 1;
+    }
+  }
+  return patterns.map((alternatives) => `(?i)${alternatives.join("|")}`);
 }
 
 /** The newest live assets of the given folders, sorted and cut in the query. */
