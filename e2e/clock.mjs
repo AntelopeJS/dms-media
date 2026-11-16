@@ -11,7 +11,7 @@ import { fileURLToPath, pathToFileURL } from "node:url";
  */
 
 const HERE = dirname(fileURLToPath(import.meta.url));
-const DMS_PACKAGE = join(HERE, "../packages/dms-media/node_modules/@antelopejs/dms/package.json");
+const DMS_PACKAGE = join(HERE, "../node_modules/@antelopejs/dms/package.json");
 const DAY_MS = 24 * 60 * 60 * 1000;
 
 /**

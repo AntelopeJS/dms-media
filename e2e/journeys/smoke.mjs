@@ -8,6 +8,7 @@ import { check, image, recordRaw, sha256 } from "../media.mjs";
 export const journeys = guarded([
   {
     id: "smoke",
+    tag: "@smoke",
     title: "an owner uploads an image into a new folder, sees it in the Library and its delivery link serves the same bytes",
     entryPoint: "/modules/media/files, POST /api/media/upload/*, GET /media/<id>/<name>",
     async run(/** @type {Ctx} */ ctx) {
