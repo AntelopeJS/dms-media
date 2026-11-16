@@ -1,5 +1,38 @@
 # Changelog
 
+## v0.8.1
+
+[compare changes](https://github.com/AntelopeJS/dms-media/compare/v0.8.0...v0.8.1)
+
+### 🔥 Performance
+
+- **dms-media:** Count and sum the library's figures in the database query ([#188](https://github.com/AntelopeJS/dms-media/pull/188))
+- **dms-media:** Filter and count the library listing in the database query ([#189](https://github.com/AntelopeJS/dms-media/pull/189))
+
+### 🩹 Fixes
+
+- **release:** Keep the docs' module version in step with the release ([#178](https://github.com/AntelopeJS/dms-media/pull/178))
+- **dms-media:** Keep the picker's destination dialog inside its scope ([#184](https://github.com/AntelopeJS/dms-media/pull/184))
+- **release:** Build the interface before the release lint ([#190](https://github.com/AntelopeJS/dms-media/pull/190))
+- **deps:** Depend on the stable @antelopejs/tooling-configs
+
+### 💅 Refactors
+
+- **dms-media:** Adopt the shared assertDmsComponents check ([#179](https://github.com/AntelopeJS/dms-media/pull/179))
+
+### 📦 Build
+
+- **dms-media:** Move to mongodb 1.8.4 and the 15 November release line ([#180](https://github.com/AntelopeJS/dms-media/pull/180))
+- Move to @antelopejs/tooling-configs 0.8 and the three-tier CI ([#181](https://github.com/AntelopeJS/dms-media/pull/181))
+
+### ✅ Tests
+
+- **e2e:** Run the verify skill's journeys as a Playwright suite in CI ([#186](https://github.com/AntelopeJS/dms-media/pull/186))
+
+### ❤️ Contributors
+
+- Antony Rizzitelli
+
 ## v0.8.0
 
 [compare changes](https://github.com/AntelopeJS/dms-media/compare/v0.7.3...v0.8.0)
