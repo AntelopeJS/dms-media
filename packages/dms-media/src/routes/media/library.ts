@@ -3,9 +3,14 @@ import { assert, assertValidation } from "@antelopejs/interface-api-util";
 import { GetModel } from "@antelopejs/interface-database-decorators";
 import { UserModel } from "@antelopejs/interface-dms/auth/db";
 import { getMediaConfig } from "../../config";
-import type { MediaAsset, MediaFolder } from "../../db";
+import type { MediaFolder } from "../../db";
 import type { FolderVisibility } from "../../types";
-import { filterAssets } from "../../library/asset-filters";
+import {
+  type AssetPredicate,
+  assetFilterPredicates,
+  effectiveVisibilityPredicate,
+  isOneOf,
+} from "../../library/asset-filters";
 import {
   loadStarredTargets,
   setStarred,
@@ -15,19 +20,25 @@ import {
   countLiveAssets,
   countPublicFiles,
   type FolderCounts,
+  isMissingAlt,
   loadFolderCounts,
   subsetRows,
   sumFiles,
   sumSize,
 } from "../../library/asset-totals";
-import { assetContent, computeFolderStats } from "../../library/folder-stats";
+import { computeFolderStats } from "../../library/folder-stats";
 import {
+  type AssetPage,
+  type AssetSortFields,
   countByTypeGroup,
-  loadAssetsInFolders,
+  countMimetypes,
+  countTypeGroups,
+  loadAssetsById,
+  loadSortFields,
   pageAssets,
+  typeGroupPredicate,
 } from "../../library/listing";
 import { searchAssets, searchFolders, searchWords } from "../../library/search";
-import { isDescribableImage } from "../../library/type-groups";
 import {
   favoriteSchema,
   type AssetFilterQuery,
@@ -54,7 +65,6 @@ import {
   buildFolderDto,
   isFolderVisible,
   listVisibleFolders,
-  resolveEffectiveVisibility,
 } from "./dto";
 
 const HTTP_FORBIDDEN = 403;
@@ -63,16 +73,17 @@ const RECENT_VIEW_LIMIT = 200;
 /** What a search without any word answers: nothing, rather than the whole library. */
 const EMPTY_SEARCH = { assets: [], total: 0, facets: { all: 0 }, folders: [] };
 
-/** What a smart view needs besides the assets: the caller's stars and each file's visibility. */
+/** What a smart view needs besides the assets: the caller's stars and each folder's visibility. */
 interface SmartViewInput {
   starredAssetIds: Set<string>;
-  visibilityOf: (asset: MediaAsset) => FolderVisibility;
+  folderVisibilities: ReadonlyMap<string, FolderVisibility>;
 }
 
-type SmartViewFilter = (
-  assets: MediaAsset[],
-  input: SmartViewInput,
-) => MediaAsset[];
+/** The conditions a smart view adds, and for `newest` the count of newest files it keeps. */
+interface SmartViewQuery {
+  where: AssetPredicate[];
+  newest?: number;
+}
 
 type ViewSort = Pick<ListingQuery, "sort" | "direction">;
 
@@ -82,24 +93,26 @@ const SMART_VIEW_DEFAULT_SORTS: Partial<Record<SmartView, ViewSort>> = {
   largest: { sort: "size", direction: "desc" },
 };
 
-function isMissingAlt(asset: Pick<MediaAsset, "mimetype" | "alt">): boolean {
-  return isDescribableImage(asset.mimetype) && !asset.alt?.trim();
-}
-
-const SMART_VIEW_FILTERS: Record<SmartView, SmartViewFilter> = {
-  recent: (assets) =>
-    [...assets]
-      .sort(
-        (left, right) => right.createdAt.getTime() - left.createdAt.getTime(),
-      )
-      .slice(0, RECENT_VIEW_LIMIT),
-  starred: (assets, { starredAssetIds }) =>
-    assets.filter((asset) => starredAssetIds.has(asset._id)),
-  "missing-alt": (assets) => assets.filter(isMissingAlt),
-  largest: (assets) => assets,
-  public: (assets, { visibilityOf }) =>
-    assets.filter((asset) => visibilityOf(asset) === "public"),
+const SMART_VIEWS: Record<
+  SmartView,
+  (input: SmartViewInput) => SmartViewQuery
+> = {
+  recent: () => ({ where: [], newest: RECENT_VIEW_LIMIT }),
+  starred: ({ starredAssetIds }) => ({
+    where: [(row) => isOneOf(row.key("_id"), starredAssetIds)],
+  }),
+  "missing-alt": () => ({ where: [isMissingAlt] }),
+  largest: () => ({ where: [] }),
+  public: ({ folderVisibilities }) => ({
+    where: [effectiveVisibilityPredicate("public", folderVisibilities)],
+  }),
 };
+
+function newestFirst<T extends AssetSortFields>(assets: T[]): T[] {
+  return [...assets].sort(
+    (left, right) => right.createdAt.getTime() - left.createdAt.getTime(),
+  );
+}
 
 function folderPathName(
   context: MediaRequestContext,
@@ -111,30 +124,40 @@ function folderPathName(
     .join(" ");
 }
 
-function visibilityOf(context: MediaRequestContext) {
-  return (asset: MediaAsset) =>
-    resolveEffectiveVisibility(asset, context.foldersById.get(asset.folderId));
+function folderVisibilities(
+  context: MediaRequestContext,
+  folderIds: string[],
+): Map<string, FolderVisibility> {
+  return new Map(
+    folderIds.map((id) => [
+      id,
+      context.foldersById.get(id)?.visibility ?? "private",
+    ]),
+  );
 }
 
-function applyFilters(
+function filterPredicates(
   context: MediaRequestContext,
-  assets: MediaAsset[],
+  folderIds: string[],
   query: AssetFilterQuery,
-): MediaAsset[] {
-  return filterAssets(assets, {
+): AssetPredicate[] {
+  return assetFilterPredicates({
     query,
     now: new Date(),
-    visibilityOf: visibilityOf(context),
+    folderVisibilities: folderVisibilities(context, folderIds),
   });
 }
 
-function buildFolderDtos(
+/** Folder DTOs with counts over every live asset of `scope`. */
+async function buildFolderDtos(
   context: MediaRequestContext,
   folders: MediaFolder[],
-  assets: MediaAsset[],
+  scope: string[],
   starredIds: Set<string>,
 ) {
-  const stats = computeFolderStats(context.folders, assets.map(assetContent));
+  if (folders.length === 0) return [];
+  const counts = await loadFolderCounts(context.assetModel, scope);
+  const stats = computeFolderStats(context.folders, counts.all);
   return folders.map((folder) =>
     buildFolderDto(context, folder, {
       stats: stats.get(folder._id),
@@ -251,13 +274,12 @@ export class MediaLibraryController extends MediaApiController {
     );
     const context = await this.resolveContext();
     requireFolderRight(context, folderId, "read");
-    const [assets, starred] = await Promise.all([
-      loadAssetsInFolders(context.assetModel, [folderId]),
-      loadStarredTargets(this.owner(context)),
-    ]);
-    return this.answerPage(
+    const scope = [folderId];
+    const starred = await loadStarredTargets(this.owner(context));
+    return this.answerQuery(
       context,
-      applyFilters(context, assets, query),
+      scope,
+      filterPredicates(context, scope, query),
       query,
       starred.assetIds,
     );
@@ -271,26 +293,35 @@ export class MediaLibraryController extends MediaApiController {
     );
     const context = await this.resolveContext();
     const scope = searchScope(context, query.folderId);
-    const [assets, starred] = await Promise.all([
-      loadAssetsInFolders(context.assetModel, scope),
-      loadStarredTargets(this.owner(context)),
-    ]);
-    const matching = SMART_VIEW_FILTERS[smartView](
-      applyFilters(context, assets, query),
-      {
-        starredAssetIds: starred.assetIds,
-        visibilityOf: visibilityOf(context),
-      },
-    );
+    const starred = await loadStarredTargets(this.owner(context));
+    const viewQuery = SMART_VIEWS[smartView]({
+      starredAssetIds: starred.assetIds,
+      folderVisibilities: folderVisibilities(context, scope),
+    });
+    const where = [
+      ...filterPredicates(context, scope, query),
+      ...viewQuery.where,
+    ];
     const defaultSort = this.ctx.url.searchParams.has("sort")
       ? undefined
       : SMART_VIEW_DEFAULT_SORTS[smartView];
-    const page = this.answerPage(
-      context,
-      matching,
-      { ...query, ...defaultSort },
-      starred.assetIds,
-    );
+    const pageQuery = { ...query, ...defaultSort };
+    const page = viewQuery.newest
+      ? await this.answerRows(
+          context,
+          newestFirst(
+            await loadSortFields(context.assetModel, scope, where),
+          ).slice(0, viewQuery.newest),
+          pageQuery,
+          starred.assetIds,
+        )
+      : await this.answerQuery(
+          context,
+          scope,
+          where,
+          pageQuery,
+          starred.assetIds,
+        );
     const viewFolders = context.folders.filter(
       (folder) =>
         smartView === "starred" &&
@@ -299,7 +330,12 @@ export class MediaLibraryController extends MediaApiController {
     );
     return {
       ...page,
-      folders: buildFolderDtos(context, viewFolders, assets, starred.folderIds),
+      folders: await buildFolderDtos(
+        context,
+        viewFolders,
+        scope,
+        starred.folderIds,
+      ),
     };
   }
 
@@ -311,21 +347,21 @@ export class MediaLibraryController extends MediaApiController {
     if (searchWords(query.q).length === 0) return EMPTY_SEARCH;
     const context = await this.resolveContext();
     const scope = searchScope(context, query.folderId);
-    const [assets, starred] = await Promise.all([
-      loadAssetsInFolders(context.assetModel, scope),
+    const [rows, starred] = await Promise.all([
+      loadSortFields(
+        context.assetModel,
+        scope,
+        filterPredicates(context, scope, query),
+      ),
       loadStarredTargets(this.owner(context)),
     ]);
-    const hits = searchAssets(assets, {
-      query,
-      now: new Date(),
-      visibilityOf: visibilityOf(context),
-      folderPathOf: (asset) =>
-        folderPathName(context, context.foldersById.get(asset.folderId)),
-    });
+    const hits = searchAssets(rows, query.q, (row) =>
+      folderPathName(context, context.foldersById.get(row.folderId)),
+    );
     const matchedOn = new Map(
       hits.map((hit) => [hit.asset._id, hit.matchedOn]),
     );
-    const page = this.answerPage(
+    const page = await this.answerRows(
       context,
       hits.map((hit) => hit.asset),
       query,
@@ -340,10 +376,10 @@ export class MediaLibraryController extends MediaApiController {
         ...asset,
         matchedOn: matchedOn.get(asset.id) ?? "name",
       })),
-      folders: buildFolderDtos(
+      folders: await buildFolderDtos(
         context,
         searchFolders(scopedFolders, query.q),
-        assets,
+        scope,
         starred.folderIds,
       ),
     };
@@ -446,19 +482,60 @@ export class MediaLibraryController extends MediaApiController {
     return { ids };
   }
 
-  private answerPage(
+  /** One page of the assets meeting `where`, with its facets counted in the database. */
+  private async answerQuery(
     context: MediaRequestContext,
-    assets: MediaAsset[],
+    scope: string[],
+    where: AssetPredicate[],
     query: PageQuery,
     starredIds: Set<string>,
   ) {
-    const page = pageAssets(assets, query);
+    const model = context.assetModel;
+    const type = query.type;
+    const mimetypes = countMimetypes(model, scope, where);
+    const rows = type
+      ? mimetypes.then((counts) =>
+          loadSortFields(model, scope, [
+            ...where,
+            typeGroupPredicate(type, counts.keys()),
+          ]),
+        )
+      : loadSortFields(model, scope, where);
+    const [counts, sortFields] = await Promise.all([mimetypes, rows]);
+    const all = [...counts.values()].reduce((sum, count) => sum + count, 0);
+    return this.answerPage(context, pageAssets(sortFields, query), starredIds, {
+      all,
+      ...countTypeGroups(counts),
+    });
+  }
+
+  /** One page of `rows`, with its facets counted over them. */
+  private async answerRows(
+    context: MediaRequestContext,
+    rows: AssetSortFields[],
+    query: PageQuery,
+    starredIds: Set<string>,
+  ) {
+    return this.answerPage(context, pageAssets(rows, query), starredIds, {
+      all: rows.length,
+      ...countByTypeGroup(rows),
+    });
+  }
+
+  private async answerPage<F>(
+    context: MediaRequestContext,
+    page: AssetPage<AssetSortFields>,
+    starredIds: Set<string>,
+    facets: F,
+  ) {
+    const assets = await loadAssetsById(
+      context.assetModel,
+      page.assets.map((asset) => asset._id),
+    );
     return {
-      assets: page.assets.map((asset) =>
-        buildAssetDto(context, asset, starredIds),
-      ),
+      assets: assets.map((asset) => buildAssetDto(context, asset, starredIds)),
       total: page.total,
-      facets: { all: assets.length, ...countByTypeGroup(assets) },
+      facets,
     };
   }
 }
