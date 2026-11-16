@@ -8,8 +8,6 @@ import type { FolderVisibility } from "../../types";
 import {
   type AssetPredicate,
   assetFilterPredicates,
-  effectiveVisibilityPredicate,
-  isOneOf,
 } from "../../library/asset-filters";
 import {
   loadStarredTargets,
@@ -20,7 +18,6 @@ import {
   countLiveAssets,
   countPublicFiles,
   type FolderCounts,
-  isMissingAlt,
   loadFolderCounts,
   subsetRows,
   sumFiles,
@@ -40,13 +37,16 @@ import {
 } from "../../library/listing";
 import { searchAssets, searchFolders, searchWords } from "../../library/search";
 import {
+  newestFirst,
+  SMART_VIEW_DEFAULT_SORTS,
+  SMART_VIEWS,
+} from "../../library/smart-views";
+import {
   favoriteSchema,
   type AssetFilterQuery,
   listingQuerySchema,
-  type ListingQuery,
   type PageQuery,
   searchQuerySchema,
-  type SmartView,
   smartViewSchema,
   starterFoldersSchema,
 } from "../../validation/library.schema";
@@ -69,50 +69,8 @@ import {
 
 const HTTP_FORBIDDEN = 403;
 const HTTP_CONFLICT = 409;
-const RECENT_VIEW_LIMIT = 200;
 /** What a search without any word answers: nothing, rather than the whole library. */
 const EMPTY_SEARCH = { assets: [], total: 0, facets: { all: 0 }, folders: [] };
-
-/** What a smart view needs besides the assets: the caller's stars and each folder's visibility. */
-interface SmartViewInput {
-  starredAssetIds: Set<string>;
-  folderVisibilities: ReadonlyMap<string, FolderVisibility>;
-}
-
-/** The conditions a smart view adds, and for `newest` the count of newest files it keeps. */
-interface SmartViewQuery {
-  where: AssetPredicate[];
-  newest?: number;
-}
-
-type ViewSort = Pick<ListingQuery, "sort" | "direction">;
-
-/** The order a view opens in when the caller asks for none. */
-const SMART_VIEW_DEFAULT_SORTS: Partial<Record<SmartView, ViewSort>> = {
-  recent: { sort: "date", direction: "desc" },
-  largest: { sort: "size", direction: "desc" },
-};
-
-const SMART_VIEWS: Record<
-  SmartView,
-  (input: SmartViewInput) => SmartViewQuery
-> = {
-  recent: () => ({ where: [], newest: RECENT_VIEW_LIMIT }),
-  starred: ({ starredAssetIds }) => ({
-    where: [(row) => isOneOf(row.key("_id"), starredAssetIds)],
-  }),
-  "missing-alt": () => ({ where: [isMissingAlt] }),
-  largest: () => ({ where: [] }),
-  public: ({ folderVisibilities }) => ({
-    where: [effectiveVisibilityPredicate("public", folderVisibilities)],
-  }),
-};
-
-function newestFirst<T extends AssetSortFields>(assets: T[]): T[] {
-  return [...assets].sort(
-    (left, right) => right.createdAt.getTime() - left.createdAt.getTime(),
-  );
-}
 
 function folderPathName(
   context: MediaRequestContext,

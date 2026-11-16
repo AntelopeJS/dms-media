@@ -36,17 +36,12 @@ const ORIENTATION_TESTS: Record<
   square: (width, height) => width.eq(height),
 };
 
-/**
- * True when `value` is one of `options`, as one flat `$in` whatever the
- * option count. The value is compared through `concat("")`, which no index
- * serves, so the query keeps reading rows in folder index order and ties keep
- * their stored order.
- */
+/** True when `value` is one of `options`, tested as one flat `$in` whatever the option count. */
 export function isOneOf(
   value: ValueProxy<string>,
   options: Iterable<string>,
 ): ValueProxy<boolean> {
-  return ValueProxy.constant([...options]).includes(value.concat(""));
+  return ValueProxy.constant([...options]).includes(value);
 }
 
 function dimension(row: ValueProxy<MediaAsset>, key: "width" | "height") {

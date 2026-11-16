@@ -113,8 +113,11 @@ const ROWS: MediaAsset[] = [
   row("hidden", { name: "hidden photo.png" }),
 ];
 
-const TIE_ROWS = ["b-ties", "a-ties", "b-ties", "a-ties", "b-ties"].map(
-  (folderId) => row(folderId, { name: "same.png" }),
+const TIE_ROW_COUNT = 400;
+const STARRED_TIE_EVERY = 20;
+
+const TIE_ROWS = Array.from({ length: TIE_ROW_COUNT }, (_, index) =>
+  row(index % 2 === 0 ? "b-ties" : "a-ties", { name: "same.png" }),
 );
 const BULK_ROWS = BULK_FOLDERS.map((entry) =>
   row(entry._id, { name: `bulk ${entry.name}.png` }),
@@ -125,7 +128,9 @@ const STARRED = new Set([
   ROWS[1]!._id,
   ROWS[11]!._id,
   ROWS[15]!._id,
-  ...TIE_ROWS.map((entry) => entry._id),
+  ...TIE_ROWS.filter((_, index) => index % STARRED_TIE_EVERY === 0).map(
+    (entry) => entry._id,
+  ),
   ...BULK_ROWS.map((entry) => entry._id),
 ]);
 
