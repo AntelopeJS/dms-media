@@ -95,6 +95,7 @@ export const journeys = guarded([
   },
   {
     id: "uploads-from-the-field-land-in-its-folder",
+    tag: "@smoke",
     title: "the field's Upload button and a drop on the field send the file to the field's linked folder",
     entryPoint: "/verify-fields, Upload to Verify covers, drop on the Cover field",
     async run(/** @type {Ctx} */ ctx) {

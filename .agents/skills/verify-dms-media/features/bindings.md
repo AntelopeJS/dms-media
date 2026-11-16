@@ -1,6 +1,7 @@
 ---
 covers:
   - packages/dms-media/src/bindings.ts
+  - packages/dms-media/src/fixed-id.ts
   - packages/dms-media/src/library/binding-labels.ts
   - packages/dms-media/src/implementations/**
   - packages/interface-dms-media/src/bindings.ts

@@ -31,6 +31,7 @@ async function explorer(ctx, folderId, first) {
 /** @type {{ id: string, title: string, entryPoint: string, run: (ctx: Ctx) => Promise<void> }} */
 const theExplorerShowsViewsLocationsAndThumbnails = {
   id: "the-explorer-shows-views-locations-and-thumbnails",
+  tag: "@smoke",
   title: "the Library lists the views and the folder tree, switches grid, list and columns with a tile size slider, opens a view and a search, and shows images by their thumb size, an SVG by its uncropped preview and a PDF by its type",
   entryPoint: "/modules/media/files",
   async run(/** @type {Ctx} */ ctx) {

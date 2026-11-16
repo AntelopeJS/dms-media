@@ -1,6 +1,7 @@
 ---
 covers:
   - packages/dms-media/src/declared/**
+  - packages/dms-media/src/fixed-id.ts
   - packages/dms-media/src/validation/declared.schema.ts
   - packages/interface-dms-media/src/content.ts
   - packages/dms-media/src/upload-policy.ts

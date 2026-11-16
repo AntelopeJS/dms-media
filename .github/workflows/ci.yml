@@ -59,15 +59,167 @@ jobs:
     permissions:
       contents: read
 
+  # ci-node.yml exposes no outputs, so this copies its tier rule for the jobs
+  # declared here.
+  select:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    outputs:
+      tier: ${{ steps.tier.outputs.tier }}
+    steps:
+      - name: Pick the tier from the event, the target branch and the draft flag
+        id: tier
+        env:
+          EVENT: ${{ github.event_name }}
+          REF_NAME: ${{ github.ref_name }}
+          DEFAULT_BRANCH: ${{ github.event.repository.default_branch }}
+          REPOSITORY: ${{ github.repository }}
+          BASE_REF: ${{ github.base_ref }}
+          HEAD_REF: ${{ github.head_ref }}
+          HEAD_REPOSITORY: ${{ github.event.pull_request.head.repo.full_name }}
+          DRAFT: ${{ github.event.pull_request.draft }}
+        run: |
+          case "$EVENT" in
+            pull_request)
+              if [[ "$BASE_REF" == "$DEFAULT_BRANCH" && "$HEAD_REPOSITORY" == "$REPOSITORY" && "$HEAD_REF" =~ ^(next|develop)$ ]]; then
+                tier=none
+              elif [[ "$DRAFT" == true ]]; then
+                tier=draft
+              elif [[ "$BASE_REF" == "$DEFAULT_BRANCH" ]]; then
+                tier=full
+              else
+                tier=fast
+              fi
+              ;;
+            push)
+              if [[ "$REF_NAME" == "$DEFAULT_BRANCH" ]]; then tier=none; else tier=full; fi
+              ;;
+            schedule) tier=nightly ;;
+            *) tier=full ;;
+          esac
+          echo "tier=${tier}" >> "$GITHUB_OUTPUT"
+          echo "Tier \`${tier}\`" >> "$GITHUB_STEP_SUMMARY"
+
+  # The journeys of e2e/ as a Playwright suite: the @smoke ones on the full
+  # tier, every journey in shards on the nightly tier, nothing on a draft or
+  # the fast tier. Its global setup prepares and starts one dms-control run.
+  e2e:
+    needs: select
+    if: needs.select.outputs.tier == 'full' || needs.select.outputs.tier == 'nightly'
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    strategy:
+      fail-fast: false
+      matrix:
+        shard: ${{ fromJSON(needs.select.outputs.tier == 'nightly' && '[1, 2]' || '[1]') }}
+    env:
+      TIER: ${{ needs.select.outputs.tier }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - run: echo "DMS_CONTROL_RUNS=${RUNNER_TEMP}/dms-runs" >> "$GITHUB_ENV"
+      # Before setup-node: its pnpm cache resolves the store by running pnpm.
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+          cache-dependency-path: |
+            pnpm-lock.yaml
+            packages/dms-media/frontend-vue/pnpm-lock.yaml
+      # The playground's modules, the mongod binary, Chromium and the
+      # dashboard builds dms-control caches.
+      - uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cache/mongodb-binaries
+            ~/.cache/ms-playwright
+            .agents/skills/verify-dms-media/playground/.antelope/cache
+          key: e2e-${{ runner.os }}-${{ hashFiles('pnpm-lock.yaml', '.agents/skills/verify-dms-media/playground/antelope.config.ts') }}
+      - uses: actions/cache@v4
+        with:
+          path: ~/.cache/dms-control/frontend
+          key: dms-control-frontend-${{ github.sha }}
+          restore-keys: dms-control-frontend-
+      - run: pnpm install --frozen-lockfile
+      - name: Install Chromium and its system packages
+        run: |
+          if timeout 240 pnpm exec playwright install --with-deps --only-shell chromium; then
+            exit 0
+          fi
+          echo "::warning::Chromium's system packages did not install: installing the browser alone"
+          pnpm exec playwright install --only-shell chromium
+      - if: env.TIER == 'full'
+        run: pnpm e2e --grep @smoke
+      # The blob report keeps each test's steps, attachments and traces, so
+      # e2e-report merges the shards into one.
+      - if: env.TIER == 'nightly'
+        run: pnpm e2e --shard=${{ matrix.shard }}/2 --reporter=blob
+        env:
+          PLAYWRIGHT_BLOB_OUTPUT_DIR: e2e/blob-report
+      - if: always() && env.TIER == 'nightly'
+        uses: actions/upload-artifact@v4
+        with:
+          name: blob-report-${{ matrix.shard }}
+          path: e2e/blob-report
+          retention-days: 3
+      - if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: e2e-evidence-${{ matrix.shard }}
+          path: |
+            e2e/playwright-report
+            e2e/test-results
+            ${{ runner.temp }}/dms-runs/*/evidence
+            ${{ runner.temp }}/dms-runs/*/logs
+          retention-days: 7
+
+  # One HTML and JSON report of the nightly shards.
+  e2e-report:
+    needs: [select, e2e]
+    if: always() && needs.select.outputs.tier == 'nightly'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+          cache-dependency-path: |
+            pnpm-lock.yaml
+            packages/dms-media/frontend-vue/pnpm-lock.yaml
+      - run: pnpm install --frozen-lockfile --ignore-scripts
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: blob-report-*
+          path: e2e/blob-reports
+          merge-multiple: true
+      - run: pnpm exec playwright merge-reports --reporter html,json e2e/blob-reports
+        env:
+          PLAYWRIGHT_HTML_OUTPUT_DIR: e2e/playwright-report
+          PLAYWRIGHT_HTML_OPEN: never
+          PLAYWRIGHT_JSON_OUTPUT_FILE: e2e/playwright-report/results.json
+      - uses: actions/upload-artifact@v4
+        with:
+          name: playwright-report
+          path: e2e/playwright-report
+          retention-days: 14
+
   # The single check the branch rulesets require: green only when every job
-  # above succeeded.
+  # above succeeded, or the tier skipped e2e.
   ubuntu:
     if: always()
-    needs: [ci]
+    needs: [select, ci, e2e]
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:
-      - if: contains(needs.*.result, 'failure') || contains(needs.*.result, 'cancelled') || contains(needs.*.result, 'skipped')
+      - if: >-
+          needs.select.result != 'success' || contains(needs.*.result, 'failure') || contains(needs.*.result, 'cancelled') || needs.ci.result == 'skipped' || ((needs.select.outputs.tier == 'full' || needs.select.outputs.tier == 'nightly') && needs.e2e.result == 'skipped')
         run: exit 1
   renovate-sync:
     if: >-
@@ -75,4 +227,5 @@ jobs:
     permissions:
       contents: write
       actions: write
+      statuses: write
     uses: AntelopeJS/.github/.github/workflows/ci-renovate-sync.yml@v2

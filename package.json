@@ -7,13 +7,14 @@
     "build": "pnpm --filter @antelopejs/dms-media build",
     "dev": "pnpm --filter @antelopejs/dms-media dev",
     "frontend:dev": "pnpm --filter @antelopejs/dms-media frontend:dev",
-    "typecheck": "pnpm --dir packages/interface-dms-media typecheck && pnpm --dir packages/dms-media typecheck",
+    "typecheck": "pnpm --dir packages/interface-dms-media typecheck && pnpm --dir packages/dms-media typecheck && tsc --noEmit -p e2e",
     "lint": "oxlint && pnpm --dir packages/dms-media/frontend-vue lint && node packages/dms-media/scripts/check-locales.mts && node packages/dms-media/scripts/check-renderer-range.mts && node packages/dms-media/scripts/check-docs-module-version.mts && node packages/dms-media/scripts/check-docs-http-surface.mts",
     "lint:fix": "oxlint --fix && pnpm --dir packages/dms-media/frontend-vue lint:fix",
     "format": "oxfmt . && pnpm --dir packages/dms-media/frontend-vue format",
     "knip": "pnpm --dir packages/interface-dms-media knip && pnpm --dir packages/dms-media knip",
     "test": "pnpm --dir packages/dms-media/frontend-vue test",
     "test:frontend": "pnpm --dir packages/dms-media test:frontend",
+    "e2e": "playwright test -c e2e",
     "prepare": "if [ -e .git ] && command -v git >/dev/null 2>&1 && command -v lefthook >/dev/null 2>&1 && GIT_DIR=.git GIT_WORK_TREE=. git rev-parse --git-dir >/dev/null 2>&1; then GIT_DIR=.git GIT_WORK_TREE=. lefthook install; fi",
     "checks": "antelopejs-checks",
     "checks:prepare": "pnpm --dir packages/interface-dms-media build",
@@ -25,7 +26,9 @@
     "suppressions:update": "antelopejs-suppressions --update"
   },
   "devDependencies": {
-    "@antelopejs/tooling-configs": "^0.8.0",
+    "@antelopejs/dms": "0.20.8-next.936.g1313dd7",
+    "@antelopejs/tooling-configs": "0.8.1-next.372.g1d7ef26",
+    "@playwright/test": "~1.65.0",
     "knip": "^6.34.0",
     "lefthook": "^2.2.2",
     "mongodb-memory-server": "^11.3.0",
@@ -37,7 +40,7 @@
     "sharp": "^0.35.5",
     "typescript": "^6.0.3"
   },
-  "packageManager": "pnpm@10.2.0",
+  "packageManager": "pnpm@10.6.5",
   "pnpm": {
     "onlyBuiltDependencies": [
       "sharp",

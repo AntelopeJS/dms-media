@@ -55,6 +55,7 @@ export async function rotateOnce(tab) {
 /** @type {{ id: string, title: string, entryPoint: string, run: (ctx: Ctx) => Promise<void> }} */
 const theEditorCropsRotatesAndSaves = {
   id: "the-editor-crops-rotates-and-saves",
+  tag: "@smoke",
   title: "the editor offers free, original and the six preset ratios, the crop fields, left and right rotation and a preview per image size; nothing is written until Save; Save rotates the file, Revert to original restores it, Save as copy adds the edit beside it",
   entryPoint: "/modules/media/editor?asset=<id>",
   async run(/** @type {Ctx} */ ctx) {

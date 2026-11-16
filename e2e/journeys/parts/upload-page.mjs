@@ -76,6 +76,7 @@ async function finishBatch(ctx, folderId) {
 /** @type {{ id: string, title: string, entryPoint: string, run: (ctx: Ctx) => Promise<void> }} */
 const aRefusedFileNeverStopsItsBatch = {
   id: "a-refused-file-never-stops-its-batch",
+  tag: "@smoke",
   title: "two files chosen in the Library: the refused HTML file is explained in plain words, the image still lands, and the batch shows on the Uploads page, in Failed today, with Open the folder",
   entryPoint: "Library › Upload, /modules/media/uploads",
   async run(/** @type {Ctx} */ ctx) {
