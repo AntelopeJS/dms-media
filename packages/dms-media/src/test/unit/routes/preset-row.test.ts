@@ -14,7 +14,7 @@ describe("[unit] routes/manage — image size cards", () => {
     const row = presetRow({
       preset: THUMB,
       origin: ORIGIN,
-      renderedKeys: [],
+      rendered: 0,
       example: EXAMPLE,
     });
     expect(row.examplePreviewUrl).to.equal(EXAMPLE_PATH);
@@ -24,7 +24,7 @@ describe("[unit] routes/manage — image size cards", () => {
     const row = presetRow({
       preset: THUMB,
       origin: ORIGIN,
-      renderedKeys: [],
+      rendered: 0,
       example: EXAMPLE,
     });
     expect(row.exampleUrl).to.equal(`${ORIGIN}${EXAMPLE_PATH}`);
@@ -32,7 +32,7 @@ describe("[unit] routes/manage — image size cards", () => {
   });
 
   it("has no example links without an example image", () => {
-    const row = presetRow({ preset: THUMB, origin: ORIGIN, renderedKeys: [] });
+    const row = presetRow({ preset: THUMB, origin: ORIGIN, rendered: 0 });
     expect(row.exampleUrl).to.equal(null);
     expect(row.examplePreviewUrl).to.equal(null);
   });

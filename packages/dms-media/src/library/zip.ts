@@ -134,6 +134,11 @@ export function portableName(name: string): string {
  * Gives every entry a distinct, portable name: `photo.jpg`, `photo (2).jpg`,
  * … inside `directory` (`Folder/Subfolder/`, empty at the top).
  */
+/** The part every name `uniqueEntryName` tries for `name` keeps. */
+export function entryStem(name: string): string {
+  return splitExtension(portableName(name))[0];
+}
+
 export function uniqueEntryName(
   name: string,
   taken: Set<string>,

@@ -2,7 +2,10 @@ import { expect } from "chai";
 import { buildActivityItems } from "../../../library/activity";
 import { buildUploadBatches } from "../../../library/batches";
 import { composedBytes, composedText } from "../../../library/composed-text";
-import { computeFolderStats } from "../../../library/folder-stats";
+import {
+  assetContent,
+  computeFolderStats,
+} from "../../../library/folder-stats";
 import { fileLink, folderLink, viewLink } from "../../../library/links";
 import { countByTypeGroup, pageAssets } from "../../../library/listing";
 import { searchAssets, searchFolders } from "../../../library/search";
@@ -67,11 +70,14 @@ describe("[unit] library — listing", () => {
 describe("[unit] library — folder stats", () => {
   it("adds every file to its folder and each ancestor", () => {
     const folders = [folder("root"), folder("child", "root", ["root"])];
-    const stats = computeFolderStats(folders, [
-      asset("x", { folderId: "child", size: 5 }),
-      asset("y", { folderId: "root", size: 7 }),
-      asset("z", { folderId: "missing" }),
-    ]);
+    const stats = computeFolderStats(
+      folders,
+      [
+        asset("x", { folderId: "child", size: 5 }),
+        asset("y", { folderId: "root", size: 7 }),
+        asset("z", { folderId: "missing" }),
+      ].map(assetContent),
+    );
     expect(stats.get("root")).to.deep.equal({
       fileCount: 2,
       size: 12,

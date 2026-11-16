@@ -8,6 +8,11 @@ interface NameParts {
   copy: number;
 }
 
+/** The part every copy name of `filename` keeps: "photo" for "photo (2).jpg". */
+export function copyStem(filename: string): string {
+  return splitName(filename).stem;
+}
+
 function splitName(filename: string): NameParts {
   const dot = filename.lastIndexOf(EXTENSION_SEPARATOR);
   const hasExtension = dot > 0;
