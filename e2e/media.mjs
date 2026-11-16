@@ -2,11 +2,11 @@ import { createHash } from "node:crypto";
 import { readFileSync, writeFileSync } from "node:fs";
 import { inflateRawSync } from "node:zlib";
 import { join } from "node:path";
-import sharp from "../../../packages/dms-media/node_modules/sharp/lib/index.js";
+import sharp from "../packages/dms-media/node_modules/sharp/lib/index.js";
 
 /**
- * @typedef {import("../../../packages/dms-media/node_modules/@antelopejs/dms/bin/control/journey.mjs").JourneyContext} Ctx
- * @typedef {import("../../../packages/dms-media/node_modules/@antelopejs/dms/bin/control/tab.mjs").Tab} Tab
+ * @typedef {import("../packages/dms-media/node_modules/@antelopejs/dms/bin/control/journey.mjs").JourneyContext} Ctx
+ * @typedef {import("../packages/dms-media/node_modules/@antelopejs/dms/bin/control/tab.mjs").Tab} Tab
  * @typedef {{ status: number | null, body: unknown, error: string | null, folder?: string }} Answer
  * @typedef {{ folder: string, status: number | null, headers: Record<string, string>, bytes: Buffer, text: string, json: unknown }} Raw
  * @typedef {Record<string, unknown>} Row

@@ -5,7 +5,7 @@ description: "Drive the AntelopeJS dms-media module (the media library, uploads,
 
 # Verify dms-media
 
-Every deterministic step is a `dms-control` command. You choose which journeys to run and judge what they show; you never write a multi-step shell recipe. When a journey you need does not exist, add it to `journeys/<feature>.mjs`, describe it in its feature file, and run it.
+Every deterministic step is a `dms-control` command. You choose which journeys to run and judge what they show; you never write a multi-step shell recipe. When a journey you need does not exist, add it to `e2e/journeys/<feature>.mjs`, describe it in its feature file, and run it.
 
 `dms-control` is the bin of `@antelopejs/dms`, a devDependency of `packages/dms-media`. Run it with Node 24 after `pnpm install`, through that package:
 
@@ -22,7 +22,7 @@ Give `doors` and `--skill` absolute paths: the command runs in `packages/dms-med
 RUN=$($C up --prepare --base origin/main)   # installs, builds, starts; prints the run folder
 ```
 
-`--prepare` runs the `prepare` commands of `verify.config.ts`: the frozen install, the build of the interface and the module, `playwright-core` into this folder, the link of the verification playground's `node_modules` to `packages/dms-media/node_modules`, and the TypeScript build of the playground's fixture module. Without it `up` uses the builds already there, and `doctor` fails on a stale one. `up` reads the playground from `verify.config.ts` (`playground/` in this folder: the DMS, the api, MongoDB, auth, local file storage and mail modules, the module under verification as a `local` source at `packages/dms-media`, and a fixture module of its own) and starts an isolated DMS:
+`--prepare` runs the `prepare` commands of `verify.config.ts`: the frozen install, the build of the interface and the module, the link of the verification playground's `node_modules` to `packages/dms-media/node_modules`, and the TypeScript build of the playground's fixture module. Without it `up` uses the builds already there, and `doctor` fails on a stale one. `up` reads the playground from `verify.config.ts` (`playground/` in this folder: the DMS, the api, MongoDB, auth, local file storage and mail modules, the module under verification as a `local` source at `packages/dms-media`, and a fixture module of its own) and starts an isolated DMS:
 
 - the checkout is laid out again under `$RUN/root`, every sibling linked, and the playground copied without `node_modules`, so the run's build, `.antelope/` and stored files are its own;
 - the API, the dashboard and the mail sink get free ports from the kernel, and `HOME` is `$RUN/home`;
@@ -47,7 +47,9 @@ $C journey "$RUN" smoke
 $C journey "$RUN" uploads [journey-id...]
 ```
 
-- Each feature file in [features/](features/README.md) lists its source globs (`covers:`), its docs pages (`docs:`) and its journeys; the journeys are in `journeys/<feature>.mjs` and `journeys/parts/`, with the helpers they share in `media.mjs` (requests, checks, images, storage), `library.mjs` (folders, uploads, members, declarations, configuration switches) and `guard.mjs` (environment loss).
+- Each feature file in [features/](features/README.md) lists its source globs (`covers:`), its docs pages (`docs:`) and its journeys; the journeys are in `e2e/journeys/<feature>.mjs` and `e2e/journeys/parts/` (the `journeys` folder of `verify.config.ts`), with the helpers they share in `e2e/`: `media.mjs` (requests, checks, images, storage), `library.mjs` (folders, uploads, members, declarations, configuration switches), `guard.mjs` (environment loss), `chooser.mjs` (file pickers, hydration) and `clock.mjs` (aged rows).
+- A journey may set `tag` (Playwright tags such as `"@smoke"`, the set the full CI tier runs) and `knownFailures`, which maps the name of each check that fails today to the finding that makes it fail. A listed check that fails is `known` and does not fail the journey, nor does a critical step that stops it when its failed checks are all listed. A listed check that passes is `fixed` and fails the journey until the entry is removed. `result.json` records each check's verdict (`pass`, `fail`, `known`, `fixed`).
+- The same journeys run as the Playwright suite of `e2e/`, which CI runs (`@smoke` on a ready pull request to `main` and on a push to `next`, every journey nightly): from the repository root, `pnpm e2e` prepares and starts a run, runs every journey on it and stops it; `pnpm e2e -g <feature or journey id>` or `--grep @smoke` narrows it. `DMS_E2E_PREBUILT=1` skips the prepare commands, and `DMS_E2E_RUN=$RUN` drives a run you started with `up`, which it leaves running. Failed journeys keep their evidence under the run, and the report attaches each failed step's screenshot and ARIA snapshot and the backend log.
 - A journey starts on an empty database with the administrator onboarded and the backend restarted on it, so runtime bindings and configuration switches are gone. Stored files stay in the run's storage, so every journey creates its own folders. It reads every mutation back through a second view: the API, a reload, an anonymous request, a member's account, the storage's own records, or a backend restart.
 - `withConfig(ctx, { VERIFY_MEDIA_*: … }, body)` restarts the backend with module options set (`MIMETYPES`, `QUOTA`, `PRESETS`, `ROOT_ACL`, `PUBLIC_BASE_URL`, `STORAGE_ORIGIN`, `NO_CORS`; see `playground/antelope.config.ts`) and restarts it again without them.
 - To look at the product yourself: `$C onboard "$RUN"`, `$C browser "$RUN" login`, `goto --path`, `snapshot`, `click --role --name`, `fill`, `press`, `screenshot`, `$C api "$RUN" <method> <path> [--as anon] [--body <json>]`, `$C reset "$RUN"`. Each writes its evidence under `$RUN/evidence/`.
@@ -66,25 +68,21 @@ $C down "$RUN"
 
 1. **Run every feature whose `covers:` globs the diff touches, plus the smoke journey.** `plan` prints that list as `run`.
 2. **Unmapped surface fails the verdict.** User-facing code is `packages/dms-media/src/**`, `frontend-vue/**`, `skills/**`, `package.json`, and `packages/interface-dms-media/src/**` and `package.json`, tests and tool configs excluded (`verify.config.ts`). `map` checks the whole tree.
-3. **Every registered journey of a feature in `run` must have run and passed.** Known findings stay as failing journeys (see the feature files' Gotchas): they fail a verdict only when the diff touches their feature.
+3. **Every registered journey of a feature in `run` must have run and passed.** A known finding is listed in its journey's `knownFailures` (see the feature files' Gotchas): its check reads `known` and does not fail the journey. Name each one in the reply as a note.
 4. **Docs.** Judge every `docs:` page of each touched feature against what the journeys showed.
 5. **Formal checks.** `$C formal "$RUN"` runs every formal check whose covered files the diff touches; `formal-asset-files` ([SKILL.md](../formal-asset-files/SKILL.md)) covers how an asset's stored files are written, published and deleted; `formal-declared-rows` ([SKILL.md](../formal-declared-rows/SKILL.md)) covers the rows declared folders, imported files and binding folders leave when several processes write them at once. A check that exits non-zero fails the verdict, `STALE` included: the model must describe the code at HEAD.
 6. **One-way doors.** The section comes right after the result line and is mandatory. `$C doors` prints the `One-way-door:` line for the diff.
 7. **Result.** FAIL if any of rules 1 to 6 fail. PASS+NOTES when something is not verified or needs the owner's attention. PASS otherwise.
 
-Write `$RUN/evidence/judgement.json` (`doors`, `docs`, `notVerified`, `attention`, `verifier`), then `$C verdict "$RUN" --pr <n>`, which writes `$RUN/evidence/verdict.md`. Report the verdict and what you saw in your own reply.
-
-## Trust
-
-The skill is not Trusted yet. It becomes Trusted when it passes a shadow run of 10 consecutive agent PRs, and its last maintain pass is newer than the last change to the repository or its `@antelopejs` dependencies and at most 30 days old.
+State the verdict in your own reply. Start it with the result, then the doors, then what each rule showed and what you saw. A new push voids the verdict: verify again on the new head. Nothing is posted to GitHub.
 
 ## Gotchas
 
 - Every dashboard page renders on the server and hydrates after `load`; a click that lands first does nothing. The journeys click again until what the click opens shows (`openPicker`, `clickUntil`, `rotateOnce`, `explorerWithFiles`), and `tab.signIn` waits for the sign-in form to hydrate.
-- The run's browser is 1280 px wide: the Library's details open in the drawer. Journeys that need the side panel widen the viewport. The explorer lays out by its own content box, inside its 1 px border, not by the window: `journeys/parts/layout.mjs` resizes the window until that box is the width wanted.
+- The run's browser is 1280 px wide: the Library's details open in the drawer. Journeys that need the side panel widen the viewport. The explorer lays out by its own content box, inside its 1 px border, not by the window: `e2e/journeys/parts/layout.mjs` resizes the window until that box is the width wanted.
 - Members and owner-only checks need a page grant that includes the page's form block; the fixture's `page:fields` does that.
 - The toolbar of the live pages names its buttons Live and Pause; the docs say Direct and Pause.
-- No journey waits for Playwright's `filechooser` event: its interception turns on without being awaited, so an action right after `waitForEvent` can open no event. `openFilePicker` (`chooser.mjs`) cancels the click on the page's file input in a capture listener, counts it, and answers that input with `setInputFiles`, several files at once where the input is `multiple` (`pickSeveral` in `journeys/parts/pickers.mjs`). A drop is a synthetic `DragEvent` with a `DataTransfer` of `File`s.
+- No journey waits for Playwright's `filechooser` event: its interception turns on without being awaited, so an action right after `waitForEvent` can open no event. `openFilePicker` (`chooser.mjs`) cancels the click on the page's file input in a capture listener, counts it, and answers that input with `setInputFiles`, several files at once where the input is `multiple` (`pickSeveral` in `e2e/journeys/parts/pickers.mjs`). A drop is a synthetic `DragEvent` with a `DataTransfer` of `File`s.
 - The reason a file was refused is read from its batch's result on the Uploads page, where the queue keeps it after the upload ends.
 - `overview/own-uploads-keep-moving-while-paused-and-activity-follows` holds the browser's storage `PUT` for 4 s with Playwright's request routing, so the upload is still in progress while the page is paused.
 - A live page renders on the server with Live pressed and applies the stored Pause only once it hydrates; the media pages share one stored choice. A journey reads or presses Live and Pause after `waitForHydration` (`chooser.mjs`), or it reads the server's Live on a page about to pause.
@@ -96,7 +94,7 @@ The skill is not Trusted yet. It becomes Trusted when it passes a shadow run of 
 
 ## Not driven
 
-List these under `notVerified` in the judgement of every verdict:
+Name these as not verified in every verdict:
 
 - the scheduled jobs (`dms-media-purge-staging`, `dms-media-sweep-derivatives`): only the module's own `node-cron` schedule starts them, and no request or switch runs them, even though `clock.mjs` can age the rows they read;
 - a zip over 1 GiB (the 200-file limit is driven; the size limit needs more than 1 GiB of stored files per run);

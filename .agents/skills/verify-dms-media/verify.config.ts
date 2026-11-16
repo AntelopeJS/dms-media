@@ -16,6 +16,8 @@ export interface VerifyConfig {
   notUserFacing: string[];
   smoke: string;
   smokeJourney: string;
+  /** The folder of the journeys modules, relative to the repository root. Absent: `journeys/` in the skill folder. */
+  journeys?: string;
   doors: Record<DoorKind, DoorRule | null>;
   formal: FormalCheck[];
 }
@@ -43,7 +45,6 @@ const config: VerifyConfig = {
   prepare: [
     ["pnpm", "install", "--frozen-lockfile", "--prefer-offline", "--ignore-scripts"],
     ["pnpm", "run", "build"],
-    ["npm", "install", "--no-save", "--no-package-lock", "--no-audit", "--no-fund", "--prefix", SKILL, "playwright-core@1.56.1"],
     ["ln", "-sfn", `../../../../${MODULE}/node_modules`, `${SKILL}/playground/node_modules`],
     [`${MODULE}/node_modules/.bin/tsc`, "-p", `${SKILL}/playground/tsconfig.build.json`],
   ],
@@ -58,6 +59,7 @@ const config: VerifyConfig = {
   ],
   smoke: "smoke",
   smokeJourney: "onboard, create a folder, upload an image, see it in the Library, follow its delivery link to the same bytes",
+  journeys: "e2e/journeys",
   doors: {
     data: {
       globs: [
