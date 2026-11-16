@@ -89,7 +89,7 @@ importers:
         version: 1.24.0
       '@antelopejs/dms':
         specifier: '>=0.20.2 <0.21.0'
-        version: 0.20.7(@antelopejs/core@1.24.0)(bare-buffer@3.7.1)(typescript@6.0.3)
+        version: 0.20.2(@antelopejs/core@1.24.0)(bare-buffer@3.7.1)(mongodb@7.5.0(socks@2.8.9))(typescript@6.0.3)
       '@antelopejs/dms-frontend':
         specifier: '>=0.11.4 <0.12.0'
         version: 0.11.4(@antelopejs/core@1.24.0)
@@ -261,15 +261,27 @@ packages:
     peerDependencies:
       '@antelopejs/core': ~1.24.0
 
-  '@antelopejs/dms@0.20.7':
-    resolution: {integrity: sha512-BQ83bNPc7K8Ngrw9Tr0OSL3jinRkWkrlGP8Cbg7CSzDBtnVWzcGo9TWePsNRmqSmoxRVSt0FMmSEwMzH0vrwpA==}
+  '@antelopejs/dms@0.20.2':
+    resolution: {integrity: sha512-nqv2LvF8GyA0lvDEuu1WFZNf0PLuhfkSy5ymsldGa9YVrFRU1VZrv3f/WR2sMoFVnq7L0KurA1wTpWDBVI6yzw==}
     engines: {node: ^20.19.0 || >=22.12.0}
     hasBin: true
     peerDependencies:
-      '@antelopejs/core': ~1.24.0
+      '@antelopejs/core': ~1.23.0
+      mongodb: ^6.21.0 || ^7.0.0
+      mysql2: ^3.24.6
+      pg: ^8.22.0
+      rethinkdb-ts: ^2.7.0
       typescript: '>=5.8.0 <7.0.0'
     peerDependenciesMeta:
       '@antelopejs/core':
+        optional: true
+      mongodb:
+        optional: true
+      mysql2:
+        optional: true
+      pg:
+        optional: true
+      rethinkdb-ts:
         optional: true
       typescript:
         optional: true
@@ -6493,7 +6505,7 @@ snapshots:
       '@oxc-parser/binding-linux-x64-gnu': 0.95.0
       '@oxc-parser/binding-win32-x64-msvc': 0.95.0
 
-  '@antelopejs/dms@0.20.7(@antelopejs/core@1.24.0)(bare-buffer@3.7.1)(typescript@6.0.3)':
+  '@antelopejs/dms@0.20.2(@antelopejs/core@1.24.0)(bare-buffer@3.7.1)(mongodb@7.5.0(socks@2.8.9))(typescript@6.0.3)':
     dependencies:
       2fa: 0.1.2
       '@antelopejs/interface-api': 0.3.3(@antelopejs/interface-core@0.5.1)
@@ -6531,6 +6543,7 @@ snapshots:
       '@antelopejs/interface-database-catalog': 0.1.0(@antelopejs/interface-core@0.5.1)
       '@antelopejs/interface-dms-automation': 0.7.0(@antelopejs/interface-core@0.5.1)
       '@antelopejs/interface-redis': 0.0.9(@antelopejs/interface-core@0.5.1)
+      mongodb: 7.5.0(socks@2.8.9)
       playwright-core: 1.65.1
       typescript: 6.0.3
     transitivePeerDependencies:
