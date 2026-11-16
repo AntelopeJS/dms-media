@@ -81,8 +81,6 @@ export const searchQuerySchema = z.object({
   q: z.string().trim().max(MAX_SEARCH_TERM_LENGTH).default(""),
 });
 
-export type SearchQuery = z.infer<typeof searchQuerySchema>;
-
 const idsSchema = z.array(z.string().min(1)).min(1).max(MAX_BULK_ITEMS);
 
 export const bulkIdsSchema = z.object({ ids: idsSchema });

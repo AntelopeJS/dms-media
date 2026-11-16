@@ -106,6 +106,7 @@ export function createMediaLibrary(options: MediaLibraryOptions) {
 
 	return {
 		mode: options.mode,
+		scopeFolderId: options.scopeFolderId,
 		remaining: options.remaining,
 		accept,
 		acceptedTypesLabel: acceptedTypes,

@@ -7,11 +7,9 @@ import type {
   ModuleStatus,
 } from "@antelopejs/interface-dms/page";
 import { MediaAssetModel, MediaFolderModel } from "../db";
+import { loadFolderCounts, sumLibraryTotals } from "./asset-totals";
 import { countFailedUploads } from "./batches";
 import { type ByteUnit, scaleBytes } from "./composed-text";
-import { loadAssetsInFolders } from "./listing";
-import { storedSize } from "./overview";
-import { isDescribableImage } from "./type-groups";
 import { loadUploadHistoryEvents } from "./upload-history";
 import { isObject, isString } from "../guards";
 
@@ -65,20 +63,18 @@ async function countLibraryFailures(
 
 async function readLibraryHealth(tenantId: string): Promise<LibraryHealth> {
   const folders = await GetModel(MediaFolderModel, tenantId).getAll();
-  const assets = await loadAssetsInFolders(
-    GetModel(MediaAssetModel, tenantId),
-    folders.map((folder) => folder._id),
+  const folderIds = folders.map((folder) => folder._id);
+  const totals = sumLibraryTotals(
+    await loadFolderCounts(GetModel(MediaAssetModel, tenantId), folderIds, [
+      "missingAlt",
+    ]),
+    new Map(folders.map((folder) => [folder._id, folder])),
   );
   return {
-    files: assets.length,
-    size: assets.reduce((total, asset) => total + storedSize(asset), 0),
-    failedToday: await countLibraryFailures(
-      tenantId,
-      folders.map((folder) => folder._id),
-    ),
-    missingAlt: assets.filter(
-      (asset) => isDescribableImage(asset.mimetype) && !asset.alt?.trim(),
-    ).length,
+    files: totals.files,
+    size: totals.storedSize,
+    failedToday: await countLibraryFailures(tenantId, folderIds),
+    missingAlt: totals.missingAlt,
   };
 }
 

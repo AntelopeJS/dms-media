@@ -237,13 +237,24 @@ export function useExplorerCommands(library: MediaLibrary, handlers: ExplorerHan
 			? library.tree.foldersById.value.get(folderId)
 			: library.currentFolder.value
 		if (target?.rights.write) return handlers.pickFiles(target.id, target.name)
+		await library.tree.ready()
+		const canCreateAtRoot = !library.tree.scopeFolder.value && Boolean(library.tree.tree.value?.root.manage)
+		if (!canCreateAtRoot && !library.tree.folders.value.some((folder) => folder.rights.write)) {
+			library.toast.add({ title: t('dms_media.toasts.no_writable_folder'), color: 'error', icon: 'i-ph-warning' })
+			return
+		}
 		const chosen = await destinationDialog.open({
 			folders: library.tree.folders.value,
 			initialId: prefs.value.lastFolderId,
 			accept: library.accept,
+			scopeFolderId: library.scopeFolderId,
 		})
-		const destination = chosen ? await folderById(chosen) : undefined
-		if (!destination) return
+		if (!chosen) return
+		const destination = await folderById(chosen)
+		if (!destination) {
+			library.toast.add({ title: t('dms_media.toasts.destination_unavailable'), color: 'error', icon: 'i-ph-warning' })
+			return
+		}
 		updatePrefs({ lastFolderId: destination.id })
 		handlers.pickFiles(destination.id, destination.name)
 	}

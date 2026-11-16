@@ -74,6 +74,7 @@ const theFilePageHeaderStepsThroughTheFolder = {
 /** @type {{ id: string, title: string, entryPoint: string, run: (ctx: Ctx) => Promise<void> }} */
 const theFileTabsEditAndShowTheFile = {
   id: "the-file-tabs-edit-and-show-the-file",
+  tag: "@smoke",
   title: "Details edits the name and alt text and offers Move… and three visibility choices, Delivery lists the stable links, History the events from the upload on, and Usage says usage is not tracked",
   entryPoint: "/modules/media/file?asset=<id> tabs",
   async run(/** @type {Ctx} */ ctx) {

@@ -7,10 +7,10 @@ import { buildUploadBatches, type UploadBatchRow } from "../../library/batches";
 import type { MediaEventDetails } from "../../library/events";
 import { loadUploadHistoryEvents } from "../../library/upload-history";
 import { presetsConfigSnippet } from "../../library/snippets";
-import { loadAssetsInFolders } from "../../library/listing";
+import { countRenderedSizes } from "../../library/asset-totals";
 import {
   buildPresetCacheItems,
-  pickExampleImage,
+  loadExampleImage,
   usesDefaultPresets,
 } from "../../library/presets-page";
 import { type MediaPresetConfig, presetCacheKey } from "../../presets";
@@ -21,8 +21,6 @@ import {
 } from "./constants";
 import { MediaApiController } from "./controller";
 import { requireFolderRight } from "./context";
-import { resolveEffectiveVisibility } from "./dto";
-import { parseDerivatives } from "./storage-keys";
 
 type BatchSummary = ReturnType<typeof batchSummarySchema.parse>;
 
@@ -75,7 +73,8 @@ function batchDetails(summary: BatchSummary): MediaEventDetails {
 interface PresetRowInput {
   preset: MediaPresetConfig;
   origin: string;
-  renderedKeys: string[];
+  /** Files that hold this size rendered. */
+  rendered: number;
   example?: MediaAsset;
 }
 
@@ -88,7 +87,7 @@ interface PresetRowInput {
 export function presetRow({
   preset,
   origin,
-  renderedKeys,
+  rendered,
   example,
 }: PresetRowInput) {
   const cacheKey = presetCacheKey(preset);
@@ -98,7 +97,7 @@ export function presetRow({
   return {
     ...preset,
     cacheKey,
-    rendered: renderedKeys.filter((key) => key === cacheKey).length,
+    rendered,
     urlPattern: `${origin}/media/{asset}/${preset.id}/{filename}`,
     exampleUrl: examplePath ? `${origin}${examplePath}` : null,
     examplePreviewUrl: examplePath,
@@ -178,21 +177,19 @@ export class MediaManageController extends MediaApiController {
   @Get("/presets")
   async presets() {
     const context = await this.resolveContext();
-    const assets = await loadAssetsInFolders(context.assetModel, [
-      ...context.access.readable,
-    ]);
-    const renderedKeys = assets.flatMap((asset) =>
-      Object.keys(parseDerivatives(asset)),
-    );
-    const example = pickExampleImage(
-      assets,
-      (asset) =>
-        resolveEffectiveVisibility(
-          asset,
-          context.foldersById.get(asset.folderId),
-        ) === "public",
+    const folderIds = [...context.access.readable];
+    const publicFolderIds = folderIds.filter(
+      (folderId) => context.foldersById.get(folderId)?.visibility === "public",
     );
     const presets = [...getMediaConfig().presets.values()];
+    const [rendered, example] = await Promise.all([
+      countRenderedSizes(
+        context.assetModel,
+        folderIds,
+        presets.map(presetCacheKey),
+      ),
+      loadExampleImage(context.assetModel, folderIds, publicFolderIds),
+    ]);
     const origin = await this.publicOrigin();
     const sweep = getLastSweep();
     return {
@@ -209,7 +206,7 @@ export class MediaManageController extends MediaApiController {
         presetRow({
           preset,
           origin,
-          renderedKeys,
+          rendered: rendered.get(presetCacheKey(preset)) ?? 0,
           example,
         }),
       ),

@@ -1,14 +1,9 @@
 import type { MediaAsset, MediaFolder } from "../db";
-import type {
-  AssetFilterQuery,
-  SearchQuery,
-} from "../validation/library.schema";
-import { type AssetFilterContext, filterAssets } from "./asset-filters";
 
 export type SearchMatch = "name" | "alt";
 
-export interface AssetSearchHit {
-  asset: MediaAsset;
+export interface AssetSearchHit<T> {
+  asset: T;
   matchedOn: SearchMatch;
 }
 
@@ -42,7 +37,7 @@ function containsEvery(haystack: string, words: string[]): boolean {
  * punctuation are ignored.
  */
 export function matchAsset(
-  asset: MediaAsset,
+  asset: Pick<MediaAsset, "name" | "alt">,
   words: string[],
   folderPath = "",
 ): SearchMatch | undefined {
@@ -56,21 +51,19 @@ export function matchAsset(
   return containsEvery(`${name} ${path}`, words) ? "name" : "alt";
 }
 
-export interface SearchFilterContext extends AssetFilterContext {
-  query: AssetFilterQuery & Partial<SearchQuery> & { q: string };
-  /** Names of the asset's folder and its ancestors, searched with its name. */
-  folderPathOf?: (asset: MediaAsset) => string;
-}
-
-/** Applies the facet filters then the term; the type facet stays open. */
-export function searchAssets(
-  assets: MediaAsset[],
-  filter: SearchFilterContext,
-): AssetSearchHit[] {
-  const words = searchWords(filter.query.q);
-  const hits: AssetSearchHit[] = [];
-  for (const asset of filterAssets(assets, filter)) {
-    const matchedOn = matchAsset(asset, words, filter.folderPathOf?.(asset));
+/**
+ * The assets matching the term, in input order. `folderPathOf` names the
+ * asset's folder and its ancestors, searched with its name.
+ */
+export function searchAssets<T extends Pick<MediaAsset, "name" | "alt">>(
+  assets: T[],
+  term: string,
+  folderPathOf: (asset: T) => string = () => "",
+): AssetSearchHit<T>[] {
+  const words = searchWords(term);
+  const hits: AssetSearchHit<T>[] = [];
+  for (const asset of assets) {
+    const matchedOn = matchAsset(asset, words, folderPathOf(asset));
     if (matchedOn) hits.push({ asset, matchedOn });
   }
   return hits;

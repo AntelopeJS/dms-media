@@ -4,7 +4,8 @@ import { JSONBody, Parameter, Post } from "@antelopejs/interface-api";
 import { assert, assertValidation } from "@antelopejs/interface-api-util";
 import type { MediaAsset } from "../../db";
 import { uploadStorageBytes } from "../../derivatives";
-import { uniqueEntryName } from "../../library/zip";
+import { loadNamesContaining } from "../../library/listing";
+import { entryStem, uniqueEntryName } from "../../library/zip";
 import {
   AnimatedImageTransformError,
   applyImageTransform,
@@ -61,8 +62,12 @@ async function copyName(
   context: MediaRequestContext,
   asset: MediaAsset,
 ): Promise<string> {
-  const siblings = await context.assetModel.getByFolder(asset.folderId);
-  const taken = new Set(siblings.map((sibling) => sibling.name.toLowerCase()));
+  const siblings = await loadNamesContaining(
+    context.assetModel,
+    asset.folderId,
+    [entryStem(asset.name)],
+  );
+  const taken = new Set(siblings.map((name) => name.toLowerCase()));
   return uniqueEntryName(asset.name, taken);
 }
 

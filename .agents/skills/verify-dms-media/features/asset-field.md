@@ -31,6 +31,9 @@ docs:
 - `a-members-picker-shows-only-what-they-can-read`: a member opening a field's picker sees only the folders they can read, and a linked field's picker opens on its folder and lists its subfolders.
 - `the-pickers-upload-targets-the-linked-folder`: a linked field's picker browsed into a subfolder still sends its Upload and a drop on it to the linked folder itself, and its drop overlay names that folder.
 - `a-read-only-linked-folder-uploads-into-the-writable-folder-shown`: a picker whose linked folder the member cannot write sends its Upload and a drop to the writable subfolder it shows, without asking where.
+- `a-pickers-destination-dialog-offers-only-its-scope`: a picker whose linked folder the member cannot write asks where its Upload goes among the linked folder's subfolders only, never a writable folder outside it, and the file lands in the one chosen.
+- `a-picker-with-nothing-writable-in-scope-offers-no-upload`: a picker with no folder the member can write inside its scope shows no Upload, even when the member can write a folder outside it, and a drop on it says why instead of asking where.
+- `root-write-alone-offers-no-upload-in-an-unscoped-picker`: an unscoped picker for a member who can write the library root but not manage it, with no writable folder, shows no Upload.
 - `a-refusal-speaks-the-members-language`: a member whose language is French sees a refused file explained in French.
 
 ## How to get to it (user POV)

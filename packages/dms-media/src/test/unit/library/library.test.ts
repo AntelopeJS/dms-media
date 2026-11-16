@@ -2,7 +2,10 @@ import { expect } from "chai";
 import { buildActivityItems } from "../../../library/activity";
 import { buildUploadBatches } from "../../../library/batches";
 import { composedBytes, composedText } from "../../../library/composed-text";
-import { computeFolderStats } from "../../../library/folder-stats";
+import {
+  assetContent,
+  computeFolderStats,
+} from "../../../library/folder-stats";
 import { fileLink, folderLink, viewLink } from "../../../library/links";
 import { countByTypeGroup, pageAssets } from "../../../library/listing";
 import { searchAssets, searchFolders } from "../../../library/search";
@@ -67,11 +70,14 @@ describe("[unit] library — listing", () => {
 describe("[unit] library — folder stats", () => {
   it("adds every file to its folder and each ancestor", () => {
     const folders = [folder("root"), folder("child", "root", ["root"])];
-    const stats = computeFolderStats(folders, [
-      asset("x", { folderId: "child", size: 5 }),
-      asset("y", { folderId: "root", size: 7 }),
-      asset("z", { folderId: "missing" }),
-    ]);
+    const stats = computeFolderStats(
+      folders,
+      [
+        asset("x", { folderId: "child", size: 5 }),
+        asset("y", { folderId: "root", size: 7 }),
+        asset("z", { folderId: "missing" }),
+      ].map(assetContent),
+    );
     expect(stats.get("root")).to.deep.equal({
       fileCount: 2,
       size: 12,
@@ -89,43 +95,15 @@ describe("[unit] library — search", () => {
   const assets = [
     asset("oak-desk"),
     asset("walnut", { alt: "An OAK finish" }),
-    asset("old", { updatedAt: new Date("2020-01-01") }),
+    asset("pine"),
   ];
 
-  it("matches names first, then alt text, and applies the filters", () => {
-    const hits = searchAssets(assets, {
-      query: {
-        q: "oak",
-        offset: 0,
-        limit: 10,
-        sort: "name",
-        direction: "asc",
-        visibility: "any",
-        modified: "any",
-        orientation: "any",
-      },
-      now: new Date("2026-06-01"),
-      visibilityOf: () => "private",
-    });
+  it("matches names first, then alt text", () => {
+    const hits = searchAssets(assets, "oak");
     expect(hits.map((hit) => [hit.asset._id, hit.matchedOn])).to.deep.equal([
       ["oak-desk", "name"],
       ["walnut", "alt"],
     ]);
-    const recent = searchAssets(assets, {
-      query: {
-        q: "",
-        offset: 0,
-        limit: 10,
-        sort: "name",
-        direction: "asc",
-        visibility: "private",
-        modified: "year",
-        orientation: "any",
-      },
-      now: new Date("2026-06-01"),
-      visibilityOf: () => "private",
-    });
-    expect(recent.map((hit) => hit.asset._id)).to.not.include("old");
   });
 
   it("matches folder names without a term only when one is given", () => {
