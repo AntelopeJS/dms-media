@@ -1,5 +1,26 @@
 # Changelog
 
+## v0.4.1
+
+[compare changes](https://github.com/AntelopeJS/dms-media/compare/interface-v0.4.0...interface-v0.4.1)
+
+### 🩹 Fixes
+
+- **release:** Build the interface before its own release lint ([#191](https://github.com/AntelopeJS/dms-media/pull/191))
+- **deps:** Depend on the stable @antelopejs/tooling-configs
+
+### 📦 Build
+
+- Move to @antelopejs/tooling-configs 0.8 and the three-tier CI ([#181](https://github.com/AntelopeJS/dms-media/pull/181))
+
+### ✅ Tests
+
+- **e2e:** Run the verify skill's journeys as a Playwright suite in CI ([#186](https://github.com/AntelopeJS/dms-media/pull/186))
+
+### ❤️ Contributors
+
+- Antony Rizzitelli
+
 ## v0.4.0
 
 [compare changes](https://github.com/AntelopeJS/dms-media/compare/interface-v0.3.3...v0.4.0)
