@@ -1,5 +1,18 @@
 # Changelog
 
+## v0.8.2
+
+[compare changes](https://github.com/AntelopeJS/dms-media/compare/v0.8.1...v0.8.2)
+
+### 🩹 Fixes
+
+- **deps:** Name the sibling interface with workspace:^ ([#192](https://github.com/AntelopeJS/dms-media/pull/192))
+- **docs:** List the packed interface range in the README compat table ([#194](https://github.com/AntelopeJS/dms-media/pull/194))
+
+### ❤️ Contributors
+
+- Antony Rizzitelli
+
 ## v0.8.1
 
 [compare changes](https://github.com/AntelopeJS/dms-media/compare/v0.8.0...v0.8.1)
