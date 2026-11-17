@@ -119,7 +119,10 @@ export const journeys = guarded([
       const [major, minor, patch] = [treeMajor, treeMinor, treePatch];
       const current = Number(major) * 1e6 + Number(minor) * 1e3 + Number(patch);
       await ctx.verify("the ranges", [
-        ...interfaces.map(([name, spec]) => check(`${name} is in the table with the same range`, table.get(name) === spec, [table.get(name), spec])),
+        ...interfaces.map(([name, spec]) => {
+          const packedRange = spec === "workspace:^" ? `^${version}` : spec;
+          return check(`${name} is in the table with the range the tarball carries`, table.get(name) === packedRange, [table.get(name), packedRange]);
+        }),
         check("the interface-dms-media range accepts the tree's interface", current >= asNumber(floor) && current < asNumber(ceiling), [range, version]),
         check("the range stops below the next minor", ceiling !== null && Number(ceiling[2]) === Number(minor) + 1, range),
         check("the dashboard layer pins one renderer minor", /^>=\d+\.\d+\.\d+ <\d+\.\d+\.0$/.test(String(pick(frontend, "engines", "@antelopejs/dms-frontend"))), pick(frontend, "engines")),
