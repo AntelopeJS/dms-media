@@ -13,11 +13,11 @@ importers:
   .:
     devDependencies:
       '@antelopejs/dms':
-        specifier: 0.20.8-next.936.g1313dd7
-        version: 0.20.8-next.936.g1313dd7(@antelopejs/core@1.24.0)(@playwright/test@1.65.1)(bare-buffer@3.7.1)(typescript@6.0.3)
+        specifier: '>=0.20.8 <0.21.0'
+        version: 0.20.8(@antelopejs/core@1.24.0)(@playwright/test@1.65.1)(bare-buffer@3.7.1)(typescript@6.0.3)
       '@antelopejs/tooling-configs':
-        specifier: 0.8.1-next.372.g1d7ef26
-        version: 0.8.1-next.372.g1d7ef26(knip@6.34.0)(mongodb-memory-server@11.3.0(bare-buffer@3.7.1)(socks@2.8.9))(oxfmt@0.66.0)(oxlint@1.81.0(oxlint-tsgolint@7.0.2001))(pixelmatch@8.0.0)(playwright-core@1.65.1)(sharp@0.35.5)
+        specifier: '>=0.8.1 <0.9.0'
+        version: 0.8.1(knip@6.34.0)(mongodb-memory-server@11.3.0(bare-buffer@3.7.1)(socks@2.8.9))(oxfmt@0.66.0)(oxlint@1.81.0(oxlint-tsgolint@7.0.2001))(pixelmatch@8.0.0)(playwright-core@1.65.1)(sharp@0.35.5)
       '@playwright/test':
         specifier: ~1.65.0
         version: 1.65.1
@@ -224,7 +224,7 @@ importers:
         version: 0.14.0(edce4304e69e22dcba6f62cb5feace92)
       '@antelopejs/tooling-configs':
         specifier: '>=0.8.1 <0.9.0'
-        version: 0.8.1(knip@6.34.0)(mongodb-memory-server@11.3.0(bare-buffer@3.7.1)(socks@2.8.9))(oxfmt@0.66.0)(oxlint@1.81.0(oxlint-tsgolint@7.0.2001))(pixelmatch@8.0.0)(playwright-core@1.65.1)(sharp@0.35.5(@types/node@24.13.3))
+        version: 0.8.1(knip@6.34.0)(mongodb-memory-server@11.3.0(bare-buffer@3.7.1)(socks@2.8.9))(oxfmt@0.66.0)(oxlint@1.81.0(oxlint-tsgolint@7.0.2001))(pixelmatch@8.0.0)(playwright-core@1.65.1)(sharp@0.35.5)
       '@types/node':
         specifier: ^24.0.0
         version: 24.13.3
@@ -290,8 +290,8 @@ packages:
       typescript:
         optional: true
 
-  '@antelopejs/dms@0.20.8-next.936.g1313dd7':
-    resolution: {integrity: sha512-YmzXdW2XSq3spQBfptT5pOeRVLSdPfn4MrvXv7yVKlejQsXtZDU6JmOL+bvLoWb3kP5heKMk4E2D2Ay1322WcA==}
+  '@antelopejs/dms@0.20.8':
+    resolution: {integrity: sha512-3+GBORC23xOkPpDbl5eEVugj2tduJ85ftNI1EJxEsviE7NVdIRq4Hwd4cNQ1M43HmhpC5ogQHjQ80xDE4Yvh5Q==}
     engines: {node: ^20.19.0 || >=22.12.0}
     hasBin: true
     peerDependencies:
@@ -418,40 +418,6 @@ packages:
 
   '@antelopejs/tooling-configs@0.8.1':
     resolution: {integrity: sha512-n/cqWGg2jow3KdVFuhPxYk6EfizzKLVTu9i47pnuZx97UGOYo1GQ22pYu6xgsxKvxCMKOXTLCLjG4GF4qQXwAw==}
-    engines: {node: '>=22.18.0'}
-    hasBin: true
-    peerDependencies:
-      '@nuxt/eslint-config': '>=1.2.0'
-      eslint-plugin-perfectionist: '>=5.0.0'
-      knip: '>=6.0.0'
-      mongodb-memory-server: '>=10.0.0'
-      oxfmt: ^0.66.0 || ^0.77.0
-      oxlint: 1.81.0
-      pixelmatch: '>=7.0.0'
-      playwright-core: '>=1.56.0'
-      sharp: '>=0.34.0'
-    peerDependenciesMeta:
-      '@nuxt/eslint-config':
-        optional: true
-      eslint-plugin-perfectionist:
-        optional: true
-      knip:
-        optional: true
-      mongodb-memory-server:
-        optional: true
-      oxfmt:
-        optional: true
-      oxlint:
-        optional: true
-      pixelmatch:
-        optional: true
-      playwright-core:
-        optional: true
-      sharp:
-        optional: true
-
-  '@antelopejs/tooling-configs@0.8.1-next.372.g1d7ef26':
-    resolution: {integrity: sha512-nj/Md/9vA1OJUP0jS7BJSwUZfcVPdQS6+i5hrC4iZdLrbpb0X+0nvvx/zsiFPsN50eKlvNxTYLBcphILtgt2sQ==}
     engines: {node: '>=22.18.0'}
     hasBin: true
     peerDependencies:
@@ -6576,7 +6542,7 @@ snapshots:
       - react-native-b4a
       - supports-color
 
-  '@antelopejs/dms@0.20.8-next.936.g1313dd7(@antelopejs/core@1.24.0)(@playwright/test@1.65.1)(bare-buffer@3.7.1)(typescript@6.0.3)':
+  '@antelopejs/dms@0.20.8(@antelopejs/core@1.24.0)(@playwright/test@1.65.1)(bare-buffer@3.7.1)(typescript@6.0.3)':
     dependencies:
       2fa: 0.1.2
       '@antelopejs/interface-api': 0.3.3(@antelopejs/interface-core@0.5.1)
@@ -6775,44 +6741,7 @@ snapshots:
       playwright-core: 1.65.1
       sharp: 0.34.5
 
-  '@antelopejs/tooling-configs@0.8.1(knip@6.34.0)(mongodb-memory-server@11.3.0(bare-buffer@3.7.1)(socks@2.8.9))(oxfmt@0.66.0)(oxlint@1.81.0(oxlint-tsgolint@7.0.2001))(pixelmatch@8.0.0)(playwright-core@1.65.1)(sharp@0.35.5(@types/node@24.13.3))':
-    dependencies:
-      '@oxlint/plugins': 1.81.0
-      dts-bundle-generator: 9.5.1
-      minimatch: 10.2.6
-      semver: 7.8.6
-      typescript: 6.0.3
-      yaml: 2.9.1
-    optionalDependencies:
-      '@typescript/typescript-aix-ppc64': 7.0.2
-      '@typescript/typescript-darwin-arm64': 7.0.2
-      '@typescript/typescript-darwin-x64': 7.0.2
-      '@typescript/typescript-freebsd-arm64': 7.0.2
-      '@typescript/typescript-freebsd-x64': 7.0.2
-      '@typescript/typescript-linux-arm': 7.0.2
-      '@typescript/typescript-linux-arm64': 7.0.2
-      '@typescript/typescript-linux-loong64': 7.0.2
-      '@typescript/typescript-linux-mips64el': 7.0.2
-      '@typescript/typescript-linux-ppc64': 7.0.2
-      '@typescript/typescript-linux-riscv64': 7.0.2
-      '@typescript/typescript-linux-s390x': 7.0.2
-      '@typescript/typescript-linux-x64': 7.0.2
-      '@typescript/typescript-netbsd-arm64': 7.0.2
-      '@typescript/typescript-netbsd-x64': 7.0.2
-      '@typescript/typescript-openbsd-arm64': 7.0.2
-      '@typescript/typescript-openbsd-x64': 7.0.2
-      '@typescript/typescript-sunos-x64': 7.0.2
-      '@typescript/typescript-win32-arm64': 7.0.2
-      '@typescript/typescript-win32-x64': 7.0.2
-      knip: 6.34.0
-      mongodb-memory-server: 11.3.0(bare-buffer@3.7.1)(socks@2.8.9)
-      oxfmt: 0.66.0
-      oxlint: 1.81.0(oxlint-tsgolint@7.0.2001)
-      pixelmatch: 8.0.0
-      playwright-core: 1.65.1
-      sharp: 0.35.5(@types/node@24.13.3)
-
-  '@antelopejs/tooling-configs@0.8.1-next.372.g1d7ef26(knip@6.34.0)(mongodb-memory-server@11.3.0(bare-buffer@3.7.1)(socks@2.8.9))(oxfmt@0.66.0)(oxlint@1.81.0(oxlint-tsgolint@7.0.2001))(pixelmatch@8.0.0)(playwright-core@1.65.1)(sharp@0.35.5)':
+  '@antelopejs/tooling-configs@0.8.1(knip@6.34.0)(mongodb-memory-server@11.3.0(bare-buffer@3.7.1)(socks@2.8.9))(oxfmt@0.66.0)(oxlint@1.81.0(oxlint-tsgolint@7.0.2001))(pixelmatch@8.0.0)(playwright-core@1.65.1)(sharp@0.35.5)':
     dependencies:
       '@oxlint/plugins': 1.81.0
       dts-bundle-generator: 9.5.1
