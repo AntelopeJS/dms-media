@@ -27,7 +27,7 @@
   },
   "devDependencies": {
     "@antelopejs/dms": ">=0.20.8 <0.21.0",
-    "@antelopejs/tooling-configs": "0.8.3-next.386.g90a4f74",
+    "@antelopejs/tooling-configs": ">=0.8.3 <0.9.0",
     "@playwright/test": "~1.65.0",
     "knip": "^6.34.0",
     "lefthook": "^2.2.2",
