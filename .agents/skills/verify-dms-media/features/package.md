@@ -13,7 +13,7 @@ docs:
 
 # Package
 
-What a project installs from the registry: the module with its build, dashboard layer and skill, the interface with its contract, and the ranges the compatibility table names.
+What a project installs from the registry: the module with its build, dashboard layer and skill, the interface with its contract, and the ranges the compatibility table names. The module names the interface as `workspace:^` in its source; the journey reads that as the `^<interface version>` that `pnpm pack` writes.
 
 ## Sub-features
 
