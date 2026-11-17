@@ -47,6 +47,17 @@ function compatibility(ctx) {
   return new Map([...readme.matchAll(/^\| `(@antelopejs\/[^`]+)`\s*\| `([^`]+)`/gm)].map((match) => [match[1] ?? "", match[2] ?? ""]));
 }
 
+/**
+ * The range `pnpm pack` writes for a sibling named `workspace:^`: `^<version>`, spelled as the floor and ceiling the checks parse.
+ *
+ * @param {string} version The sibling's version
+ * @returns {string} The floor and the ceiling
+ */
+function caretRange(version) {
+  const [major = 0, minor = 0] = version.split(".").map(Number);
+  return `>=${version} <${major === 0 ? `0.${minor + 1}.0` : `${major + 1}.0.0`}`;
+}
+
 /** What a project installs from the registry: the module, its dashboard layer, its skill, and the interface. */
 export const journeys = guarded([
   {
@@ -98,15 +109,20 @@ export const journeys = guarded([
       const frontend = readJson(ctx, "packages/dms-media/frontend-vue/package.json");
       const dependencies = pick(module, "dependencies");
       const interfaces = isRow(dependencies) ? Object.entries(dependencies).filter(([name]) => name.startsWith("@antelopejs/interface-")) : [];
-      const range = String(pick(dependencies, "@antelopejs/interface-dms-media"));
       const version = String(pick(iface, "version"));
+      const source = String(pick(dependencies, "@antelopejs/interface-dms-media"));
+      const [treeMajor = "0", treeMinor = "0", treePatch = "0"] = version.split(".");
+      const range = source === "workspace:^" ? caretRange(version) : source;
       const [floor, ceiling] = [/>=(\d+)\.(\d+)\.(\d+)/.exec(range), /<(\d+)\.(\d+)\.(\d+)/.exec(range)];
       /** @param {RegExpExecArray | null} match @returns {number} */
       const asNumber = (match) => (match ? Number(match[1]) * 1e6 + Number(match[2]) * 1e3 + Number(match[3]) : Number.NaN);
-      const [major = "0", minor = "0", patch = "0"] = version.split(".");
+      const [major, minor, patch] = [treeMajor, treeMinor, treePatch];
       const current = Number(major) * 1e6 + Number(minor) * 1e3 + Number(patch);
       await ctx.verify("the ranges", [
-        ...interfaces.map(([name, spec]) => check(`${name} is in the table with the same range`, table.get(name) === spec, [table.get(name), spec])),
+        ...interfaces.map(([name, spec]) => {
+          const packedRange = spec === "workspace:^" ? `^${version}` : spec;
+          return check(`${name} is in the table with the range the tarball carries`, table.get(name) === packedRange, [table.get(name), packedRange]);
+        }),
         check("the interface-dms-media range accepts the tree's interface", current >= asNumber(floor) && current < asNumber(ceiling), [range, version]),
         check("the range stops below the next minor", ceiling !== null && Number(ceiling[2]) === Number(minor) + 1, range),
         check("the dashboard layer pins one renderer minor", /^>=\d+\.\d+\.\d+ <\d+\.\d+\.0$/.test(String(pick(frontend, "engines", "@antelopejs/dms-frontend"))), pick(frontend, "engines")),
