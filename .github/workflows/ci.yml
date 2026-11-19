@@ -66,6 +66,8 @@ jobs:
       test-job: true
     permissions:
       contents: read
+    secrets:
+      NOTION_TOKEN: ${{ secrets.NOTION_TOKEN }}
 
   # ci-node.yml exposes no outputs, so this reads the same tier action and
   # picks the e2e scope from it: nothing on a draft or a promotion of `next`,
