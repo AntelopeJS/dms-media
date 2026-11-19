@@ -9,7 +9,8 @@ import { isString } from "../guards";
 import { SETUP_TOKEN } from "./helpers/setup-token";
 import STACK_MODULES from "./stack-modules.json";
 
-const API_PORT = 5019;
+/** `DMS_MEDIA_TEST_PORT` lets several checkouts run the suite at once. */
+const API_PORT = Number(process.env.DMS_MEDIA_TEST_PORT ?? 5019);
 const LOCAL_BUILD_COMMAND = process.env.DMS_PREBUILT ? [] : ["pnpm build"];
 const JWT_SECRET = "test-jwt-secret";
 const HTML_RENDER_SECRET = "test-html-render-secret";
