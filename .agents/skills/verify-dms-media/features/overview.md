@@ -2,6 +2,7 @@
 covers:
   - packages/dms-media/src/routes/media/overview.ts
   - packages/dms-media/src/library/overview.ts
+  - packages/dms-media/src/library/asset-totals.ts
   - packages/dms-media/src/library/activity.ts
   - packages/dms-media/src/library/events.ts
   - packages/dms-media/src/library/realtime.ts

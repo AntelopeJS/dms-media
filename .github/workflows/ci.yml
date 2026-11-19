@@ -42,13 +42,19 @@ jobs:
       # consumer and the module itself (#26). The last command fails when a
       # test run recorded a module it installed without a committed record in
       # `antelope-lock/`: commit what it lists, so every run installs the same
-      # graph. `test:frontend` typechecks the frontend layer against the DMS
-      # layer from the `@antelopejs/dms` devDependency.
+      # graph. `test:exports` also packs both packages and checks the tarballs
+      # and the README compatibility table, `test:feature-map` runs
+      # `dms-control map` on the verify skill, and `test:formal` model-checks
+      # the TLA+ specs of the formal skills. `test:frontend` typechecks the
+      # frontend layer against the DMS layer from the `@antelopejs/dms`
+      # devDependency.
       extra-commands: |
         export DMS_PREBUILT=1
         pnpm --dir packages/dms-media build
         pnpm --dir packages/interface-dms-media check:exports
         pnpm --dir packages/dms-media test:exports
+        pnpm --dir packages/dms-media test:feature-map
+        pnpm --dir packages/dms-media test:formal
         pnpm --dir packages/dms-media test:playground
         pnpm --dir packages/dms-media test
         pnpm --dir packages/dms-media test:reload

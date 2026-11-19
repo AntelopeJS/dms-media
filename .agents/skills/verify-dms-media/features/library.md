@@ -8,6 +8,7 @@ covers:
   - packages/dms-media/src/library/type-groups.ts
   - packages/dms-media/src/library/composed-text.ts
   - packages/dms-media/src/library/module-readout.ts
+  - packages/dms-media/src/library/smart-views.ts
   - packages/dms-media/src/validation/library.schema.ts
   - packages/dms-media/src/pages/files.ts
   - packages/dms-media/frontend-vue/app/components/Explorer.vue
