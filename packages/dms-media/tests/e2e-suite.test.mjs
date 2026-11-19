@@ -10,8 +10,9 @@ void test("no tracked file outside the agent docs names a verify skill folder, s
     [
       "grep",
       "-l",
+      "-E",
       "-e",
-      ".agents/skills/verify-",
+      "[.]agents/skills/verify-",
       "--",
       ":!.agents",
       ":!*.md",
