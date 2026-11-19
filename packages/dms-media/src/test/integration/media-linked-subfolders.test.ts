@@ -156,6 +156,8 @@ function describeSubfolderCreation(): void {
       const text = await presign("notes.txt", "text/plain");
       expect(text.status).to.equal(HTTP_UNSUPPORTED_MEDIA_TYPE);
       expect(text.data.reason).to.equal("field_type");
+      expect(text.data.accepted).to.deep.equal(["image/*"]);
+      expect(text.data.message).to.match(/\S/);
       expect((await presign("photo.png", "image/png")).status).to.equal(
         HTTP_OK,
       );

@@ -10,18 +10,16 @@ import {
 import sharp from "sharp";
 import { z } from "zod";
 import { CONTENT_ROOT_BINDING } from "../../bindings";
-import {
-  configureMediaModule,
-  type DmsMediaConfig,
-  getMediaConfig,
-} from "../../config";
+import { configureMediaModule, type DmsMediaConfig } from "../../config";
 import { runPurgeStaging } from "../../crons/purge-staging";
 import { MediaFolderModel } from "../../db";
 import { putPresigned, uploadAsset, uploadPixelPng } from "../helpers/assets";
 import { createdBody, presignBody, readBody } from "../helpers/bodies";
+import { snapshotConfig } from "../helpers/config";
 import { fetchFolderNodes } from "../helpers/folders";
 import { authorizedClient } from "../helpers/http";
 import { ensureOwnerSession } from "../helpers/owner";
+import { expectRefusal } from "../helpers/uploads";
 
 const HTTP_OK = 200;
 const HTTP_PAYLOAD_TOO_LARGE = 413;
@@ -45,18 +43,6 @@ const confirmedBody = z.object({
 
 interface StagedUpload {
   resourceKey: string;
-}
-
-/** The configuration in force, in the shape `configureMediaModule` takes back. */
-function snapshotConfig(): DmsMediaConfig {
-  const current = getMediaConfig();
-  return {
-    rootAcl: current.rootAcl,
-    storage: current.storage,
-    presets: [...current.presets.values()],
-    storageQuotaBytes: current.storageQuotaBytes,
-    allowedMimetypes: [...current.allowedMimetypes],
-  };
 }
 
 /** Bound folders are locked through the API: later suites expect an empty library. */
@@ -157,7 +143,11 @@ function describeTypeRules(): void {
       expect(linked, "linked folder").to.not.equal(undefined);
       const image = await presign(linked!.id, "photo.png", "image/png");
       expect(image.status).to.equal(HTTP_UNSUPPORTED_MEDIA_TYPE);
-      expect(image.data.reason).to.equal("field_type");
+      expectRefusal(
+        image,
+        { status: HTTP_UNSUPPORTED_MEDIA_TYPE, reason: "field_type" },
+        "photo.png",
+      );
       expect(image.data.accepted).to.deep.equal(["application/pdf"]);
       expect(
         (await presign(linked!.id, "sheet.pdf", "application/pdf")).status,
@@ -308,6 +298,18 @@ function describeStaging(): void {
       });
       expect(abort.status).to.equal(HTTP_OK);
       expect(await FileExists(staged.resourceKey)).to.equal(false);
+      const late = await client.post("/api/media/upload/confirm", {
+        folderId,
+        resourceKey: staged.resourceKey,
+        filename: "cancelled.txt",
+      });
+      expect(late.status).to.not.equal(HTTP_OK);
+      const listing = await client.get(`/api/media/folders/${folderId}/assets`);
+      const names = readBody(
+        listing,
+        z.object({ assets: z.array(z.object({ name: z.string() })) }),
+      ).assets.map((asset) => asset.name);
+      expect(names).to.not.include("cancelled.txt");
     });
 
     it("purges staged uploads abandoned for more than a day", async () => {
