@@ -71,7 +71,7 @@ export function useListingFilterItems(library: MediaLibrary) {
 		...typeEntries.value.map((entry) => ({
 			label: t(`dms_media.types.${entry.group}`),
 			icon: TYPE_GROUP_ICONS[entry.group],
-			suffix: format.formatNumber(entry.count),
+			description: format.formatNumber(entry.count),
 			type: 'checkbox' as const,
 			checked: filters.value.type === entry.group,
 			onSelect: () => setType(entry.group),

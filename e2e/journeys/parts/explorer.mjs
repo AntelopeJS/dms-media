@@ -169,11 +169,34 @@ const aSelectionIsMovedPublishedZippedAndDeleted = {
   },
 };
 
+/** @type {{ id: string, title: string, entryPoint: string, run: (ctx: Ctx) => Promise<void> }} */
+const theTypeMenuShowsEachTypesCount = {
+  id: "the-type-menu-shows-each-types-count",
+  title: "the Filters type menu lists each type of the folder with its file count: two images and one PDF show Images 2 and PDF 1",
+  entryPoint: "/modules/media/files type menu",
+  async run(/** @type {Ctx} */ ctx) {
+    const folder = await createFolder(ctx, ctx.unique("Type counts"));
+    await uploaded(ctx, { folderId: folder.id, name: "un.png", mimetype: "image/png", bytes: await image(ctx, { width: 10, height: 10 }) });
+    await uploaded(ctx, { folderId: folder.id, name: "deux.png", mimetype: "image/png", bytes: await image(ctx, { width: 10, height: 10 }) });
+    await uploaded(ctx, { folderId: folder.id, name: "fiche.pdf", mimetype: "application/pdf", bytes: Buffer.from("%PDF-1.4\n%%EOF\n") });
+    const tab = await explorer(ctx, folder.id, /^deux\.png/);
+    await tab.click({ role: "button", name: "All types" });
+    const menu = tab.page.getByRole("menu");
+    await menu.waitFor({ timeout: 10_000 }).catch(() => undefined);
+    const lines = (await menu.innerText().catch(() => "")).split("\n").map((line) => line.trim());
+    const countOf = (/** @type {string} */ label) => lines[lines.indexOf(label) + 1] ?? "";
+    await ctx.verify("the type menu", [
+      check("Images shows 2", countOf("Images") === "2", lines.join(" | ")),
+      check("PDF shows 1", countOf("PDF") === "1", lines.join(" | ")),
+    ]);
+  },
+};
+
 /**
  * Journeys of the Library page's explorer.
  *
  * @returns {{ id: string, title: string, entryPoint: string, run: (ctx: Ctx) => Promise<void> }[]} The journeys
  */
 export function explorerJourneys() {
-  return [theExplorerShowsViewsLocationsAndThumbnails, aSelectionIsMovedPublishedZippedAndDeleted];
+  return [theExplorerShowsViewsLocationsAndThumbnails, aSelectionIsMovedPublishedZippedAndDeleted, theTypeMenuShowsEachTypesCount];
 }
