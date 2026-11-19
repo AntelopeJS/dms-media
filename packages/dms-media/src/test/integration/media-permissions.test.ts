@@ -1,6 +1,6 @@
 import { assert, expect } from "chai";
 import { z } from "zod";
-import { rawGet, uploadTextAsset } from "../helpers/assets";
+import { ONE_PIXEL_PNG, rawGet, uploadTextAsset } from "../helpers/assets";
 import { readBody } from "../helpers/bodies";
 
 import {
@@ -419,6 +419,11 @@ function describeDelivery(): void {
       const allowed = await rawGet(path, sessions.secretMember.accessToken);
       expect(allowed.status).to.equal(HTTP_FOUND);
       expect(allowed.cacheControl).to.equal("no-store");
+      assert.isNotNull(allowed.location);
+      const stored = await fetch(allowed.location);
+      expect(
+        Buffer.from(await stored.arrayBuffer()).equals(ONE_PIXEL_PNG),
+      ).to.equal(true);
     });
 
     it("serves linked-folder assets to the consumer permission holder", async () => {

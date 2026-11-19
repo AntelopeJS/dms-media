@@ -14,6 +14,7 @@ import {
 } from "../../transform";
 import { type UploadedAsset, uploadAsset } from "../helpers/assets";
 import { createdBody, readBody } from "../helpers/bodies";
+import { deliver, follow } from "../helpers/delivery";
 import { authorizedClient, getBaseUrl } from "../helpers/http";
 import { ensureOwnerSession } from "../helpers/owner";
 
@@ -40,44 +41,6 @@ const WIDE_SVG_HEIGHT = 240;
 const WIDE_SVG_SOURCE = `<svg xmlns="http://www.w3.org/2000/svg" width="${WIDE_SVG_WIDTH}" height="${WIDE_SVG_HEIGHT}"><rect width="${WIDE_SVG_WIDTH}" height="${WIDE_SVG_HEIGHT}" fill="#f0a000"/></svg>`;
 const SVG_SOURCE =
   '<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20"><script>alert(1)</script><circle cx="10" cy="10" r="9"/></svg>';
-
-interface Delivery {
-  status: number;
-  headers: Headers;
-  body: Buffer;
-}
-
-async function deliver(
-  path: string,
-  headers: Record<string, string> = {},
-): Promise<Delivery> {
-  const response = await fetch(`${getBaseUrl()}${path}`, {
-    redirect: "manual",
-    headers,
-  });
-  return {
-    status: response.status,
-    headers: response.headers,
-    body: Buffer.from(await response.arrayBuffer()),
-  };
-}
-
-/** Follows the delivery redirect to the storage and returns the stored bytes. */
-async function follow(
-  path: string,
-  headers: Record<string, string> = {},
-): Promise<Delivery> {
-  const redirect = await deliver(path, headers);
-  expect(redirect.status, path).to.equal(HTTP_FOUND);
-  const location = redirect.headers.get("location");
-  assert.isNotNull(location, path);
-  const response = await fetch(location);
-  return {
-    status: response.status,
-    headers: response.headers,
-    body: Buffer.from(await response.arrayBuffer()),
-  };
-}
 
 function photo(): Promise<Buffer> {
   return sharp({
@@ -167,15 +130,13 @@ function describeDeliveryLinks(): void {
     it("answers a bare 401 to scripts and sends browsers to the file page", async () => {
       const anonymous = await deliver(assetPath(jpeg));
       expect(anonymous.status).to.equal(HTTP_UNAUTHORIZED);
+      expect(anonymous.body.toString()).to.not.contain("<html");
       const browser = await deliver(assetPath(jpeg), { Accept: "text/html" });
-      const location = browser.headers.get("location") ?? "";
-      const isFilePageRedirect =
-        browser.status === HTTP_FOUND &&
-        location.endsWith(`/modules/media/file?asset=${jpeg.id}`);
-      const isSignInPage =
-        browser.status === HTTP_UNAUTHORIZED &&
-        (browser.headers.get("content-type") ?? "").startsWith("text/html");
-      expect(isFilePageRedirect || isSignInPage).to.equal(true);
+      expect(browser.status).to.equal(HTTP_FOUND);
+      expect(browser.headers.get("location")).to.equal(
+        `${getBaseUrl()}/modules/media/file?asset=${jpeg.id}`,
+      );
+      expect(browser.headers.get("cache-control")).to.equal("no-store");
     });
 
     it("sends stale or empty file names to the canonical URL", async () => {
@@ -409,6 +370,8 @@ function describeUnusualFiles(): void {
 function describeEdits(): void {
   describe("copies, successive edits and replaced versions", () => {
     it("saves an edit as a copy next to the untouched source", async () => {
+      const auth = { Authorization: `Bearer ${token}` };
+      const sourceBefore = await follow(assetPath(jpeg), auth);
       const copy = await client.post(
         `/api/media/assets/${jpeg.id}/transform/copy`,
         { crop: { x: 0, y: 0, width: 0.5, height: 1 } },
@@ -423,6 +386,21 @@ function describeEdits(): void {
       const source = await client.get(`/api/media/assets/${jpeg.id}`);
       expect(source.data.asset.width).to.equal(PHOTO_WIDTH);
       expect(source.data.asset.hasOriginal).to.equal(false);
+      const sourceAfter = await follow(assetPath(jpeg), auth);
+      expect(sourceAfter.body.equals(sourceBefore.body)).to.equal(true);
+      const copyId = readBody(copy, z.object({ asset: createdBody })).asset.id;
+      const served = await follow(`/media/${copyId}/photo%20(2).jpg`, auth);
+      const metadata = await sharp(served.body).metadata();
+      expect([metadata.width, metadata.height]).to.deep.equal([
+        PHOTO_WIDTH / 2,
+        PHOTO_HEIGHT,
+      ]);
+      const listing = await client.get(`/api/media/folders/${folderId}/assets`);
+      const listed = readBody(
+        listing,
+        z.object({ assets: z.array(createdBody) }),
+      ).assets.map((asset) => asset.id);
+      expect(listed).to.include.members([jpeg.id, copyId]);
     });
 
     it("renders successive edits from the original and resets on revert", async () => {
