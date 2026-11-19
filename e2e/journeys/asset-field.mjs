@@ -3,6 +3,7 @@ import { openFilePicker } from "../chooser.mjs";
 import { createFolder, folderAssets, member, uploaded } from "../library.mjs";
 import { check, fixture, image, pick, text } from "../media.mjs";
 import { boundFolder } from "./folders.mjs";
+import { fieldEntryJourneys } from "./parts/field-entries.mjs";
 import { openPicker, pickerDestinationJourneys, pickerUploadJourneys } from "./parts/picker-uploads.mjs";
 
 /** @typedef {import("../media.mjs").Ctx} Ctx */
@@ -152,6 +153,7 @@ export const journeys = guarded([
       await ctx.verify("the linked field opens on its folder and lists its subfolder", [check("the picker opens", projectsOpened, projectsOpened), tab.visible({ role: "heading", name: "Verify projects", level: 2 }), tab.visible({ role: "button", name: /^Chantier Nord/ })]);
     },
   },
+  ...fieldEntryJourneys(),
   ...pickerUploadJourneys(),
   ...pickerDestinationJourneys(),
   {

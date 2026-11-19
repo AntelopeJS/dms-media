@@ -43,6 +43,7 @@ The Library page: views, the folder tree, search, facets, sort, grid, list and c
 - `the-modified-filter-keeps-its-window`: the modification date filter keeps the files changed in the last 7 days, the last 30 days or since 1 January, and every file for any date.
 - `a-linked-folder-shows-the-link-icon-in-the-locations-tree`: in the Locations tree a folder linked to a field shows the link icon in place of the folder icon and again as its marker, with the tooltip Linked to a field; an unlinked folder shows the folder icon and no marker; a starred folder shows one marker that is not the link.
 - `a-sort-replaces-the-order-of-a-largest-or-recent-view`: the Largest files view lists the biggest file first and Recent the newest, and a sort in the query replaces that order, whatever the direction: the ids come back in exactly the order asked.
+- `the-library-stars-files-and-folders`: Star in a file's context menu and in a folder's menu puts them in the Starred view, the menu then offers Remove star, and removing a star from the Starred view drops the tile with an Undo that brings it back.
 
 ## How to get to it (user POV)
 
