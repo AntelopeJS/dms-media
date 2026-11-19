@@ -159,6 +159,11 @@ function describeConfiguredSizes(): void {
           { format: "jpeg", width: 200, height: 150 },
           "wide",
         );
+        await expectRendering(
+          sharper,
+          { format: "jpeg", width: 200, height: 150 },
+          "sharp",
+        );
         expect(
           sharper.bytes.byteLength,
           "quality 95 is heavier than 30",
