@@ -35,19 +35,14 @@ export interface FormalCheck {
 
 import { COVERED_FILES } from "../formal-asset-files/coverage.mjs";
 import { COVERED_FILES as DECLARED_ROWS_COVERED_FILES } from "../formal-declared-rows/coverage.mjs";
+import journeys from "../../../e2e/journeys.config.ts";
 
-const SKILL = ".agents/skills/verify-dms-media";
 const MODULE = "packages/dms-media";
 const INTERFACE = "packages/interface-dms-media";
 
 const config: VerifyConfig = {
-  playground: `${SKILL}/playground`,
-  prepare: [
-    ["pnpm", "install", "--frozen-lockfile", "--prefer-offline", "--ignore-scripts"],
-    ["pnpm", "run", "build"],
-    ["ln", "-sfn", `../../../../${MODULE}/node_modules`, `${SKILL}/playground/node_modules`],
-    [`${MODULE}/node_modules/.bin/tsc`, "-p", `${SKILL}/playground/tsconfig.build.json`],
-  ],
+  playground: journeys.playground,
+  prepare: journeys.prepare,
   userFacing: [`${MODULE}/src/**`, `${MODULE}/frontend-vue/**`, `${MODULE}/skills/**`, `${MODULE}/package.json`, `${INTERFACE}/src/**`, `${INTERFACE}/package.json`],
   notUserFacing: [
     `${MODULE}/src/test/**`,
@@ -57,7 +52,7 @@ const config: VerifyConfig = {
     `${MODULE}/frontend-vue/vitest.config.ts`,
     `${MODULE}/frontend-vue/pnpm-lock.yaml`,
   ],
-  smoke: "smoke",
+  smoke: journeys.smoke,
   smokeJourney: "onboard, create a folder, upload an image, see it in the Library, follow its delivery link to the same bytes",
   journeys: "e2e/journeys",
   doors: {

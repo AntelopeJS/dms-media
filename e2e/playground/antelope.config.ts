@@ -119,7 +119,7 @@ export default defineConfig({
       source: { type: "local", path: "." },
     },
     "dms-media": {
-      source: { type: "local", path: "../../../../packages/dms-media" },
+      source: { type: "local", path: "../../packages/dms-media" },
       config: mediaConfig(),
     },
     dms: {

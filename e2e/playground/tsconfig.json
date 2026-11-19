@@ -1,0 +1,16 @@
+{
+  "extends": "../../tsconfig.json",
+  "compilerOptions": {
+    "types": ["node"],
+    "lib": ["ES2022"],
+    "typeRoots": ["../../packages/dms-media/node_modules/@types"],
+    "module": "nodenext",
+    "moduleResolution": "nodenext",
+    "experimentalDecorators": true,
+    "composite": false,
+    "incremental": false,
+    "declaration": false,
+    "noEmit": true
+  },
+  "include": ["*.ts", "src/**/*.ts"]
+}

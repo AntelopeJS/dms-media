@@ -9,8 +9,8 @@ importers:
   .:
     devDependencies:
       '@antelopejs/dms':
-        specifier: 0.21.4-next.939.g641c7fa
-        version: 0.21.4-next.939.g641c7fa(@playwright/test@1.65.1)(bare-buffer@3.7.1)(typescript@6.0.3)
+        specifier: 0.21.4-next.944.g3da5606
+        version: 0.21.4-next.944.g3da5606(@playwright/test@1.65.1)(bare-buffer@3.7.1)(typescript@6.0.3)
       '@antelopejs/tooling-configs':
         specifier: '>=0.8.9 <0.9.0'
         version: 0.8.9(knip@6.34.0)(mongodb-memory-server@11.3.0(bare-buffer@3.7.1)(socks@2.8.9))(oxfmt@0.66.0)(oxlint@1.81.0(oxlint-tsgolint@7.0.2001))(pixelmatch@8.0.0)(playwright-core@1.65.1)(sharp@0.35.5)
@@ -277,8 +277,8 @@ packages:
       typescript:
         optional: true
 
-  '@antelopejs/dms@0.21.4-next.939.g641c7fa':
-    resolution: {integrity: sha512-wAF+SPGjEl4X8JM23HFXBLtTRjBQqx5OoWg3Cxm2Pm260UDdeLukgbZw0dw5ifNZoMv7wjV/uyTiqZ+WSeK7Rw==}
+  '@antelopejs/dms@0.21.4-next.944.g3da5606':
+    resolution: {integrity: sha512-Os2WiWC8f5cm4JBtLea0ZQxnx09Iwp4t9vb1pWBcrcR8HJI3EshGE2jqjmspY4BovEgI0yYGzmH73QFPC9/IUg==}
     engines: {node: ^20.19.0 || >=22.12.0}
     hasBin: true
     peerDependencies:
@@ -6522,7 +6522,7 @@ snapshots:
       - react-native-b4a
       - supports-color
 
-  '@antelopejs/dms@0.21.4-next.939.g641c7fa(@playwright/test@1.65.1)(bare-buffer@3.7.1)(typescript@6.0.3)':
+  '@antelopejs/dms@0.21.4-next.944.g3da5606(@playwright/test@1.65.1)(bare-buffer@3.7.1)(typescript@6.0.3)':
     dependencies:
       2fa: 0.1.2
       '@antelopejs/interface-api': 0.3.3(@antelopejs/interface-core@0.5.1)
