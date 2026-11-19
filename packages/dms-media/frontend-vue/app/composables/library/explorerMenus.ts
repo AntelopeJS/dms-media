@@ -120,7 +120,7 @@ export function createExplorerMenus(library: MediaLibrary, commands: MenuCommand
 	}
 
 	function lockedItem(label: string, icon: string): DropdownMenuItem {
-		return { label, icon, disabled: true, suffix: t('dms_media.markers.locked') }
+		return { label, icon, disabled: true, description: t('dms_media.markers.locked') }
 	}
 
 	function folderBasics(folder: MediaFolder): DropdownMenuItem[] {

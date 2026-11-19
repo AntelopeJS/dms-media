@@ -34,11 +34,8 @@ export function hasRights(got, wanted, label) {
 export const journeys = guarded([
   {
     id: "a-locked-folders-menu-says-why",
-    title: "a linked folder's menu offers Why is this locked? and disables Rename, Move to… and Delete folder… with the suffix Locked; the dialog names the folder and its binding and has a Got it button; a disabled item opens nothing and the folder keeps its name",
+    title: "a linked folder's menu offers Why is this locked? and disables Rename, Move to… and Delete folder… each described as Locked; the dialog names the folder and its binding and has a Got it button; a disabled item opens nothing and the folder keeps its name",
     entryPoint: "/modules/media/files linked folder menu: Why is this locked?",
-    knownFailures: {
-      "each of the three carries the suffix Locked": "lockedItem in explorerMenus.ts sets a suffix (dms_media.markers.locked) that @nuxt/ui 4.10 DropdownMenu items have no prop for, so the menu shows Rename, Move to… and Delete folder… disabled with no Locked text",
-    },
     async run(/** @type {Ctx} */ ctx) {
       const cover = await boundFolder(ctx, "verify.cover");
       const before = await tree(ctx);
@@ -51,7 +48,7 @@ export const journeys = guarded([
       await ctx.verify("the Content folder lists the linked folder", [check("the linked folder has a name", name !== "", row), tab.visible(more, { timeoutMs: 30_000 })]);
       await tab.click(more);
       await ctx.verify("the menu locks Rename, Move to… and Delete folder…", [
-        check("each of the three carries the suffix Locked", ((await tab.page.getByRole("menu").innerText()).match(/\bLocked\b/g) ?? []).length === 3, (await tab.page.getByRole("menu").innerText()).replaceAll("\n", " | ")),
+        check("each of the three is described as Locked", ((await tab.page.getByRole("menu").innerText()).match(/\bLocked\b/g) ?? []).length === 3, (await tab.page.getByRole("menu").innerText()).replaceAll("\n", " | ")),
         tab.enabled({ role: "menuitem", name: /^Rename/ }, { disabled: true }),
         tab.enabled({ role: "menuitem", name: /^Move to…/ }, { disabled: true }),
         tab.enabled({ role: "menuitem", name: /^Delete folder…/ }, { disabled: true }),
