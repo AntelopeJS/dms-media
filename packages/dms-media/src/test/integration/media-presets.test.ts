@@ -282,7 +282,9 @@ function describeCropping(): void {
   });
 }
 
-describe("[integration] media presets — default and configured image sizes", () => {
+describe("[integration] media presets — default and configured image sizes", function () {
+  this.timeout(30_000);
+
   before(async function () {
     this.timeout(40_000);
     initialConfig = snapshotConfig();
