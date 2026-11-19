@@ -1,23 +1,18 @@
-import { GetModel } from "@antelopejs/interface-database-decorators";
 import { CustomComponent } from "@antelopejs/interface-dms/base/custom";
-import { DEFAULT_TENANT_ID } from "@antelopejs/interface-dms/constants";
 import {
   GetPermissionId,
   PageController,
   pagesCategory,
   RegisterPage,
 } from "@antelopejs/interface-dms/page";
-import {
-  RegisterAssetBinding,
-  UnregisterAssetBinding,
-} from "@antelopejs/interface-dms-media";
+import { RegisterAssetBinding } from "@antelopejs/interface-dms-media";
 import type { AxiosInstance } from "axios";
 import { assert, expect } from "chai";
 import { z } from "zod";
-import { MediaAssetModel, MediaFolderModel } from "../../db";
 import { createdBody, readBody } from "../helpers/bodies";
 import { fetchFolderNodes } from "../helpers/folders";
 import { authorizedClient } from "../helpers/http";
+import { leaveLibraryAsFound } from "../helpers/library-scope";
 import {
   memberHolding,
   probeRights,
@@ -53,31 +48,9 @@ class OpenPage extends PageController("journeys-bindings-open", {
   static content = CustomComponent("dms-media-journeys-open");
 }
 
-const registered = new Set<string>();
-
 function register(config: Parameters<typeof RegisterAssetBinding>[0]): string {
-  registered.add(config.id);
   RegisterAssetBinding(config);
   return config.id;
-}
-
-/** Removes what this file linked, so later suites meet the library they expect. */
-async function removeRegisteredFolders(): Promise<void> {
-  for (const id of registered) UnregisterAssetBinding(id);
-  const folders = GetModel(MediaFolderModel, DEFAULT_TENANT_ID);
-  const assets = GetModel(MediaAssetModel, DEFAULT_TENANT_ID);
-  const linked = await folders.getBy("binding", ...registered);
-  const doomed = (await folders.getAll()).filter((folder) =>
-    linked.some(
-      (entry) => entry._id === folder._id || folder.path.includes(entry._id),
-    ),
-  );
-  const files = await assets.getBy(
-    "folderId",
-    ...doomed.map((folder) => folder._id),
-  );
-  await Promise.all(files.map((file) => assets.delete(file._id)));
-  await Promise.all(doomed.map((folder) => folders.delete(folder._id)));
 }
 
 let owner: AxiosInstance;
@@ -277,14 +250,11 @@ function describePageRights(): void {
 }
 
 describe("[integration] media bindings journeys — what a linked folder is and who reaches it", () => {
+  leaveLibraryAsFound();
+
   before(async function () {
     this.timeout(60_000);
     owner = authorizedClient((await ensureOwnerSession()).accessToken);
-  });
-
-  after(async function () {
-    this.timeout(30_000);
-    await removeRegisteredFolders();
   });
 
   describeProvisionedFolders();

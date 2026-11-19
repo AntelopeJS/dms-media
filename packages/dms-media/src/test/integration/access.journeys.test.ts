@@ -13,6 +13,7 @@ import type { AclEntry } from "../../types";
 import { createdBody, readBody } from "../helpers/bodies";
 import { fetchFolderNodes } from "../helpers/folders";
 import { authorizedClient } from "../helpers/http";
+import { leaveLibraryAsFound } from "../helpers/library-scope";
 import {
   aclFolder,
   isAllowed,
@@ -409,6 +410,8 @@ function readRoutes(): void {
 }
 
 describe("[integration] access journeys — member rights, inheritance, role subjects and write mappings", () => {
+  leaveLibraryAsFound();
+
   before(async function () {
     this.timeout(SETUP_TIMEOUT_MS);
     owner = authorizedClient((await ensureOwnerSession()).accessToken);

@@ -15,6 +15,7 @@ import { PNG_MIMETYPE } from "../helpers/assets";
 import { readBody } from "../helpers/bodies";
 import { fetchFolderNodes } from "../helpers/folders";
 import { authorizedClient } from "../helpers/http";
+import { leaveLibraryAsFound } from "../helpers/library-scope";
 import { ensureOwnerSession } from "../helpers/owner";
 
 const HTTP_OK = 200;
@@ -263,6 +264,8 @@ function describeFolderBindings(): void {
 }
 
 describe("[integration] media declared content — the HTTP journeys of the declared feature", () => {
+  leaveLibraryAsFound();
+
   before(async function () {
     this.timeout(40_000);
     RegisterAssetBinding({
