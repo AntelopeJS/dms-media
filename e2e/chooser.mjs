@@ -25,7 +25,7 @@ async function arm(tab) {
           const target = event.target;
           if (!(target instanceof HTMLInputElement) || target.type !== "file") return;
           event.preventDefault();
-          for (const marked of document.querySelectorAll("[data-verify-chosen]")) marked.removeAttribute("data-verify-chosen");
+          for (const marked of document.querySelectorAll("[data-e2e-chosen]")) marked.removeAttribute("data-e2e-chosen");
           target.dataset.verifyChosen = "1";
           root.dataset.verifyFileInputClicks = String(Number(root.dataset.verifyFileInputClicks) + 1);
         },
@@ -87,7 +87,7 @@ export async function openFilePicker(tab, action, timeoutMs = 15_000) {
       clicks = await clicksOf(tab);
     }
   }
-  const input = tab.page.locator("input[type=file][data-verify-chosen]").first();
+  const input = tab.page.locator("input[type=file][data-e2e-chosen]").first();
   const opened = clicks > before;
   const multiple = opened ? await input.evaluate((element) => element instanceof HTMLInputElement && element.multiple).catch(() => false) : false;
   return {

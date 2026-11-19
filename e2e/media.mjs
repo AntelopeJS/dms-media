@@ -16,8 +16,8 @@ import sharp from "../packages/dms-media/node_modules/sharp/lib/index.js";
 /** The library's HTTP API, which the dashboard and asset fields call. */
 export const MEDIA = "/api/media";
 
-/** The verification playground's trusted backend calls (`playground/src/fixture.ts`). */
-export const FIXTURE = "/verify-media";
+/** The e2e playground's trusted backend calls (`playground/src/fixture.ts`). */
+export const FIXTURE = "/e2e-media";
 
 /** The tenant of a single-tenant DMS. */
 export const TENANT = "default";
@@ -110,7 +110,7 @@ export function media(ctx, label, method, path, options = {}) {
 }
 
 /**
- * Calls the verification playground's trusted backend.
+ * Calls the e2e playground's trusted backend.
  *
  * @param {Ctx} ctx The journey
  * @param {string} label What the call does

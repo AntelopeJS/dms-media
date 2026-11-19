@@ -25,7 +25,7 @@ It needs Node 24 and `pnpm install` done, because the runner comes from `@antelo
 - Exit 1 has three causes. `BROKEN <rule>` names a rule that breaks, followed by TLC's shortest counterexample as a list of actions. `STALE <file>#<function>` names a covered function whose text changed since the model was last confirmed against it. Under `--seeded`, a line that is not `finding` names a seeded bug the check no longer catches. The runner prints the folder that keeps TLC's output.
 - Exit 2 means TLC or Java could not run.
 
-`verify-dms-media` runs it as the formal check `formal-asset-files` (`$C formal "$RUN"`) whenever a diff touches a covered file or this folder.
+CI runs it on every pull request through `pnpm --dir packages/dms-media test:formal`.
 
 ## The rules
 

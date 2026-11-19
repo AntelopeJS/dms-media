@@ -113,7 +113,7 @@ function mediaConfig(): MediaConfig {
  * verification built from the checkout.
  */
 export default defineConfig({
-  name: "verify-dms-media",
+  name: "e2e-dms-media",
   modules: {
     app: {
       source: { type: "local", path: "." },
