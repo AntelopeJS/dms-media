@@ -3,7 +3,8 @@ import { DEFAULT_TENANT_ID } from "@antelopejs/interface-dms/constants";
 import { DeleteFile } from "@antelopejs/interface-file-storage";
 import type { AxiosInstance } from "axios";
 import { assert, expect } from "chai";
-import { configureMediaModule, getMediaConfig } from "../../config";
+import { getMediaConfig } from "../../config";
+import { withMediaConfig } from "../helpers/media-config";
 import { MediaAssetModel } from "../../db";
 import { type UploadedAsset, uploadAsset } from "../helpers/assets";
 import { createdBody, readBody } from "../helpers/bodies";
@@ -26,17 +27,6 @@ let folderId: string;
 
 function assetPath(asset: UploadedAsset): string {
   return `/media/${asset.id}/${encodeURIComponent(asset.name)}`;
-}
-
-function allowMimetypes(allowedMimetypes: string[]): void {
-  const current = getMediaConfig();
-  configureMediaModule({
-    rootAcl: current.rootAcl,
-    storage: current.storage,
-    presets: [...current.presets.values()],
-    storageQuotaBytes: current.storageQuotaBytes,
-    allowedMimetypes,
-  });
 }
 
 function longSvg(): Buffer {
@@ -119,32 +109,38 @@ function describeActiveContent(): void {
     });
 
     it("streams an XML file as a sandboxed attachment once its type is allowed", async () => {
-      const initial = [...getMediaConfig().allowedMimetypes];
-      allowMimetypes([...initial, "application/xml", "text/xml"]);
-      try {
-        const bytes = Buffer.concat([
-          Buffer.from('<?xml version="1.0" encoding="UTF-8"?>\n<notes>\n'),
-          longText(LONG_DESCRIPTION_LINES),
-          Buffer.from("</notes>\n"),
-        ]);
-        const xml = await uploadAsset(
-          client,
-          folderId,
-          "flux.xml",
-          "application/xml",
-          bytes,
-        );
-        const read = await deliver(assetPath(xml), {
-          Authorization: `Bearer ${token}`,
-        });
-        expect(read.status).to.equal(HTTP_OK);
-        expect(read.headers.get("content-disposition")).to.match(/^attachment/);
-        expect(read.headers.get("content-security-policy")).to.equal("sandbox");
-        expect(read.headers.get("x-content-type-options")).to.equal("nosniff");
-        expect(read.body.equals(bytes)).to.equal(true);
-      } finally {
-        allowMimetypes(initial);
-      }
+      const initial = getMediaConfig().allowedMimetypes;
+      await withMediaConfig(
+        { allowedMimetypes: [...initial, "application/xml", "text/xml"] },
+        async () => {
+          const bytes = Buffer.concat([
+            Buffer.from('<?xml version="1.0" encoding="UTF-8"?>\n<notes>\n'),
+            longText(LONG_DESCRIPTION_LINES),
+            Buffer.from("</notes>\n"),
+          ]);
+          const xml = await uploadAsset(
+            client,
+            folderId,
+            "flux.xml",
+            "application/xml",
+            bytes,
+          );
+          const read = await deliver(assetPath(xml), {
+            Authorization: `Bearer ${token}`,
+          });
+          expect(read.status).to.equal(HTTP_OK);
+          expect(read.headers.get("content-disposition")).to.match(
+            /^attachment/,
+          );
+          expect(read.headers.get("content-security-policy")).to.equal(
+            "sandbox",
+          );
+          expect(read.headers.get("x-content-type-options")).to.equal(
+            "nosniff",
+          );
+          expect(read.body.equals(bytes)).to.equal(true);
+        },
+      );
     });
 
     it("answers 502 for an SVG whose stored file is gone", async () => {

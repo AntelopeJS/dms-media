@@ -13,13 +13,9 @@ import {
 import type { AxiosInstance } from "axios";
 import { assert, expect } from "chai";
 import sharp from "sharp";
-import {
-  configureMediaModule,
-  type DmsMediaConfig,
-  getMediaConfig,
-} from "../../config";
 import { MediaAssetModel, MediaFolderModel } from "../../db";
 import { PNG_MIMETYPE } from "../helpers/assets";
+import { withMediaConfig } from "../helpers/media-config";
 import { authorizedClient } from "../helpers/http";
 import { ensureOwnerSession } from "../helpers/owner";
 
@@ -72,19 +68,6 @@ const FORBIDDEN_CHARACTERS = [
   "\u0007",
 ];
 const LIBRARY_REFUSES_TYPE = "This type of file can't be added to the library";
-
-/** The bytes the storage holds for an asset, read through its read URL. */
-/** The configuration in force, in the shape `configureMediaModule` takes back. */
-function mediaConfigSnapshot(): DmsMediaConfig {
-  const current = getMediaConfig();
-  return {
-    rootAcl: current.rootAcl,
-    storage: current.storage,
-    presets: [...current.presets.values()],
-    storageQuotaBytes: current.storageQuotaBytes,
-    allowedMimetypes: [...current.allowedMimetypes],
-  };
-}
 
 let client: AxiosInstance;
 let tempDir: string;
@@ -367,15 +350,11 @@ function describeUploadLimits(): void {
     });
 
     it("refuses a file once the storage plan is full", async () => {
-      const { storageQuotaBytes } = getMediaConfig();
-      configureMediaModule({ ...mediaConfigSnapshot(), storageQuotaBytes: 1 });
-      try {
+      await withMediaConfig({ storageQuotaBytes: 1 }, async () => {
         expect(
           await declare("quota", { source: { bytes: Buffer.alloc(64, 97) } }),
         ).to.equal("The library's storage plan is full");
-      } finally {
-        configureMediaModule({ ...mediaConfigSnapshot(), storageQuotaBytes });
-      }
+      });
     });
 
     it("stores a JPEG declared as a PNG under its decoded type", async () => {

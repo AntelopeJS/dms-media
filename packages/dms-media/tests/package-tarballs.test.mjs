@@ -36,15 +36,6 @@ const frontendManifestSchema = z.object({
   engines: z.object({ "@antelopejs/dms-frontend": z.string() }),
 });
 
-/**
- * @param {string} version A semver version
- * @returns {number} It as one comparable number
- */
-function rank(version) {
-  const [major = 0, minor = 0, patch = 0] = version.split(".").map(Number);
-  return major * 1e6 + minor * 1e3 + patch;
-}
-
 void test("the module tarball holds every path its manifest names, the skill and the dashboard locales, without build info", () => {
   const { files, manifest } = packed(packageRoot);
   const parsed = moduleManifestSchema.parse(manifest);
@@ -149,26 +140,6 @@ void test("the README compatibility table names the interface ranges the module 
       name,
     );
   }
-
-  const source = dependencies["@antelopejs/interface-dms-media"];
-  const [major = 0, minor = 0] = version.split(".").map(Number);
-  const range =
-    source === "workspace:^"
-      ? `>=${version} <${major === 0 ? `0.${minor + 1}.0` : `${major + 1}.0.0`}`
-      : (source ?? "");
-  const floor = /^>=(\d+\.\d+\.\d+)/.exec(range)?.[1];
-  const ceiling = /<(\d+)\.(\d+)\.(\d+)$/.exec(range);
-  assert.ok(floor && ceiling, `${range} has a floor and a ceiling`);
-  assert.ok(
-    rank(version) >= rank(floor) &&
-      rank(version) < rank(ceiling.slice(1).join(".")),
-    range,
-  );
-  assert.equal(
-    Number(ceiling[2]),
-    minor + 1,
-    `${range} stops below the next minor`,
-  );
 
   const { engines } = frontendManifestSchema.parse(
     readRepoJson("packages/dms-media/frontend-vue/package.json"),

@@ -1,32 +1,25 @@
-import { chmodSync, existsSync, mkdirSync, readdirSync } from "node:fs";
-import { tmpdir } from "node:os";
+import { existsSync, mkdirSync, rmSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { assert } from "chai";
 
-const STORAGE_DIR_PREFIX = "dms-media-test-storage-";
-const READ_ONLY_DIRECTORY = 0o500;
-const WRITABLE_DIRECTORY = 0o700;
-
 /**
- * Runs with the folder that would hold an asset's renderings read-only, so the
- * storage cannot write one. The local storage of this run is the directory
- * that holds the asset's original.
+ * Runs with a plain file where the folder of an asset's renderings would go,
+ * so the local storage cannot write one on any platform, as root included.
  */
 export async function withUnwritableDerivatives(
-  asset: { id: string; storageKey: string },
+  asset: { id: string },
   run: () => Promise<void>,
 ): Promise<void> {
-  const root = readdirSync(tmpdir())
-    .filter((name) => name.startsWith(STORAGE_DIR_PREFIX))
-    .map((name) => join(tmpdir(), name, "files"))
-    .find((candidate) => existsSync(join(candidate, asset.storageKey)));
-  assert.isDefined(root, "the local storage directory of this run");
-  const derivatives = join(root, "media-derivatives", asset.id);
-  mkdirSync(derivatives, { recursive: true });
-  chmodSync(derivatives, READ_ONLY_DIRECTORY);
+  const storageDir = process.env.TEST_STORAGE_DIR;
+  assert.isDefined(storageDir, "TEST_STORAGE_DIR");
+  const parent = join(storageDir, "files", "media-derivatives");
+  const blocker = join(parent, asset.id);
+  assert.isFalse(existsSync(blocker), `${blocker} holds no rendering yet`);
+  mkdirSync(parent, { recursive: true });
+  writeFileSync(blocker, "");
   try {
     await run();
   } finally {
-    chmodSync(derivatives, WRITABLE_DIRECTORY);
+    rmSync(blocker, { force: true });
   }
 }

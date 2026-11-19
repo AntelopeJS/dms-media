@@ -22,7 +22,7 @@ function entryLabels(tab) {
 }
 
 /**
- * Clicks Save and reads the form's stored values until `done` holds, clicking again while the page hydrates.
+ * Clicks Save once, then reads the form's stored values until `done` holds or 15 s pass.
  *
  * @param {Ctx} ctx The journey
  * @param {Tab} tab The tab on the field page

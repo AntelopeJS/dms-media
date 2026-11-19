@@ -8,7 +8,7 @@ import { packageRoot } from "./manifest.mjs";
 export const repoRoot = path.resolve(packageRoot, "..", "..");
 
 /**
- * Packs a package the way a release does and lists the tarball.
+ * Packs a package with `npm pack` and lists the tarball.
  *
  * @param {string} dir The package folder
  * @returns {{ files: string[], manifest: unknown }} The packed paths and the packed manifest
@@ -21,14 +21,18 @@ export function packed(dir) {
       ["pack", "--ignore-scripts", "--silent", "--pack-destination", folder],
       { cwd: dir, encoding: "utf8", shell: process.platform === "win32" },
     );
-    const tarball = path.join(folder, output.trim().split("\n").at(-1) ?? "");
-    const files = execFileSync("tar", ["-tzf", tarball], { encoding: "utf8" })
+    const tarball = path.basename(output.trim().split("\n").at(-1) ?? "");
+    const files = execFileSync("tar", ["-tzf", tarball], {
+      cwd: folder,
+      encoding: "utf8",
+    })
       .split("\n")
       .filter(Boolean)
       .map((line) => line.replace(/^package\//, ""));
     /** @type {unknown} */
     const manifest = JSON.parse(
       execFileSync("tar", ["-xzOf", tarball, "package/package.json"], {
+        cwd: folder,
         encoding: "utf8",
       }),
     );

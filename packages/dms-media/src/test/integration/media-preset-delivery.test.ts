@@ -2,9 +2,6 @@ import type { AxiosInstance } from "axios";
 import { assert, expect } from "chai";
 import { z } from "zod";
 import { configureMediaModule, type DmsMediaConfig } from "../../config";
-import { GetModel } from "@antelopejs/interface-database-decorators";
-import { DEFAULT_TENANT_ID } from "@antelopejs/interface-dms/constants";
-import { MediaAssetModel } from "../../db";
 import { type UploadedAsset, uploadAsset } from "../helpers/assets";
 import { createdBody, readBody } from "../helpers/bodies";
 import { snapshotConfig } from "../helpers/config";
@@ -165,18 +162,11 @@ function describeRenderings(): void {
         "image/png",
         await noisyImage(20, 20, "png"),
       );
-      const row = await GetModel(MediaAssetModel, DEFAULT_TENANT_ID).get(
-        photo.id,
-      );
-      assert.isDefined(row);
-      await withUnwritableDerivatives(
-        { id: photo.id, storageKey: row.storageKey },
-        async () => {
-          expect((await render(token, photo, "thumb")).status).to.equal(
-            HTTP_SERVICE_UNAVAILABLE,
-          );
-        },
-      );
+      await withUnwritableDerivatives(photo, async () => {
+        expect((await render(token, photo, "thumb")).status).to.equal(
+          HTTP_SERVICE_UNAVAILABLE,
+        );
+      });
     });
   });
 }
