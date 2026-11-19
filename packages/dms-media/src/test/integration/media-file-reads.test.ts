@@ -33,7 +33,7 @@ async function scratchFolder(name: string): Promise<string> {
 
 function describeReadUrls(): void {
   describe("read URLs, previews and asset search", () => {
-    it("serves a read URL of five minutes for the original and a size, previews images only, and searches by name and type", async () => {
+    it("serves a read URL of five minutes for the original and a size, previews images only, lists every readable file, and searches by name and type", async () => {
       const folder = await scratchFolder("Read URLs");
       try {
         const bytes = await solidPng(500, 400);
@@ -81,6 +81,13 @@ function describeReadUrls(): void {
         expect(
           Object.keys(readBody(previews, previewsBody).previews),
         ).to.deep.equal([photo.id]);
+
+        const listing = await client.get("/api/media/assets");
+        const listed = readBody(
+          listing,
+          z.object({ assets: z.array(createdBody) }),
+        ).assets.map((asset) => asset.id);
+        expect(listed).to.include.members([photo.id, document.id]);
 
         const search = await client.get("/api/media/assets/search", {
           params: { q: "toiture", mime: "application/", folderId: folder },
