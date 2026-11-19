@@ -196,6 +196,47 @@ describe("[integration] media transform — crop, rotate, revert", () => {
   });
 });
 
+/** A GIF, a tilt, an empty request and a crop past the image are refused, and the PNG they hit keeps no original. */
+async function expectRefusalsChangeNothing(
+  client: AxiosInstance,
+  folderId: string,
+): Promise<void> {
+  const gif = await uploadAsset(
+    client,
+    folderId,
+    await solidImage(10, 10).gif().toBuffer(),
+    "g.gif",
+    "image/gif",
+  );
+  const gifEdit = await client.post(`/api/media/assets/${gif}/transform`, {
+    rotate: 90,
+  });
+  expect(gifEdit.status).to.equal(HTTP_UNPROCESSABLE_ENTITY);
+  const untouched = await uploadAsset(
+    client,
+    folderId,
+    await solidImage(10, 10).png().toBuffer(),
+    "p.png",
+    "image/png",
+  );
+  const tilted = await client.post(`/api/media/assets/${untouched}/transform`, {
+    rotate: 45,
+  });
+  expect(tilted.status).to.equal(HTTP_BAD_REQUEST);
+  const empty = await client.post(
+    `/api/media/assets/${untouched}/transform`,
+    {},
+  );
+  expect(empty.status).to.equal(HTTP_BAD_REQUEST);
+  const pastTheEdge = await client.post(
+    `/api/media/assets/${untouched}/transform`,
+    { crop: { x: 0.6, y: 0, width: 0.5, height: 1 } },
+  );
+  expect(pastTheEdge.status).to.equal(HTTP_BAD_REQUEST);
+  const read = await client.get(`/api/media/assets/${untouched}`);
+  expect(read.data.asset.hasOriginal).to.equal(false);
+}
+
 describe("[integration] media transform — what the same link serves after an edit", () => {
   let client: AxiosInstance;
   let token: string;
@@ -234,9 +275,13 @@ describe("[integration] media transform — what the same link serves after an e
       rotate: 90,
     });
     expect(rotated.status).to.equal(HTTP_OK);
+    expect([rotated.data.asset.width, rotated.data.asset.height]).to.deep.equal(
+      [200, 400],
+    );
     expect(rotated.data.asset.hasOriginal).to.equal(true);
     const afterRotate = await servedImage(path, token);
     expect([afterRotate.width, afterRotate.height]).to.deep.equal([200, 400]);
+    expect(afterRotate.bytes.equals(landscape)).to.equal(false);
     const thumbAfter = await servedImage(thumbPath, token);
     expect(thumbBefore.width).to.be.greaterThan(thumbBefore.height);
     expect(thumbAfter.height).to.be.greaterThan(thumbAfter.width);
@@ -246,6 +291,7 @@ describe("[integration] media transform — what the same link serves after an e
     const cropped = await client.post(`/api/media/assets/${id}/transform`, {
       crop: { x: 0, y: 0, width: 0.5, height: 1 },
     });
+    expect(cropped.status).to.equal(HTTP_OK);
     expect(cropped.data.asset.hasOriginal).to.equal(true);
     const afterCrop = await servedImage(path, token);
     expect([afterCrop.width, afterCrop.height]).to.deep.equal([100, 400]);
@@ -256,7 +302,7 @@ describe("[integration] media transform — what the same link serves after an e
     expect(afterRevert.bytes.equals(landscape)).to.equal(true);
   });
 
-  it("edits JPEG, PNG, WebP and AVIF, turns by quarter steps, and refuses a GIF, a tilt or an empty request without changing the file", async () => {
+  it("edits JPEG, PNG, WebP and AVIF, turns by quarter steps, and refuses a GIF, a tilt, an empty request or a crop past the image without changing the file", async () => {
     const formats = ["jpeg", "png", "webp", "avif"] as const;
     for (const format of formats) {
       const id = await uploadAsset(
@@ -293,30 +339,6 @@ describe("[integration] media transform — what the same link serves after an e
       threeQuarters.data.asset.width,
       threeQuarters.data.asset.height,
     ]).to.deep.equal([10, 30]);
-    const gif = await uploadAsset(
-      client,
-      folderId,
-      await solidImage(10, 10).gif().toBuffer(),
-      "g.gif",
-      "image/gif",
-    );
-    const gifEdit = await client.post(`/api/media/assets/${gif}/transform`, {
-      rotate: 90,
-    });
-    expect(gifEdit.status).to.equal(HTTP_UNPROCESSABLE_ENTITY);
-    const untouched = await uploadAsset(
-      client,
-      folderId,
-      await solidImage(10, 10).png().toBuffer(),
-      "p.png",
-      "image/png",
-    );
-    const tilted = await client.post(
-      `/api/media/assets/${untouched}/transform`,
-      { rotate: 45 },
-    );
-    expect(tilted.status).to.equal(HTTP_BAD_REQUEST);
-    const read = await client.get(`/api/media/assets/${untouched}`);
-    expect(read.data.asset.hasOriginal).to.equal(false);
+    await expectRefusalsChangeNothing(client, folderId);
   });
 });
