@@ -4,11 +4,17 @@ import { z } from "zod";
 import { uploadAsset } from "../helpers/assets";
 import { createdBody, readBody } from "../helpers/bodies";
 import { authorizedClient } from "../helpers/http";
+import { withMediaConfig } from "../helpers/media-config";
 import { createRole, registerMember } from "../helpers/members";
 import { ensureOwnerSession } from "../helpers/owner";
+import { solidPng } from "../helpers/png";
 
 const HTTP_OK = 200;
 const HTTP_FORBIDDEN = 403;
+const HTTP_PAYLOAD_TOO_LARGE = 413;
+const LARGE_FILE_BYTES = 20 * 1000 * 1000;
+const PLAN_BYTES = 1_000_000;
+const FILL_BYTES = 6000;
 const TEXT_MIMETYPE = "text/plain";
 const BODY = Buffer.alloc(10, 1);
 const BATCH_ID = "overview-retried-batch";
@@ -198,5 +204,169 @@ describe("[integration] media activity and overview — figures, upload history 
       expect(response.status, path).to.equal(HTTP_FORBIDDEN);
       expect((await client.get(path)).status, path).to.equal(HTTP_OK);
     }
+  });
+});
+
+const storageBody = z.object({
+  value: z.number(),
+  segments: z.array(
+    z.object({
+      value: z.number(),
+      label: z.object({
+        params: z.object({ type: z.object({ key: z.string() }) }),
+      }),
+    }),
+  ),
+});
+const kpisBody = z.object({
+  items: z.array(z.object({ id: z.string() }).passthrough()),
+});
+
+async function stats(client: AxiosInstance) {
+  const storage = readBody(
+    await client.get("/api/media/stats/storage"),
+    storageBody,
+  );
+  const segment = (type: string) =>
+    storage.segments.find(
+      (entry) => entry.label.params.type.key === `dms_media.types.${type}`,
+    )?.value ?? 0;
+  const attention = readBody(
+    await client.get("/api/media/stats/attention"),
+    attentionBody,
+  );
+  const figure = (id: string) =>
+    attention.items.find((entry) => entry.id === id)?.value ?? 0;
+  return {
+    used: storage.value,
+    segmentSum: storage.segments.reduce((sum, entry) => sum + entry.value, 0),
+    pdf: segment("pdf"),
+    image: segment("image"),
+    failedUploads: figure("failed-uploads"),
+    largeFiles: figure("large-files"),
+  };
+}
+
+describe("[integration] media overview — storage plan and exact figures", () => {
+  let client: AxiosInstance;
+  let folderId: string;
+
+  before(async function () {
+    this.timeout(30_000);
+    client = authorizedClient((await ensureOwnerSession()).accessToken);
+    folderId = readBody(
+      await client.post("/api/media/folders", { name: "Overview plan" }),
+      createdBody,
+    ).id;
+  });
+
+  after(async () => {
+    await client.delete(`/api/media/folders/${folderId}`);
+  });
+
+  it("names the storage plan on the storage KPI and gives its quota in the tree only when one is set", async () => {
+    const freshStorageItem = async () => {
+      const touched = await client.post("/api/media/folders", {
+        name: "Overview plan touch",
+      });
+      await client.delete(
+        `/api/media/folders/${readBody(touched, createdBody).id}`,
+      );
+      return JSON.stringify(
+        readBody(
+          await client.get("/api/media/stats/kpis"),
+          kpisBody,
+        ).items.find((item) => item.id === "storage"),
+      );
+    };
+    const quota = async () =>
+      readBody(
+        await client.get("/api/media/tree"),
+        z.object({ quotaBytes: z.number().nullable() }),
+      ).quotaBytes;
+    expect(await freshStorageItem()).not.to.contain("storage_quota_detail");
+    expect(await quota()).to.equal(null);
+    await withMediaConfig({ storageQuotaBytes: PLAN_BYTES }, async () => {
+      expect(await freshStorageItem()).to.contain("storage_quota_detail");
+      expect(await quota()).to.equal(PLAN_BYTES);
+    });
+  });
+
+  it("counts exactly the failed uploads of today, the files over 20 MB and each type's bytes, the original of an edited image included", async function () {
+    this.timeout(120_000);
+    const before = await stats(client);
+    const upload = (name: string, size: number) =>
+      uploadAsset(
+        client,
+        folderId,
+        name,
+        "application/pdf",
+        Buffer.alloc(size, 37),
+      );
+    await upload("pile.pdf", LARGE_FILE_BYTES);
+    await upload("plus.pdf", LARGE_FILE_BYTES + 1);
+    const photoBytes = await solidPng(300, 200);
+    const photo = await uploadAsset(
+      client,
+      folderId,
+      "photo.png",
+      "image/png",
+      photoBytes,
+    );
+    const edited = await client.post(
+      `/api/media/assets/${photo.id}/transform`,
+      {
+        rotate: 90,
+      },
+    );
+    expect(edited.status).to.equal(HTTP_OK);
+    for (const failed of [2, 1]) {
+      const report = await client.post("/api/media/upload/batches", {
+        batchId: `figures-${failed}`,
+        folderId,
+        total: failed + 1,
+        uploaded: 1,
+        failed,
+        size: 1,
+        failures: Array.from({ length: failed }, (_, index) => ({
+          name: `f${index}.html`,
+          reason: "type_not_allowed",
+        })),
+      });
+      expect(report.status).to.equal(HTTP_OK);
+    }
+    const after = await stats(client);
+    expect(after.failedUploads - before.failedUploads).to.equal(3);
+    expect(after.largeFiles - before.largeFiles).to.equal(1);
+    expect(after.pdf - before.pdf).to.equal(2 * LARGE_FILE_BYTES + 1);
+    expect(after.image - before.image).to.equal(
+      readBody(edited, z.object({ asset: z.object({ size: z.number() }) }))
+        .asset.size + photoBytes.byteLength,
+    );
+    expect(after.used).to.equal(after.segmentSum);
+  });
+
+  it("accepts a file that fills the storage plan to the byte and refuses one more byte with nothing remaining", async () => {
+    const { used } = await stats(client);
+    await withMediaConfig(
+      { storageQuotaBytes: used + FILL_BYTES },
+      async () => {
+        await uploadAsset(
+          client,
+          folderId,
+          "remplit.txt",
+          TEXT_MIMETYPE,
+          Buffer.alloc(FILL_BYTES, 97),
+        );
+        const more = await client.post("/api/media/upload/presign", {
+          folderId,
+          filename: "octet.txt",
+          size: 1,
+          mimetype: TEXT_MIMETYPE,
+        });
+        expect(more.status).to.equal(HTTP_PAYLOAD_TOO_LARGE);
+        expect(more.data).to.include({ reason: "quota", remaining: 0 });
+      },
+    );
   });
 });

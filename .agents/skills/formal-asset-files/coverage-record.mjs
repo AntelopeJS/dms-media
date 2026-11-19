@@ -1,8 +1,8 @@
 /** Each covered function's fingerprint, and the last commit that changed the covered code when the model was confirmed against it. Written by `check.mjs --sync`. */
 export default {
-  "sync": "ac67959",
+  "sync": "a9387ca",
   "functions": {
-    "packages/dms-media/src/asset-lifecycle.ts#retiredFiles": "10406ec6c154bb1a",
+    "packages/dms-media/src/asset-lifecycle.ts#retiredFiles": "a517f3883f82fe3d",
     "packages/dms-media/src/asset-lifecycle.ts#updateAssetMedia": "c0b5759e2c55b9cb",
     "packages/dms-media/src/asset-lifecycle.ts#acknowledgeFile": "29d0565eeca3d152",
     "packages/dms-media/src/asset-lifecycle.ts#cleanupAssetFiles": "ab617d842c762951",
@@ -18,7 +18,7 @@ export default {
     "packages/dms-media/src/transform.ts#applyImageTransform": "5a500ead4d7a9bef",
     "packages/dms-media/src/transform.ts#revertImageTransform": "8bf8f49fa40783ff",
     "packages/dms-media/src/crons/sweep-derivatives.ts#sweepAssetDerivatives": "1e82fa9f2fe3152d",
-    "packages/dms-media/src/routes/media/storage-keys.ts#parseDerivatives": "644b8e6f5ee9ba2e",
+    "packages/dms-media/src/routes/media/storage-keys.ts#parseDerivatives": "31bfd78017980ec8",
     "packages/dms-media/src/routes/media/storage-keys.ts#collectAssetStorageKeys": "56d1abd0ef83fdd9",
     "packages/dms-media/src/db/models/mediaAssets.model.ts#compareMedia": "fdb5544fbc9c998a",
     "packages/dms-media/src/db/models/mediaAssets.model.ts#deleteCleanedAsset": "4c71d93151b88bac",

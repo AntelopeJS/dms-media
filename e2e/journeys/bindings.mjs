@@ -174,4 +174,47 @@ export const journeys = guarded([
       ]);
     },
   },
+  {
+    id: "a-locked-folders-menu-says-why",
+    title: "a linked folder's menu offers Why is this locked? and disables Rename, Move to… and Delete folder… with the suffix Locked; the dialog names the folder and its binding and has a Got it button; a disabled item opens nothing and the folder keeps its name",
+    entryPoint: "/modules/media/files linked folder menu: Why is this locked?",
+    knownFailures: {
+      "each of the three carries the suffix Locked": "lockedItem in explorerMenus.ts sets a suffix (dms_media.markers.locked) that @nuxt/ui 4.10 DropdownMenu items have no prop for, so the menu shows Rename, Move to… and Delete folder… disabled with no Locked text",
+    },
+    async run(/** @type {Ctx} */ ctx) {
+      const cover = await boundFolder(ctx, "verify.cover");
+      const before = await tree(ctx);
+      const row = before.folders.find((folder) => pick(folder, "id") === cover);
+      const name = text(row, "name");
+      const tab = await ctx.tab();
+      await tab.signIn("admin");
+      await tab.goto(`/modules/media/files?folder=${text(row, "parentId")}`);
+      const more = { role: "button", name: `More actions for ${name}`, exact: true };
+      await ctx.verify("the Content folder lists the linked folder", [check("the linked folder has a name", name !== "", row), tab.visible(more, { timeoutMs: 30_000 })]);
+      await tab.click(more);
+      await ctx.verify("the menu locks Rename, Move to… and Delete folder…", [
+        check("each of the three carries the suffix Locked", ((await tab.page.getByRole("menu").innerText()).match(/\bLocked\b/g) ?? []).length === 3, (await tab.page.getByRole("menu").innerText()).replaceAll("\n", " | ")),
+        tab.enabled({ role: "menuitem", name: /^Rename/ }, { disabled: true }),
+        tab.enabled({ role: "menuitem", name: /^Move to…/ }, { disabled: true }),
+        tab.enabled({ role: "menuitem", name: /^Delete folder…/ }, { disabled: true }),
+        tab.enabled({ role: "menuitem", name: "Why is this locked?", exact: true }),
+      ]);
+      await tab.click({ role: "menuitem", name: "Why is this locked?", exact: true });
+      const dialog = { role: "dialog", name: `${name} is linked to a field` };
+      await ctx.verify("the dialog says why", [
+        tab.visible(dialog),
+        tab.shows(/A file field created this folder and decides who can use it\./),
+        tab.shows(/Managed by\s+verify\.cover/),
+        tab.shows(/You can upload, rename and edit the files inside\. To rename the folder, move it or change who can upload, edit the field definition in code\./),
+        tab.visible({ role: "button", name: "Got it", exact: true, within: dialog }),
+      ]);
+      await tab.click({ role: "button", name: "Got it", exact: true, within: dialog });
+      await ctx.verify("Got it closes it", [tab.visible(dialog, { hidden: true })]);
+      await tab.click(more);
+      await tab.page.getByRole("menuitem", { name: /^Rename/ }).click({ force: true, timeout: 10_000 });
+      await tab.page.waitForTimeout(800);
+      const after = await tree(ctx);
+      await ctx.verify("a disabled Rename opens nothing", [tab.visible({ role: "dialog" }, { hidden: true, timeoutMs: 1500 }), check("the folder keeps its name", text(after.folders.find((folder) => pick(folder, "id") === cover), "name") === name, name)]);
+    },
+  },
 ]);

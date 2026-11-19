@@ -16,6 +16,7 @@ function anonymousAttempts(anonymous: AxiosInstance): Promise<AxiosResponse>[] {
     anonymous.get("/api/media/tree"),
     anonymous.get("/api/media/assets"),
     anonymous.get("/api/media/assets/search?q=x"),
+    anonymous.get("/api/media/search?q=x"),
     anonymous.get("/api/media/assets/any"),
     anonymous.get("/api/media/assets/any/read-url"),
     anonymous.post("/api/media/assets/any/update", { alt: "x" }),

@@ -4,6 +4,7 @@ import { check, image, list, media, names, pick } from "../media.mjs";
 import { explorerJourneys } from "./parts/explorer.mjs";
 import { layoutJourneys } from "./parts/layout.mjs";
 import { shortcutJourneys } from "./parts/shortcuts.mjs";
+import { starJourneys } from "./parts/stars.mjs";
 import { libraryWindowJourneys } from "./parts/time-windows.mjs";
 import { treeIconJourneys } from "./parts/tree-icons.mjs";
 import { viewSortJourneys } from "./parts/view-sorts.mjs";
@@ -155,6 +156,7 @@ export const journeys = guarded([
   },
   ...explorerJourneys(),
   ...shortcutJourneys(),
+  ...starJourneys(),
   ...layoutJourneys(),
   ...libraryWindowJourneys(),
   ...treeIconJourneys(),

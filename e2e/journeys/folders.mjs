@@ -2,6 +2,7 @@ import { existsSync, readdirSync } from "node:fs";
 import { guarded } from "../guard.mjs";
 import { createFolder, folderAssets, follow, setVisibility, tree, uploaded } from "../library.mjs";
 import { check, image, longText, media, names, pick, raw, recordRaw, sha256, storagePath, text, unzip } from "../media.mjs";
+import { folderMenuJourneys } from "./parts/folder-menus.mjs";
 
 /** @typedef {import("../media.mjs").Ctx} Ctx */
 
@@ -202,4 +203,5 @@ export const journeys = guarded([
       await ctx.verify("the listing pages up to 500", [check("all 201 in one page", listed.assets.length === 201, listed.assets.length)]);
     },
   },
+  ...folderMenuJourneys(),
 ]);

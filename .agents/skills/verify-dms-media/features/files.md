@@ -39,6 +39,7 @@ One file: its page with Copy link, Download and its tabs, and the routes that re
 - `a-signed-out-browser-reaches-the-file-through-sign-in`: a signed-out browser following a private link goes to the file's page, signs in there and comes back to the file.
 - `the-history-lists-every-event`: a file's History lists every event of the file, from its upload on: 55 renames and the upload give 56 entries, the upload last.
 - `a-move-keeps-the-targets-rules`: a file moved into a linked folder must be of a type its field accepts, and a file moved into a folder must not take a name already there, whatever its case: both moves are refused and the file stays.
+- `the-file-page-renames-moves-and-deletes-the-file`: the file page's Details tab renames the file keeping its extension and its old link, refuses a name with a slash, moves it with Move…, offers to make a public file private instead of deleting it, and deletes it after a confirmation that leads back to its folder.
 
 ## How to get to it (user POV)
 

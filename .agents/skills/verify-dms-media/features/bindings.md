@@ -23,6 +23,7 @@ A folder binding is the folder an asset field uploads into: provisioned per tena
 - `a-linked-folder-is-locked`: a linked folder cannot be renamed, moved or deleted, holds no subfolder unless its binding allows them, and a subfolder of an allowing binding can be created and renamed.
 - `acl-precedence-follows-the-documented-order`: an explicit acl, [] included, replaces every derived entry; a permissionMapping right takes precedence over the page one right at a time and [] turns that right off; a right with no mapping falls back to the page's permission.
 - `a-field-folder-takes-its-page-rights`: a member whose role grants the field's page explicitly sees and uploads into the field's folder and its subfolders; a page held through memberAccess grants no folder right.
+- `a-locked-folders-menu-says-why`: a linked folder's menu offers Why is this locked? and disables Rename, Move to… and Delete folder…; the dialog names the folder and its binding and closes with Got it; a disabled item opens nothing and the folder keeps its name.
 
 ## How to get to it (user POV)
 
@@ -38,3 +39,4 @@ dms-control journey "$RUN" bindings
 
 - The playground's fixture registers bindings at run time (`POST /verify-media/binding`); a backend restart forgets them, and every journey starts on a restarted backend.
 - Rights are probed through the API: listing a folder is `read`, presigning into it is `write`.
+- `a-locked-folders-menu-says-why` lists the missing `Locked` suffix of the disabled menu items in `knownFailures`: `lockedItem` sets a `suffix` that `@nuxt/ui` 4.10's dropdown items have no prop for.

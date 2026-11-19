@@ -1,14 +1,17 @@
 import type { AxiosInstance } from "axios";
 import { assert, expect } from "chai";
 import { z } from "zod";
+import sharp from "sharp";
 import {
   ONE_PIXEL_PNG,
   PNG_NAME,
   rawGet,
+  uploadAsset,
   uploadPixelPng,
 } from "../helpers/assets";
 import { createdBody, readBody, urlBody } from "../helpers/bodies";
-import { authorizedClient } from "../helpers/http";
+import { deliver, longText, signedLifetimeSeconds } from "../helpers/delivery";
+import { authorizedClient, getBaseUrl } from "../helpers/http";
 import { ensureOwnerSession } from "../helpers/owner";
 
 const HTTP_OK = 200;
@@ -159,4 +162,217 @@ describe("[integration] media delivery — visibility and derivatives", () => {
     const response = await rawGet(`/media/${assetId}/${PNG_NAME}`);
     expect(response.status).to.equal(HTTP_UNAUTHORIZED);
   });
+});
+
+const PRIVATE_SIGNED_MAX_SECONDS = 300;
+const PRIVATE_SIGNED_MIN_SECONDS = 150;
+const PUBLIC_SIGNED_MAX_SECONDS = 3600;
+const PUBLIC_SIGNED_MIN_SECONDS = 1800;
+const BINARY_BYTES = 3 * 1024 * 1024;
+const TEXT_LINES = 4000;
+const FOREIGN_ORIGIN = "https://site.example.org";
+const RENAMED = "après été.png";
+
+let contractClient: AxiosInstance;
+let contractToken = "";
+function asOwner() {
+  return { Authorization: `Bearer ${contractToken}` };
+}
+
+const contractFolderIds: string[] = [];
+
+async function newFolder(name: string): Promise<string> {
+  const response = await contractClient.post("/api/media/folders", { name });
+  expect(response.status).to.equal(HTTP_OK);
+  const { id } = readBody(response, createdBody);
+  contractFolderIds.push(id);
+  return id;
+}
+
+async function setVisibility(
+  kind: "folders" | "assets",
+  id: string,
+  visibility: string,
+): Promise<void> {
+  const response = await contractClient.post(
+    `/api/media/${kind}/${id}/visibility`,
+    { visibility },
+  );
+  expect(response.status).to.equal(HTTP_OK);
+}
+
+function solidPng(width: number): Promise<Buffer> {
+  return sharp({
+    create: { width, height: width, channels: 3, background: "#3366cc" },
+  })
+    .png()
+    .toBuffer();
+}
+
+function linkOf(asset: { id: string; name: string }): string {
+  return `/media/${asset.id}/${encodeURIComponent(asset.name)}`;
+}
+
+function describeLinkAnswers(): void {
+  describe("what a link answers", () => {
+    it("redirects a public file to a signed URL that serves every byte, and keeps the CORS answer of an allowed origin", async () => {
+      const folderId = await newFolder("Public bytes");
+      const bytes = Buffer.from(
+        Array.from(
+          { length: BINARY_BYTES },
+          (_, index) => (index * 31 + (index >> 11)) % 256,
+        ),
+      );
+      const file = await uploadAsset(
+        contractClient,
+        folderId,
+        "Données été 東京.bin",
+        "application/pdf",
+        bytes,
+      );
+      await setVisibility("folders", folderId, "public");
+      const anonymous = await deliver(linkOf(file), {
+        Origin: FOREIGN_ORIGIN,
+      });
+      expect(anonymous.status).to.equal(HTTP_FOUND);
+      expect(anonymous.headers.get("cache-control")).to.equal("no-cache");
+      expect(anonymous.headers.get("access-control-allow-origin")).to.equal(
+        "*",
+      );
+      const location = anonymous.headers.get("location") ?? "";
+      expect(location).to.not.contain("/media/");
+      expect((await fetchBytes(location)).equals(bytes)).to.equal(true);
+      const allowed = await deliver(linkOf(file), { Origin: getBaseUrl() });
+      expect(allowed.headers.get("access-control-allow-origin")).to.equal(
+        getBaseUrl(),
+      );
+      expect(allowed.headers.get("cache-control")).to.equal("no-cache");
+    });
+
+    it("keeps a private file behind its reader: no open CORS answer, no HTML for a script, the same text bytes", async () => {
+      const folderId = await newFolder("Private text");
+      const bytes = longText(TEXT_LINES);
+      const file = await uploadAsset(
+        contractClient,
+        folderId,
+        "notes privées.txt",
+        "text/plain",
+        bytes,
+      );
+      const script = await deliver(linkOf(file), {
+        Accept: "application/json",
+      });
+      expect(script.status).to.equal(HTTP_UNAUTHORIZED);
+      expect(script.body.toString()).to.not.contain("<html");
+      const owner = await deliver(linkOf(file), asOwner());
+      expect(owner.status).to.equal(HTTP_FOUND);
+      expect(owner.headers.get("cache-control")).to.equal("no-store");
+      expect(owner.headers.get("access-control-allow-origin")).to.not.equal(
+        "*",
+      );
+      const stored = await fetchBytes(owner.headers.get("location") ?? "");
+      expect(stored.equals(bytes)).to.equal(true);
+    });
+
+    it("redirects a stale file name to the canonical link after a rename and refuses a link without a name", async () => {
+      const folderId = await newFolder("Stale names");
+      const file = await uploadAsset(
+        contractClient,
+        folderId,
+        "avant.png",
+        "image/png",
+        await solidPng(8),
+      );
+      const rename = await contractClient.post(
+        `/api/media/assets/${file.id}/update`,
+        { name: RENAMED },
+      );
+      expect(rename.status).to.equal(HTTP_OK);
+      const canonical = `/media/${file.id}/${encodeURIComponent(RENAMED)}`;
+      const old = await deliver(linkOf(file), asOwner());
+      expect(old.status).to.equal(HTTP_FOUND);
+      expect(old.headers.get("location")).to.equal(canonical);
+      expect(old.headers.get("cache-control")).to.equal("no-cache");
+      const current = await deliver(canonical, asOwner());
+      expect(current.status).to.equal(HTTP_FOUND);
+      expect(current.headers.get("location")).to.contain("/file-storage/");
+      const nameless = await deliver(`/media/${file.id}/`, asOwner());
+      expect(nameless.status).to.equal(HTTP_NOT_FOUND);
+      const unknown = await deliver("/media/no-such-asset/x.png", asOwner());
+      expect(unknown.status).to.equal(HTTP_NOT_FOUND);
+    });
+  });
+}
+
+function describeLinkLifetimes(): void {
+  describe("how long a link's signed URL lives", () => {
+    it("signs a private file's URL for five minutes and a public one's for an hour", async () => {
+      const folderId = await newFolder("Signed lifetimes");
+      const file = await uploadAsset(
+        contractClient,
+        folderId,
+        "signed.png",
+        "image/png",
+        await solidPng(8),
+      );
+      const first = await deliver(linkOf(file), asOwner());
+      const second = await deliver(linkOf(file), asOwner());
+      const privateUrl = first.headers.get("location") ?? "";
+      expect(second.headers.get("location")).to.equal(privateUrl);
+      expect(await signedLifetimeSeconds(privateUrl)).to.be.within(
+        PRIVATE_SIGNED_MIN_SECONDS + 1,
+        PRIVATE_SIGNED_MAX_SECONDS,
+      );
+      await setVisibility("assets", file.id, "public");
+      const open = await deliver(linkOf(file));
+      const publicUrl = open.headers.get("location") ?? "";
+      expect(publicUrl).to.not.equal(privateUrl);
+      expect(await signedLifetimeSeconds(publicUrl)).to.be.within(
+        PUBLIC_SIGNED_MIN_SECONDS + 1,
+        PUBLIC_SIGNED_MAX_SECONDS,
+      );
+    });
+
+    it("takes the file's visibility, else its folder's, else private, and never changes the link", async () => {
+      const folderId = await newFolder("Visibility order");
+      const file = await uploadAsset(
+        contractClient,
+        folderId,
+        "vis.png",
+        "image/png",
+        await solidPng(8),
+      );
+      const anonymousStatus = async (): Promise<number> =>
+        (await deliver(linkOf(file))).status;
+      expect(await anonymousStatus()).to.equal(HTTP_UNAUTHORIZED);
+      await setVisibility("folders", folderId, "public");
+      expect(await anonymousStatus()).to.equal(HTTP_FOUND);
+      await setVisibility("assets", file.id, "private");
+      expect(await anonymousStatus()).to.equal(HTTP_UNAUTHORIZED);
+      await setVisibility("folders", folderId, "private");
+      await setVisibility("assets", file.id, "public");
+      expect(await anonymousStatus()).to.equal(HTTP_FOUND);
+      await setVisibility("assets", file.id, "inherit");
+      expect(await anonymousStatus()).to.equal(HTTP_UNAUTHORIZED);
+      const details = await contractClient.get(`/api/media/assets/${file.id}`);
+      expect(details.data.asset.url).to.equal(file.url);
+    });
+  });
+}
+
+describe("[integration] media delivery — the link contract", () => {
+  before(async function () {
+    this.timeout(40_000);
+    const session = await ensureOwnerSession();
+    contractClient = authorizedClient(session.accessToken);
+    contractToken = session.accessToken;
+  });
+
+  after(async () => {
+    for (const id of contractFolderIds)
+      await contractClient.delete(`/api/media/folders/${id}`);
+  });
+
+  describeLinkAnswers();
+  describeLinkLifetimes();
 });

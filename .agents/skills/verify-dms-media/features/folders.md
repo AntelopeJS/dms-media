@@ -24,6 +24,9 @@ Folders hold the files: names unique in their folder, rules for names Windows an
 - `delete-takes-only-its-own-files`: deleting a folder removes its subfolders, their files and stored bytes, and leaves every other folder and file as it was.
 - `starter-folders-need-manage-at-the-root`: the starter folders are created at the root by the owner, refused 409 when a root folder already has the name.
 - `zips-hold-files-and-subfolders-within-limits`: a selection zips into media.zip with every byte of each file, a folder zips with its subfolders as directories, and more than 200 files are refused 413.
+- `a-folders-menu-renames-and-moves-it`: a folder card's ⋯ menu renames the folder in a dialog that refuses a sibling's name in any case and a forbidden character before it asks, and moves it to the folder picked in a tree; the tree and the folder's files read back the same.
+- `a-folders-menu-deletes-it-after-typing-its-name`: Delete folder… lists the subfolders, files and space that go with the folder, refuses an empty or wrong confirmation, and deletes only after the folder's name is typed; its subfolders, files and stored bytes are gone and a sibling folder stays.
+- `a-folders-menu-publishes-and-zips-it`: Visibility… makes a folder public and private again with a warning first, reaching its direct files only, and Download as .zip saves an archive named after the folder and the day that holds its files and subfolders byte for byte.
 
 ## How to get to it (user POV)
 
