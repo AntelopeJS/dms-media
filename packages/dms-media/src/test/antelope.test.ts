@@ -9,8 +9,6 @@ import { isString } from "../guards";
 import { SETUP_TOKEN } from "./helpers/setup-token";
 import STACK_MODULES from "./stack-modules.json";
 
-/** `DMS_MEDIA_TEST_PORT` lets several checkouts run the suite at once. */
-const API_PORT = Number(process.env.DMS_MEDIA_TEST_PORT ?? 5019);
 const LOCAL_BUILD_COMMAND = process.env.DMS_PREBUILT ? [] : ["pnpm build"];
 const JWT_SECRET = "test-jwt-secret";
 const HTML_RENDER_SECRET = "test-html-render-secret";
@@ -86,6 +84,20 @@ async function startSmtpFixture(): Promise<number> {
   return address.port;
 }
 
+/** Asks the OS for a free port so concurrent suite runs never collide. */
+async function findFreePort(): Promise<number> {
+  const probe = createServer();
+  await new Promise<void>((resolve, reject) => {
+    probe.once("error", reject);
+    probe.listen(EPHEMERAL_PORT, SMTP_HOST, resolve);
+  });
+  const address = probe.address();
+  const port = !address || isString(address) ? undefined : address.port;
+  await new Promise<void>((resolve) => probe.close(() => resolve()));
+  if (port === undefined) throw new Error("Invalid probe address");
+  return port;
+}
+
 function stopSmtpFixture(): Promise<void> {
   if (!smtpServer) return Promise.resolve();
   return new Promise((resolve, reject) => {
@@ -117,11 +129,6 @@ export default defineConfig({
         version: DMS_VERSION,
       },
       config: {
-        /**
-         * No frontend server runs here: the dashboard URL is the API, whose
-         * paths the front proxy serves unchanged.
-         */
-        clientBaseUrl: `http://127.0.0.1:${API_PORT}`,
         auth: {
           jwtSecret: JWT_SECRET,
         },
@@ -157,10 +164,7 @@ export default defineConfig({
         package: "@antelopejs/api",
         version: STACK_MODULES["@antelopejs/api"],
       },
-      config: {
-        servers: [{ protocol: "http", host: "127.0.0.1", port: API_PORT }],
-        publicBaseUrl: `http://127.0.0.1:${API_PORT}`,
-      },
+      config: {},
     },
     "file-storage-local": {
       source: {
@@ -187,6 +191,8 @@ export default defineConfig({
     folder: process.env.DMS_MEDIA_TEST_DIR ?? "dist/test",
     async setup() {
       const smtpPort = await startSmtpFixture();
+      const apiPort = await findFreePort();
+      const apiBaseUrl = `http://127.0.0.1:${apiPort}`;
       mongod = await MongoMemoryReplSet.create({
         replSet: { count: 1 },
         binary: { version: MONGO_BINARY_VERSION },
@@ -196,19 +202,34 @@ export default defineConfig({
       const mongoUrl = mongod.getUri();
       process.env.TEST_MONGO_URL = mongoUrl;
       process.env.TEST_STORAGE_DIR = storageDir;
-      process.env.TEST_API_BASE_URL = `http://127.0.0.1:${API_PORT}`;
+      process.env.TEST_API_BASE_URL = apiBaseUrl;
       process.env.TEST_JWT_SECRET = JWT_SECRET;
       process.env.DMS_SETUP_TOKEN = SETUP_TOKEN;
 
       return {
         modules: {
+          dms: {
+            config: {
+              /**
+               * No frontend server runs here: the dashboard URL is the API,
+               * whose paths the front proxy serves unchanged.
+               */
+              clientBaseUrl: apiBaseUrl,
+            },
+          },
+          api: {
+            config: {
+              servers: [{ protocol: "http", host: SMTP_HOST, port: apiPort }],
+              publicBaseUrl: apiBaseUrl,
+            },
+          },
           mongodb: {
             config: { url: mongoUrl, database: "dms-media-test" },
           },
           "file-storage-local": {
             config: {
               storagePath: storageDir,
-              baseUrl: `http://127.0.0.1:${API_PORT}`,
+              baseUrl: apiBaseUrl,
               defaultVisibility: "private",
             },
           },
