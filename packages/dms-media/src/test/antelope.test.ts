@@ -197,7 +197,6 @@ export default defineConfig({
       process.env.TEST_API_BASE_URL = `http://127.0.0.1:${API_PORT}`;
       process.env.TEST_STORAGE_DIR = storageDir;
       process.env.TEST_JWT_SECRET = JWT_SECRET;
-      process.env.TEST_STORAGE_DIR = storageDir;
       process.env.DMS_SETUP_TOKEN = SETUP_TOKEN;
 
       return {
