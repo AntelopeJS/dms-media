@@ -1,13 +1,21 @@
 import type { AxiosInstance } from "axios";
 import { expect } from "chai";
+import { GetModel } from "@antelopejs/interface-database-decorators";
+import { DEFAULT_TENANT_ID } from "@antelopejs/interface-dms/constants";
+import { FileExists } from "@antelopejs/interface-file-storage";
 import { z } from "zod";
-import { putPresigned } from "../helpers/assets";
+import { MediaAssetModel } from "../../db";
+import { putPresigned, rawGet, uploadAsset } from "../helpers/assets";
 import { createdBody, presignBody, readBody } from "../helpers/bodies";
 import { authorizedClient } from "../helpers/http";
 import { ensureOwnerSession } from "../helpers/owner";
+import { solidPng } from "../helpers/png";
 
 const HTTP_OK = 200;
 const HTTP_NOT_FOUND = 404;
+const HTTP_BAD_REQUEST = 400;
+const HTTP_FOUND = 302;
+const HTTP_UNAUTHORIZED = 401;
 const READY_TIMEOUT_MS = 30_000;
 const POLL_INTERVAL_MS = 200;
 const FILE_CONTENT = "hello media library";
@@ -32,6 +40,8 @@ const treeBody = z.object({
   folders: z.array(
     z.object({
       id: z.string(),
+      name: z.string().optional(),
+      visibility: z.string().optional(),
       parentId: z.string().nullable(),
       rights: z
         .object({ read: z.boolean(), write: z.boolean(), manage: z.boolean() })
@@ -206,5 +216,129 @@ describe("[integration] media API — owner lifecycle: teardown", () => {
 
     const tree = await client.get("/api/media/tree");
     expect(tree.data.folders).to.deep.equal([]);
+  });
+});
+
+async function folderIdOf(name: string, parentId?: string): Promise<string> {
+  const created = await client.post("/api/media/folders", { name, parentId });
+  expect(created.status, name).to.equal(HTTP_OK);
+  return readBody(created, createdBody).id;
+}
+
+async function treeById() {
+  const tree = await client.get("/api/media/tree");
+  return new Map(
+    readBody(tree, treeBody).folders.map((folder) => [folder.id, folder]),
+  );
+}
+
+describe("[integration] media API — folder changes read back", () => {
+  it("shows a renamed, moved and published folder in the tree and its impact, and keeps a subfolder private", async () => {
+    const top = await folderIdOf("Tree top");
+    const target = await folderIdOf("Tree target");
+    try {
+      const child = await folderIdOf("Child", top);
+      const grand = await folderIdOf("Grand", child);
+      const png = await solidPng(4, 4);
+      const inTop = await uploadAsset(client, top, "top.png", "image/png", png);
+      const inChild = await uploadAsset(
+        client,
+        child,
+        "child.png",
+        "image/png",
+        png,
+      );
+      const rename = await client.post(`/api/media/folders/${child}/rename`, {
+        name: "Enfant",
+      });
+      const move = await client.post(`/api/media/folders/${child}/move`, {
+        parentId: target,
+      });
+      const inside = await client.post(`/api/media/folders/${child}/move`, {
+        parentId: grand,
+      });
+      const publish = (id: string) =>
+        client.post(`/api/media/folders/${id}/visibility`, {
+          visibility: "public",
+        });
+      const published = await publish(top);
+      expect([rename.status, move.status, published.status]).to.deep.equal([
+        HTTP_OK,
+        HTTP_OK,
+        HTTP_OK,
+      ]);
+      expect(inside.status).to.equal(HTTP_BAD_REQUEST);
+      const folders = await treeById();
+      expect(folders.get(child)).to.include({
+        name: "Enfant",
+        parentId: target,
+      });
+      expect(folders.get(top)?.visibility).to.equal("public");
+      expect(folders.get(grand)?.visibility).to.equal("private");
+      expect((await rawGet(`/media/${inTop.id}/top.png`)).status).to.equal(
+        HTTP_FOUND,
+      );
+      const impact = await client.get(`/api/media/folders/${target}/impact`);
+      expect(impact.data).to.include({ subfolders: 2, files: 1 });
+      expect((await publish(target)).status).to.equal(HTTP_OK);
+      expect((await rawGet(`/media/${inChild.id}/child.png`)).status).to.equal(
+        HTTP_UNAUTHORIZED,
+      );
+    } finally {
+      await client.delete(`/api/media/folders/${top}`);
+      await client.delete(`/api/media/folders/${target}`);
+    }
+  });
+
+  it("deletes a folder with its subfolders, their files and stored bytes, and leaves another folder's file serving the same bytes", async () => {
+    const doomed = await folderIdOf("Doomed");
+    const kept = await folderIdOf("Kept");
+    try {
+      const sub = await folderIdOf("Sub", doomed);
+      const bytes = await solidPng(8, 8);
+      const gone = await uploadAsset(
+        client,
+        sub,
+        "gone.png",
+        "image/png",
+        bytes,
+      );
+      const stays = await uploadAsset(
+        client,
+        kept,
+        "stays.png",
+        "image/png",
+        bytes,
+      );
+      const storageKey = (
+        await GetModel(MediaAssetModel, DEFAULT_TENANT_ID).get(gone.id)
+      )?.storageKey;
+      expect(storageKey, "stored file of the doomed asset").to.be.a("string");
+      expect(await FileExists(storageKey!)).to.equal(true);
+      const impact = await client.get(`/api/media/folders/${doomed}/impact`);
+      expect(impact.data).to.include({
+        subfolders: 1,
+        files: 1,
+        size: bytes.byteLength,
+      });
+      expect(
+        (await client.delete(`/api/media/folders/${doomed}`)).status,
+      ).to.equal(HTTP_OK);
+      const folders = await treeById();
+      expect(folders.has(doomed) || folders.has(sub)).to.equal(false);
+      expect(folders.has(kept)).to.equal(true);
+      expect((await client.get(`/media/${gone.id}/gone.png`)).status).to.equal(
+        HTTP_NOT_FOUND,
+      );
+      expect(await FileExists(storageKey!)).to.equal(false);
+      const served = await client.get(`/media/${stays.id}/stays.png`, {
+        responseType: "arraybuffer",
+      });
+      expect(served.status).to.equal(HTTP_OK);
+      expect(Buffer.from(served.data).equals(bytes)).to.equal(true);
+    } finally {
+      await client.delete(`/api/media/folders/${doomed}`);
+      await client.delete(`/api/media/folders/${kept}`);
+    }
   });
 });
