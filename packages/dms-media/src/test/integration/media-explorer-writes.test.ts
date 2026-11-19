@@ -9,11 +9,17 @@ import {
 } from "@antelopejs/interface-dms-media";
 import { CONTENT_ROOT_BINDING } from "../../bindings";
 import { MediaEventModel, MediaFolderModel } from "../../db";
-import { uploadPixelPng, uploadTextAsset } from "../helpers/assets";
+import {
+  uploadAsset,
+  uploadPixelPng,
+  uploadTextAsset,
+} from "../helpers/assets";
 import { createdBody, readBody } from "../helpers/bodies";
 import { fetchFolderNodes } from "../helpers/folders";
 import { authorizedClient } from "../helpers/http";
 import { ensureOwnerSession } from "../helpers/owner";
+import { solidPng } from "../helpers/png";
+import { readZip } from "../helpers/zip";
 
 const HTTP_OK = 200;
 const HTTP_BAD_REQUEST = 400;
@@ -22,31 +28,42 @@ const HTTP_NOT_FOUND = 404;
 const HTTP_CONFLICT = 409;
 const BINDING_ID = "explorer.linked";
 const ERRORS = "$dms_media.errors";
-const CENTRAL_DIRECTORY_SIGNATURE = 0x02014b50;
-const CENTRAL_NAME_LENGTH_OFFSET = 28;
-const CENTRAL_EXTRA_LENGTH_OFFSET = 30;
-const CENTRAL_COMMENT_LENGTH_OFFSET = 32;
-const CENTRAL_HEADER_SIZE = 46;
 const ALT_LIMIT = 255;
+const NAME_LIMIT = 255;
+const ZIP_FILE_LIMIT = 200;
+const HTTP_PAYLOAD_TOO_LARGE = 413;
+const UPLOAD_BATCH = 20;
+const NFD_SUMMER = "Été".normalize("NFD");
 
-/** The entry names of a zip, read from its central directory. */
-function zipEntryNames(zip: Buffer): string[] {
-  const names: string[] = [];
-  let offset = zip.indexOf(Buffer.from([0x50, 0x4b, 0x01, 0x02]));
-  while (
-    offset >= 0 &&
-    zip.readUInt32LE(offset) === CENTRAL_DIRECTORY_SIGNATURE
-  ) {
-    const nameLength = zip.readUInt16LE(offset + CENTRAL_NAME_LENGTH_OFFSET);
-    const extraLength = zip.readUInt16LE(offset + CENTRAL_EXTRA_LENGTH_OFFSET);
-    const commentLength = zip.readUInt16LE(
-      offset + CENTRAL_COMMENT_LENGTH_OFFSET,
+function textLines(count: number): Buffer {
+  return Buffer.from(
+    Array.from(
+      { length: count },
+      (_, index) => `ligne ${index} — été 東京`,
+    ).join("\n"),
+  );
+}
+
+/** Uploads `count` small text files into a folder, a few at a time, and answers their ids. */
+async function uploadMany(folderId: string, count: number): Promise<string[]> {
+  const ids: string[] = [];
+  for (let first = 0; first < count; first += UPLOAD_BATCH) {
+    const batch = await Promise.all(
+      Array.from(
+        { length: Math.min(UPLOAD_BATCH, count - first) },
+        (_, offset) =>
+          uploadAsset(
+            client,
+            folderId,
+            `f${first + offset}.txt`,
+            "text/plain",
+            Buffer.from(String(first + offset)),
+          ),
+      ),
     );
-    const start = offset + CENTRAL_HEADER_SIZE;
-    names.push(zip.subarray(start, start + nameLength).toString("utf8"));
-    offset = start + nameLength + extraLength + commentLength;
+    ids.push(...batch.map((asset) => asset.id));
   }
-  return names;
+  return ids;
 }
 
 async function removeLinkedFolders(): Promise<void> {
@@ -66,6 +83,18 @@ let client: AxiosInstance;
 let rootId: string;
 let otherId: string;
 
+async function folderIdOf(name: string, parentId?: string): Promise<string> {
+  const created = await client.post("/api/media/folders", { name, parentId });
+  expect(created.status, name).to.equal(HTTP_OK);
+  return readBody(created, createdBody).id;
+}
+
+async function removeFolder(folderId: string): Promise<void> {
+  expect(
+    (await client.delete(`/api/media/folders/${folderId}`)).status,
+  ).to.equal(HTTP_OK);
+}
+
 function describeFolderNames(): void {
   describe("folder names and linked folders", () => {
     it("refuses a sibling folder name whatever its case, with a translatable message", async () => {
@@ -84,6 +113,63 @@ function describeFolderNames(): void {
       });
       expect(created.status).to.equal(HTTP_BAD_REQUEST);
       expect(created.data).to.equal(`${ERRORS}.name_forbidden`);
+    });
+
+    it("refuses a sibling name taken ignoring case and Unicode form on create, rename and move, and allows it in another folder", async () => {
+      const parent = await folderIdOf("Unicode siblings", rootId);
+      await folderIdOf("Été", parent);
+      for (const name of ["ÉTÉ", NFD_SUMMER]) {
+        const twin = await client.post("/api/media/folders", {
+          name,
+          parentId: parent,
+        });
+        expect(twin.status, name).to.equal(HTTP_CONFLICT);
+        expect(twin.data, name).to.equal(`${ERRORS}.folder_name_taken`);
+      }
+      const winter = await folderIdOf("Hiver", parent);
+      const rename = await client.post(`/api/media/folders/${winter}/rename`, {
+        name: "été",
+      });
+      expect(rename.status).to.equal(HTTP_CONFLICT);
+      expect(rename.data).to.equal(`${ERRORS}.folder_name_taken`);
+      const elsewhere = await folderIdOf("Été");
+      try {
+        const move = await client.post(`/api/media/folders/${elsewhere}/move`, {
+          parentId: parent,
+        });
+        expect(move.status).to.equal(HTTP_CONFLICT);
+      } finally {
+        await removeFolder(elsewhere);
+      }
+    });
+
+    it("refuses every name Windows or macOS cannot save with an error key, and keeps a name of 255 characters", async () => {
+      const forbidden = [
+        "a/b",
+        "a\\b",
+        "a<b",
+        "a>b",
+        "a:b",
+        'a"b',
+        "a|b",
+        "a?b",
+        "a*b",
+        "a\u0001b",
+        "x".repeat(NAME_LIMIT + 1),
+        "   ",
+      ];
+      for (const name of forbidden) {
+        const created = await client.post("/api/media/folders", {
+          name,
+          parentId: rootId,
+        });
+        const label = JSON.stringify(name.slice(0, 20));
+        expect(created.status, label).to.equal(HTTP_BAD_REQUEST);
+        expect(created.data, label).to.match(/^\$dms_media\.errors\./);
+      }
+      const longest = `${"y".repeat(NAME_LIMIT - " été".length)} été`;
+      expect(longest).to.have.length(NAME_LIMIT);
+      await folderIdOf(longest, rootId);
     });
 
     it("records the created folder's id on its activity event", async () => {
@@ -172,6 +258,37 @@ function describeFileNames(): void {
       await client.delete(`/api/media/assets/${mover.id}`);
     });
 
+    it("refuses a file name taken ignoring Unicode form, and reads back a name, an alt and an alt of 255 characters", async () => {
+      const folder = await folderIdOf("File names", rootId);
+      await uploadTextAsset(client, folder, "Été.txt");
+      const file = await uploadTextAsset(client, folder, "a.txt");
+      const update = (body: Record<string, string>) =>
+        client.post(`/api/media/assets/${file.id}/update`, body);
+      const taken = await update({ name: "ÉTÉ.txt" });
+      expect(taken.status).to.equal(HTTP_CONFLICT);
+      expect(taken.data).to.equal(`${ERRORS}.name_taken`);
+      const alt = "Un toit au soleil, 東京";
+      expect((await update({ name: "b é.txt", alt })).status).to.equal(HTTP_OK);
+      const read = await client.get(`/api/media/assets/${file.id}`);
+      expect(read.data.asset).to.include({ name: "b é.txt", alt });
+      expect((await update({ alt: "a".repeat(ALT_LIMIT) })).status).to.equal(
+        HTTP_OK,
+      );
+      const longest = await client.get(`/api/media/assets/${file.id}`);
+      expect(longest.data.asset.alt).to.have.length(ALT_LIMIT);
+    });
+
+    it("refuses a file name Windows or macOS cannot save, like a folder name", async () => {
+      const file = await uploadTextAsset(client, rootId, "portable.txt");
+      const update = (name: string) =>
+        client.post(`/api/media/assets/${file.id}/update`, { name });
+      expect((await update("a:b?.txt")).status).to.equal(HTTP_BAD_REQUEST);
+      const slash = await update("a/b.txt");
+      expect(slash.status).to.equal(HTTP_BAD_REQUEST);
+      expect(slash.data).to.equal(`${ERRORS}.name_forbidden`);
+      await client.delete(`/api/media/assets/${file.id}`);
+    });
+
     it("answers validation errors with i18n keys instead of zod dumps", async () => {
       const asset = await uploadPixelPng(client, rootId);
       const tooLong = await client.post(
@@ -200,6 +317,80 @@ function describeFileNames(): void {
 
 function describeZip(): void {
   describe("folder zip", () => {
+    it("zips a selection as media.zip and a folder under its own name, every byte of each file kept", async () => {
+      const folder = await folderIdOf("Été 2026");
+      try {
+        const sub = await folderIdOf("Sous-dossier", folder);
+        const notes = textLines(20_000);
+        const png = await solidPng(30, 30);
+        const first = await uploadAsset(
+          client,
+          folder,
+          "notes été.txt",
+          "text/plain",
+          notes,
+        );
+        const second = await uploadAsset(
+          client,
+          sub,
+          "image.png",
+          "image/png",
+          png,
+        );
+        const selection = await client.post(
+          "/api/media/assets/zip",
+          { ids: [first.id, second.id] },
+          { responseType: "arraybuffer" },
+        );
+        expect(selection.status).to.equal(HTTP_OK);
+        expect(selection.headers["content-type"]).to.match(/^application\/zip/);
+        expect(selection.headers["content-disposition"]).to.contain(
+          'filename="media.zip"',
+        );
+        const selected = readZip(readBody(selection, z.instanceof(Buffer)));
+        expect(selected.map((entry) => entry.name).sort()).to.deep.equal([
+          "image.png",
+          "notes été.txt",
+        ]);
+        expect(
+          selected
+            .find((entry) => entry.name === "notes été.txt")
+            ?.bytes.equals(notes),
+        ).to.equal(true);
+        expect(
+          selected
+            .find((entry) => entry.name === "image.png")
+            ?.bytes.equals(png),
+        ).to.equal(true);
+
+        const whole = await client.post(
+          `/api/media/folders/${folder}/zip`,
+          undefined,
+          { responseType: "arraybuffer" },
+        );
+        expect(whole.headers["content-disposition"]).to.contain(
+          `filename*=UTF-8''${encodeURIComponent("Été 2026.zip")}`,
+        );
+        const entries = readZip(readBody(whole, z.instanceof(Buffer)));
+        expect(entries.map((entry) => entry.name).sort()).to.deep.equal([
+          "Sous-dossier/image.png",
+          "notes été.txt",
+        ]);
+        expect(
+          entries
+            .find((entry) => entry.name === "Sous-dossier/image.png")
+            ?.bytes.equals(png),
+        ).to.equal(true);
+        expect(
+          entries
+            .find((entry) => entry.name === "notes été.txt")
+            ?.bytes.equals(notes),
+        ).to.equal(true);
+      } finally {
+        await removeFolder(folder);
+      }
+    });
+
     it("zips a folder with its subfolders under portable names", async () => {
       const zipped = await client.post(
         `/api/media/folders/${rootId}/zip`,
@@ -212,12 +403,50 @@ function describeZip(): void {
       expect(zipped.headers["content-disposition"]).to.contain(
         "Explorer writes.zip",
       );
-      const names = zipEntryNames(readBody(zipped, z.instanceof(Buffer)));
+      const names = readZip(readBody(zipped, z.instanceof(Buffer))).map(
+        (entry) => entry.name,
+      );
       expect(names).to.include.members([
         "Notes.txt",
         "other.txt",
         "Other/notes.txt",
       ]);
+    });
+  });
+}
+
+function describeZipLimits(): void {
+  describe("zip limits", () => {
+    it("zips at most 200 files, and lists 500 files in one page", async function () {
+      this.timeout(180_000);
+      const many = await folderIdOf("Many files");
+      try {
+        const ids = await uploadMany(many, ZIP_FILE_LIMIT + 1);
+        const zipIds = (selection: string[]) =>
+          client.post(
+            "/api/media/assets/zip",
+            { ids: selection },
+            { responseType: "arraybuffer" },
+          );
+        expect((await zipIds(ids)).status).to.equal(HTTP_PAYLOAD_TOO_LARGE);
+        const atMost = await zipIds(ids.slice(0, ZIP_FILE_LIMIT));
+        expect(atMost.status).to.equal(HTTP_OK);
+        expect(readZip(readBody(atMost, z.instanceof(Buffer)))).to.have.length(
+          ZIP_FILE_LIMIT,
+        );
+        const folderZip = await client.post(
+          `/api/media/folders/${many}/zip`,
+          undefined,
+          { responseType: "arraybuffer" },
+        );
+        expect(folderZip.status).to.equal(HTTP_PAYLOAD_TOO_LARGE);
+        const listing = await client.get(`/api/media/folders/${many}/assets`, {
+          params: { limit: 500 },
+        });
+        expect(listing.data.assets).to.have.length(ZIP_FILE_LIMIT + 1);
+      } finally {
+        await removeFolder(many);
+      }
     });
   });
 }
@@ -247,4 +476,5 @@ describe("[integration] media explorer writes — names, linked folders, zips", 
   describeFolderNames();
   describeFileNames();
   describeZip();
+  describeZipLimits();
 });
