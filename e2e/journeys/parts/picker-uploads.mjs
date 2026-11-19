@@ -35,14 +35,14 @@ export function pickerUploadJourneys() {
     {
       id: "the-pickers-upload-targets-the-linked-folder",
       title: "a linked field's picker browsed into a subfolder still sends its Upload and a drop on it to the linked folder itself",
-      entryPoint: "/verify-fields, Projects picker, Chantier Nord, Upload and a drop",
+      entryPoint: "/e2e-fields, Projects picker, Chantier Nord, Upload and a drop",
       async run(/** @type {Ctx} */ ctx) {
         const projects = await boundFolder(ctx, "verify.projects");
         const sub = await createFolder(ctx, "Chantier Nord", { parentId: projects });
         await member(ctx, "picker", ["page:fields"]);
         const tab = await ctx.tab("picker");
         await tab.signIn("picker");
-        await tab.goto("/verify-fields");
+        await tab.goto("/e2e-fields");
         const projectsOpened = await openPicker(tab, "Projects");
         await ctx.verify("the picker opens", [check("the dialog", projectsOpened, projectsOpened)]);
         const pickerDialog = tab.page.getByRole("dialog", { name: "Choose from the library" });
@@ -67,7 +67,7 @@ export function pickerUploadJourneys() {
     {
       id: "a-read-only-linked-folder-uploads-into-the-writable-folder-shown",
       title: "a picker whose linked folder the member cannot write sends its Upload and a drop to the writable subfolder it shows, without asking where",
-      entryPoint: "/verify-fields, Projects picker bound read-only, writable Chantier Sud, a drop and Upload",
+      entryPoint: "/e2e-fields, Projects picker bound read-only, writable Chantier Sud, a drop and Upload",
       async run(/** @type {Ctx} */ ctx) {
         await fixture(ctx, "RegisterAssetBinding verify.projects read-only", "POST", "/binding", { id: "verify.projects", folderName: "Verify projects", subfolders: true, permissionMapping: { write: [] }, permissionsFromPage: "fields" });
         const projects = await boundFolder(ctx, "verify.projects");
@@ -76,7 +76,7 @@ export function pickerUploadJourneys() {
         await member(ctx, "lecteur", ["page:fields", "verify.sud.write"]);
         const tab = await ctx.tab("lecteur");
         await tab.signIn("lecteur");
-        await tab.goto("/verify-fields");
+        await tab.goto("/e2e-fields");
         const opened = await openPicker(tab, "Projects");
         await ctx.verify("the picker opens", [check("the dialog", opened, opened)]);
         const pickerDialog = tab.page.getByRole("dialog", { name: "Choose from the library" });
@@ -110,7 +110,7 @@ export function pickerDestinationJourneys() {
     {
       id: "a-pickers-destination-dialog-offers-only-its-scope",
       title: "a picker whose linked folder the member cannot write asks where its Upload goes among the linked folder's subfolders only, and the file lands in the one chosen",
-      entryPoint: "/verify-fields, Projects picker bound read-only, writable Chantier Sud inside and Ailleurs outside, Upload",
+      entryPoint: "/e2e-fields, Projects picker bound read-only, writable Chantier Sud inside and Ailleurs outside, Upload",
       async run(/** @type {Ctx} */ ctx) {
         await fixture(ctx, "RegisterAssetBinding verify.projects read-only", "POST", "/binding", { id: "verify.projects", folderName: "Verify projects", subfolders: true, permissionMapping: { write: [] }, permissionsFromPage: "fields" });
         const projects = await boundFolder(ctx, "verify.projects");
@@ -120,7 +120,7 @@ export function pickerDestinationJourneys() {
         await member(ctx, "portee", ["page:fields", "verify.sud.write"]);
         const tab = await ctx.tab("portee");
         await tab.signIn("portee");
-        await tab.goto("/verify-fields");
+        await tab.goto("/e2e-fields");
         const opened = await openPicker(tab, "Projects");
         await ctx.verify("the picker opens on its read-only linked folder", [check("the dialog", opened, opened), check("Ailleurs is declared outside the linked folder", text(elsewhere.body, "result", "id") !== "", elsewhere.body), tab.visible({ role: "heading", name: "Verify projects", level: 2 }, { timeoutMs: 10_000 })]);
         const pickerDialog = tab.page.getByRole("dialog", { name: "Choose from the library" });
@@ -142,7 +142,7 @@ export function pickerDestinationJourneys() {
     {
       id: "a-picker-with-nothing-writable-in-scope-offers-no-upload",
       title: "a picker with no folder the member can write inside its scope offers no Upload, and a drop on it says why instead of asking where",
-      entryPoint: "/verify-fields, Projects picker bound read-only, read-only Lecture inside, writable Ailleurs outside, Upload and a drop",
+      entryPoint: "/e2e-fields, Projects picker bound read-only, read-only Lecture inside, writable Ailleurs outside, Upload and a drop",
       async run(/** @type {Ctx} */ ctx) {
         await fixture(ctx, "RegisterAssetBinding verify.projects read-only", "POST", "/binding", { id: "verify.projects", folderName: "Verify projects", subfolders: true, permissionMapping: { write: [] }, permissionsFromPage: "fields" });
         await boundFolder(ctx, "verify.projects");
@@ -151,7 +151,7 @@ export function pickerDestinationJourneys() {
         await member(ctx, "impasse", ["page:fields", "verify.ail.write"]);
         const tab = await ctx.tab("impasse");
         await tab.signIn("impasse");
-        await tab.goto("/verify-fields");
+        await tab.goto("/e2e-fields");
         const opened = await openPicker(tab, "Projects");
         const pickerDialog = tab.page.getByRole("dialog", { name: "Choose from the library" });
         const shown = await tab.visible({ role: "heading", name: "Verify projects", level: 2 }, { timeoutMs: 10_000 });
@@ -172,7 +172,7 @@ export function pickerDestinationJourneys() {
     {
       id: "root-write-alone-offers-no-upload-in-an-unscoped-picker",
       title: "an unscoped picker for a member who can write the root but not manage it, with no writable folder, offers no Upload",
-      entryPoint: "/verify-fields, Attachment picker, root ACL write only, every writable folder deleted",
+      entryPoint: "/e2e-fields, Attachment picker, root ACL write only, every writable folder deleted",
       async run(/** @type {Ctx} */ ctx) {
         await withConfig(ctx, { VERIFY_MEDIA_ROOT_ACL: "permission:verify.root:write" }, async () => {
           await fixture(ctx, "RegisterAssetBinding verify.projects read-only", "POST", "/binding", { id: "verify.projects", folderName: "Verify projects", subfolders: true, permissionMapping: { write: [] }, permissionsFromPage: "fields" });
@@ -188,7 +188,7 @@ export function pickerDestinationJourneys() {
           const writable = after.folders.filter((folder) => pick(folder, "rights", "write") === true).map((folder) => pick(folder, "name"));
           const tab = await ctx.tab("racine");
           await tab.signIn("racine");
-          await tab.goto("/verify-fields");
+          await tab.goto("/e2e-fields");
           const opened = await openPicker(tab, "Attachment");
           const pickerDialog = tab.page.getByRole("dialog", { name: "Choose from the library" });
           await tab.page.waitForTimeout(3000);

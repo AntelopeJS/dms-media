@@ -5,7 +5,7 @@ import { folderMenuJourneys } from "./parts/folder-menus.mjs";
 /** @typedef {import("../media.mjs").Ctx} Ctx */
 
 /**
- * The folder bound to an asset field of the verification playground.
+ * The folder bound to an asset field of the e2e playground.
  *
  * @param {Ctx} ctx The journey
  * @param {string} bindingId The binding

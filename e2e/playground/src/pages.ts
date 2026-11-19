@@ -20,7 +20,7 @@ import { z } from "zod";
 /** Where the field page keeps what its form saved, by field id. */
 const savedValues = new Map<string, string | string[] | null>();
 
-const VALUES = "/api/verify-media/fields";
+const VALUES = "/api/e2e-media/fields";
 
 const valuesSchema = z.record(
   z.string(),
@@ -35,7 +35,7 @@ const valuesSchema = z.record(
  * without a binding, and a free attachment without a binding.
  */
 @RegisterPage()
-export class FieldsPage extends PageController("verify-fields", {
+export class FieldsPage extends PageController("e2e-fields", {
   displayName: "Verify fields",
   category: pagesCategory,
   order: 5,
@@ -113,7 +113,7 @@ export class FieldsPage extends PageController("verify-fields", {
  * right.
  */
 @RegisterPage()
-export class OpenPage extends PageController("verify-open", {
+export class OpenPage extends PageController("e2e-open", {
   displayName: "Verify open page",
   category: pagesCategory,
   order: 6,

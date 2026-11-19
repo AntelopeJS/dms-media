@@ -16,23 +16,23 @@
 async function arm(tab) {
   return tab.page.evaluate(() => {
     const root = document.documentElement;
-    if (root.dataset.verifyChooserArmed !== "1") {
-      root.dataset.verifyChooserArmed = "1";
-      root.dataset.verifyFileInputClicks = "0";
+    if (root.dataset.e2eChooserArmed !== "1") {
+      root.dataset.e2eChooserArmed = "1";
+      root.dataset.e2eFileInputClicks = "0";
       document.addEventListener(
         "click",
         (event) => {
           const target = event.target;
           if (!(target instanceof HTMLInputElement) || target.type !== "file") return;
           event.preventDefault();
-          for (const marked of document.querySelectorAll("[data-verify-chosen]")) marked.removeAttribute("data-verify-chosen");
-          target.dataset.verifyChosen = "1";
-          root.dataset.verifyFileInputClicks = String(Number(root.dataset.verifyFileInputClicks) + 1);
+          for (const marked of document.querySelectorAll("[data-e2e-chosen]")) marked.removeAttribute("data-e2e-chosen");
+          target.dataset.e2eChosen = "1";
+          root.dataset.e2eFileInputClicks = String(Number(root.dataset.e2eFileInputClicks) + 1);
         },
         true,
       );
     }
-    return Number(root.dataset.verifyFileInputClicks);
+    return Number(root.dataset.e2eFileInputClicks);
   });
 }
 
@@ -59,7 +59,7 @@ export async function waitForHydration(tab, timeoutMs) {
  * @returns {Promise<number>} The file-input clicks counted on the current document
  */
 async function clicksOf(tab) {
-  return Number(await tab.page.evaluate(() => document.documentElement.dataset.verifyFileInputClicks ?? "0").catch(() => "0"));
+  return Number(await tab.page.evaluate(() => document.documentElement.dataset.e2eFileInputClicks ?? "0").catch(() => "0"));
 }
 
 /**
@@ -87,7 +87,7 @@ export async function openFilePicker(tab, action, timeoutMs = 15_000) {
       clicks = await clicksOf(tab);
     }
   }
-  const input = tab.page.locator("input[type=file][data-verify-chosen]").first();
+  const input = tab.page.locator("input[type=file][data-e2e-chosen]").first();
   const opened = clicks > before;
   const multiple = opened ? await input.evaluate((element) => element instanceof HTMLInputElement && element.multiple).catch(() => false) : false;
   return {

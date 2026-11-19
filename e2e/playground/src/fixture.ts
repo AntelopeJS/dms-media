@@ -167,9 +167,9 @@ function sourceOf(
 /**
  * Trusted backend calls a journey cannot make over HTTP: members with a role,
  * the interface's declaration functions, runtime bindings and the asset
- * field's validation. Only the verification playground serves them.
+ * field's validation. Only the e2e playground serves them.
  */
-export class VerifyFixtureController extends Controller("/verify-media") {
+export class VerifyFixtureController extends Controller("/e2e-media") {
   @Post("/member")
   async member(@JSONBody() body: unknown) {
     const { name, permissions, language } = memberSchema.parse(body);

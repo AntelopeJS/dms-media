@@ -31,10 +31,10 @@ function entryLabels(tab) {
  */
 async function saveUntil(ctx, tab, done) {
   await tab.click({ role: "button", name: /^Save/, nth: 0 });
-  let saved = await ctx.api("read the saved values", { method: "GET", path: "/api/verify-media/fields/values" });
+  let saved = await ctx.api("read the saved values", { method: "GET", path: "/api/e2e-media/fields/values" });
   for (let attempt = 0; attempt < 30 && !done(saved.body); attempt += 1) {
     await tab.page.waitForTimeout(500);
-    saved = await ctx.api("read the saved values again", { method: "GET", path: "/api/verify-media/fields/values" });
+    saved = await ctx.api("read the saved values again", { method: "GET", path: "/api/e2e-media/fields/values" });
   }
   return saved.body;
 }
@@ -43,7 +43,7 @@ async function saveUntil(ctx, tab, done) {
 const aFieldAddsOrdersDescribesAndRemovesImages = {
   id: "a-field-adds-orders-describes-and-removes-images",
   title: "in a form, an image field adds the images picked in its picker, warns of the missing alt text and saves one from the field, makes an image the cover, removes one, adds another and stores the ids in that order; a single image field replaces and removes its image",
-  entryPoint: "/verify-fields, Projects and Cover fields",
+  entryPoint: "/e2e-fields, Projects and Cover fields",
   async run(/** @type {Ctx} */ ctx) {
     const projects = await boundFolder(ctx, "verify.projects");
     const covers = await boundFolder(ctx, "verify.cover");
@@ -55,7 +55,7 @@ const aFieldAddsOrdersDescribesAndRemovesImages = {
     const sea = await uploaded(ctx, { folderId: covers, name: "mer.png", mimetype: "image/png", bytes: await bytes() });
     const tab = await ctx.tab();
     await tab.signIn("admin");
-    await tab.goto("/verify-fields");
+    await tab.goto("/e2e-fields");
     await tab.visible({ role: "button", name: "Projects", exact: true }, { timeoutMs: 30_000 });
     await waitForHydration(tab, 60_000);
     const opened = await openPicker(tab, "Projects");

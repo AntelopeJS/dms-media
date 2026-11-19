@@ -85,7 +85,7 @@ export function pickerJourneys() {
     {
       id: "every-file-picker-takes-several-files",
       title: "the Library's Upload, the Overview's Choose files, the Uploads page's Upload files and a multiple asset field's upload each take several files in one pick, and every file lands",
-      entryPoint: "file pickers of /modules/media/files, /overview, /uploads and /verify-fields",
+      entryPoint: "file pickers of /modules/media/files, /overview, /uploads and /e2e-fields",
       async run(/** @type {Ctx} */ ctx) {
         const name = ctx.unique("Several");
         const folder = await createFolder(ctx, name);
@@ -111,7 +111,7 @@ export function pickerJourneys() {
         ctx.record(ctx.step("choose the Uploads page's files at once"), [check("the Uploads page's picker takes several files at once", several, several)]);
         results.push({ where: "Uploads page Upload files", wanted: page.map((file) => file.name), found: await landed(ctx, folder.id, page.map((file) => file.name)) });
         const projects = await boundFolder(ctx, "verify.projects");
-        await tab.goto("/verify-fields");
+        await tab.goto("/e2e-fields");
         const field = await twoImages(ctx, "champ");
         await pickSeveral(ctx, tab, tab.page.getByRole("button", { name: "Upload to Verify projects" }), field);
         results.push({ where: "the Projects field's upload", wanted: field.map((file) => file.name), found: await landed(ctx, projects, field.map((file) => file.name)) });

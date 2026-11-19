@@ -45,7 +45,7 @@ jobs:
       # `antelope-lock/`: commit what it lists, so every run installs the same
       # graph. `test:exports` also packs both packages and checks the tarballs
       # and the README compatibility table, `test:e2e-suite` checks
-      # that the e2e suite and CI read no verify skill folder, and `test:formal` model-checks
+      # that the e2e kit loads every journey, and `test:formal` model-checks
       # the TLA+ specs of the formal skills. `test:frontend` typechecks the
       # frontend layer against the DMS layer from the `@antelopejs/dms`
       # devDependency.
@@ -141,8 +141,8 @@ jobs:
       - uses: actions/cache@v4
         with:
           path: ~/.cache/dms-control/frontend
-          key: dms-control-frontend-${{ github.sha }}
-          restore-keys: dms-control-frontend-
+          key: e2e-frontend-${{ github.sha }}
+          restore-keys: e2e-frontend-
       - run: pnpm install --frozen-lockfile
       - name: Install Chromium and its system packages
         run: |

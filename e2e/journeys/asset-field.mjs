@@ -13,14 +13,14 @@ export const journeys = guarded([
   {
     id: "the-picker-shows-what-the-field-accepts",
     title: "the picker says what the field accepts, shows a file of another type but refuses it, lets a PDF be chosen, and the form stores the asset id, never a URL",
-    entryPoint: "/verify-fields, PDF only field, Choose from the library",
+    entryPoint: "/e2e-fields, PDF only field, Choose from the library",
     async run(/** @type {Ctx} */ ctx) {
       const folder = await createFolder(ctx, ctx.unique("Picked"));
       const pdf = await uploaded(ctx, { folderId: folder.id, name: "fiche.pdf", mimetype: "application/pdf", bytes: Buffer.from("%PDF-1.4\n%%EOF\n") });
       await uploaded(ctx, { folderId: folder.id, name: "photo.png", mimetype: "image/png", bytes: await image(ctx, { width: 8, height: 8 }) });
       const tab = await ctx.tab();
       await tab.signIn("admin");
-      await tab.goto("/verify-fields");
+      await tab.goto("/e2e-fields");
       await ctx.verify("the fields say what they accept", [tab.shows(/Choose up to 2 PDFs/, { timeoutMs: 20_000 }), tab.shows(/Choose an image/), tab.visible({ role: "button", name: "Upload to Verify covers" })]);
       const opened = await openPicker(tab, "PDF only");
       await ctx.verify("the picker opens", [check("the dialog", opened, opened), tab.shows(/Accepts: PDF/)]);
@@ -31,11 +31,11 @@ export const journeys = guarded([
       await tab.page.getByRole("button", { name: /^Choose file/ }).click({ timeout: 15_000 }).catch(() => undefined);
       await ctx.verify("the field shows the chosen file", [tab.shows(/fiche\.pdf/, { timeoutMs: 15_000 }), tab.visible({ role: "dialog", name: "Choose from the library" }, { hidden: true })]);
       await tab.page.getByRole("button", { name: /^Save/ }).first().click({ timeout: 10_000 }).catch(() => undefined);
-      let saved = await ctx.api("read the saved values", { method: "GET", path: "/api/verify-media/fields/values" });
+      let saved = await ctx.api("read the saved values", { method: "GET", path: "/api/e2e-media/fields/values" });
       for (let attempt = 0; attempt < 10 && pick(saved.body, "pdf") === undefined; attempt += 1) {
         await tab.page.getByRole("button", { name: /^Save/ }).first().click({ timeout: 5000 }).catch(() => undefined);
         await tab.page.waitForTimeout(1000);
-        saved = await ctx.api("read the saved values again", { method: "GET", path: "/api/verify-media/fields/values" });
+        saved = await ctx.api("read the saved values again", { method: "GET", path: "/api/e2e-media/fields/values" });
       }
       await ctx.verify("the form stored the asset id", [check("pdf holds the id of fiche.pdf, not a URL", pick(saved.body, "pdf") === pdf.id, saved.body)]);
       await ctx.verify("no crop on the field", [tab.visible({ role: "button", name: /Edit image|Crop/ }, { hidden: true })]);
@@ -45,12 +45,12 @@ export const journeys = guarded([
     id: "uploads-from-the-field-land-in-its-folder",
     tag: "@smoke",
     title: "the field's Upload button and a drop on the field send the file to the field's linked folder",
-    entryPoint: "/verify-fields, Upload to Verify covers, drop on the Cover field",
+    entryPoint: "/e2e-fields, Upload to Verify covers, drop on the Cover field",
     async run(/** @type {Ctx} */ ctx) {
       const cover = await boundFolder(ctx, "verify.cover");
       const tab = await ctx.tab();
       await tab.signIn("admin");
-      await tab.goto("/verify-fields");
+      await tab.goto("/e2e-fields");
       await tab.visible({ role: "button", name: "Upload to Verify covers" }, { timeoutMs: 20_000 });
       const folder = ctx.step("choose a file with the field's Upload button");
       const byButton = await openFilePicker(tab, () => tab.page.getByRole("button", { name: "Upload to Verify covers" }).click(), 30_000);
@@ -77,7 +77,7 @@ export const journeys = guarded([
   {
     id: "a-members-picker-shows-only-what-they-can-read",
     title: "a member opening a field's picker sees only the folders they can read, and a linked field's picker opens on its folder and lists its subfolders",
-    entryPoint: "/verify-fields as a member, Attachment and Projects pickers",
+    entryPoint: "/e2e-fields as a member, Attachment and Projects pickers",
     async run(/** @type {Ctx} */ ctx) {
       const hidden = await createFolder(ctx, ctx.unique("Owner only"));
       const projects = await boundFolder(ctx, "verify.projects");
@@ -85,7 +85,7 @@ export const journeys = guarded([
       await member(ctx, "picker", ["page:fields"]);
       const tab = await ctx.tab("picker");
       await tab.signIn("picker");
-      await tab.goto("/verify-fields");
+      await tab.goto("/e2e-fields");
       const opened = await openPicker(tab, "Attachment");
       const dialog = tab.page.getByRole("dialog", { name: "Choose from the library" });
       await ctx.verify("only readable folders", [
@@ -106,12 +106,12 @@ export const journeys = guarded([
   {
     id: "a-refusal-speaks-the-members-language",
     title: "a member whose language is French sees a refused file explained in French",
-    entryPoint: "/verify-fields as a fr-FR member, Cover field upload of a PDF",
+    entryPoint: "/e2e-fields as a fr-FR member, Cover field upload of a PDF",
     async run(/** @type {Ctx} */ ctx) {
       await member(ctx, "francais", ["page:fields"], "fr");
       const tab = await ctx.tab("francais");
       await tab.signIn("francais");
-      await tab.goto("/verify-fields");
+      await tab.goto("/e2e-fields");
       await tab.page.locator("input[type=file]").first().waitFor({ state: "attached", timeout: 30_000 }).catch(() => undefined);
       let shown = false;
       for (let attempt = 0; attempt < 5 && !shown; attempt += 1) {
