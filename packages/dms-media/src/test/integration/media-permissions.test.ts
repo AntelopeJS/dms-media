@@ -19,6 +19,8 @@ import {
   setUpPermissionsWorld,
   tearDownPermissionsWorld,
 } from "../helpers/permissions-world";
+import { permissionLevelSuites } from "./permission-levels";
+import { permissionReachSuites } from "./permission-reach";
 import {
   folderManagementSuites,
   laterPermissionSuites,
@@ -461,6 +463,8 @@ describe("[integration] media permissions — multi-actor ACL enforcement", () =
   describeAssetWriteRights();
   describeTransformRights();
   folderManagementSuites();
+  permissionReachSuites();
+  permissionLevelSuites();
   describeDelivery();
   laterPermissionSuites();
 });

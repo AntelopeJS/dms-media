@@ -1,3 +1,4 @@
+import { randomUUID } from "node:crypto";
 import {
   GetPermissionId,
   PageController,
@@ -15,6 +16,11 @@ import { z } from "zod";
 import { RegisterAssetBinding } from "@antelopejs/interface-dms-media";
 import { MEDIA_PAGE_PERMISSION } from "../../pages/files";
 import { type UploadedAsset, uploadTextAsset } from "../helpers/assets";
+import {
+  assetDetailBody,
+  memberHolding,
+  uploadPng,
+} from "../helpers/member-rights";
 import { createdBody, readBody } from "../helpers/bodies";
 import { readFolderAcl } from "../helpers/folders";
 import { authorizedClient } from "../helpers/http";
@@ -34,6 +40,11 @@ const BINDING_ID = "member-access.gallery";
 const LINKED_FOLDER_NAME = "Member access gallery";
 const SHELF_FOLDER_NAME = "Member access shelf";
 const CONTENT_ROOT_NAME = "Content";
+const WRITE_BINDING_ID = "member-access.write-only";
+const WRITE_FOLDER_NAME = "Member access write mapping";
+const WRITE_PERMISSION = "member-access.write";
+const LANDSCAPE = { width: 20, height: 10 };
+const ROTATE_QUARTER_TURN = 90;
 
 @RegisterPage()
 class MemberAccessProbePage extends PageController("member-access-probe", {
@@ -72,6 +83,7 @@ interface MemberAccessWorld {
   linkedFolderId: string;
   shelfFolderId: string;
   ownerAsset: UploadedAsset;
+  writeFolderId: string;
 }
 
 async function fetchTree(client: AxiosInstance): Promise<TreeResponse> {
@@ -89,6 +101,24 @@ function collectPermissionIds(tree: Record<string, PermissionTree>): string[] {
     ...(node.data ? [node.data.id] : []),
     ...collectPermissionIds(node.children),
   ]);
+}
+
+async function createOwnerSubfolder(
+  owner: AxiosInstance,
+  parentId: string,
+): Promise<string> {
+  const created = await owner.post("/api/media/folders", {
+    name: `Lot ${randomUUID()}`,
+    parentId,
+  });
+  expect(created.status, "owner creates a subfolder").to.equal(HTTP_OK);
+  return readBody(created, createdBody).id;
+}
+
+async function readAsset(owner: AxiosInstance, assetId: string) {
+  const response = await owner.get(`/api/media/assets/${assetId}`);
+  expect(response.status, "read the file").to.equal(HTTP_OK);
+  return readBody(response, assetDetailBody).asset;
 }
 
 function presignInto(client: AxiosInstance, folderId: string) {
@@ -116,6 +146,8 @@ async function buildWorld(): Promise<MemberAccessWorld> {
   const linked = findFolder(await fetchTree(owner), LINKED_FOLDER_NAME);
   assert.isDefined(linked, "provisioned linked folder");
   const linkedFolderId = linked.id;
+  const writeLinked = findFolder(await fetchTree(owner), WRITE_FOLDER_NAME);
+  assert.isDefined(writeLinked, "provisioned write-mapping folder");
   return {
     owner,
     pageMember: await registerMember("PageMember", [pageRole]),
@@ -125,7 +157,106 @@ async function buildWorld(): Promise<MemberAccessWorld> {
     linkedFolderId,
     shelfFolderId: readBody(shelf, createdBody).id,
     ownerAsset: await uploadTextAsset(owner, linkedFolderId, "owner-file.txt"),
+    writeFolderId: writeLinked.id,
   };
+}
+
+function writeMappingTests(world: () => MemberAccessWorld): void {
+  it("lets a write-mapping member upload and rename files but not create or rename subfolders", async () => {
+    const writer = await memberHolding("MappingWriter", [WRITE_PERMISSION]);
+    const uploaded = await uploadTextAsset(
+      writer.client,
+      world().writeFolderId,
+      "mapped.txt",
+    );
+    const renamed = await writer.client.post(
+      `/api/media/assets/${uploaded.id}/update`,
+      { name: "mapped renamed.txt" },
+    );
+    expect(renamed.status).to.equal(HTTP_OK);
+    const created = await writer.client.post("/api/media/folders", {
+      name: "Mapped subfolder",
+      parentId: world().writeFolderId,
+    });
+    expect(created.status).to.equal(HTTP_FORBIDDEN);
+    const subfolder = await createOwnerSubfolder(
+      world().owner,
+      world().writeFolderId,
+    );
+    const folderRename = await writer.client.post(
+      `/api/media/folders/${subfolder}/rename`,
+      { name: "Renamed by a writer" },
+    );
+    expect(folderRename.status).to.equal(HTTP_FORBIDDEN);
+  });
+}
+
+function pageMemberFileTests(world: () => MemberAccessWorld): void {
+  it("lets a page member rename, describe, rotate, move and delete a file the owner uploaded", async () => {
+    const client = world().pageMember.client;
+    const subfolder = await createOwnerSubfolder(
+      world().owner,
+      world().linkedFolderId,
+    );
+    const file = await uploadPng(
+      world().owner,
+      world().linkedFolderId,
+      "owner-image.png",
+      LANDSCAPE,
+    );
+    const other = await uploadPng(
+      world().owner,
+      world().linkedFolderId,
+      "owner-other.png",
+      LANDSCAPE,
+    );
+    const renamed = await client.post(`/api/media/assets/${file.id}/update`, {
+      name: "renamed.png",
+      alt: "Described by a member",
+    });
+    const rotated = await client.post(
+      `/api/media/assets/${file.id}/transform`,
+      { rotate: ROTATE_QUARTER_TURN },
+    );
+    const moved = await client.post(`/api/media/assets/${file.id}/move`, {
+      folderId: subfolder,
+    });
+    const removed = await client.delete(`/api/media/assets/${other.id}`);
+    expect([renamed.status, rotated.status, moved.status]).to.deep.equal([
+      HTTP_OK,
+      HTTP_OK,
+      HTTP_OK,
+    ]);
+    const asset = await readAsset(world().owner, file.id);
+    expect(asset).to.include({
+      name: "renamed.png",
+      alt: "Described by a member",
+      width: LANDSCAPE.height,
+      height: LANDSCAPE.width,
+      folderId: subfolder,
+    });
+    expect(removed.status).to.equal(HTTP_OK);
+    const gone = await world().owner.get(`/api/media/assets/${other.id}`);
+    expect(gone.status).to.equal(HTTP_NOT_FOUND);
+  });
+
+  it("keeps folder structure with the owner, even where the binding allows subfolders", async () => {
+    const client = world().pageMember.client;
+    const created = await client.post("/api/media/folders", {
+      name: "Member subfolder",
+      parentId: world().linkedFolderId,
+    });
+    expect(created.status).to.equal(HTTP_FORBIDDEN);
+    const subfolder = await createOwnerSubfolder(
+      world().owner,
+      world().linkedFolderId,
+    );
+    const renamed = await client.post(
+      `/api/media/folders/${subfolder}/rename`,
+      { name: "Renamed by a member" },
+    );
+    expect(renamed.status).to.equal(HTTP_FORBIDDEN);
+  });
 }
 
 describe("[integration] media member access — roles, root ACL and linked folders", () => {
@@ -137,6 +268,13 @@ describe("[integration] media member access — roles, root ACL and linked folde
       id: BINDING_ID,
       folderName: LINKED_FOLDER_NAME,
       permissionsFromPage: MemberAccessProbePage,
+      subfolders: true,
+    });
+    RegisterAssetBinding({
+      id: WRITE_BINDING_ID,
+      folderName: WRITE_FOLDER_NAME,
+      permissionMapping: { write: [WRITE_PERMISSION] },
+      subfolders: true,
     });
     world = await buildWorld();
   });
@@ -175,6 +313,10 @@ describe("[integration] media member access — roles, root ACL and linked folde
     });
   });
 
+  describe("linked folder of a write mapping", () => {
+    writeMappingTests(() => world);
+  });
+
   describe("linked folders of a project page", () => {
     it("shows a page member the linked folder only", async () => {
       const tree = await fetchTree(world.pageMember.client);
@@ -203,6 +345,10 @@ describe("[integration] media member access — roles, root ACL and linked folde
       expect(described.status).to.equal(HTTP_OK);
       const removed = await client.delete(`/api/media/assets/${uploaded.id}`);
       expect(removed.status).to.equal(HTTP_OK);
+    });
+
+    describe("any file of the linked folder", () => {
+      pageMemberFileTests(() => world);
     });
 
     it("keeps visibility changes with the owner", async () => {

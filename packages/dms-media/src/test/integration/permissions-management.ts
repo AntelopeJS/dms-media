@@ -9,6 +9,7 @@ import { GetModel } from "@antelopejs/interface-database-decorators";
 import { MediaUploadsPage } from "../../pages/uploads";
 import { uploadAvailability } from "../../pages/upload-availability";
 import { MEDIA_ROUTES } from "../../library/links";
+import { uploadTextAsset } from "../helpers/assets";
 import { createdBody, readBody } from "../helpers/bodies";
 import { readFolderAcl, writeFolderAcl } from "../helpers/folders";
 import { readPageAccess } from "../helpers/pages";
@@ -89,10 +90,16 @@ function folderManagementTests(): void {
     const estate = await createFolder(owner, "Estate");
     const cellar = await createFolder(owner, "EstateCellar", estate);
     await writeFolderAcl(cellar, [roleEntry(roles.secretTeam, ["manage"])]);
+    const kept = await uploadTextAsset(owner, cellar, "cellar-file.txt");
     const denied = await sessions.folderManager.client.delete(
       `/api/media/folders/${estate}`,
     );
     expect(denied.status).to.equal(HTTP_FORBIDDEN);
+    const tree = await fetchTree(owner);
+    expect(findById(tree, estate), "estate stays").to.not.equal(undefined);
+    expect(findById(tree, cellar), "cellar stays").to.not.equal(undefined);
+    const survivor = await owner.get(`/api/media/assets/${kept.id}`);
+    expect(survivor.status, "the cellar's file stays").to.equal(HTTP_OK);
     const cleanup = await owner.delete(`/api/media/folders/${estate}`);
     expect(cleanup.status).to.equal(HTTP_OK);
   });
