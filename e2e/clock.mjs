@@ -23,7 +23,7 @@ function isDriver(value) {
 }
 
 /**
- * The MongoDB driver dms-control itself uses to drop a journey's database.
+ * The MongoDB driver the e2e kit itself uses to drop a journey's database.
  *
  * @returns {Promise<Driver>} The driver
  */
@@ -32,7 +32,7 @@ async function driver() {
   /** @type {unknown} */
   const loaded = await import(pathToFileURL(resolved).href);
   if (isDriver(loaded)) return loaded;
-  throw new Error("the MongoDB driver dms-control resolves has no MongoClient");
+  throw new Error("the MongoDB driver the e2e kit resolves has no MongoClient");
 }
 
 /**
