@@ -5,8 +5,8 @@ import { join } from "node:path";
 import sharp from "../packages/dms-media/node_modules/sharp/lib/index.js";
 
 /**
- * @typedef {import("../node_modules/@antelopejs/dms/bin/control/journey.mjs").JourneyContext} Ctx
- * @typedef {import("../node_modules/@antelopejs/dms/bin/control/tab.mjs").Tab} Tab
+ * @typedef {import("../node_modules/@antelopejs/dms/e2e/journey.mjs").JourneyContext} Ctx
+ * @typedef {import("../node_modules/@antelopejs/dms/e2e/tab.mjs").Tab} Tab
  * @typedef {{ status: number | null, body: unknown, error: string | null, folder?: string }} Answer
  * @typedef {{ folder: string, status: number | null, headers: Record<string, string>, bytes: Buffer, text: string, json: unknown }} Raw
  * @typedef {Record<string, unknown>} Row
@@ -74,17 +74,6 @@ export function text(value, ...path) {
 export function list(value, ...path) {
   const found = path.length === 0 ? value : pick(value, ...path);
   return Array.isArray(found) ? found.filter(isRow) : [];
-}
-
-/**
- * The ids a bulk route says it did: its `done` array, which holds plain ids, not objects.
- *
- * @param {unknown} body A bulk answer
- * @returns {string[]} The ids done
- */
-export function doneIds(body) {
-  const done = pick(body, "done");
-  return Array.isArray(done) ? done.map(String) : [];
 }
 
 /**

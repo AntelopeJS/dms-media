@@ -225,8 +225,12 @@ function describeSizesApi(): void {
         const path = `/media/${publicPhoto.id}/thumb/${encodeURIComponent(name)}`;
         const thumb = presetRow(await readPresets(), "thumb");
         expect(thumb.examplePreviewUrl).to.equal(path);
-        expect(thumb.exampleUrl).to.match(/^https?:\/\//);
-        expect(thumb.exampleUrl?.endsWith(path)).to.equal(true);
+        const { origin } = readBody(
+          await client.get("/api/media/links/origin"),
+          z.object({ origin: z.string() }),
+        );
+        expect(origin).to.match(/^https?:\/\//);
+        expect(thumb.exampleUrl).to.equal(`${origin}${path}`);
       } finally {
         await client.delete(`/api/media/folders/${publicFolder}`);
       }

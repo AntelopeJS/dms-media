@@ -1,10 +1,8 @@
 import { age } from "../../clock.mjs";
-import { createFolder, folderAssets, uploaded } from "../../library.mjs";
+import { createFolder, uploaded } from "../../library.mjs";
 import { check, image, list, media, pick } from "../../media.mjs";
 
 /** @typedef {import("../../media.mjs").Ctx} Ctx */
-
-const DAY_MS = 24 * 60 * 60 * 1000;
 
 /**
  * @param {unknown} body A statistics answer
@@ -58,42 +56,6 @@ const theOverviewWindowsCountOnlyRecentRows = {
   },
 };
 
-/** @type {{ id: string, title: string, entryPoint: string, run: (ctx: Ctx) => Promise<void> }} */
-const theModifiedFilterKeepsItsWindow = {
-  id: "the-modified-filter-keeps-its-window",
-  title: "the modification date filter keeps the files changed in the last 7 days, the last 30 days or since 1 January, and every file for any date",
-  entryPoint: "GET /api/media/folders/:id/assets?modified=7d|30d|year|any",
-  async run(/** @type {Ctx} */ ctx) {
-    const folder = await createFolder(ctx, ctx.unique("Modified"));
-    const plan = [["d3.png", 3], ["d10.png", 10], ["d40.png", 40], ["d400.png", 400]];
-    const aged = [];
-    for (const [name, days] of plan) {
-      const file = await uploaded(ctx, { folderId: folder.id, name: String(name), mimetype: "image/png", bytes: await image(ctx, { width: 6, height: 6 }) });
-      aged.push(await age(ctx, "media_assets", file.id, { updatedAt: Number(days) }));
-    }
-    const now = new Date();
-    const january = new Date(now.getFullYear(), 0, 1).getTime();
-    /** @param {(days: number) => boolean} keep @returns {string[]} */
-    const expected = (keep) => plan.filter(([, days]) => keep(Number(days))).map(([name]) => String(name)).sort();
-    /** @param {string} window @returns {Promise<string[]>} */
-    const listed = async (window) => (await folderAssets(ctx, folder.id, { query: `modified=${window}&limit=50` })).assets.map((row) => String(pick(row, "name"))).sort();
-    const checks = [check("every file was aged", aged.every((count) => count === 1), aged)];
-    /** @type {{ window: string, keep: (days: number) => boolean }[]} */
-    const windows = [
-      { window: "7d", keep: (days) => days <= 7 },
-      { window: "30d", keep: (days) => days <= 30 },
-      { window: "year", keep: (days) => now.getTime() - days * DAY_MS >= january },
-      { window: "any", keep: () => true },
-    ];
-    for (const { window, keep } of windows) {
-      const got = await listed(window);
-      const want = expected(keep);
-      checks.push(check(`modified=${window} keeps ${want.join(", ")}`, JSON.stringify(got) === JSON.stringify(want), got));
-    }
-    await ctx.verify("each window", checks);
-  },
-};
-
 /**
  * The Overview's time windows.
  *
@@ -101,13 +63,4 @@ const theModifiedFilterKeepsItsWindow = {
  */
 export function overviewWindowJourneys() {
   return [theOverviewWindowsCountOnlyRecentRows];
-}
-
-/**
- * The Library's modification date windows.
- *
- * @returns {{ id: string, title: string, entryPoint: string, run: (ctx: Ctx) => Promise<void> }[]} The journeys
- */
-export function libraryWindowJourneys() {
-  return [theModifiedFilterKeepsItsWindow];
 }

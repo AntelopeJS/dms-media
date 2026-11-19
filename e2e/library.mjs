@@ -128,17 +128,6 @@ export function declareFolder(ctx, declaration) {
 }
 
 /**
- * Declares a file through `ImportMediaAsset` in the trusted backend.
- *
- * @param {Ctx} ctx The journey
- * @param {Row} declaration The declaration; `source` is `{ kind: "bytes" | "load", base64 }` or `{ kind: "filePath", filePath }`
- * @returns {Promise<Answer>} `{ ok, result | error, loads }`
- */
-export function declareAsset(ctx, declaration) {
-  return fixture(ctx, `ImportMediaAsset ${String(declaration.key)}`, "POST", "/asset", { tenantId: TENANT, ...declaration });
-}
-
-/**
  * Follows a delivery link to its bytes: the `/media/...` answer, then the storage URL it redirects to.
  *
  * @param {Ctx} ctx The journey
@@ -220,17 +209,4 @@ export async function dashboardSession(ctx, account = "admin") {
   const cookieNames = cookies.map((cookie) => cookie.split("=")[0]);
   ctx.record(folder, [check("the dashboard opens a session", response.ok && cookieNames.some((name) => name?.startsWith("dms_session")), `${response.status} ${cookieNames.join(", ")}`)], { critical: true });
   return cookies.join("; ");
-}
-
-/**
- * A declared folder whose ACL grants one permission the given rights.
- *
- * @param {Ctx} ctx The journey
- * @param {string} permission The permission
- * @param {string[]} rights The rights
- * @returns {Promise<string>} The folder id
- */
-export async function aclFolder(ctx, permission, rights) {
-  const answer = await declareFolder(ctx, { key: ctx.unique("verify.acl"), name: ctx.unique(`ACL ${rights.join(" ")}`), acl: [{ subject: { kind: "permission", id: permission }, rights }] });
-  return text(answer.body, "result", "id");
 }

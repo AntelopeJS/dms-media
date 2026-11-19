@@ -126,9 +126,11 @@ function describeSmartViews(): void {
         const stored = await library.get(`/api/media/assets/${blank.id}`);
         expect(stored.data.asset.alt).to.equal("   ");
         const starred = await library.get("/api/media/views/starred");
-        expect(
-          readBody(starred, assetsBody).assets.map((asset) => asset.id),
-        ).to.include(doc.id);
+        const starredIds = readBody(starred, assetsBody).assets.map(
+          (asset) => asset.id,
+        );
+        expect(starredIds).to.include(doc.id);
+        expect(starredIds).to.not.include(big.id);
         expect(
           readBody(starred, foldersBody).folders.map((folder) => folder.id),
         ).to.include(two);
@@ -279,6 +281,7 @@ function describeFacets(): void {
     const listing = fixture.listing;
 
     it("narrows a listing by type, visibility, modified window and orientation", async () => {
+      expect(await listing({})).to.have.length(4);
       expect(await listing({ type: "image" })).to.deep.equal([
         "a-tall.png",
         "b-square.png",
