@@ -3,11 +3,11 @@ import { expect } from "chai";
 import { z } from "zod";
 import { PNG_MIMETYPE, uploadAsset } from "../helpers/assets";
 import { createdBody, readBody, urlBody } from "../helpers/bodies";
+import { signedLifetimeSeconds } from "../helpers/delivery";
 import { authorizedClient, getBaseUrl } from "../helpers/http";
 import { withMediaConfig } from "../helpers/media-config";
 import { ensureOwnerSession } from "../helpers/owner";
 import { solidPng } from "../helpers/png";
-import { readUrlLifetimeSeconds } from "../helpers/read-url-lifetime";
 
 const HTTP_OK = 200;
 const CDN = "https://cdn.example.org";
@@ -62,7 +62,7 @@ function describeReadUrls(): void {
           urlBody,
         ).url;
         for (const url of [original, thumb]) {
-          const lifetime = await readUrlLifetimeSeconds(url);
+          const lifetime = await signedLifetimeSeconds(url);
           expect(lifetime).to.be.within(241, 300);
         }
         const served = await fetch(new URL(original, getBaseUrl()));

@@ -56,7 +56,7 @@ const readTokenBody = z.object({ expiresAt: z.number() });
  * local storage keeps for it.
  */
 export async function signedLifetimeSeconds(location: string): Promise<number> {
-  const token = new URL(location).searchParams.get("token");
+  const token = new URL(location, getBaseUrl()).searchParams.get("token");
   assert.isNotNull(token, location);
   const storageDir = process.env.TEST_STORAGE_DIR;
   assert.isDefined(storageDir, "TEST_STORAGE_DIR");

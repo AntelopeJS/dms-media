@@ -9,5 +9,6 @@ export function snapshotConfig(): DmsMediaConfig {
     presets: [...current.presets.values()],
     storageQuotaBytes: current.storageQuotaBytes,
     allowedMimetypes: [...current.allowedMimetypes],
+    publicBaseUrl: current.publicBaseUrl,
   };
 }
