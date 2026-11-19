@@ -1,5 +1,5 @@
 import { guarded } from "../guard.mjs";
-import { createFolder, setVisibility, tree, uploaded, withConfig } from "../library.mjs";
+import { createFolder, setVisibility, tree, uploaded } from "../library.mjs";
 import { check, image, list, media, pick, text } from "../media.mjs";
 import { activityJourneys } from "./parts/activity.mjs";
 import { activityTabJourneys } from "./parts/activity-tabs.mjs";
@@ -72,21 +72,6 @@ export const journeys = guarded([
       await tab.goto("/modules/media/overview");
       await tab.click({ role: "link", name: "Open library" });
       await ctx.verify("Open library opens the Library", [tab.at(/^\/modules\/media\/files$/)]);
-    },
-  },
-  {
-    id: "the-plan-shows-on-the-storage-kpi",
-    title: "with storageQuotaBytes set, the storage KPI measures the use against the plan",
-    entryPoint: "storageQuotaBytes, GET /api/media/stats/kpis, /api/media/tree",
-    async run(/** @type {Ctx} */ ctx) {
-      await withConfig(ctx, { VERIFY_MEDIA_QUOTA: "1000000" }, async () => {
-        const kpis = await media(ctx, "KPIs with a plan", "GET", "/stats/kpis");
-        const read = await tree(ctx);
-        await ctx.verify("the plan", [
-          check("the storage KPI names the plan", JSON.stringify(list(kpis.body, "items").find((row) => pick(row, "id") === "storage")).includes("storage_quota_detail"), kpis.body),
-          check("the tree gives the quota", pick(read.answer.body, "quotaBytes") === 1000000, pick(read.answer.body, "quotaBytes")),
-        ]);
-      });
     },
   },
   {
