@@ -1,68 +1,15 @@
 import { guarded } from "../guard.mjs";
 import { openFilePicker } from "../chooser.mjs";
 import { createFolder, folderAssets, member, uploaded } from "../library.mjs";
-import { check, fixture, image, pick, text } from "../media.mjs";
+import { check, image, pick, text } from "../media.mjs";
 import { boundFolder } from "./folders.mjs";
 import { fieldEntryJourneys } from "./parts/field-entries.mjs";
 import { openPicker, pickerDestinationJourneys, pickerUploadJourneys } from "./parts/picker-uploads.mjs";
 
 /** @typedef {import("../media.mjs").Ctx} Ctx */
 
-/**
- * Asks the fixture's `AssetType` whether its validation accepts each value.
- *
- * @param {Ctx} ctx The journey
- * @param {Record<string, unknown>} options The field options
- * @param {unknown[]} values The values
- * @returns {Promise<unknown>} One boolean per value
- */
-async function accepts(ctx, options, values) {
-  const answer = await fixture(ctx, `validate ${JSON.stringify(options)}`, "POST", "/validate", { options, values });
-  return pick(answer.body, "accepted");
-}
-
 /** The `AssetType` form field: its value, its validation, its picker and its uploads. */
 export const journeys = guarded([
-  {
-    id: "the-value-is-asset-ids-checked-for-shape-only",
-    title: "by default one nonempty id; multiple takes an array of nonempty ids, the empty one included; max caps it only in multiple mode; an unknown id passes",
-    entryPoint: "new AssetType(options).getValidation()",
-    async run(/** @type {Ctx} */ ctx) {
-      const single = await accepts(ctx, {}, ["asset-a", "", ["asset-a"], 3, null, "never-uploaded"]);
-      const multiple = await accepts(ctx, { multiple: true }, [[], ["asset-a", "asset-b"], ["asset-a", ""], "asset-a", [3]]);
-      const capped = await accepts(ctx, { multiple: true, max: 4 }, [["a", "b", "c", "d"], ["a", "b", "c", "d", "e"]]);
-      const singleWithMax = await accepts(ctx, { max: 0 }, ["asset-a"]);
-      const typed = await accepts(ctx, { mimetypes: ["image/*"] }, ["a-pdf-id"]);
-      await ctx.verify("the shapes", [
-        check("single: an id yes, empty no, array no, number no, null no, unknown id yes", JSON.stringify(single) === JSON.stringify([true, false, false, false, false, true]), single),
-        check("multiple: [] yes, ids yes, an empty id no, a bare id no, numbers no", JSON.stringify(multiple) === JSON.stringify([true, true, false, false, false]), multiple),
-        check("max 4: four yes, a fifth no", JSON.stringify(capped) === JSON.stringify([true, false]), capped),
-        check("max does not apply in single mode", JSON.stringify(singleWithMax) === JSON.stringify([true]), singleWithMax),
-        check("mimetypes are not checked by validation", JSON.stringify(typed) === JSON.stringify([true]), typed),
-      ]);
-    },
-  },
-  {
-    id: "the-field-declares-its-picker-and-binding",
-    title: "the package registers the asset data type, the field's input is dms-media-asset-picker with its options and the binding id but never the ACL, and a binding given to the field registers a folder accepting its types",
-    entryPoint: "ASSET_DATA_TYPE_ID, ASSET_PICKER_COMPONENT, AssetType binding",
-    async run(/** @type {Ctx} */ ctx) {
-      const answer = await fixture(ctx, "read the constants and a serialized field", "GET", "/constants");
-      const options = pick(answer.body, "serialized", "inputComponent", "options");
-      const folderId = await boundFolder(ctx, "verify.constants");
-      const listed = await fixture(ctx, "read the constants once more", "GET", "/constants");
-      await ctx.verify("the declared field", [
-        check("ASSET_DATA_TYPE_ID is asset", pick(answer.body, "dataType") === "asset", answer.body),
-        check("ASSET_PICKER_COMPONENT is dms-media-asset-picker", pick(answer.body, "component") === "dms-media-asset-picker", answer.body),
-        check("importing the package registered the type", pick(answer.body, "registered") === true, answer.body),
-        check("the input component is the picker", pick(answer.body, "serialized", "inputComponent", "componentName") === "dms-media-asset-picker", answer.body),
-        check("its options: multiple, max, mimetypes, bindingId", JSON.stringify(options) === JSON.stringify({ multiple: true, max: 3, mimetypes: ["image/png"], bindingId: "verify.constants" }), options),
-        check("never the ACL", !JSON.stringify(answer.body).includes("acl"), answer.body),
-        check("the binding's folder exists and accepts the field's types", folderId !== "", folderId),
-        check("constructing the field again creates no second binding", listed.status === 200, listed.status),
-      ]);
-    },
-  },
   {
     id: "the-picker-shows-what-the-field-accepts",
     title: "the picker says what the field accepts, shows a file of another type but refuses it, lets a PDF be chosen, and the form stores the asset id, never a URL",

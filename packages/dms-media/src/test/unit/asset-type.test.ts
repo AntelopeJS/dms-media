@@ -3,6 +3,8 @@ import {
   serializeType,
 } from "@antelopejs/interface-dms/base/data-types";
 import {
+  ASSET_DATA_TYPE_ID,
+  ASSET_PICKER_COMPONENT,
   AssetType,
   type AssetTypeOptions,
 } from "@antelopejs/interface-dms-media";
@@ -69,6 +71,13 @@ describe("[unit] AssetType — the asset field's value and declaration", () => {
 
   it("registers the asset data type under the id the dashboard looks up", () => {
     expect(CreateDataType("asset", {})).to.be.instanceOf(AssetType);
+  });
+
+  it("names the data type and the picker component the dashboard looks up", () => {
+    expect(CreateDataType(ASSET_DATA_TYPE_ID, {})).to.be.instanceOf(AssetType);
+    expect(
+      serializedField(new AssetType({})).inputComponent.componentName,
+    ).to.equal(ASSET_PICKER_COMPONENT);
   });
 
   it("declares the picker with the field's options and no binding id without a binding", () => {
