@@ -5,8 +5,7 @@ import { MediaAssetModel, MediaQuotaAlertModel } from "../db";
 import { fixedId } from "../fixed-id";
 import { sumStoredBytes } from "../library/listing";
 import { usedPercent } from "../services/listing";
-import { acceptsOrigin, acceptsTenant } from "./channel";
-import { currentAutomationOrigin } from "./origin";
+import { acceptsTenant } from "./channel";
 import { commonFields, type RecordedMediaEvent } from "./recorded";
 import {
   storageThresholdChannel,
@@ -28,14 +27,9 @@ function thresholdBytes(quota: number, percent: number): number {
 }
 
 function watchedPercents(tenantId: string): number[] {
-  const isAutomationWrite = currentAutomationOrigin() !== undefined;
   const percents = storageThresholdChannel
     .configs()
-    .filter(
-      (config) =>
-        acceptsTenant(config, tenantId) &&
-        acceptsOrigin(config, isAutomationWrite),
-    )
+    .filter((config) => acceptsTenant(config, tenantId))
     .map(thresholdPercentOf);
   return [...new Set(percents)];
 }

@@ -42,12 +42,14 @@ describe("[unit] media automation node set", () => {
       }
     });
 
-    it("offers includeAutomationWrites, off by default, and origin outputs on every trigger", () => {
+    it("offers includeAutomationWrites, off by default, on every trigger but storage-threshold, and origin outputs on all", () => {
       for (const trigger of MEDIA_TRIGGERS) {
         expect(
           trigger.configSchema.properties?.includeAutomationWrites?.default,
           trigger.id,
-        ).to.equal(false);
+        ).to.equal(
+          trigger.id === "media.storage-threshold" ? undefined : false,
+        );
         expect(trigger.outputSchema.properties, trigger.id).to.include.keys(
           "originProcedureId",
           "originRunId",

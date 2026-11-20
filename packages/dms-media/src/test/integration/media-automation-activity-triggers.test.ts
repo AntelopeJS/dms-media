@@ -298,7 +298,7 @@ function describeStorageThresholdMore(): void {
       });
     });
 
-    it("ignores a procedure's crossing unless includeAutomationWrites, and never fires without a plan", async () => {
+    it("fires once for a procedure's crossing, with its origin, and never without a plan", async () => {
       const tenantId = await crossingTenant("procedure");
       const ignoring = await capture(storageThresholdTrigger, {
         tenantId,
@@ -313,33 +313,33 @@ function describeStorageThresholdMore(): void {
       const otherTenant = await crossingTenant("procedure-b");
       const otherFolder = await declaredFolder(otherTenant, "procedure-b");
       await withMediaConfig({ storageQuotaBytes: PLAN_BYTES }, async () => {
-        const byDefault = await capture(storageThresholdTrigger, {
+        const watching = await capture(storageThresholdTrigger, {
           tenantId: otherTenant,
           percent: 50,
         });
-        const withWrites = await capture(storageThresholdTrigger, {
-          tenantId: otherTenant,
-          percent: 50,
-          includeAutomationWrites: true,
-        });
-        try {
-          await createFileAction.execute(
+        const create = (name: string) =>
+          createFileAction.execute(
             {
               tenantId: otherTenant,
               folderId: otherFolder,
-              name: "big.txt",
-              content: "x".repeat(600),
+              name,
+              content: "x".repeat(300),
               mimetype: "text/plain",
             },
             stepCtx("procedure-quota"),
           );
-          expect(byDefault.received).to.deep.equal([]);
-          expect(withWrites.received).to.have.length(1);
-          expect(withWrites.received[0]?.originProcedureId).to.equal(
-            "procedure-quota",
-          );
+        try {
+          await create("first.txt");
+          await create("crossing.txt");
+          await create("above.txt");
+          expect(watching.received).to.have.length(1);
+          expect(watching.received[0]).to.deep.include({
+            usedBytes: 600,
+            actorKind: "automation",
+            originProcedureId: "procedure-quota",
+          });
         } finally {
-          await Promise.all([byDefault.stop(), withWrites.stop()]);
+          await watching.stop();
         }
       });
     });

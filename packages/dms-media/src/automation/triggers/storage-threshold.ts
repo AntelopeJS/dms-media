@@ -1,14 +1,11 @@
 import type { MediaEventKind } from "../../library/events";
-import {
-  channelTrigger,
-  TriggerChannel,
-  type TriggerSettings,
-} from "../channel";
+import { channelTrigger, TriggerChannel } from "../channel";
 import type { CommonFields } from "../recorded";
 
 const DEFAULT_THRESHOLD_PERCENT = 90;
 
-export interface StorageThresholdConfig extends TriggerSettings {
+export interface StorageThresholdConfig {
+  tenantId?: string;
   percent?: number;
 }
 
@@ -32,12 +29,13 @@ export const storageThresholdChannel = new TriggerChannel<
 >(
   "media.storage-threshold",
   (config, event) => thresholdPercentOf(config) === event.payload.percent,
+  "delivered",
 );
 
 export const storageThresholdTrigger = channelTrigger(storageThresholdChannel, {
   name: "Storage plan almost full",
   description:
-    "Fires once when a tenant's media library crosses a percentage of its storage plan. Fires again only after usage has dropped 5 points below it. Never fires when no storage plan is configured.",
+    "Fires once when a tenant's media library crosses a percentage of its storage plan. Fires again only after usage has dropped 5 points below it. Never fires when no storage plan is configured. A crossing a procedure caused fires too.",
   icon: "i-lucide-hard-drive",
   configProperties: {
     percent: {

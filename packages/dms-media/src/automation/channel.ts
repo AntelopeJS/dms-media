@@ -35,6 +35,13 @@ interface Subscription<TConfig, TPayload> {
   emit: (payload: TPayload) => void;
 }
 
+/**
+ * How a trigger treats a change a procedure's write caused: `filtered`
+ * delivers it only with `includeAutomationWrites`, behind the loop guard;
+ * `delivered` delivers it like any other change.
+ */
+export type AutomationWritePolicy = "filtered" | "delivered";
+
 const channels = new Set<{ clear(): void; readonly isArmed: boolean }>();
 
 /** Whether a tenant's events reach a subscription with these settings. */
@@ -47,7 +54,7 @@ export function acceptsTenant(
 }
 
 /** Whether a subscription with these settings takes an event a procedure caused or not. */
-export function acceptsOrigin(
+function acceptsOrigin(
   config: TriggerSettings,
   isAutomationWrite: boolean,
 ): boolean {
@@ -74,6 +81,7 @@ export class TriggerChannel<
   constructor(
     readonly id: string,
     private readonly accepts: EventFilter<TConfig, TPayload> = () => true,
+    readonly automationWrites: AutomationWritePolicy = "filtered",
   ) {
     channels.add(this);
   }
@@ -105,11 +113,14 @@ export class TriggerChannel<
 
   /**
    * Emits a change: one a procedure's write caused carries the procedure and
-   * its run, and passes the circuit breaker on `subject` first.
+   * its run and, on a `filtered` channel, passes the circuit breaker on
+   * `subject` first.
    */
   emit(subject: string, event: ChannelEvent<TPayload>): void {
     const origin = automationOriginFields();
-    const isAutomationWrite = origin.originProcedureId !== undefined;
+    const isFiltered = this.automationWrites === "filtered";
+    const isAutomationWrite =
+      isFiltered && origin.originProcedureId !== undefined;
     if (isAutomationWrite && !admitAutomationEvent(this.id, subject)) return;
     const payload = { ...event.payload, ...origin };
     for (const [handle, subscription] of this.subscriptions) {
@@ -205,6 +216,19 @@ const COMMON_OUTPUTS = {
   },
 } satisfies Record<string, JsonSchema>;
 
+/** The `includeAutomationWrites` setting, which only a `filtered` trigger offers. */
+interface AutomationWritesSetting {
+  includeAutomationWrites?: JsonSchema;
+}
+
+function automationWritesConfig(
+  policy: AutomationWritePolicy,
+): AutomationWritesSetting {
+  if (policy === "filtered")
+    return { includeAutomationWrites: AUTOMATION_WRITES_CONFIG };
+  return {};
+}
+
 /**
  * The trigger type of a channel. Every media trigger arms on every instance
  * (`replicated`): the change exists only in the process that made it.
@@ -227,7 +251,7 @@ export function channelTrigger<
       properties: {
         tenantId: TENANT_CONFIG,
         ...spec.configProperties,
-        includeAutomationWrites: AUTOMATION_WRITES_CONFIG,
+        ...automationWritesConfig(channel.automationWrites),
       },
     },
     outputSchema: {
