@@ -10,5 +10,6 @@ export function snapshotConfig(): DmsMediaConfig {
     storageQuotaBytes: current.storageQuotaBytes,
     allowedMimetypes: [...current.allowedMimetypes],
     publicBaseUrl: current.publicBaseUrl,
+    automation: { readUrlMaxTtlSeconds: current.readUrlMaxTtlSeconds },
   };
 }

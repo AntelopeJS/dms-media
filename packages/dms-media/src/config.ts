@@ -22,6 +22,18 @@ export const DEFAULT_ALLOWED_MIMETYPES: readonly string[] = [
   "text/csv",
 ];
 
+/** Default and ceiling of a signed link's lifetime: 7 days, the presigned-URL limit of S3-compatible storages. */
+export const DEFAULT_READ_URL_MAX_TTL_SECONDS = 7 * 24 * 60 * 60;
+
+/** Settings of the module's automation nodes. */
+export interface DmsMediaAutomationConfig {
+  /**
+   * Longest lifetime, in seconds, of a link `media.create-read-url` signs.
+   * At most the default, 7 days.
+   */
+  readUrlMaxTtlSeconds?: number;
+}
+
 export interface DmsMediaConfig {
   rootAcl?: AclEntry[];
   storage?: string;
@@ -40,6 +52,7 @@ export interface DmsMediaConfig {
    * With neither set, links stay relative.
    */
   publicBaseUrl?: string;
+  automation?: DmsMediaAutomationConfig;
 }
 
 interface ResolvedMediaConfig {
@@ -49,6 +62,7 @@ interface ResolvedMediaConfig {
   storageQuotaBytes?: number;
   allowedMimetypes: readonly string[];
   publicBaseUrl?: string;
+  readUrlMaxTtlSeconds: number;
 }
 
 function buildPresetMap(
@@ -61,6 +75,7 @@ let currentConfig: ResolvedMediaConfig = {
   rootAcl: DEFAULT_ROOT_ACL,
   presets: buildPresetMap(DEFAULT_PRESETS),
   allowedMimetypes: DEFAULT_ALLOWED_MIMETYPES,
+  readUrlMaxTtlSeconds: DEFAULT_READ_URL_MAX_TTL_SECONDS,
 };
 
 export function configureMediaModule(config: DmsMediaConfig): void {
@@ -71,6 +86,11 @@ export function configureMediaModule(config: DmsMediaConfig): void {
     storageQuotaBytes: config.storageQuotaBytes,
     allowedMimetypes: config.allowedMimetypes ?? DEFAULT_ALLOWED_MIMETYPES,
     publicBaseUrl: config.publicBaseUrl?.trim() || undefined,
+    readUrlMaxTtlSeconds: Math.min(
+      config.automation?.readUrlMaxTtlSeconds ??
+        DEFAULT_READ_URL_MAX_TTL_SECONDS,
+      DEFAULT_READ_URL_MAX_TTL_SECONDS,
+    ),
   };
 }
 

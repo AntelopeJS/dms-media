@@ -3,6 +3,10 @@ import { AddFrontendModule } from "@antelopejs/interface-dms/page";
 import { Logging } from "@antelopejs/interface-core/logging";
 import "./db";
 import type { ScheduledTask } from "node-cron";
+import {
+  registerAutomationNodes,
+  unregisterAutomationNodes,
+} from "./automation";
 import { type DmsMediaConfig, configureMediaModule } from "./config";
 import { registerMediaCrons } from "./crons";
 import { frontendModule } from "./frontend-module";
@@ -33,11 +37,15 @@ export async function construct(config: DmsMediaConfig = {}): Promise<void> {
   await AddFrontendModule(frontendModule());
 }
 
-export function start(): void {
+export async function start(): Promise<void> {
   cronTasks = registerMediaCrons();
+  await registerAutomationNodes();
 }
 
 export async function stop(): Promise<void> {
+  await unregisterAutomationNodes().catch((error: unknown) =>
+    Logging.Error("The media automation nodes failed to unregister", error),
+  );
   cancelLibraryChange();
   const teardowns = await Promise.allSettled(
     cronTasks.map(async (task) => task.destroy()),

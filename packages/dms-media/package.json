@@ -95,6 +95,9 @@
     "rimraf": "^6.1.3",
     "typescript": "^6.0.3"
   },
+  "optionalDependencies": {
+    "@antelopejs/interface-dms-automation": ">=0.7.0 <0.8.0"
+  },
   "packageManager": "pnpm@10.2.0",
   "antelopeJs": {
     "baseUrl": "dist",
