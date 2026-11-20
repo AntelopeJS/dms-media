@@ -1,4 +1,10 @@
-export * from "./asset-actions";
+export {
+  type AssetChanges,
+  moveAsset,
+  removeAsset,
+  setAssetVisibility,
+  updateAssetDetails,
+} from "../../services/files";
 export * from "./assets";
 export * from "./bulk";
 export * from "./constants";

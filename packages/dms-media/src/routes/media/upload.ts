@@ -239,14 +239,18 @@ export class MediaUploadController extends MediaApiController {
     });
     const asset = await context.assetModel.get(assetId);
     assert(asset, HTTP_BAD_REQUEST, "Asset creation failed");
-    await this.record(context, {
-      kind: "asset.upload",
-      targetName: asset.name,
-      folderId,
-      assetId,
-      size: asset.size,
-      details: batchId ? { batchId } : undefined,
-    });
+    await this.record(
+      context,
+      {
+        kind: "asset.upload",
+        targetName: asset.name,
+        folderId,
+        assetId,
+        size: asset.size,
+        details: batchId ? { batchId } : undefined,
+      },
+      { assets: [asset], foldersById: context.foldersById, source: "upload" },
+    );
     return { asset: buildAssetDto(context, asset) };
   }
 }

@@ -15,6 +15,7 @@ import { IfAuthUser } from "@antelopejs/interface-dms/auth";
 import type { User } from "@antelopejs/interface-dms/auth/db";
 import { GetClientBaseUrl } from "@antelopejs/interface-dms/client-base-url";
 import { getMediaConfig } from "../../config";
+import { EDITABLE_IMAGE_MIMETYPES } from "../../constants";
 import { type MediaAsset, MediaAssetModel, MediaFolderModel } from "../../db";
 import { ensureDerivative, UnreadableImageError } from "../../derivatives";
 import { fileLink } from "../../library/links";
@@ -44,21 +45,7 @@ const HTML_MIMETYPE = "text/html";
 const SIGN_IN_PAGE =
   '<!doctype html><html><head><meta charset="utf-8"><title>401</title></head><body><p>401</p></body></html>';
 
-/**
- * Formats accepted by the transform pipeline. Sharp would silently
- * rasterize or flatten anything else (SVG, animated sources).
- *
- * Mirrored in `frontend-vue/app/utils/mediaFiles.ts` for the UI
- * affordances: the frontend module is copied by ajs dms at prepare time and
- * cannot resolve imports into the backend `src/` tree, so keep both
- * lists in sync when adding a format.
- */
-export const EDITABLE_IMAGE_MIMETYPES = new Set([
-  "image/jpeg",
-  "image/png",
-  "image/webp",
-  "image/avif",
-]);
+export { EDITABLE_IMAGE_MIMETYPES } from "../../constants";
 
 interface DeliverableAsset {
   asset: MediaAsset;

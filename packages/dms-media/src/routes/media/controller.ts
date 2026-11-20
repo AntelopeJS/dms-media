@@ -10,7 +10,11 @@ import { TenantScopedModel } from "@antelopejs/interface-dms/tenant-scoped-model
 import type { User } from "@antelopejs/interface-dms/auth/db";
 import { getMediaConfig } from "../../config";
 import { MediaAssetModel, MediaFolderModel } from "../../db";
-import { type MediaEventInput, recordMediaEvent } from "../../library/events";
+import {
+  type MediaEventFacts,
+  type MediaEventInput,
+  recordMediaEvent,
+} from "../../library/events";
 import { type MediaRequestContext, resolveMediaContext } from "./context";
 
 const TRAILING_SLASHES = /\/+$/;
@@ -66,11 +70,12 @@ export class MediaApiController extends Controller("/api/media") {
   }
 
   /** Adds an entry to the library activity on behalf of the caller. */
-  protected record(
+  protected async record(
     context: MediaRequestContext,
     input: MediaEventInput,
+    facts?: MediaEventFacts,
   ): Promise<void> {
-    return recordMediaEvent(context, input);
+    await recordMediaEvent(context, input, facts);
   }
 
   /** The query string as plain values, for schema parsing. */

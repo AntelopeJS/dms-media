@@ -15,7 +15,11 @@ import {
   bulkVisibilitySchema,
 } from "../../validation/library.schema";
 import { rejectInvalid } from "../../validation/media.schema";
-import { moveAsset, removeAsset, setAssetVisibility } from "./asset-actions";
+import {
+  moveAsset,
+  removeAsset,
+  setAssetVisibility,
+} from "../../services/files";
 import { requireReadableAsset } from "./assets";
 import { MediaApiController } from "./controller";
 import {

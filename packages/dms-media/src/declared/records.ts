@@ -23,6 +23,13 @@ export const DECLARED_CONTENT_AUTHOR: MediaEventAuthor = {
   email: "",
 };
 
+/** Writes made by a procedure's media action are attributed to automation. */
+export const AUTOMATION_AUTHOR: MediaEventAuthor = {
+  _id: "dms-media:automation",
+  name: "Automation",
+  email: "",
+};
+
 const KIND_LABELS: Record<MediaDeclarationKind, string> = {
   folder: "Media folder",
   asset: "Media file",

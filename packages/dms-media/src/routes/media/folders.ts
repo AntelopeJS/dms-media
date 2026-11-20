@@ -1,109 +1,37 @@
 import { MediaApiController } from "./controller";
 import { Delete, JSONBody, Parameter, Post } from "@antelopejs/interface-api";
 import { assert } from "@antelopejs/interface-api-util";
-import { deleteMediaAsset } from "../../asset-lifecycle";
-import { holdsSubfolders } from "../../bindings";
-import { forgetFavorites } from "../../library/favorites";
 import { type MediaFolder } from "../../db";
 import {
-  comparableName,
+  applyFolderDeletion,
+  applyFolderVisibility,
+  assertCanPlaceUnder,
+  assertUniqueSiblingName,
+  buildChildPath,
+  planFolderDeletion,
+  planFolderVisibility,
+} from "../../services/folders";
+import {
   createFolderSchema,
   folderVisibilitySchema,
-  MEDIA_ERRORS,
   moveFolderSchema,
   rejectInvalid,
   renameFolderSchema,
 } from "../../validation/media.schema";
 import {
   assertNotBound,
-  assertMediaOwner,
   getDescendantFolders,
   type MediaRequestContext,
   requireFolderRight,
 } from "./context";
 
 const HTTP_BAD_REQUEST = 400;
-const HTTP_FORBIDDEN = 403;
-const HTTP_CONFLICT = 409;
 
-/** Whether another folder under `parentId` has this name, case and Unicode form aside. */
-export function hasSiblingNamed(
-  folders: MediaFolder[],
-  name: string,
-  parentId: string | undefined,
-  ignoredId?: string,
-): boolean {
-  const wanted = comparableName(name);
-  return folders.some(
-    (folder) =>
-      folder._id !== ignoredId &&
-      (folder.parentId ?? undefined) === parentId &&
-      comparableName(folder.name) === wanted,
-  );
-}
-
-function assertUniqueSiblingName(
-  context: MediaRequestContext,
-  name: string,
-  parentId: string | undefined,
-  ignoredId?: string,
-): void {
-  const clash = hasSiblingNamed(context.folders, name, parentId, ignoredId);
-  assert(!clash, HTTP_CONFLICT, MEDIA_ERRORS.folderNameTaken);
-}
-
-function assertCanPlaceUnder(
-  context: MediaRequestContext,
-  parentId: string | undefined,
-): MediaFolder | undefined {
-  if (!parentId) {
-    assert(
-      context.rootRights.has("manage"),
-      HTTP_FORBIDDEN,
-      "Missing 'manage' right at the media root",
-    );
-    return undefined;
-  }
-  const parent = requireFolderRight(context, parentId, "manage");
-  assert(holdsSubfolders(parent), HTTP_FORBIDDEN, MEDIA_ERRORS.boundParent);
-  return parent;
-}
-
-export function buildChildPath(parent: MediaFolder | undefined): string[] {
-  return parent ? [...parent.path, parent._id] : [];
-}
-
-type FolderTreeModels = Pick<MediaRequestContext, "folderModel" | "assetModel">;
-
-async function deleteFolderAssets(
-  context: FolderTreeModels,
-  folderIds: string[],
-): Promise<void> {
-  const assets = await context.assetModel.getBy("folderId", ...folderIds);
-  await Promise.all(
-    assets.map((asset) => deleteMediaAsset(context.assetModel, asset._id)),
-  );
-}
-
-/**
- * Deletes folder rows first, then cascades from the database rather than the
- * request snapshot, so children and assets written concurrently under a
- * deleted folder are removed instead of left orphaned.
- */
-export async function deleteFolderTree(
-  context: FolderTreeModels,
-  folderIds: string[],
-): Promise<void> {
-  let pending = folderIds;
-  while (pending.length > 0) {
-    await Promise.all(pending.map((id) => context.folderModel.delete(id)));
-    const [lateChildren] = await Promise.all([
-      context.folderModel.getBy("parentId", ...pending),
-      deleteFolderAssets(context, pending),
-    ]);
-    pending = lateChildren.map((child) => child._id);
-  }
-}
+export {
+  buildChildPath,
+  deleteFolderTree,
+  hasSiblingNamed,
+} from "../../services/folders";
 
 /** Moves a folder and rewrites the materialized path of everything under it. */
 export async function applyFolderMove(
@@ -238,50 +166,20 @@ export class MediaFoldersController extends MediaApiController {
       folderVisibilitySchema.parse(body),
     );
     const context = await this.resolveContext();
-    const folder = requireFolderRight(context, folderId, "manage");
-    assertMediaOwner(context);
-    await context.folderModel.update(folderId, { visibility });
-    await this.record(context, {
-      kind: "folder.visibility",
-      targetName: folder.name,
-      folderId,
-      details: { visibility: `$dms_media.visibility.${visibility}` },
-    });
+    await applyFolderVisibility(
+      context,
+      planFolderVisibility(context, folderId, visibility),
+    );
     return { ok: true };
   }
 
   @Delete("/folders/:folderId")
   async deleteFolder(@Parameter("folderId", "param") folderId: string) {
     const context = await this.resolveContext();
-    const folder = requireFolderRight(context, folderId, "manage");
-    assertNotBound(folder);
-    const descendants = getDescendantFolders(context, folderId);
-    for (const descendant of descendants) {
-      assertNotBound(descendant);
-      assert(
-        context.access.manageable.has(descendant._id),
-        HTTP_FORBIDDEN,
-        "Missing 'manage' right on a subfolder",
-      );
-    }
-    const folderIds = [folderId, ...descendants.map((child) => child._id)];
-    const assets = await context.assetModel.getBy("folderId", ...folderIds);
-    await deleteFolderTree(context, folderIds);
-    await forgetFavorites(context.tenantId, [
-      ...folderIds,
-      ...assets.map((asset) => asset._id),
-    ]);
-    await this.record(context, {
-      kind: "folder.delete",
-      targetName: folder.name,
-      folderId: folder.parentId,
-      count: assets.length,
-      size: assets.reduce((total, asset) => total + asset.size, 0),
-      details: {
-        files: assets.length,
-        folders: folderIds.length,
-      },
-    });
+    await applyFolderDeletion(
+      context,
+      await planFolderDeletion(context, folderId),
+    );
     return { ok: true };
   }
 }
