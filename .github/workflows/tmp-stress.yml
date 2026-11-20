@@ -1,5 +1,7 @@
 name: tmp-stress
-on: workflow_dispatch
+on:
+  push:
+    branches: [test/wec9b4589-18-registration-stress]
 permissions:
   contents: read
 jobs:
