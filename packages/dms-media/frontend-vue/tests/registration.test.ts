@@ -21,26 +21,9 @@ it('registers every block under the DmsMedia prefix by its file name', async () 
 	const names = registerComponent.mock.calls.map(([name]) => name)
 	expect(frontendModule.componentPrefix).toBe('DmsMedia')
 	expect(names).toEqual(
-		expect.arrayContaining([
-			'Explorer',
-			'AssetPicker',
-			'FileHeader',
-			'FilePreview',
-			'FileProperties',
-			'ImageEditor',
-			'UploadQueue',
-			'PresetCards',
-		]),
+		expect.arrayContaining(['Explorer', 'AssetPicker', 'FileHeader', 'FilePreview', 'FileProperties', 'ImageEditor', 'UploadQueue', 'PresetCards']),
 	)
-	for (const absent of [
-		'ExplorerShell',
-		'UploadQueueRow',
-		'AccessTree',
-		'AccessFolder',
-		'AccessRulesCard',
-		'AccessVisibility',
-		'LinkedDetail',
-	]) {
+	for (const absent of ['ExplorerShell', 'UploadQueueRow', 'AccessTree', 'AccessFolder', 'AccessRulesCard', 'AccessVisibility', 'LinkedDetail']) {
 		expect(names).not.toContain(absent)
 	}
 	expect(new Set(names).size).toBe(names.length)
