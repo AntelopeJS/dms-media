@@ -113,7 +113,10 @@ const shortcutsSelectAndView = {
     await tab.page.getByRole("option", { name: /^a\.png/ }).click();
     await tab.page.keyboard.press("Shift+Slash");
     await ctx.verify("? lists every shortcut", [tab.visible({ role: "dialog" }, { timeoutMs: 10_000 }), tab.shows(/Extend the selection/i), tab.shows(/New folder/i)]);
-    await tab.press("Escape");
+    await ctx.verify("? opens the dms shortcuts page", [tab.at(/^\/settings\/user\/shortcuts$/, { timeoutMs: 10_000 })]);
+    await tab.goto(`/modules/media/files?folder=${folderId}`);
+    await tab.visible({ role: "option", name: /^a\.png/ }, { timeoutMs: 20_000 });
+    await tab.page.getByRole("option", { name: /^a\.png/ }).click();
     await tab.press("Control+/");
     const focused = await tab.page.getByRole("textbox", { name: "Search the library" }).evaluate((element) => element === document.activeElement).catch(() => false);
     await tab.page.keyboard.type("2");
