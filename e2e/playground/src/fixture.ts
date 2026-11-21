@@ -1,4 +1,4 @@
-import { randomUUID } from "node:crypto";
+import { createHash, randomUUID } from "node:crypto";
 import {
   Controller,
   Delete,
@@ -183,7 +183,7 @@ export class VerifyFixtureController extends Controller("/e2e-media") {
       email,
       roles_ids: roleId === undefined ? [] : [roleId],
       language,
-      token,
+      token: createHash("sha256").update(token).digest("hex"),
       asTenantOwner: false,
       expiresAt: new Date(Date.now() + INVITE_LIFETIME_MS),
     });
