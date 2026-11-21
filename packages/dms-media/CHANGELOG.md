@@ -1,5 +1,36 @@
 # Changelog
 
+## v0.8.3
+
+[compare changes](https://github.com/AntelopeJS/dms-media/compare/v0.8.2...v0.8.3)
+
+### 🩹 Fixes
+
+- **frontend:** Show why a linked folder's menu items are locked ([#206](https://github.com/AntelopeJS/dms-media/pull/206))
+- **test:** Bind a free port for the module test stack ([#205](https://github.com/AntelopeJS/dms-media/pull/205))
+- **frontend:** Show each type's count in the Filters type menu ([#208](https://github.com/AntelopeJS/dms-media/pull/208))
+- **deps:** Depend on the stable @antelopejs/interface-dms and @antelopejs/dms
+
+### 📦 Build
+
+- **deps:** Depend on the interface-dms 0.15 preview for the release train ([#210](https://github.com/AntelopeJS/dms-media/pull/210))
+
+### 🏡 Chore
+
+- Promote next to main ([#198](https://github.com/AntelopeJS/dms-media/pull/198))
+- Delete the verify harness and every reference to it ([#204](https://github.com/AntelopeJS/dms-media/pull/204))
+
+### ✅ Tests
+
+- **e2e:** Smoke on pull requests, the full suite in the merge queue, more flows covered ([#201](https://github.com/AntelopeJS/dms-media/pull/201))
+- Port the dms-media inventory lines off dms-control and the verify harness ([#202](https://github.com/AntelopeJS/dms-media/pull/202))
+- Run the e2e suite and CI without the verify skill folder or dms-control ([#203](https://github.com/AntelopeJS/dms-media/pull/203))
+- **frontend:** Size the explorer import timeout for the DMS layer load ([#209](https://github.com/AntelopeJS/dms-media/pull/209))
+
+### ❤️ Contributors
+
+- Antony Rizzitelli
+
 ## v0.8.2
 
 [compare changes](https://github.com/AntelopeJS/dms-media/compare/v0.8.1...v0.8.2)
