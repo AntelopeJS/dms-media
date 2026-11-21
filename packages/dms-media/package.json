@@ -68,7 +68,7 @@
     "@antelopejs/interface-core": ">=0.5.1 <0.6.0",
     "@antelopejs/interface-database": ">=0.4.0 <0.5.0",
     "@antelopejs/interface-database-decorators": ">=0.5.2 <0.6.0",
-    "@antelopejs/interface-dms": ">=0.14.0 <0.15.0",
+    "@antelopejs/interface-dms": "0.14.7-next.1011.g9a5478b",
     "@antelopejs/interface-dms-media": "workspace:^",
     "@antelopejs/interface-file-storage": ">=0.1.8 <0.2.0",
     "node-cron": "^4.2.1",
@@ -77,7 +77,7 @@
   },
   "devDependencies": {
     "@antelopejs/core": "~1.24.0",
-    "@antelopejs/dms": ">=0.21.0 <0.22.0",
+    "@antelopejs/dms": "0.21.4-next.1013.gf74dda7",
     "@antelopejs/dms-frontend": ">=0.11.8 <0.12.0",
     "@antelopejs/interface-data-api": ">=0.8.0 <0.9.0",
     "@antelopejs/tooling-configs": ">=0.8.9 <0.9.0",
