@@ -119,9 +119,7 @@ jobs:
       - uses: actions/checkout@v4
         with:
           persist-credentials: false
-      # The dms-control names go once the repo is on a dms release with AntelopeJS/dms#1184.
       - run: |
-          echo "DMS_CONTROL_RUNS=${RUNNER_TEMP}/dms-runs" >> "$GITHUB_ENV"
           echo "DMS_E2E_RUNS=${RUNNER_TEMP}/dms-runs" >> "$GITHUB_ENV"
       # Before setup-node: its pnpm cache resolves the store by running pnpm.
       - uses: pnpm/action-setup@v4
@@ -144,7 +142,6 @@ jobs:
       - uses: actions/cache@v4
         with:
           path: |
-            ~/.cache/dms-control/frontend
             ~/.cache/dms-e2e/frontend
           key: e2e-frontend-v2-${{ github.sha }}
           restore-keys: e2e-frontend-v2-
