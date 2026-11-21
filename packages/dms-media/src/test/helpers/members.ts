@@ -1,4 +1,4 @@
-import { randomUUID } from "node:crypto";
+import { createHash, randomUUID } from "node:crypto";
 import { GetModel } from "@antelopejs/interface-database-decorators";
 import { DEFAULT_TENANT_ID } from "@antelopejs/interface-dms/constants";
 import { RoleModel, UserInviteModel } from "@antelopejs/interface-dms/db";
@@ -55,7 +55,7 @@ async function seedMemberInvite(
     email,
     roles_ids: roleIds,
     language: MEMBER_LANGUAGE,
-    token,
+    token: createHash("sha256").update(token).digest("hex"),
     asTenantOwner: false,
     expiresAt: new Date(Date.now() + INVITE_LIFETIME_MS),
   });

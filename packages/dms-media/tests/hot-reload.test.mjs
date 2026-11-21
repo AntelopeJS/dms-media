@@ -83,7 +83,8 @@ const OWNER = {
 const CONSUMER_INTERFACES = {
   "@antelopejs/interface-api": ">=0.0.13 <1.0.0",
   "@antelopejs/interface-core": ">=0.2.3 <1.0.0",
-  "@antelopejs/interface-dms": ">=0.9.0 <1.0.0",
+  "@antelopejs/interface-dms":
+    dmsManifest.dependencies["@antelopejs/interface-dms"],
 };
 const COUNTER_ID_PATTERN = /^\d+$/;
 const MEDIA_ID_PATTERN = /^(media|modules\.media|settings\.media)(\.|$)/;
