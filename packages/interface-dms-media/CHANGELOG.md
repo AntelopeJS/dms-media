@@ -1,5 +1,25 @@
 # Changelog
 
+## v0.4.2
+
+[compare changes](https://github.com/AntelopeJS/dms-media/compare/interface-v0.4.1...interface-v0.4.2)
+
+### 🩹 Fixes
+
+- **deps:** Depend on the stable @antelopejs/interface-dms
+
+### 📦 Build
+
+- **deps:** Depend on the interface-dms 0.15 preview for the release train ([#210](https://github.com/AntelopeJS/dms-media/pull/210))
+
+### ✅ Tests
+
+- **e2e:** Smoke on pull requests, the full suite in the merge queue, more flows covered ([#201](https://github.com/AntelopeJS/dms-media/pull/201))
+
+### ❤️ Contributors
+
+- Antony Rizzitelli
+
 ## v0.4.1
 
 [compare changes](https://github.com/AntelopeJS/dms-media/compare/interface-v0.4.0...interface-v0.4.1)
