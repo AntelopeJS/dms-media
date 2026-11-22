@@ -1,0 +1,28 @@
+name: module locks
+
+on:
+  schedule:
+    - cron: "47 4 * * *"
+  workflow_dispatch:
+  pull_request:
+    paths:
+      - .github/workflows/module-locks.yml
+
+permissions:
+  contents: read
+
+jobs:
+  refresh:
+    permissions:
+      contents: read
+    uses: AntelopeJS/.github/.github/workflows/module-locks-refresh.yml@v2
+    with:
+      projects: ""
+      commands: |
+        export DMS_PREBUILT=1
+        pnpm --dir packages/dms-media build
+        rm -rf packages/dms-media/antelope-lock
+        pnpm --dir packages/dms-media test
+    secrets:
+      RELEASE_APP_ID: ${{ secrets.RELEASE_APP_ID }}
+      RELEASE_APP_PRIVATE_KEY: ${{ secrets.RELEASE_APP_PRIVATE_KEY }}
