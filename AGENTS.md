@@ -43,7 +43,6 @@ CI runs `pnpm run checks` in full on every pull request and reports what failed.
 
 - `pnpm run typecheck` after you change types or signatures.
 - `pnpm exec oxlint <files>` and `pnpm exec oxfmt <files>` on the files you changed.
-- In `frontend-vue`, `pnpm run types` once, so type-aware lint resolves the `#dms-*` imports through `.dms-types`, then `pnpm exec eslint <files>` on the `.vue` files you changed.
 - One test file, not the suite. In a module that tests with `ajs module test`: `pnpm run build`, then `pnpm exec ajs module test . -f dist/<path>.test.js`.
 
 ### Comments
