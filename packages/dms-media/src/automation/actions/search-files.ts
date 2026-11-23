@@ -20,7 +20,7 @@ const MAX_QUERY_LENGTH = 200;
 const input = z
   .object({
     tenantId: tenantIdField,
-    q: z.string().trim().min(1).max(MAX_QUERY_LENGTH),
+    query: z.string().trim().min(1).max(MAX_QUERY_LENGTH),
     ...folderTargetFields,
     type: z.enum(ASSET_TYPE_GROUPS).optional(),
     limit: z.number().int().min(1).max(MAX_LIMIT).default(DEFAULT_LIMIT),
@@ -40,7 +40,7 @@ export const searchFilesAction = readAction({
   inputSchema: objectSchema(
     {
       tenantId: TENANT_INPUT,
-      q: {
+      query: {
         type: "string",
         maxLength: MAX_QUERY_LENGTH,
         description:
@@ -61,7 +61,7 @@ export const searchFilesAction = readAction({
       },
       offset: { type: "integer", minimum: 0, default: 0 },
     },
-    ["q"],
+    ["query"],
   ),
   outputSchema: objectSchema({
     files: {
@@ -84,7 +84,10 @@ export const searchFilesAction = readAction({
     const scope = isScoped
       ? folderScope(context, requireTargetFolder(context, value)._id, true)
       : context.folders.map((folder) => folder._id);
-    const page = await searchFiles(context, scope, value);
+    const page = await searchFiles(context, scope, {
+      ...value,
+      q: value.query,
+    });
     return {
       files: page.assets.map((asset) => ({
         ...fileSummary(context, asset),

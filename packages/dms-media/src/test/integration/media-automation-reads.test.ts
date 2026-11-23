@@ -218,17 +218,20 @@ function describeListings(): void {
       await postOk(client, `/assets/${other.id}/update`, {
         alt: "Menu du soir",
       });
-      const byName = await searchFilesAction.execute({ q: "ete" }, stepCtx());
+      const byName = await searchFilesAction.execute(
+        { query: "ete" },
+        stepCtx(),
+      );
       expect(byName.files.map((file) => file.assetId)).to.include(summer.id);
       const narrowed = await searchFilesAction.execute(
-        { q: "cafe 2026" },
+        { query: "cafe 2026" },
         stepCtx(),
       );
       expect(narrowed.files.map((file) => file.assetId)).to.deep.equal([
         summer.id,
       ]);
       const byAlt = await searchFilesAction.execute(
-        { q: "SOIR", folderId: rootId },
+        { query: "SOIR", folderId: rootId },
         stepCtx(),
       );
       expect(byAlt.files).to.have.length(1);
@@ -237,7 +240,7 @@ function describeListings(): void {
         matchedOn: "alt",
       });
       const scoped = await searchFilesAction.execute(
-        { q: "soir", folderId: folder },
+        { query: "soir", folderId: folder },
         stepCtx(),
       );
       expect(scoped.total).to.equal(0);
