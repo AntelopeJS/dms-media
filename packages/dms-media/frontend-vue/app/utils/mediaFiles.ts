@@ -67,16 +67,16 @@ const EDITABLE_MIMETYPES = new Set([
 ]);
 
 /** Icons naming the format itself, where the type group's icon would name another one. */
-const EXTENSION_ICONS: Record<string, string> = {
-  csv: "i-ph-file-csv",
-  xls: "i-ph-file-xls",
-  xlsx: "i-ph-file-xls",
-  doc: "i-ph-file-doc",
-  docx: "i-ph-file-doc",
-  ppt: "i-ph-file-ppt",
-  pptx: "i-ph-file-ppt",
-  txt: "i-ph-file-txt",
-};
+const EXTENSION_ICONS = new Map([
+  ["csv", "i-ph-file-csv"],
+  ["xls", "i-ph-file-xls"],
+  ["xlsx", "i-ph-file-xls"],
+  ["doc", "i-ph-file-doc"],
+  ["docx", "i-ph-file-doc"],
+  ["ppt", "i-ph-file-ppt"],
+  ["pptx", "i-ph-file-ppt"],
+  ["txt", "i-ph-file-txt"],
+]);
 
 /** Formats the browser shows in a frame from their read URL. */
 const FRAMED_MIMETYPES = new Set(["application/pdf"]);
@@ -125,7 +125,7 @@ export function assetIconOf(
   asset: Pick<MediaAsset, "name" | "mimetype" | "typeGroup">,
 ): string {
   return (
-    EXTENSION_ICONS[extensionOf(asset)] ?? TYPE_GROUP_ICONS[asset.typeGroup]
+    EXTENSION_ICONS.get(extensionOf(asset)) ?? TYPE_GROUP_ICONS[asset.typeGroup]
   );
 }
 

@@ -1,11 +1,11 @@
 type GridStep = (columns: number) => number;
 
-const GRID_STEPS: Record<string, GridStep> = {
-  ArrowRight: () => 1,
-  ArrowLeft: () => -1,
-  ArrowDown: (columns) => columns,
-  ArrowUp: (columns) => -columns,
-};
+const GRID_STEPS = new Map<string, GridStep>([
+  ["ArrowRight", () => 1],
+  ["ArrowLeft", () => -1],
+  ["ArrowDown", (columns) => columns],
+  ["ArrowUp", (columns) => -columns],
+]);
 
 /** How many items share the first row of a wrapping grid, read from the layout. */
 export function gridColumnsOf(items: HTMLElement[]): number {
@@ -29,14 +29,14 @@ export function gridIndexAfter(
   if (count === 0) return undefined;
   if (key === "Home") return 0;
   if (key === "End") return count - 1;
-  const step = GRID_STEPS[key];
+  const step = GRID_STEPS.get(key);
   if (!step) return undefined;
   const next = Math.max(index, 0) + (index < 0 ? 0 : step(columns));
   return next >= 0 && next < count ? next : undefined;
 }
 
 export function isGridKey(key: string): boolean {
-  return key in GRID_STEPS || key === "Home" || key === "End";
+  return GRID_STEPS.has(key) || key === "Home" || key === "End";
 }
 
 /** Moves the focus to an element and keeps it in view. */
