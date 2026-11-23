@@ -2,7 +2,6 @@ import { strict as assert } from "node:assert";
 import { computed, effectScope, nextTick, ref } from "vue";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import "./fixtures/serverRender";
-import type { ExplorerContext } from "../app/composables/library/useExplorerCommands";
 import { useExplorerDetailsDrawer } from "../app/composables/library/useExplorerDetailsDrawer";
 import type { ExplorerLayout } from "../app/composables/library/useExplorerLayout";
 import type { DrawerRowHeader } from "#dms-ui/app/composables/containers/types";
@@ -78,9 +77,8 @@ function setup(isWide = false) {
       : undefined,
   );
   const library = { listing: { assets }, selection: { focusedAsset, select } };
-  const context = { library, commands: {} } as unknown as ExplorerContext;
   const scope = effectScope();
-  scope.run(() => useExplorerDetailsDrawer(layout, context));
+  scope.run(() => useExplorerDetailsDrawer(layout, library));
   return { layout, isInline, scope, selectedIds, select };
 }
 

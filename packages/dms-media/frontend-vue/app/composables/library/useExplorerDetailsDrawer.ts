@@ -6,6 +6,15 @@ import ExplorerDetailsDrawer from "../../components/explorer/ExplorerDetailsDraw
 import type { ExplorerContext } from "./useExplorerCommands";
 import type { ExplorerLayout } from "./useExplorerLayout";
 
+/** What the details drawer reads of the explorer's library: the files shown and the selection. */
+interface DetailsDrawerLibrary {
+  listing: Pick<ExplorerContext["library"]["listing"], "assets">;
+  selection: Pick<
+    ExplorerContext["library"]["selection"],
+    "focusedAsset" | "select"
+  >;
+}
+
 /**
  * Below the width that keeps the details beside the files, shows them in the
  * DMS drawer while `layout.isDetailsDrawerOpen` is on. The drawer reads the
@@ -18,11 +27,11 @@ import type { ExplorerLayout } from "./useExplorerLayout";
  */
 export function useExplorerDetailsDrawer(
   layout: ExplorerLayout,
-  context: ExplorerContext,
+  library: DetailsDrawerLibrary,
 ): void {
   const { open } = useDrawer();
   const { t } = useI18n();
-  const { listing, selection } = context.library;
+  const { listing, selection } = library;
   let drawer: DrawerInstance | null = null;
 
   function selectAt(index: number): void {

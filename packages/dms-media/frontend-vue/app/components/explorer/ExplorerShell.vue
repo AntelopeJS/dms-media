@@ -84,7 +84,7 @@ const commands = useExplorerCommands(library, {
   },
 });
 provideExplorerCommands(commands);
-useExplorerDetailsDrawer(layout, { library, commands });
+useExplorerDetailsDrawer(layout, library);
 const interactions = createAssetInteractions(library, commands, layout);
 provideAssetNavigation(createAssetNavigation(library, interactions.onCheck));
 const { uploads, enqueue } = useExplorerUploads(library, {
