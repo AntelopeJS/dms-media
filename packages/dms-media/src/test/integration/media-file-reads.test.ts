@@ -18,7 +18,7 @@ const deliveryBody = z.object({
     z.object({ id: z.string(), copyValue: z.string().optional() }),
   ),
 });
-const previewsBody = z.object({ previews: z.record(z.unknown()) });
+const previewsBody = z.object({ previews: z.record(z.string(), z.unknown()) });
 const historyBody = z.object({
   items: z.array(z.object({ title: z.string() })),
 });

@@ -18,7 +18,7 @@ export interface PageAccess {
 
 const layoutSchema = z.object({
   components: z
-    .union([z.array(z.unknown()), z.record(z.unknown())])
+    .union([z.array(z.unknown()), z.record(z.string(), z.unknown())])
     .nullish()
     .transform((components) =>
       Array.isArray(components)

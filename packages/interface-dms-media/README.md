@@ -75,8 +75,8 @@ The interface needs a `@antelopejs/dms-media` release that implements this versi
 | Package                      | Supported          | Tested with |
 | ---------------------------- | ------------------ | ----------- |
 | `@antelopejs/interface-api`  | `>=0.3.3 <0.4.0`   | `0.3.3`     |
-| `@antelopejs/interface-core` | `>=0.5.1 <0.6.0`   | `0.5.1`     |
-| `@antelopejs/interface-dms`  | `>=0.15.0 <0.16.0` | `0.15.0`    |
+| `@antelopejs/interface-core` | `>=0.5.2 <0.6.0`   | `0.5.2`     |
+| `@antelopejs/interface-dms`  | `>=0.16.0 <0.17.0` | `0.16.0`    |
 
 <!-- antelopejs-docs-compat:end -->
 

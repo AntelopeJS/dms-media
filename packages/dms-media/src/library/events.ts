@@ -27,6 +27,7 @@ export type MediaEventKind = (typeof MEDIA_EVENT_KINDS)[number];
 export type MediaEventDetails = Record<string, string | number>;
 
 const eventDetailsSchema: z.ZodType<MediaEventDetails> = z.record(
+  z.string(),
   z.union([z.string(), z.number()]),
 );
 

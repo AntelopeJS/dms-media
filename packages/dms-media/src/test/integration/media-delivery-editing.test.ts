@@ -20,7 +20,7 @@ import { ensureOwnerSession } from "../helpers/owner";
 
 const previewsBody = z.object({
   previews: z
-    .record(z.string())
+    .record(z.string(), z.string())
     .transform((urls) => new Map(Object.entries(urls))),
 });
 
