@@ -428,11 +428,12 @@ function describeEdits(): void {
     it("refuses an edit rendered from a version someone replaced", async () => {
       const model = GetModel(MediaAssetModel, DEFAULT_TENANT_ID);
       const stale = await model.get(jpeg.id);
+      assert.isDefined(stale, "the asset before the edit");
       const edit = await client.post(`/api/media/assets/${jpeg.id}/transform`, {
         rotate: 180,
       });
       expect(edit.status).to.equal(HTTP_OK);
-      const outcome = await applyImageTransform(model, stale!, {
+      const outcome = await applyImageTransform(model, stale, {
         rotate: 90,
       }).catch((error: unknown) => error);
       expect(outcome).to.be.instanceOf(MediaAssetChangedError);

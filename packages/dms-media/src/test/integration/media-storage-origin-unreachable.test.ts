@@ -35,13 +35,6 @@ function requestUrl(input: Parameters<typeof fetch>[0]): URL {
   return new URL(input);
 }
 
-/**
- * A backend behind a private network or an egress policy cannot call the
- * storage's public URL (here the API's own /file-storage routes). Clients still
- * reach it, as a browser does through the dashboard; only the server's fetch
- * is cut, so every server-side read and write must go through the storage
- * interface.
- */
 describe("[integration] media when the server cannot reach the storage's public URL", () => {
   const serverFetch = globalThis.fetch;
   let client: AxiosInstance;

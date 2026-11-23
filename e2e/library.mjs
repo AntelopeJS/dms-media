@@ -1,4 +1,14 @@
-import { check, fixture, isText, list, media, pick, raw, text, TENANT } from "./media.mjs";
+import {
+  check,
+  fixture,
+  isText,
+  list,
+  media,
+  pick,
+  raw,
+  text,
+  TENANT,
+} from "./media.mjs";
 
 /**
  * @typedef {import("./media.mjs").Ctx} Ctx
@@ -17,7 +27,13 @@ import { check, fixture, isText, list, media, pick, raw, text, TENANT } from "./
  * @returns {Promise<{ answer: Answer, id: string }>} The answer and the new folder id, empty when refused
  */
 export async function createFolder(ctx, name, options = {}) {
-  const answer = await media(ctx, `create the folder ${name}`, "POST", "/folders", { body: { name, parentId: options.parentId }, as: options.as });
+  const answer = await media(
+    ctx,
+    `create the folder ${name}`,
+    "POST",
+    "/folders",
+    { body: { name, parentId: options.parentId }, as: options.as },
+  );
   const id = text(answer.body, "folder", "id") || text(answer.body, "id");
   return { answer, id };
 }
@@ -31,19 +47,50 @@ export async function createFolder(ctx, name, options = {}) {
  * @returns {Promise<Upload>} What each step answered
  */
 export async function upload(ctx, file) {
-  const presign = await media(ctx, `presign ${file.name}`, "POST", "/upload/presign", {
-    body: { folderId: file.folderId, filename: file.name, size: file.size ?? file.bytes.byteLength, mimetype: file.mimetype },
-    as: file.as,
-  });
-  if (presign.status !== 200) return { presign, put: null, confirm: null, id: "", asset: undefined };
+  const presign = await media(
+    ctx,
+    `presign ${file.name}`,
+    "POST",
+    "/upload/presign",
+    {
+      body: {
+        folderId: file.folderId,
+        filename: file.name,
+        size: file.size ?? file.bytes.byteLength,
+        mimetype: file.mimetype,
+      },
+      as: file.as,
+    },
+  );
+  if (presign.status !== 200)
+    return { presign, put: null, confirm: null, id: "", asset: undefined };
   /** @type {Record<string, string>} */
   const headers = {};
-  for (const [name, value] of Object.entries(pick(presign.body, "headers") ?? {})) if (isText(value)) headers[name] = value;
-  const put = await raw(ctx, `PUT ${file.name} to the storage`, { url: text(presign.body, "uploadUrl"), method: "PUT", headers, body: file.bytes });
-  const confirm = await media(ctx, `confirm ${file.name}`, "POST", "/upload/confirm", {
-    body: { folderId: file.folderId, resourceKey: text(presign.body, "resourceKey"), filename: file.name, batchId: file.batchId },
-    as: file.as,
+  for (const [name, value] of Object.entries(
+    pick(presign.body, "headers") ?? {},
+  ))
+    if (isText(value)) headers[name] = value;
+  const put = await raw(ctx, `PUT ${file.name} to the storage`, {
+    url: text(presign.body, "uploadUrl"),
+    method: "PUT",
+    headers,
+    body: file.bytes,
   });
+  const confirm = await media(
+    ctx,
+    `confirm ${file.name}`,
+    "POST",
+    "/upload/confirm",
+    {
+      body: {
+        folderId: file.folderId,
+        resourceKey: text(presign.body, "resourceKey"),
+        filename: file.name,
+        batchId: file.batchId,
+      },
+      as: file.as,
+    },
+  );
   const asset = pick(confirm.body, "asset");
   return { presign, put, confirm, id: text(asset, "id"), asset };
 }
@@ -58,9 +105,21 @@ export async function upload(ctx, file) {
 export async function uploaded(ctx, file) {
   const done = await upload(ctx, file);
   await ctx.verify(`${file.name} is uploaded`, [
-    check("presign answers 200", done.presign.status === 200, done.presign.body),
-    check("the storage takes the PUT", (done.put?.status ?? 0) >= 200 && (done.put?.status ?? 0) < 300, done.put?.status),
-    check("confirm answers the asset", done.confirm?.status === 200 && done.id !== "", done.confirm?.body),
+    check(
+      "presign answers 200",
+      done.presign.status === 200,
+      done.presign.body,
+    ),
+    check(
+      "the storage takes the PUT",
+      (done.put?.status ?? 0) >= 200 && (done.put?.status ?? 0) < 300,
+      done.put?.status,
+    ),
+    check(
+      "confirm answers the asset",
+      done.confirm?.status === 200 && done.id !== "",
+      done.confirm?.body,
+    ),
   ]);
   return done;
 }
@@ -76,18 +135,38 @@ export async function uploaded(ctx, file) {
  * @returns {Promise<{ roleId: string, userId: string }>} The role and the user
  */
 export async function member(ctx, name, permissions, language = "en") {
-  const invite = await fixture(ctx, `invite ${name}`, "POST", "/member", { name, permissions, language });
+  const invite = await fixture(ctx, `invite ${name}`, "POST", "/member", {
+    name,
+    permissions,
+    language,
+  });
   const email = text(invite.body, "email");
   const password = ctx.password();
   const signup = await ctx.api(`${name} signs up`, {
     method: "POST",
     path: "/api/auth/signup",
-    body: { name, email, password, lang: language, token: text(invite.body, "token") },
+    body: {
+      name,
+      email,
+      password,
+      lang: language,
+      token: text(invite.body, "token"),
+    },
     as: "anon",
   });
   const userId = text(signup.body, "user", "_id");
   ctx.addAccount(name, { email, password, userId });
-  await ctx.verify(`${name} is a member`, [check("the signup answers a session", signup.status === 200 && userId !== "", signup.status)], { critical: true });
+  await ctx.verify(
+    `${name} is a member`,
+    [
+      check(
+        "the signup answers a session",
+        signup.status === 200 && userId !== "",
+        signup.status,
+      ),
+    ],
+    { critical: true },
+  );
   return { roleId: text(invite.body, "roleId"), userId };
 }
 
@@ -99,7 +178,13 @@ export async function member(ctx, name, permissions, language = "en") {
  * @returns {Promise<{ answer: Answer, folders: Row[] }>} The answer and its folders
  */
 export async function tree(ctx, as) {
-  const answer = await media(ctx, `read the tree as ${as ?? "admin"}`, "GET", "/tree", { as });
+  const answer = await media(
+    ctx,
+    `read the tree as ${as ?? "admin"}`,
+    "GET",
+    "/tree",
+    { as },
+  );
   return { answer, folders: list(answer.body, "folders") };
 }
 
@@ -112,7 +197,13 @@ export async function tree(ctx, as) {
  * @returns {Promise<{ answer: Answer, assets: Row[] }>} The answer and its files
  */
 export async function folderAssets(ctx, folderId, options = {}) {
-  const answer = await media(ctx, `list the folder as ${options.as ?? "admin"}`, "GET", `/folders/${folderId}/assets${options.query ? `?${options.query}` : ""}`, { as: options.as });
+  const answer = await media(
+    ctx,
+    `list the folder as ${options.as ?? "admin"}`,
+    "GET",
+    `/folders/${folderId}/assets${options.query ? `?${options.query}` : ""}`,
+    { as: options.as },
+  );
   return { answer, assets: list(answer.body, "assets") };
 }
 
@@ -124,7 +215,13 @@ export async function folderAssets(ctx, folderId, options = {}) {
  * @returns {Promise<Answer>} `{ ok, result | error }`
  */
 export function declareFolder(ctx, declaration) {
-  return fixture(ctx, `EnsureMediaFolder ${String(declaration.key)}`, "POST", "/folder", { tenantId: TENANT, ...declaration });
+  return fixture(
+    ctx,
+    `EnsureMediaFolder ${String(declaration.key)}`,
+    "POST",
+    "/folder",
+    { tenantId: TENANT, ...declaration },
+  );
 }
 
 /**
@@ -136,11 +233,18 @@ export function declareFolder(ctx, declaration) {
  * @returns {Promise<{ link: Raw, file: Raw | null }>} Both answers; `file` is null when the link does not redirect
  */
 export async function follow(ctx, path, options = {}) {
-  const link = await raw(ctx, `GET ${path}`, { path, as: options.as, headers: options.headers });
+  const link = await raw(ctx, `GET ${path}`, {
+    path,
+    as: options.as,
+    headers: options.headers,
+  });
   const location = link.headers.location ?? "";
   if (link.status !== 302 || location === "") return { link, file: null };
   const url = new URL(location, ctx.state.apiUrl).href;
-  return { link, file: await raw(ctx, `follow the redirect of ${path}`, { url }) };
+  return {
+    link,
+    file: await raw(ctx, `follow the redirect of ${path}`, { url }),
+  };
 }
 
 /**
@@ -186,7 +290,13 @@ export async function withConfig(ctx, env, body) {
  * @returns {Promise<Answer>} The answer
  */
 export function setVisibility(ctx, kind, id, visibility, as) {
-  return media(ctx, `make the ${kind === "folders" ? "folder" : "file"} ${visibility}`, "POST", `/${kind}/${id}/visibility`, { body: { visibility }, as });
+  return media(
+    ctx,
+    `make the ${kind === "folders" ? "folder" : "file"} ${visibility}`,
+    "POST",
+    `/${kind}/${id}/visibility`,
+    { body: { visibility }, as },
+  );
 }
 
 /**
@@ -203,10 +313,26 @@ export async function dashboardSession(ctx, account = "admin") {
   const response = await fetch(`${ctx.state.webUrl}/auth/login`, {
     method: "POST",
     headers: { "content-type": "application/json", origin: ctx.state.webUrl },
-    body: JSON.stringify({ email: credentials?.email, password: credentials?.password }),
+    body: JSON.stringify({
+      email: credentials?.email,
+      password: credentials?.password,
+    }),
   });
-  const cookies = response.headers.getSetCookie().map((cookie) => cookie.split(";")[0] ?? "");
+  const cookies = response.headers
+    .getSetCookie()
+    .map((cookie) => cookie.split(";")[0] ?? "");
   const cookieNames = cookies.map((cookie) => cookie.split("=")[0]);
-  ctx.record(folder, [check("the dashboard opens a session", response.ok && cookieNames.some((name) => name?.startsWith("dms_session")), `${response.status} ${cookieNames.join(", ")}`)], { critical: true });
+  ctx.record(
+    folder,
+    [
+      check(
+        "the dashboard opens a session",
+        response.ok &&
+          cookieNames.some((name) => name?.startsWith("dms_session")),
+        `${response.status} ${cookieNames.join(", ")}`,
+      ),
+    ],
+    { critical: true },
+  );
   return cookies.join("; ");
 }

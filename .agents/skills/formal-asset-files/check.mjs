@@ -1,19 +1,4 @@
 #!/usr/bin/env node
-/**
- * Model-checks AssetFiles.tla with TLC through the shared runner of
- * @antelopejs/tooling-configs, once per configuration in `CONFIGS`.
- *
- * - `check.mjs` prints `STALE <file>#<function>` for each covered function
- *   that changed since coverage-record.mjs, then checks every configuration. Every
- *   INVARIANT must hold, except the findings in `FINDINGS`. Exits 0 when all
- *   match, 1 when a rule changed or a covered function is stale, 2 when TLC
- *   could not run.
- * - `check.mjs --seeded` applies each mutation of `SEEDED` to a copy of the
- *   spec and requires its rule to break with the recorded counterexample
- *   length. Exits 1 on the first mutation the check misses.
- * - `check.mjs --sync` records the covered functions' fingerprints. Run it
- *   only once the spec describes the covered code.
- */
 import { mkdtempSync, readFileSync, writeFileSync } from "node:fs";
 import os from "node:os";
 import path from "node:path";
@@ -150,7 +135,23 @@ async function checkMutation(mutation) {
   });
 }
 
-/** Checks every configuration, and fails when a covered function changed since the record. */
+/**
+ * Model-checks AssetFiles.tla with TLC through the shared runner of
+ * @antelopejs/tooling-configs, once per configuration in `CONFIGS`.
+ *
+ * - `check.mjs` prints `STALE <file>#<function>` for each covered function
+ *   that changed since coverage-record.mjs, then checks every configuration. Every
+ *   INVARIANT must hold, except the findings in `FINDINGS`. Exits 0 when all
+ *   match, 1 when a rule changed or a covered function is stale, 2 when TLC
+ *   could not run.
+ * - `check.mjs --seeded` applies each mutation of `SEEDED` to a copy of the
+ *   spec and requires its rule to break with the recorded counterexample
+ *   length. Exits 1 on the first mutation the check misses.
+ * - `check.mjs --sync` records the covered functions' fingerprints. Run it
+ *   only once the spec describes the covered code.
+ *
+ * Checks every configuration, and fails when a covered function changed since the record.
+ */
 async function checkModel() {
   const stale = staleFunctions();
   for (const key of stale) console.log(`STALE ${key}`);

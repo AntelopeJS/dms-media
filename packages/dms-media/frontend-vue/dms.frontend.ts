@@ -1,34 +1,33 @@
-import { defineAsyncComponent, type Component } from 'vue'
-import type { DmsFrontendModule } from '#dms/frontend-module'
+import { defineAsyncComponent, type Component } from "vue";
+import type { DmsFrontendModule } from "#dms/frontend-module";
 
 interface VueModule {
-	default: Component
+  default: Component;
 }
 
-const blocks = import.meta.glob<VueModule>('./app/components/*.vue')
+const blocks = import.meta.glob<VueModule>("./app/components/*.vue");
 
 function componentName(path: string): string {
-	return path
-		.split('/')
-		.at(-1)!
-		.replace(/\.vue$/, '')
+  return path.slice(path.lastIndexOf("/") + 1).replace(/\.vue$/, "");
 }
 
 const frontendModule: DmsFrontendModule = {
-	componentPrefix: 'DmsMedia',
-	setup(sdk) {
-		sdk.registerPlugin(async () => {
-			const { registerAssetDataType } =
-				await import('./app/utils/assetDataType')
-			registerAssetDataType()
-		})
-		for (const [path, loader] of Object.entries(blocks).sort()) {
-			sdk.registerComponent(
-				componentName(path),
-				defineAsyncComponent(async () => (await loader()).default),
-			)
-		}
-	},
-}
+  componentPrefix: "DmsMedia",
+  setup(sdk) {
+    sdk.registerPlugin(async () => {
+      const { registerAssetDataType } =
+        await import("./app/utils/assetDataType");
+      registerAssetDataType();
+    });
+    for (const [path, loader] of Object.entries(blocks).sort(
+      ([left], [right]) => (left < right ? -1 : 1),
+    )) {
+      sdk.registerComponent(
+        componentName(path),
+        defineAsyncComponent(async () => (await loader()).default),
+      );
+    }
+  },
+};
 
-export default frontendModule
+export default frontendModule;

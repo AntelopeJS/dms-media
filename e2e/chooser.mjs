@@ -23,11 +23,15 @@ async function arm(tab) {
         "click",
         (event) => {
           const target = event.target;
-          if (!(target instanceof HTMLInputElement) || target.type !== "file") return;
+          if (!(target instanceof HTMLInputElement) || target.type !== "file")
+            return;
           event.preventDefault();
-          for (const marked of document.querySelectorAll("[data-e2e-chosen]")) marked.removeAttribute("data-e2e-chosen");
+          for (const marked of document.querySelectorAll("[data-e2e-chosen]"))
+            marked.removeAttribute("data-e2e-chosen");
           target.dataset.e2eChosen = "1";
-          root.dataset.e2eFileInputClicks = String(Number(root.dataset.e2eFileInputClicks) + 1);
+          root.dataset.e2eFileInputClicks = String(
+            Number(root.dataset.e2eFileInputClicks) + 1,
+          );
         },
         true,
       );
@@ -47,7 +51,13 @@ async function arm(tab) {
  */
 export async function waitForHydration(tab, timeoutMs) {
   for (let waited = 0; waited < timeoutMs; waited += 500) {
-    const mounted = await tab.page.evaluate(() => [...document.querySelectorAll("body div")].some((element) => "__vue_app__" in element)).catch(() => false);
+    const mounted = await tab.page
+      .evaluate(() =>
+        [...document.querySelectorAll("body div")].some(
+          (element) => "__vue_app__" in element,
+        ),
+      )
+      .catch(() => false);
     if (mounted) return true;
     await tab.page.waitForTimeout(500);
   }
@@ -59,7 +69,13 @@ export async function waitForHydration(tab, timeoutMs) {
  * @returns {Promise<number>} The file-input clicks counted on the current document
  */
 async function clicksOf(tab) {
-  return Number(await tab.page.evaluate(() => document.documentElement.dataset.e2eFileInputClicks ?? "0").catch(() => "0"));
+  return Number(
+    await tab.page
+      .evaluate(
+        () => document.documentElement.dataset.e2eFileInputClicks ?? "0",
+      )
+      .catch(() => "0"),
+  );
 }
 
 /**
@@ -89,7 +105,13 @@ export async function openFilePicker(tab, action, timeoutMs = 15_000) {
   }
   const input = tab.page.locator("input[type=file][data-e2e-chosen]").first();
   const opened = clicks > before;
-  const multiple = opened ? await input.evaluate((element) => element instanceof HTMLInputElement && element.multiple).catch(() => false) : false;
+  const multiple = opened
+    ? await input
+        .evaluate(
+          (element) => element instanceof HTMLInputElement && element.multiple,
+        )
+        .catch(() => false)
+    : false;
   return {
     opened,
     multiple,

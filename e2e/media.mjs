@@ -94,7 +94,11 @@ export function names(value, ...path) {
  * @returns {Check} The check
  */
 export function check(name, pass, detail) {
-  return { name, pass: pass === true, detail: isText(detail) ? detail : (JSON.stringify(detail) ?? "undefined") };
+  return {
+    name,
+    pass: pass === true,
+    detail: isText(detail) ? detail : (JSON.stringify(detail) ?? "undefined"),
+  };
 }
 
 /**
@@ -106,7 +110,12 @@ export function check(name, pass, detail) {
  * @returns {Promise<Answer>} The answer
  */
 export function media(ctx, label, method, path, options = {}) {
-  return ctx.api(label, { method, path: `${MEDIA}${path}`, body: options.body, as: options.as });
+  return ctx.api(label, {
+    method,
+    path: `${MEDIA}${path}`,
+    body: options.body,
+    as: options.as,
+  });
 }
 
 /**
@@ -120,7 +129,12 @@ export function media(ctx, label, method, path, options = {}) {
  * @returns {Promise<Answer>} The answer
  */
 export function fixture(ctx, label, method, path, body) {
-  return ctx.api(label, { method, path: `${FIXTURE}${path}`, body, as: "anon" });
+  return ctx.api(label, {
+    method,
+    path: `${FIXTURE}${path}`,
+    body,
+    as: "anon",
+  });
 }
 
 /**
@@ -143,7 +157,12 @@ export function parseJson(body) {
  * @returns {Promise<string | undefined>} The token
  */
 export async function tokenOf(ctx, account) {
-  if (!ctx.state.tokens?.[account]) await ctx.api(`sign ${account} in`, { method: "GET", path: `${MEDIA}/tree`, as: account });
+  if (!ctx.state.tokens?.[account])
+    await ctx.api(`sign ${account} in`, {
+      method: "GET",
+      path: `${MEDIA}/tree`,
+      as: account,
+    });
   return ctx.state.tokens?.[account];
 }
 
@@ -162,17 +181,41 @@ export async function raw(ctx, label, request) {
   const method = request.method ?? "GET";
   /** @type {Record<string, string>} */
   const headers = { ...request.headers };
-  if (request.as) headers.authorization = `Bearer ${(await tokenOf(ctx, request.as)) ?? ""}`;
-  const shown = Object.fromEntries(Object.entries(headers).map(([name, value]) => [name, /auth|cookie/i.test(name) ? "<session>" : value]));
-  writeFileSync(join(folder, "request.json"), `${JSON.stringify({ method, url, headers: shown, bodyBytes: request.body?.byteLength ?? 0 }, null, 2)}\n`);
-  const response = await fetch(url, { method, headers, redirect: "manual", body: request.body });
+  if (request.as)
+    headers.authorization = `Bearer ${(await tokenOf(ctx, request.as)) ?? ""}`;
+  const shown = Object.fromEntries(
+    Object.entries(headers).map(([name, value]) => [
+      name,
+      /auth|cookie/i.test(name) ? "<session>" : value,
+    ]),
+  );
+  writeFileSync(
+    join(folder, "request.json"),
+    `${JSON.stringify({ method, url, headers: shown, bodyBytes: request.body?.byteLength ?? 0 }, null, 2)}\n`,
+  );
+  const response = await fetch(url, {
+    method,
+    headers,
+    redirect: "manual",
+    body: request.body,
+  });
   const bytes = Buffer.from(await response.arrayBuffer());
   /** @type {Record<string, string>} */
   const received = {};
   for (const [name, value] of response.headers) received[name] = value;
   const body = bytes.toString("utf8");
-  writeFileSync(join(folder, "response.json"), `${JSON.stringify({ status: response.status, headers: received, bytes: bytes.byteLength, sha256: sha256(bytes), body: body.slice(0, 4000) }, null, 2)}\n`);
-  return { folder, status: response.status, headers: received, bytes, text: body, json: parseJson(body) };
+  writeFileSync(
+    join(folder, "response.json"),
+    `${JSON.stringify({ status: response.status, headers: received, bytes: bytes.byteLength, sha256: sha256(bytes), body: body.slice(0, 4000) }, null, 2)}\n`,
+  );
+  return {
+    folder,
+    status: response.status,
+    headers: received,
+    bytes,
+    text: body,
+    json: parseJson(body),
+  };
 }
 
 /**
@@ -214,8 +257,11 @@ export function sharpOf() {
 export async function image(ctx, spec) {
   const seed = spec.seed ?? Math.floor(Math.random() * 200);
   const pixels = Buffer.alloc(spec.width * spec.height * 3);
-  for (let index = 0; index < pixels.length; index += 1) pixels[index] = (index * 7 + seed) % 256;
-  return sharpOf()(pixels, { raw: { width: spec.width, height: spec.height, channels: 3 } })
+  for (let index = 0; index < pixels.length; index += 1)
+    pixels[index] = (index * 7 + seed) % 256;
+  return sharpOf()(pixels, {
+    raw: { width: spec.width, height: spec.height, channels: 3 },
+  })
     .toFormat(spec.format ?? "png")
     .toBuffer();
 }
@@ -230,14 +276,20 @@ export async function image(ctx, spec) {
 export async function imageInfo(ctx, bytes) {
   try {
     const meta = await sharpOf()(bytes).metadata();
-    return { format: meta.format ?? "", width: meta.width ?? 0, height: meta.height ?? 0 };
+    return {
+      format: meta.format ?? "",
+      width: meta.width ?? 0,
+      height: meta.height ?? 0,
+    };
   } catch {
     return { format: "", width: 0, height: 0 };
   }
 }
 
 /** A small SVG drawing. */
-export const SVG = Buffer.from('<svg xmlns="http://www.w3.org/2000/svg" width="40" height="20" viewBox="0 0 40 20"><rect width="40" height="20" fill="#3a6"/></svg>\n');
+export const SVG = Buffer.from(
+  '<svg xmlns="http://www.w3.org/2000/svg" width="40" height="20" viewBox="0 0 40 20"><rect width="40" height="20" fill="#3a6"/></svg>\n',
+);
 
 /**
  * Text bytes long enough to cross several network chunks, with characters outside ASCII.
@@ -246,7 +298,13 @@ export const SVG = Buffer.from('<svg xmlns="http://www.w3.org/2000/svg" width="4
  * @returns {Buffer} The bytes
  */
 export function longText(lines) {
-  return Buffer.from(Array.from({ length: lines }, (_, index) => `ligne ${index} : été, naïve, 東京, €\n`).join(""), "utf8");
+  return Buffer.from(
+    Array.from(
+      { length: lines },
+      (_, index) => `ligne ${index} : été, naïve, 東京, €\n`,
+    ).join(""),
+    "utf8",
+  );
 }
 
 /**
@@ -257,7 +315,12 @@ export function longText(lines) {
  * @returns {string} The folder or file
  */
 export function storagePath(ctx, ...parts) {
-  return join(ctx.state.runPlayground ?? ctx.state.playground, ".antelope", "file-storage", ...parts);
+  return join(
+    ctx.state.runPlayground ?? ctx.state.playground,
+    ".antelope",
+    "file-storage",
+    ...parts,
+  );
 }
 
 /**
@@ -270,9 +333,13 @@ export function storagePath(ctx, ...parts) {
 export function signedLifetime(ctx, location) {
   const token = new URL(location, "http://x").searchParams.get("token") ?? "";
   try {
-    const record = parseJson(readFileSync(storagePath(ctx, "tokens", "read", `${token}.json`), "utf8"));
+    const record = parseJson(
+      readFileSync(storagePath(ctx, "tokens", "read", `${token}.json`), "utf8"),
+    );
     const expiresAt = pick(record, "expiresAt");
-    return Number.isFinite(expiresAt) ? Math.round((Number(expiresAt) - Date.now()) / 1000) : -1;
+    return Number.isFinite(expiresAt)
+      ? Math.round((Number(expiresAt) - Date.now()) / 1000)
+      : -1;
   } catch {
     return -1;
   }
@@ -298,9 +365,13 @@ export function unzip(zip) {
     const commentLength = zip.readUInt16LE(offset + 32);
     const local = zip.readUInt32LE(offset + 42);
     const name = zip.toString("utf8", offset + 46, offset + 46 + nameLength);
-    const dataStart = local + 30 + zip.readUInt16LE(local + 26) + zip.readUInt16LE(local + 28);
+    const dataStart =
+      local + 30 + zip.readUInt16LE(local + 26) + zip.readUInt16LE(local + 28);
     const data = zip.subarray(dataStart, dataStart + compressed);
-    entries.push({ name, bytes: method === 8 ? inflateRawSync(data) : Buffer.from(data) });
+    entries.push({
+      name,
+      bytes: method === 8 ? inflateRawSync(data) : Buffer.from(data),
+    });
     offset += 46 + nameLength + extraLength + commentLength;
   }
   return entries;

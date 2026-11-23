@@ -57,7 +57,11 @@ import { AssetType } from "@antelopejs/interface-dms-media";
 
 new AssetType({
   mimetypes: ["image/*"],
-  binding: { id: "articles.cover", folderName: "Article covers", permissionsFromPage: ArticlesPage },
+  binding: {
+    id: "articles.cover",
+    folderName: "Article covers",
+    permissionsFromPage: ArticlesPage,
+  },
 });
 ```
 
@@ -69,9 +73,9 @@ The module also needs a DMS backend in a release that implements the `@antelopej
 
 ## Packages
 
-| Package | Directory | Role |
-| --- | --- | --- |
-| [`@antelopejs/dms-media`](https://www.npmjs.com/package/@antelopejs/dms-media) | [`packages/dms-media`](./packages/dms-media) | The module: library, uploads, delivery, image sizes and editor. |
+| Package                                                                                            | Directory                                                        | Role                                                                                      |
+| -------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------- | ----------------------------------------------------------------------------------------- |
+| [`@antelopejs/dms-media`](https://www.npmjs.com/package/@antelopejs/dms-media)                     | [`packages/dms-media`](./packages/dms-media)                     | The module: library, uploads, delivery, image sizes and editor.                           |
 | [`@antelopejs/interface-dms-media`](https://www.npmjs.com/package/@antelopejs/interface-dms-media) | [`packages/interface-dms-media`](./packages/interface-dms-media) | The interface consumers use: the `AssetType` field, folder bindings and declared content. |
 
 ## Documentation

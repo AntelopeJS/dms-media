@@ -27,3 +27,6 @@ logs
 generated-layers.json
 i18n-registry.generated.ts
 .dms-media-generated.json
+
+# Types written by ajs dms prepare-types for type-aware lint
+.dms-types

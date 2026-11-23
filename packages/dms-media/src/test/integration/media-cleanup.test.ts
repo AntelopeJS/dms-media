@@ -2,7 +2,7 @@ import { randomUUID } from "node:crypto";
 import { type AtomicMutation, Table } from "@antelopejs/interface-database";
 import { GetModel } from "@antelopejs/interface-database-decorators";
 import * as storage from "@antelopejs/interface-file-storage";
-import { expect } from "chai";
+import { assert, expect } from "chai";
 import sharp from "sharp";
 import {
   cleanupAssetFiles,
@@ -46,6 +46,15 @@ async function uploadImage(): Promise<string> {
   );
 }
 
+async function reload(
+  source: MediaAssetModel,
+  id: string,
+): Promise<MediaAsset> {
+  const found = await source.get(id);
+  assert.isDefined(found, `asset ${id}`);
+  return found;
+}
+
 async function insertAsset(model: MediaAssetModel): Promise<MediaAsset> {
   const _id = randomUUID();
   await model.insert({
@@ -61,7 +70,7 @@ async function insertAsset(model: MediaAssetModel): Promise<MediaAsset> {
     json_retiredFiles: "[]",
   });
   await model.table.get(_id).update({ updatedAt: OLD_DATE }).run();
-  return (await model.get(_id))!;
+  return reload(model, _id);
 }
 
 let model: MediaAssetModel;
@@ -93,7 +102,7 @@ describe("[integration] replayable media cleanup — competing publications", ()
       patches.map((patch) => model.compareMedia(asset, patch)),
     );
     expect(results.filter(Boolean)).to.have.length(1);
-    const winner = (await model.get(asset._id))!;
+    const winner = await reload(model, asset._id);
     expect(winner.alt).to.equal(patches[results.indexOf(true)].alt);
     expect(winner.createdAt).to.deep.equal(asset.createdAt);
     expect(winner.updatedAt.getTime()).to.be.greaterThan(OLD_DATE.getTime());
@@ -109,7 +118,7 @@ describe("[integration] replayable media cleanup — competing publications", ()
       ),
     );
     expect(results).to.deep.equal(keys);
-    expect(parseDerivatives((await model.get(asset._id))!)).to.deep.equal({
+    expect(parseDerivatives(await reload(model, asset._id))).to.deep.equal({
       "preset-0": keys[0],
       "preset-1": keys[1],
     });
@@ -124,14 +133,15 @@ describe("[integration] replayable media cleanup — competing publications", ()
       keys.map((key) => commitDerivative(model, asset, "same", key)),
     );
     expect(new Set(results).size).to.equal(1);
-    const winner = results[0]!;
+    const [winner] = results;
+    assert.isDefined(winner, "a published key");
     expect(await commitDerivative(model, asset, "same", winner)).to.equal(
       winner,
     );
     expect(await storage.FileExists(winner)).to.equal(true);
-    expect(
-      await storage.FileExists(keys.find((key) => key !== winner)!),
-    ).to.equal(false);
+    const loser = keys.find((key) => key !== winner);
+    assert.isDefined(loser, "the key that lost the publication");
+    expect(await storage.FileExists(loser)).to.equal(false);
   });
 
   it("does not delete a key shared by a fresh and stale derivative", async () => {
@@ -141,7 +151,7 @@ describe("[integration] replayable media cleanup — competing publications", ()
       json_derivatives: JSON.stringify({ obsolete: key, [cacheKey]: key }),
     });
     await sweepAssetDerivatives(model, asset);
-    expect(parseDerivatives((await model.get(asset._id))!)).to.deep.equal({
+    expect(parseDerivatives(await reload(model, asset._id))).to.deep.equal({
       [cacheKey]: key,
     });
     expect(await storage.FileExists(key)).to.equal(true);
@@ -180,7 +190,7 @@ describe("[integration] replayable media cleanup — sweep and replay", () => {
     expect(error).to.be.instanceOf(Error);
     expect(calls).to.equal(1);
     expect(await storage.FileExists(key)).to.equal(true);
-    expect(retiredFiles((await model.get(asset._id))!)).to.deep.equal([key]);
+    expect(retiredFiles(await reload(model, asset._id))).to.deep.equal([key]);
     restoreMutation();
     await sweepAssetDerivatives(model, asset);
     expect(await storage.FileExists(key)).to.equal(false);
@@ -204,7 +214,7 @@ describe("[integration] replayable media cleanup — sweep and replay", () => {
       sweepAssetDerivatives(model, asset),
     ]);
     expect(injected).to.equal(true);
-    expect(parseDerivatives((await model.get(asset._id))!)).to.deep.equal({
+    expect(parseDerivatives(await reload(model, asset._id))).to.deep.equal({
       [cacheKey]: newKey,
     });
     expect(await storage.FileExists(oldKey)).to.equal(false);
@@ -215,20 +225,20 @@ describe("[integration] replayable media cleanup — sweep and replay", () => {
     const [first, second] = await Promise.all([upload(), upload()]);
     await commitDerivative(model, asset, "old-first", first);
     await commitDerivative(model, asset, "old-second", second);
-    await updateAssetMedia(model, (await model.get(asset._id))!, {
+    await updateAssetMedia(model, await reload(model, asset._id), {
       json_derivatives: "",
     });
     await cleanupAssetFiles(model, asset._id, async (key, storageName) => {
       if (key === second) throw new Error("storage unavailable");
       return storage.DeleteFile(key, storageName);
     });
-    const partial = (await model.get(asset._id))!;
+    const partial = await reload(model, asset._id);
     expect(parseDerivatives(partial)).to.deep.equal({});
     expect(retiredFiles(partial)).to.deep.equal([second]);
     expect(await storage.FileExists(first)).to.equal(false);
     expect(await storage.FileExists(second)).to.equal(true);
     await sweepAssetDerivatives(model, asset);
-    expect(retiredFiles((await model.get(asset._id))!)).to.deep.equal([]);
+    expect(retiredFiles(await reload(model, asset._id))).to.deep.equal([]);
     expect(await storage.FileExists(second)).to.equal(false);
   });
 
@@ -245,10 +255,10 @@ describe("[integration] replayable media cleanup — sweep and replay", () => {
     );
     expect(error).to.be.instanceOf(Error);
     expect(await storage.FileExists(key)).to.equal(false);
-    expect(retiredFiles((await model.get(asset._id))!)).to.deep.equal([key]);
+    expect(retiredFiles(await reload(model, asset._id))).to.deep.equal([key]);
     model.compareMedia = compare;
     await cleanupAssetFiles(model, asset._id);
-    expect(retiredFiles((await model.get(asset._id))!)).to.deep.equal([]);
+    expect(retiredFiles(await reload(model, asset._id))).to.deep.equal([]);
   });
 });
 
@@ -259,7 +269,7 @@ describe("[integration] replayable media cleanup — deletion and replacement", 
     await deleteMediaAsset(model, asset._id, async () => {
       throw new Error("storage unavailable");
     });
-    const deleted = (await model.get(asset._id))!;
+    const deleted = await reload(model, asset._id);
     expect(deleted.isDeleting).to.equal(true);
     expect(retiredFiles(deleted)).to.deep.equal([asset.storageKey]);
     expect(await model.listByFolders([asset.folderId], 1)).to.deep.equal([]);
@@ -288,7 +298,7 @@ describe("[integration] replayable media cleanup — deletion and replacement", 
     expect(await storage.FileExists(obsolete)).to.equal(false);
     expect(await storage.FileExists(asset.storageKey)).to.equal(false);
     expect(await storage.FileExists(replacement)).to.equal(true);
-    expect(parseDerivatives((await model.get(asset._id))!)).to.deep.equal({});
+    expect(parseDerivatives(await reload(model, asset._id))).to.deep.equal({});
   });
 
   it("retires derivatives published during a transform without deleting the original", async () => {
@@ -297,7 +307,7 @@ describe("[integration] replayable media cleanup — deletion and replacement", 
       storageKey: source,
       mimetype: "image/png",
     });
-    asset = (await model.get(asset._id))!;
+    asset = await reload(model, asset._id);
     const derivative = await upload();
     let injected = false;
     model.compareMedia = async (expected, patch) => {
@@ -308,7 +318,7 @@ describe("[integration] replayable media cleanup — deletion and replacement", 
       return compare.call(model, expected, patch);
     };
     await applyImageTransform(model, asset, { rotate: 90 });
-    const transformed = (await model.get(asset._id))!;
+    const transformed = await reload(model, asset._id);
     expect(transformed.width).to.equal(10);
     expect(transformed.height).to.equal(20);
     expect(transformed.originalKey).to.equal(source);

@@ -46,11 +46,18 @@ new AssetType({
 Ship a folder and a file with each new tenant, from the hook the DMS fires once when the tenant is created:
 
 ```ts
-import { EnsureMediaFolder, ImportMediaAsset } from "@antelopejs/interface-dms-media";
+import {
+  EnsureMediaFolder,
+  ImportMediaAsset,
+} from "@antelopejs/interface-dms-media";
 import { Hook, RegisterHook } from "@antelopejs/interface-dms/hooks";
 
 RegisterHook(Hook.TENANT_BEING_PROVISIONED, async ({ tenantId }) => {
-  await EnsureMediaFolder({ tenantId, key: "helio.procedures", name: "Procedures" });
+  await EnsureMediaFolder({
+    tenantId,
+    key: "helio.procedures",
+    name: "Procedures",
+  });
   await ImportMediaAsset({
     tenantId,
     key: "helio.procedures.roof",

@@ -1,5 +1,5 @@
 import type { AxiosInstance } from "axios";
-import { expect } from "chai";
+import { assert, expect } from "chai";
 import { z } from "zod";
 import { GetModel } from "@antelopejs/interface-database-decorators";
 import { DEFAULT_TENANT_ID } from "@antelopejs/interface-dms/constants";
@@ -192,15 +192,15 @@ function describeFolderNames(): void {
       const linked = (await fetchFolderNodes(client)).find(
         (folder) => folder.binding === BINDING_ID,
       );
-      expect(linked, "linked folder").to.not.equal(undefined);
+      assert.isDefined(linked, "linked folder");
       const created = await client.post("/api/media/folders", {
         name: "Inside",
-        parentId: linked!.id,
+        parentId: linked.id,
       });
       expect(created.status).to.equal(HTTP_FORBIDDEN);
       expect(created.data).to.equal(`${ERRORS}.bound_parent`);
       const moved = await client.post(`/api/media/folders/${otherId}/move`, {
-        parentId: linked!.id,
+        parentId: linked.id,
       });
       expect(moved.status).to.equal(HTTP_FORBIDDEN);
     });

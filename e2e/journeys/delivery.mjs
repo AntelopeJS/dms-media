@@ -1,5 +1,10 @@
 import { guarded } from "../guard.mjs";
-import { createFolder, dashboardSession, deliveryPath, uploaded } from "../library.mjs";
+import {
+  createFolder,
+  dashboardSession,
+  deliveryPath,
+  uploaded,
+} from "../library.mjs";
 import { check, image, raw, recordRaw } from "../media.mjs";
 import { readUrlRenewalJourneys } from "./parts/read-url-renewal.mjs";
 
@@ -22,16 +27,38 @@ async function oneFile(ctx, file) {
 export const journeys = guarded([
   {
     id: "the-dashboard-origin-serves-media-links",
-    title: "a /media link on the dashboard's origin reaches the backend with the member's session, so a private file opens there",
+    title:
+      "a /media link on the dashboard's origin reaches the backend with the member's session, so a private file opens there",
     entryPoint: "GET <dashboard>/media/<id>/<name> with the session cookie",
     async run(/** @type {Ctx} */ ctx) {
       const bytes = await image(ctx, { width: 16, height: 16 });
-      const file = await oneFile(ctx, { name: "dash.png", mimetype: "image/png", bytes });
+      const file = await oneFile(ctx, {
+        name: "dash.png",
+        mimetype: "image/png",
+        bytes,
+      });
       const cookie = await dashboardSession(ctx);
-      const signedIn = await raw(ctx, "the dashboard origin with the session", { path: file.path, origin: "web", headers: { cookie, accept: "image/*" } });
-      recordRaw(ctx, signedIn, [check("redirects to the signed URL", signedIn.status === 302 && (signedIn.headers.location ?? "").includes("token="), `${signedIn.status} ${signedIn.headers.location}`)]);
-      const anon = await raw(ctx, "the dashboard origin without a session", { path: file.path, origin: "web", headers: { accept: "image/*" } });
-      recordRaw(ctx, anon, [check("refused without the session", anon.status === 401, anon.status)]);
+      const signedIn = await raw(ctx, "the dashboard origin with the session", {
+        path: file.path,
+        origin: "web",
+        headers: { cookie, accept: "image/*" },
+      });
+      recordRaw(ctx, signedIn, [
+        check(
+          "redirects to the signed URL",
+          signedIn.status === 302 &&
+            (signedIn.headers.location ?? "").includes("token="),
+          `${signedIn.status} ${signedIn.headers.location}`,
+        ),
+      ]);
+      const anon = await raw(ctx, "the dashboard origin without a session", {
+        path: file.path,
+        origin: "web",
+        headers: { accept: "image/*" },
+      });
+      recordRaw(ctx, anon, [
+        check("refused without the session", anon.status === 401, anon.status),
+      ]);
     },
   },
   ...readUrlRenewalJourneys(),

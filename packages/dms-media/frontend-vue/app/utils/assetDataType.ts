@@ -1,12 +1,8 @@
-import { h } from 'vue'
-import AssetValue from '../components/field/AssetValue.vue'
+import { h } from "vue";
+import AssetValue from "../components/field/AssetValue.vue";
 
 /** Id of the data type `AssetType` declares on the server. */
-const ASSET_DATA_TYPE_ID = 'asset'
-
-function isEmptyValue(value: unknown): boolean {
-	return !value || (Array.isArray(value) && value.length === 0)
-}
+const ASSET_DATA_TYPE_ID = "asset";
 
 /**
  * Words an asset field's value wherever the DMS shows it outside the field
@@ -14,11 +10,13 @@ function isEmptyValue(value: unknown): boolean {
  * thumbnails instead of their ids.
  */
 export function registerAssetDataType(): void {
-	useDataTypes().registerDataType({
-		id: ASSET_DATA_TYPE_ID,
-		formatter: {
-			default: (value: unknown) =>
-				isEmptyValue(value) ? '' : h(AssetValue, { value }),
-		},
-	})
+  useDataTypes().registerDataType({
+    id: ASSET_DATA_TYPE_ID,
+    formatter: {
+      default: (value) =>
+        !value || (Array.isArray(value) && value.length === 0)
+          ? ""
+          : h(AssetValue, { value }),
+    },
+  });
 }

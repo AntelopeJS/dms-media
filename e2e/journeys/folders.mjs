@@ -1,6 +1,7 @@
 import { guarded } from "../guard.mjs";
 import { media, text } from "../media.mjs";
 import { folderMenuJourneys } from "./parts/folder-menus.mjs";
+import { folderZipJourneys } from "./parts/folder-zip.mjs";
 
 /** @typedef {import("../media.mjs").Ctx} Ctx */
 
@@ -12,9 +13,17 @@ import { folderMenuJourneys } from "./parts/folder-menus.mjs";
  * @returns {Promise<string>} The folder id
  */
 export async function boundFolder(ctx, bindingId) {
-  const answer = await media(ctx, `read the folder of ${bindingId}`, "GET", `/bindings/${bindingId}/folder`);
+  const answer = await media(
+    ctx,
+    `read the folder of ${bindingId}`,
+    "GET",
+    `/bindings/${bindingId}/folder`,
+  );
   return text(answer.body, "folder", "id") || text(answer.body, "id");
 }
 
 /** Folders: the explorer menus. */
-export const journeys = guarded([...folderMenuJourneys()]);
+export const journeys = guarded([
+  ...folderMenuJourneys(),
+  ...folderZipJourneys(),
+]);
