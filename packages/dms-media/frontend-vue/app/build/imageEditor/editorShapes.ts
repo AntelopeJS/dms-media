@@ -59,6 +59,11 @@ export interface KeyStep {
   y: number;
 }
 
+/** The crop step of each arrow key, read by the key a keyboard event names. */
+export interface KeyStepTable {
+  readonly [key: string]: KeyStep | undefined;
+}
+
 export interface PresetPreview {
   id: string;
   label: string;
@@ -75,10 +80,11 @@ export const ZOOM_STEP = 1.2;
 export const PRESET_PREVIEW_SIZE = 128;
 export const EDITING_PRESET = "preview";
 export const EDITING_MAX_SIDE = 2048;
-export const SAME_SHAPE_TOLERANCE = 0.02;
+export const SAME_ASPECT_TOLERANCE = 0.02;
 export const NUDGE_RATIO = 0.01;
 export const VECTOR_MIMETYPE = "image/svg+xml";
-export const KEY_STEPS: Record<string, KeyStep> = {
+export const KEY_STEPS: KeyStepTable = {
+  __proto__: null,
   ArrowLeft: { x: -1, y: 0 },
   ArrowRight: { x: 1, y: 0 },
   ArrowUp: { x: 0, y: -1 },
@@ -109,13 +115,13 @@ export function naturalSize(url: string): Promise<PixelSize> {
   });
 }
 
-export function hasSameShape(size: PixelSize, target: MediaAsset): boolean {
+export function hasSameAspect(size: PixelSize, target: MediaAsset): boolean {
   if (!target.width || !target.height) return false;
   const ratio = size.width / size.height;
   const targetRatio = target.width / target.height;
   return [targetRatio, 1 / targetRatio].some(
     (candidate) =>
-      Math.abs(ratio - candidate) / candidate < SAME_SHAPE_TOLERANCE,
+      Math.abs(ratio - candidate) / candidate < SAME_ASPECT_TOLERANCE,
   );
 }
 
@@ -134,7 +140,7 @@ export async function editingSource(
     const preview = await api
       .readUrl(target.id, EDITING_PRESET)
       .then(async ({ url }) =>
-        hasSameShape(await naturalSize(url), target) ? url : undefined,
+        hasSameAspect(await naturalSize(url), target) ? url : undefined,
       )
       .catch(() => undefined);
     if (preview) return preview;

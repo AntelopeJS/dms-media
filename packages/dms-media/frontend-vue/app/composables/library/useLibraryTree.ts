@@ -22,13 +22,38 @@ function subtreeIds(folders: MediaFolder[], rootId: string): Set<string> {
   }
   const ids = new Set([rootId]);
   const queue = [rootId];
-  while (queue.length > 0) {
-    for (const childId of childIds.get(queue.shift()!) ?? []) {
+  for (const parentId of queue) {
+    for (const childId of childIds.get(parentId) ?? []) {
       ids.add(childId);
       queue.push(childId);
     }
   }
   return ids;
+}
+
+function withAdjustedCounts(
+  tree: MediaTree,
+  affected: ReadonlySet<string>,
+  files: number,
+  size: number,
+): MediaTree {
+  return {
+    ...tree,
+    root: {
+      ...tree.root,
+      fileCount: tree.root.fileCount + files,
+      size: tree.root.size + size,
+    },
+    folders: tree.folders.map((folder) =>
+      affected.has(folder.id)
+        ? {
+            ...folder,
+            fileCount: folder.fileCount + files,
+            size: folder.size + size,
+          }
+        : folder,
+    ),
+  };
 }
 
 /**
@@ -38,7 +63,6 @@ function subtreeIds(folders: MediaFolder[], rootId: string): Set<string> {
  * change.
  */
 export function useLibraryTree(options: LibraryTreeOptions = {}) {
-  // Read again on each library change, its own trigger: the page's refreshes leave it alone.
   const read = useApiData<MediaTree>(MEDIA_READS.tree, {
     query: options.scopeFolderId
       ? { folderId: options.scopeFolderId }
@@ -83,20 +107,18 @@ export function useLibraryTree(options: LibraryTreeOptions = {}) {
   function descendantsOf(folderId: string): MediaFolder[] {
     const result: MediaFolder[] = [];
     const queue = [folderId];
-    while (queue.length > 0) {
-      const children = childrenOf(queue.shift()!);
+    for (const parentId of queue) {
+      const children = childrenOf(parentId);
       result.push(...children);
       queue.push(...children.map((child) => child.id));
     }
     return result;
   }
 
-  /** Resolves once the tree's first read is done. */
   async function ready(): Promise<void> {
     await read;
   }
 
-  /** Reads the tree again; the blocks asking at once share one request. */
   function refresh(): Promise<void> {
     return read.refresh({ dedupe: "defer" });
   }
@@ -126,23 +148,7 @@ export function useLibraryTree(options: LibraryTreeOptions = {}) {
         (folder) => folder.id,
       ),
     );
-    tree.value = {
-      ...tree.value,
-      root: {
-        ...tree.value.root,
-        fileCount: tree.value.root.fileCount + files,
-        size: tree.value.root.size + size,
-      },
-      folders: tree.value.folders.map((folder) =>
-        affected.has(folder.id)
-          ? {
-              ...folder,
-              fileCount: folder.fileCount + files,
-              size: folder.size + size,
-            }
-          : folder,
-      ),
-    };
+    tree.value = withAdjustedCounts(tree.value, affected, files, size);
   }
 
   function adjustView(view: keyof MediaTree["views"], delta: number): void {

@@ -34,7 +34,7 @@ export function useAssetFieldUploads(options: AssetFieldUploadOptions) {
   const uploadToasts = useUploadToasts();
   const toast = useToast();
   const { t } = useI18n();
-  const { presentError } = useApiErrorPresenter();
+  const errors = useApiErrorPresenter();
   const batchIds = ref<string[]>([]);
   const reportedFailures = new Set<string>();
 
@@ -88,11 +88,10 @@ export function useAssetFieldUploads(options: AssetFieldUploadOptions) {
     uploadToasts.announceRefusedTypes(byType.refused, accept);
     const { kept } = splitByRoom(byType.kept);
     if (kept.length === 0) return;
-    const batchId = await uploads.enqueue(kept, destination);
+    const batchId = uploads.enqueue(kept, destination);
     if (batchId) batchIds.value = [...batchIds.value, batchId];
   }
 
-  /** Why a file failed, worded as the upload queue and its toasts word it. */
   const failureText = useUploadFailureText();
 
   function reportFailures(list: UploadItem[]): void {
@@ -102,7 +101,7 @@ export function useAssetFieldUploads(options: AssetFieldUploadOptions) {
     )) {
       reportedFailures.add(item.id);
       if (item.requestError !== undefined) {
-        presentError(item.requestError, {
+        errors.presentError(item.requestError, {
           fallbackKey: "dms_media.field_widget.upload.failed",
           params: { name: item.name },
         });

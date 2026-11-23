@@ -8,7 +8,6 @@ export function useMediaFormat() {
   const regional = useRegionalFormat();
   const { t } = useI18n();
 
-  /** A byte size in its largest whole unit, with the unit of the reader's language ("3.2 MB", "3,2 Mo"). */
   function formatBytes(bytes: number): string {
     let value = Math.max(bytes, 0);
     let unit = 0;

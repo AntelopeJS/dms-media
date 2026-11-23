@@ -43,7 +43,6 @@ export function createAssetInteractions(
     selection.select(asset.id, { extend: false, toggle: true });
   }
 
-  /** A right-click on a file outside the selection selects it, as in Finder. */
   function onContextMenu(asset: MediaAsset): void {
     if (isPick || isSelected(asset)) return;
     selection.select(asset.id, { extend: false, toggle: false });
@@ -79,7 +78,6 @@ export function createAssetInteractions(
     );
   }
 
-  /** What a screen reader says for a file: name, kind, size and alt text state. */
   function describe(asset: MediaAsset): string {
     const parts = [
       asset.name,

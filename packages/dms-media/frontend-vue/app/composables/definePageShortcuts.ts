@@ -1,7 +1,7 @@
 import { useActiveElement } from "@vueuse/core";
-import type { MaybeRefOrGetter } from "vue";
+import type { MaybeRefOrGetter, Ref } from "vue";
 
-type ShortcutMap = Record<string, unknown>;
+type ShortcutMap = Exclude<Parameters<typeof defineShortcuts>[0], Ref>;
 
 /**
  * Page shortcuts that stand down while the keyboard is in a dialog or a menu,
@@ -19,7 +19,5 @@ export function definePageShortcuts(
       isFocusInsideOverlay(active) && !toValue(host)?.contains(active ?? null)
     );
   });
-  defineShortcuts(
-    computed(() => (isInOverlay.value ? {} : shortcuts())) as never,
-  );
+  defineShortcuts(computed(() => (isInOverlay.value ? {} : shortcuts())));
 }

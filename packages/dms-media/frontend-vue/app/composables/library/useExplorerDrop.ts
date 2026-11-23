@@ -14,21 +14,57 @@ function carries(event: DragEvent, type: string): boolean {
   return Array.from(event.dataTransfer?.types ?? []).includes(type);
 }
 
+function beginDrag(event: DragEvent, type: string, payload: string): void {
+  event.dataTransfer?.setData(type, payload);
+  if (event.dataTransfer) event.dataTransfer.effectAllowed = "move";
+}
+
+/** Whether desktop files are being dragged over the explorer, and how many. */
+function createFileDragTracker() {
+  const isDraggingFiles = ref(false);
+  const fileCount = ref(0);
+  let enterDepth = 0;
+
+  function onShellDragEnter(event: DragEvent): void {
+    if (!carries(event, FILES_DRAG_TYPE)) return;
+    enterDepth += 1;
+    isDraggingFiles.value = true;
+    fileCount.value = event.dataTransfer?.items.length ?? 0;
+  }
+
+  function onShellDragLeave(event: DragEvent): void {
+    if (!carries(event, FILES_DRAG_TYPE)) return;
+    enterDepth = Math.max(enterDepth - 1, 0);
+    if (enterDepth === 0) isDraggingFiles.value = false;
+  }
+
+  function resetFileDrag(): void {
+    enterDepth = 0;
+    isDraggingFiles.value = false;
+  }
+
+  return {
+    isDraggingFiles,
+    fileCount,
+    onShellDragEnter,
+    onShellDragLeave,
+    resetFileDrag,
+  };
+}
+
 /** Drag files or folders onto folders to move them, or drop desktop files to upload them. */
 export function createExplorerDrop(library: MediaLibrary, upload: DropUpload) {
   const hoverFolderId = ref<string | null>(null);
   const draggedIds = ref<string[]>([]);
   const draggedFolder = ref<MediaFolder | null>(null);
-  const isDraggingFiles = ref(false);
-  const fileCount = ref(0);
-  let enterDepth = 0;
+  const fileDrag = createFileDragTracker();
+  const { resetFileDrag } = fileDrag;
 
   function startAssetDrag(event: DragEvent, asset: MediaAsset): void {
     const selected = library.selection.selectedIds.value;
     const ids = selected.has(asset.id) ? [...selected] : [asset.id];
     draggedIds.value = ids;
-    event.dataTransfer?.setData(ASSET_DRAG_TYPE, JSON.stringify(ids));
-    if (event.dataTransfer) event.dataTransfer.effectAllowed = "move";
+    beginDrag(event, ASSET_DRAG_TYPE, JSON.stringify(ids));
   }
 
   function canDragFolder(folder: MediaFolder): boolean {
@@ -38,8 +74,7 @@ export function createExplorerDrop(library: MediaLibrary, upload: DropUpload) {
   function startFolderDrag(event: DragEvent, folder: MediaFolder): void {
     if (!canDragFolder(folder)) return event.preventDefault();
     draggedFolder.value = folder;
-    event.dataTransfer?.setData(FOLDER_DRAG_TYPE, folder.id);
-    if (event.dataTransfer) event.dataTransfer.effectAllowed = "move";
+    beginDrag(event, FOLDER_DRAG_TYPE, folder.id);
   }
 
   function endAssetDrag(): void {
@@ -48,7 +83,6 @@ export function createExplorerDrop(library: MediaLibrary, upload: DropUpload) {
     hoverFolderId.value = null;
   }
 
-  /** A folder goes into another it can be managed in, never into itself or below. */
   function acceptsFolder(target: MediaFolder | null): boolean {
     const dragged = draggedFolder.value;
     if (!dragged || dragged.parentId === (target?.id ?? null)) return false;
@@ -94,7 +128,9 @@ export function createExplorerDrop(library: MediaLibrary, upload: DropUpload) {
     resetFileDrag();
     if (carries(event, FOLDER_DRAG_TYPE)) return moveDraggedFolder(folder);
     const raw = event.dataTransfer?.getData(ASSET_DRAG_TYPE);
-    if (raw) return moveDragged(JSON.parse(raw) as string[], folder);
+    const draggedIds: unknown = raw ? JSON.parse(raw) : undefined;
+    if (Array.isArray(draggedIds) && draggedIds.every(isString))
+      return moveDragged(draggedIds, folder);
     const files = Array.from(event.dataTransfer?.files ?? []);
     if (files.length) upload(files, folder);
   }
@@ -115,7 +151,6 @@ export function createExplorerDrop(library: MediaLibrary, upload: DropUpload) {
       void library.actions.moveFolder(dragged, target?.id ?? null);
   }
 
-  /** The library's root takes folders only: files always live in a folder. */
   function onRootDragOver(event: DragEvent): void {
     if (!carries(event, FOLDER_DRAG_TYPE) || !acceptsFolder(null)) return;
     event.preventDefault();
@@ -135,24 +170,6 @@ export function createExplorerDrop(library: MediaLibrary, upload: DropUpload) {
     moveDraggedFolder(null);
   }
 
-  function onShellDragEnter(event: DragEvent): void {
-    if (!carries(event, FILES_DRAG_TYPE)) return;
-    enterDepth += 1;
-    isDraggingFiles.value = true;
-    fileCount.value = event.dataTransfer?.items.length ?? 0;
-  }
-
-  function onShellDragLeave(event: DragEvent): void {
-    if (!carries(event, FILES_DRAG_TYPE)) return;
-    enterDepth = Math.max(enterDepth - 1, 0);
-    if (enterDepth === 0) isDraggingFiles.value = false;
-  }
-
-  function resetFileDrag(): void {
-    enterDepth = 0;
-    isDraggingFiles.value = false;
-  }
-
   return {
     hoverFolderId,
     draggedIds,
@@ -162,16 +179,12 @@ export function createExplorerDrop(library: MediaLibrary, upload: DropUpload) {
     onRootDragOver,
     onRootDragLeave,
     onRootDrop,
-    isDraggingFiles,
-    fileCount,
+    ...fileDrag,
     startAssetDrag,
     endAssetDrag,
     onFolderDragOver,
     onFolderDragLeave,
     onFolderDrop,
-    onShellDragEnter,
-    onShellDragLeave,
-    resetFileDrag,
   };
 }
 

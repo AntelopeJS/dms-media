@@ -8,8 +8,8 @@ const RELOAD_DEBOUNCE_MS = 500;
  * tab, another tab or a colleague. It follows the page's live mode as the
  * DMS blocks do: held while the page is paused, caught up on resume.
  */
-export function onLibraryChange(reload: () => unknown): void {
-  const scheduleReload = useDebounceFn(() => void reload(), RELOAD_DEBOUNCE_MS);
+export function onLibraryChange(reload: () => void): void {
+  const scheduleReload = useDebounceFn(() => reload(), RELOAD_DEBOUNCE_MS);
   usePageLiveRefresh(() => void scheduleReload(), {
     realtimeTopic: MEDIA_LIBRARY_TOPIC,
   });

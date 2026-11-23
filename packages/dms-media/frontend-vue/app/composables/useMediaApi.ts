@@ -80,10 +80,17 @@ export const MEDIA_READS = {
   search: `${API}/search`,
 } as const;
 
+/** The body a media API request takes, as the authenticated DMS fetch types it. */
+export type MediaRequestBody = NonNullable<
+  NonNullable<
+    Parameters<ReturnType<typeof useAuthFetch>["$authFetch"]>[1]
+  >["body"]
+>;
+
 /** Typed calls to the media API, through the authenticated DMS fetch: the writes, and the reads a click or a viewer makes itself. */
 export function useMediaApi() {
   const { $authFetch } = useAuthFetch();
-  const post = <T>(path: string, body?: object) =>
+  const post = <T>(path: string, body?: MediaRequestBody) =>
     $authFetch<T>(`${API}${path}`, { method: "POST", body });
 
   async function previews(ids: string[]): Promise<MediaPreviews> {

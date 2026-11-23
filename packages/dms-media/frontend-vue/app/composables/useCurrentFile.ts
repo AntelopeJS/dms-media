@@ -9,8 +9,10 @@ import MediaLightbox from "../components/shared/MediaLightbox.vue";
 const SORT_KEYS: readonly AssetSortKey[] = ["name", "date", "size", "type"];
 const SORT_DIRECTIONS: readonly SortDirection[] = ["asc", "desc"];
 
+type QueryValue = ReturnType<typeof useDmsRoute>["query"][string];
+
 function queryValue<T extends string>(
-  value: unknown,
+  value: QueryValue,
   allowed: readonly T[],
 ): T | undefined {
   return allowed.find((candidate) => candidate === value);
@@ -30,7 +32,7 @@ export function useCurrentFile() {
   const createLightbox = () => overlay.create(MediaLightbox);
   let lightbox: ReturnType<typeof createLightbox> | undefined;
   const assetId = computed(() =>
-    typeof route.query.asset === "string" ? route.query.asset : undefined,
+    isString(route.query.asset) ? route.query.asset : undefined,
   );
   const order = computed<FileListingOrder>(() => ({
     sort: queryValue(route.query.sort, SORT_KEYS),
@@ -47,7 +49,6 @@ export function useCurrentFile() {
       });
   }
 
-  /** Full-screen viewer over the folder; closing it leaves the page on the file it showed last. */
   async function fullscreen(): Promise<void> {
     const asset = file.asset.value;
     if (!asset) return;
