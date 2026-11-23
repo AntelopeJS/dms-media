@@ -82,7 +82,7 @@ importers:
         version: 0.34.5
       zod:
         specifier: ^4.5.0
-        version: 4.5.4
+        version: 4.6.7
     devDependencies:
       '@antelopejs/core':
         specifier: ~1.24.5
@@ -155,14 +155,14 @@ importers:
         version: 2.8.9(vue@3.5.40(typescript@6.0.3))
       zod:
         specifier: ^4.5.0
-        version: 4.5.4
+        version: 4.6.7
     devDependencies:
       '@antelopejs/tooling-configs':
         specifier: '>=0.9.4 <0.10.0'
         version: 0.9.4(knip@6.34.0)(mongodb-memory-server@11.3.0(bare-buffer@3.7.1)(socks@2.8.9))(oxfmt@0.66.0)(oxlint@1.81.0(oxlint-tsgolint@7.0.2001))(pixelmatch@8.0.0)(playwright-core@1.65.1)(sharp@0.35.5)
       '@nuxt/ui':
         specifier: 4.10.0
-        version: 4.10.0(5f3d9d8a82563190fce9e64a9f5dac71)
+        version: 4.10.0(7611e7befd8c86bfb8e2781f06a8c210)
       '@typescript-eslint/parser':
         specifier: ^8.0.0
         version: 8.65.0(eslint@9.39.5(jiti@2.7.0))(typescript@6.0.3)
@@ -195,7 +195,7 @@ importers:
     dependencies:
       zod:
         specifier: ^4.5.0
-        version: 4.5.4
+        version: 4.6.7
     devDependencies:
       '@antelopejs/interface-api':
         specifier: '>=0.3.3 <0.4.0'
@@ -6415,8 +6415,8 @@ packages:
     resolution: {integrity: sha512-zK7YHHz4ZXpW89AHXUPbQVGKI7uvkd3hzusTdotCg1UxyaVtg0zFJSTfW/Dq5f7OBBVnq6cZIaC8Ti4hb6dtCA==}
     engines: {node: '>= 14'}
 
-  zod@4.5.4:
-    resolution: {integrity: sha512-sC95tT5iHHH9gtpj6A81kh+NEaRAUFN+qlUPDUbRfOMvNf5QCBqsb3WgvnpVtK5Y+4UfA6KqufotuTvMGiTlsA==}
+  zod@4.6.7:
+    resolution: {integrity: sha512-g8W2D2kU6a8untc053fX1uVBKzM7yqAxW/3zwk83+6RyF2+SKOuV+c0wBDhUwzV1PaGapmZH+rmcUzPf+3CGwg==}
 
 snapshots:
 
@@ -6492,7 +6492,7 @@ snapshots:
       striptags: 3.2.0
       ts-morph: 28.0.0
       ua-parser-js: 2.0.10
-      zod: 4.5.4
+      zod: 4.6.7
     optionalDependencies:
       '@antelopejs/core': 1.24.7
       '@antelopejs/interface-database-catalog': 0.1.1(@antelopejs/interface-core@0.5.2)
@@ -6566,7 +6566,7 @@ snapshots:
       '@antelopejs/interface-database-decorators': 0.5.2(@antelopejs/interface-api@0.3.3(@antelopejs/interface-core@0.5.2))(@antelopejs/interface-core@0.5.2)(@antelopejs/interface-database@0.4.0(@antelopejs/interface-core@0.5.2))
       '@antelopejs/interface-file-storage': 0.1.8(@antelopejs/interface-core@0.5.2)
       randomstring: 1.3.2
-      zod: 4.5.4
+      zod: 4.6.7
 
   '@antelopejs/interface-email@0.2.1(@antelopejs/interface-core@0.5.2)':
     dependencies:
@@ -7599,7 +7599,7 @@ snapshots:
       pkg-types: 2.3.1
       std-env: 4.2.0
 
-  '@nuxt/ui@4.10.0(5f3d9d8a82563190fce9e64a9f5dac71)':
+  '@nuxt/ui@4.10.0(7611e7befd8c86bfb8e2781f06a8c210)':
     dependencies:
       '@floating-ui/dom': 1.8.0
       '@iconify/vue': 5.0.1(vue@3.5.40(typescript@6.0.3))
@@ -7670,7 +7670,7 @@ snapshots:
       '@internationalized/number': 3.6.7
       valibot: 1.4.2(typescript@6.0.3)
       vue-router: 5.2.0(@vue/compiler-sfc@3.5.46)(esbuild@0.28.1)(rolldown@1.2.0)(rollup@4.62.2)(vite@7.3.6(@types/node@24.13.3)(jiti@2.7.0)(lightningcss@1.33.0)(terser@5.49.0)(yaml@2.9.1))(vue@3.5.40(typescript@6.0.3))
-      zod: 4.5.4
+      zod: 4.6.7
     transitivePeerDependencies:
       - '@azure/app-configuration'
       - '@azure/cosmos'
@@ -10492,7 +10492,7 @@ snapshots:
       tinyglobby: 0.2.17
       unbash: 4.0.11
       yaml: 2.9.1
-      zod: 4.5.4
+      zod: 4.6.7
 
   knitwork@1.3.0: {}
 
@@ -12546,4 +12546,4 @@ snapshots:
       compress-commons: 6.0.2
       readable-stream: 4.8.0
 
-  zod@4.5.4: {}
+  zod@4.6.7: {}
