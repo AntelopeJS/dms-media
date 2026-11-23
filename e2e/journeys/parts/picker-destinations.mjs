@@ -2,7 +2,7 @@ import { openFilePicker } from "../../chooser.mjs";
 import { declareFolder, member, tree, withConfig } from "../../library.mjs";
 import { check, fixture, image, media, pick, text } from "../../media.mjs";
 import { boundFolder } from "../folders.mjs";
-import { landed } from "./picker-files.mjs";
+import { dragFile, landed } from "./picker-files.mjs";
 import { openPicker } from "./picker-uploads.mjs";
 
 /** @typedef {import("../../media.mjs").Ctx} Ctx */
