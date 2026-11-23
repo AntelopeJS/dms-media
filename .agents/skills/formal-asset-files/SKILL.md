@@ -70,12 +70,12 @@ Replay the counterexample against the code, one action per step, using the cover
 
 | Model action | Code |
 | --- | --- |
-| `DGet`, `DRead`, `DWrite`, `GGet` | `ensureDerivative`, `generateDerivative`, `uploadStorageBytes` (packages/dms-media/src/derivatives.ts); callers in routes/media/delivery.ts and routes/media/assets.ts |
+| `DGet`, `DRead`, `DWrite`, `GGet` | `ensureDerivative`, `generateDerivative`, `uploadStorageBytes` (packages/dms-media/src/derivatives.ts); callers in routes/media/delivery.ts, routes/media/assets.ts and services/reads.ts |
 | `CGet`, `CCas`, `CDrop`, `CDiscard` | `commitDerivative` (derivatives.ts) |
-| `EGet`, `ERead`, `EWrite`, `EDiscard` | `transform` and `requireEditableAsset` (routes/media/transform.ts), `requireReadableAsset` (routes/media/assets.ts), `renderAssetTransform`, `applyImageTransform` (transform.ts) |
+| `EGet`, `ERead`, `EWrite`, `EDiscard` | `transform` (routes/media/transform.ts), `requireEditableAsset`, `transformInPlace` (services/transform.ts), `requireReadableAsset` (services/files.ts), `renderAssetTransform`, `applyImageTransform` (transform.ts) |
 | `RGet`, `RRead` | `revert` (routes/media/transform.ts), `revertImageTransform` (transform.ts) |
 | `TGet`, `TCas`, `SavePatch`, `RevertPatch` | `commitTransform`, `originalPatch` (transform.ts) |
-| `XGet`, `XCas` | `deleteMediaAsset` (asset-lifecycle.ts), `removeAsset` (routes/media/asset-actions.ts), `deleteFolderAssets` (routes/media/folders.ts) |
+| `XGet`, `XCas` | `deleteMediaAsset` (asset-lifecycle.ts), `removeAsset`, `applyAssetRemoval` (services/files.ts), `deleteFolderAssets`, `deleteFolderTree` (services/folders.ts) |
 | `SGet`, `SCas` | `sweepAssetDerivatives` (crons/sweep-derivatives.ts), `partitionDerivatives` (derivatives.ts) |
 | `ClStart` .. `AckCas`, `ClFinal`, `ClDrop` | `cleanupAssetFiles`, `acknowledgeFile`, `retiredFiles` (asset-lifecycle.ts), `deleteCleanedAsset` (db/models/mediaAssets.model.ts) |
 | `Publish`, `KeysOf`, `Live` | `updateAssetMedia` (asset-lifecycle.ts), `compareMedia` (db/models/mediaAssets.model.ts), `collectAssetStorageKeys`, `parseDerivatives` (routes/media/storage-keys.ts) |

@@ -18,12 +18,11 @@ export const COVERED = {
     "ensureDeclaredFolder",
   ],
   [`${SRC}/declared/assets.ts`]: [
-    "writeFile",
-    "insertAsset",
     "createAsset",
     "applyAssetDeclaration",
     "importDeclaredAsset",
   ],
+  [`${SRC}/services/add-file.ts`]: ["insertAsset", "storeNewFile"],
   [`${SRC}/declared/records.ts`]: ["declaredId", "rememberDeclaration"],
   [`${SRC}/bindings.ts`]: [
     "bindingFolderId",
@@ -33,7 +32,7 @@ export const COVERED = {
     "ensureTenantBindings",
   ],
   [`${SRC}/fixed-id.ts`]: ["fixedId"],
-  [`${SRC}/routes/media/folders.ts`]: ["hasSiblingNamed"],
+  [`${SRC}/services/folders.ts`]: ["hasSiblingNamed", "findSiblingNamed"],
 };
 
 /** The repository paths of the covered files. */
