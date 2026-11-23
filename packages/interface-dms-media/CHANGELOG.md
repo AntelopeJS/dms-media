@@ -1,5 +1,30 @@
 # Changelog
 
+## v0.5.0
+
+[compare changes](https://github.com/AntelopeJS/dms-media/compare/interface-v0.4.2...interface-v0.5.0)
+
+### 📦 Build
+
+- **deps:** Move to zod 4 and interface-dms 0.16 ([#217](https://github.com/AntelopeJS/dms-media/pull/217))
+
+### 🏡 Chore
+
+- Lint every file under the org comment rule with tooling-configs 0.10 ([#218](https://github.com/AntelopeJS/dms-media/pull/218))
+
+### 🤖 CI
+
+- Re-sync the AntelopeJS pack for the release app ([#213](https://github.com/AntelopeJS/dms-media/pull/213))
+- Stop forwarding the retired RELEASE_GITHUB_TOKEN ([#215](https://github.com/AntelopeJS/dms-media/pull/215))
+
+#### ⚠️ Breaking Changes
+
+- **deps:** Move to zod 4 and interface-dms 0.16 ([#217](https://github.com/AntelopeJS/dms-media/pull/217))
+
+### ❤️ Contributors
+
+- Antony Rizzitelli
+
 ## v0.4.2
 
 [compare changes](https://github.com/AntelopeJS/dms-media/compare/interface-v0.4.1...interface-v0.4.2)
