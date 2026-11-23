@@ -313,6 +313,115 @@ function describeFolderWrites(): void {
   });
 }
 
+function describeDetailsAndMoves(): void {
+  describe("details, moves and visibility, port by port", () => {
+    it("changes only the ports given: alt alone keeps the name, a name alone keeps the alt, an empty alt clears it", async () => {
+      const file = await uploadTextAsset(client, rootId, "ports.txt");
+      await updateFileDetailsAction.execute(
+        { assetId: file.id, alt: "First alt" },
+        stepCtx(),
+      );
+      expect((await assets().get(file.id))?.name).to.equal("ports.txt");
+      await updateFileDetailsAction.execute(
+        { assetId: file.id, name: "ports-renamed.txt" },
+        stepCtx(),
+      );
+      const renamed = await assets().get(file.id);
+      expect([renamed?.name, renamed?.alt]).to.deep.equal([
+        "ports-renamed.txt",
+        "First alt",
+      ]);
+      const cleared = await updateFileDetailsAction.execute(
+        { assetId: file.id, alt: "" },
+        stepCtx(),
+      );
+      expect(cleared).to.deep.include({ alt: null, altChanged: true });
+      const stored = await assets().get(file.id);
+      expect([stored?.name, stored?.alt || null]).to.deep.equal([
+        "ports-renamed.txt",
+        null,
+      ]);
+    });
+
+    it("moves into a folder by binding, refuses a type its field refuses and a taken name, and simulates without moving", async () => {
+      const image = await uploadAsset(
+        client,
+        rootId,
+        "to-field.png",
+        "image/png",
+        await solidPng(4, 4),
+      );
+      const text = await uploadTextAsset(client, rootId, "not-an-image.txt");
+      const fieldFolder = bindingFolderId(DEFAULT_TENANT_ID, IMAGE_BINDING);
+      const simulated = await moveFileAction.dryRun?.(
+        { assetId: image.id, binding: IMAGE_BINDING },
+        stepCtx(),
+      );
+      expect(simulated).to.deep.include({ moved: true, folderId: fieldFolder });
+      expect((await assets().get(image.id))?.folderId).to.equal(rootId);
+      const moved = await moveFileAction.execute(
+        { assetId: image.id, binding: IMAGE_BINDING },
+        stepCtx(),
+      );
+      expect(moved).to.deep.equal(simulated);
+      expect(
+        await failureOf(
+          moveFileAction.execute(
+            { assetId: text.id, binding: IMAGE_BINDING },
+            stepCtx(),
+          ),
+        ),
+      ).to.match(/does not accept this type/);
+      const twin = await uploadAsset(
+        client,
+        rootId,
+        "to-field.png",
+        "image/png",
+        await solidPng(4, 4),
+      );
+      expect(
+        await failureOf(
+          moveFileAction.execute(
+            { assetId: twin.id, binding: IMAGE_BINDING },
+            stepCtx(),
+          ),
+        ),
+      ).to.match(/another file of the folder has this name/);
+    });
+
+    it("simulates a visibility change without writing, and a real one to public fires file-published", async () => {
+      const file = await uploadTextAsset(client, rootId, "to-publish.txt");
+      const published = await capture(filePublishedTrigger, {
+        includeAutomationWrites: true,
+      });
+      try {
+        const simulated = await setFileVisibilityAction.dryRun?.(
+          { assetId: file.id, visibility: "public" },
+          stepCtx(),
+        );
+        expect(simulated).to.deep.include({
+          changed: true,
+          effectiveVisibility: "public",
+        });
+        expect((await assets().get(file.id))?.visibility).to.equal("inherit");
+        expect(published.received).to.deep.equal([]);
+        await setFileVisibilityAction.execute(
+          { assetId: file.id, visibility: "public" },
+          stepCtx(),
+        );
+        expect(
+          published.received.map((payload) => [
+            payload.assetId,
+            payload.reason,
+          ]),
+        ).to.deep.equal([[file.id, "visibility"]]);
+      } finally {
+        await published.stop();
+      }
+    });
+  });
+}
+
 describe("[integration] media automation — library write actions", function () {
   this.timeout(TEST_TIMEOUT_MS);
 
@@ -335,4 +444,5 @@ describe("[integration] media automation — library write actions", function ()
   describeFileWrites();
   describeFileWritesMore();
   describeFolderWrites();
+  describeDetailsAndMoves();
 });

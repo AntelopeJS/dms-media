@@ -19,7 +19,7 @@ export async function createFolder(
 export async function postOk(
   client: AxiosInstance,
   path: string,
-  body: Record<string, string | number | boolean | null> = {},
+  body: Record<string, string | string[] | number | boolean | null> = {},
 ): Promise<void> {
   const response = await client.post(`/api/media${path}`, body);
   expect(response.status, `${path}: ${JSON.stringify(response.data)}`).to.equal(

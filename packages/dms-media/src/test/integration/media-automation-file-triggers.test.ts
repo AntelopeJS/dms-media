@@ -350,6 +350,58 @@ function describeFilePublished(): void {
   });
 }
 
+function describeBulkAndCreated(): void {
+  describe("bulk deletes and files added public", () => {
+    it("fires media.file-deleted once per file of a bulk delete", async () => {
+      const files = await Promise.all(
+        ["bulk-a.txt", "bulk-b.txt"].map((name) =>
+          uploadTextAsset(client, nestedId, name),
+        ),
+      );
+      const watching = await capture(fileDeletedTrigger, {
+        folderId: nestedId,
+      });
+      try {
+        await postOk(client, "/assets/bulk/delete", {
+          ids: files.map((file) => file.id),
+        });
+        expect(
+          watching.received.map((payload) => payload.assetId).sort(),
+        ).to.deep.equal(files.map((file) => file.id).sort());
+        expect(
+          watching.received.every((payload) => payload.cause === "file"),
+        ).to.equal(true);
+      } finally {
+        await watching.stop();
+      }
+    });
+
+    it("fires for a file added already public only when `created` is chosen", async () => {
+      const open = await createFolder(client, "Open drop");
+      await postOk(client, `/folders/${open}/visibility`, {
+        visibility: "public",
+      });
+      const byDefault = await capture(filePublishedTrigger, { folderId: open });
+      const created = await capture(filePublishedTrigger, {
+        folderId: open,
+        reasons: ["created"],
+      });
+      try {
+        const file = await uploadTextAsset(client, open, "born-public.txt");
+        expect(byDefault.received).to.deep.equal([]);
+        expect(created.received).to.have.length(1);
+        expect(created.received[0]).to.deep.include({
+          assetId: file.id,
+          reason: "created",
+          previousEffectiveVisibility: null,
+        });
+      } finally {
+        await Promise.all([byDefault.stop(), created.stop()]);
+      }
+    });
+  });
+}
+
 describe("[integration] media automation — file triggers", function () {
   this.timeout(TEST_TIMEOUT_MS);
 
@@ -363,4 +415,5 @@ describe("[integration] media automation — file triggers", function () {
   describeFileUploadedMore();
   describeFileDeleted();
   describeFilePublished();
+  describeBulkAndCreated();
 });
