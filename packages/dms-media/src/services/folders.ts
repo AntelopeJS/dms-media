@@ -79,17 +79,19 @@ export function buildChildPath(parent: MediaFolder | undefined): string[] {
   return parent ? [...parent.path, parent._id] : [];
 }
 
+/**
+ * Deletes every file of the folders, a tombstoned one included so its
+ * cleanup is retried, and resolves with the files this call tombstoned.
+ */
 async function deleteFolderAssets(
   context: FolderTreeModels,
   folderIds: string[],
 ): Promise<MediaAsset[]> {
-  const assets = (
-    await context.assetModel.getBy("folderId", ...folderIds)
-  ).filter((asset) => !asset.isDeleting);
+  const assets = await context.assetModel.getBy("folderId", ...folderIds);
   await Promise.all(
     assets.map((asset) => deleteMediaAsset(context.assetModel, asset._id)),
   );
-  return assets;
+  return assets.filter((asset) => !asset.isDeleting);
 }
 
 /**
