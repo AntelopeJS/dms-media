@@ -4,13 +4,13 @@
 
 A pnpm workspace with two published packages. The root holds the tool configs and the CI workflows; the code lives in the packages.
 
-| Path                                  | What it is                                                                                                                                  |
-| ------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------- |
-| `packages/dms-media`                  | `@antelopejs/dms-media`, the DMS media module: uploads, folders with per-folder permissions, derivatives and image editing                  |
-| `packages/dms-media/frontend-vue`     | The Vue layer, shipped as source. ESLint and Prettier own it, not oxlint and oxfmt. It keeps its own lockfile for standalone consumers      |
-| `packages/dms-media/playground`       | An AntelopeJS project that runs the module against MongoDB. It is not a workspace package: install it with `--ignore-workspace`               |
-| `packages/dms-media/skills`           | Agent skills published with the module                                                                                                      |
-| `packages/interface-dms-media`        | `@antelopejs/interface-dms-media`, the interface the module implements: the `AssetType` field, folder bindings and declared content         |
+| Path                              | What it is                                                                                                                             |
+| --------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------- |
+| `packages/dms-media`              | `@antelopejs/dms-media`, the DMS media module: uploads, folders with per-folder permissions, derivatives and image editing             |
+| `packages/dms-media/frontend-vue` | The Vue layer, shipped as source. ESLint and Prettier own it, not oxlint and oxfmt. It keeps its own lockfile for standalone consumers |
+| `packages/dms-media/playground`   | An AntelopeJS project that runs the module against MongoDB. It is not a workspace package: install it with `--ignore-workspace`        |
+| `packages/dms-media/skills`       | Agent skills published with the module                                                                                                 |
+| `packages/interface-dms-media`    | `@antelopejs/interface-dms-media`, the interface the module implements: the `AssetType` field, folder bindings and declared content    |
 
 Run a package script from its own directory: `pnpm --dir packages/dms-media <script>`.
 

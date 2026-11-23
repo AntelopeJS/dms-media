@@ -59,15 +59,23 @@ static form = Form({
 
 ```typescript
 import { Hook, RegisterHook } from "@antelopejs/interface-dms/hooks";
-import { EnsureMediaFolder, ImportMediaAsset } from "@antelopejs/interface-dms-media";
+import {
+  EnsureMediaFolder,
+  ImportMediaAsset,
+} from "@antelopejs/interface-dms-media";
 
 // Once per tenant, when it is created (registered from construct()).
 RegisterHook(Hook.TENANT_BEING_PROVISIONED, async ({ tenantId }) => {
-  await EnsureMediaFolder({ tenantId, key: "helio.procedures", name: "Procedures", visibility: "private" });
+  await EnsureMediaFolder({
+    tenantId,
+    key: "helio.procedures",
+    name: "Procedures",
+    visibility: "private",
+  });
   await ImportMediaAsset({
     tenantId,
     key: "helio.procedures.roof",
-    folder: { key: "helio.procedures" },   // or { binding: "projects.cover" } for a field's folder
+    folder: { key: "helio.procedures" }, // or { binding: "projects.cover" } for a field's folder
     name: "Roof safety checklist.pdf",
     mimetype: "application/pdf",
     source: { filePath: "/abs/path.pdf" }, // or { bytes: buffer }, or { load: () => bytes }

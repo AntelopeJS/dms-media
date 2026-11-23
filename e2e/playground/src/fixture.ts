@@ -110,9 +110,15 @@ type Outcome =
  */
 function permissionsOf(name: string): string[] {
   if (name === "page:fields")
-    return [GetPermissionId(FieldsPage), GetPermissionId(FieldsPage.content)].flatMap((id) => id ?? []);
+    return [
+      GetPermissionId(FieldsPage),
+      GetPermissionId(FieldsPage.content),
+    ].flatMap((id) => id ?? []);
   if (name === "page:open")
-    return [GetPermissionId(OpenPage), GetPermissionId(OpenPage.content)].flatMap((id) => id ?? []);
+    return [
+      GetPermissionId(OpenPage),
+      GetPermissionId(OpenPage.content),
+    ].flatMap((id) => id ?? []);
   return [name];
 }
 
@@ -192,14 +198,22 @@ export class VerifyFixtureController extends Controller("/e2e-media") {
 
   @Get("/permissions")
   permissions() {
-    return { fields: GetPermissionId(FieldsPage), fieldsForm: GetPermissionId(FieldsPage.content), open: GetPermissionId(OpenPage) };
+    return {
+      fields: GetPermissionId(FieldsPage),
+      fieldsForm: GetPermissionId(FieldsPage.content),
+      open: GetPermissionId(OpenPage),
+    };
   }
 
   @Post("/folder")
   folder(@JSONBody() body: unknown) {
     const { tenantId, ...declaration } = folderSchema.parse(body);
     return outcome(
-      () => EnsureMediaFolder({ ...declaration, tenantId: tenantSchema.parse(tenantId) }),
+      () =>
+        EnsureMediaFolder({
+          ...declaration,
+          tenantId: tenantSchema.parse(tenantId),
+        }),
       () => 0,
     );
   }

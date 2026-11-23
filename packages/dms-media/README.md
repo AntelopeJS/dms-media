@@ -56,7 +56,11 @@ import { AssetType } from "@antelopejs/interface-dms-media";
 
 new AssetType({
   mimetypes: ["image/*"],
-  binding: { id: "articles.cover", folderName: "Article covers", permissionsFromPage: ArticlesPage },
+  binding: {
+    id: "articles.cover",
+    folderName: "Article covers",
+    permissionsFromPage: ArticlesPage,
+  },
 });
 ```
 

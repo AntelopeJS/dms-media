@@ -19,7 +19,12 @@ const DAY_MS = 24 * 60 * 60 * 1000;
  * @returns {value is Driver} Whether it is the MongoDB driver
  */
 function isDriver(value) {
-  return typeof value === "object" && value !== null && "MongoClient" in value && typeof value.MongoClient === "function";
+  return (
+    typeof value === "object" &&
+    value !== null &&
+    "MongoClient" in value &&
+    typeof value.MongoClient === "function"
+  );
 }
 
 /**
@@ -47,15 +52,27 @@ async function driver() {
  */
 export async function age(ctx, table, id, daysAgo) {
   const { MongoClient } = await driver();
-  const client = new MongoClient(ctx.state.mongoUrl, { serverSelectionTimeoutMS: 5000 });
+  const client = new MongoClient(ctx.state.mongoUrl, {
+    serverSelectionTimeoutMS: 5000,
+  });
   await client.connect();
   try {
     const database = client.db(ctx.state.database);
-    const names = (await database.listCollections().toArray()).map((entry) => entry.name).filter((name) => name.endsWith(table));
+    const names = (await database.listCollections().toArray())
+      .map((entry) => entry.name)
+      .filter((name) => name.endsWith(table));
     const now = Date.now();
-    const fields = Object.fromEntries(Object.entries(daysAgo).map(([field, days]) => [field, new Date(now - days * DAY_MS)]));
+    const fields = Object.fromEntries(
+      Object.entries(daysAgo).map(([field, days]) => [
+        field,
+        new Date(now - days * DAY_MS),
+      ]),
+    );
     let matched = 0;
-    for (const name of names) matched += (await database.collection(name).updateOne({ _id: id }, { $set: fields })).matchedCount;
+    for (const name of names)
+      matched += (
+        await database.collection(name).updateOne({ _id: id }, { $set: fields })
+      ).matchedCount;
     return matched;
   } finally {
     await client.close();

@@ -17,10 +17,18 @@ export async function dragFile(target, name, buffer, types) {
     (element, file) => {
       const binary = atob(file.base64);
       const bytes = new Uint8Array(binary.length);
-      for (let index = 0; index < binary.length; index += 1) bytes[index] = binary.charCodeAt(index);
+      for (let index = 0; index < binary.length; index += 1)
+        bytes[index] = binary.charCodeAt(index);
       const transfer = new DataTransfer();
       transfer.items.add(new File([bytes], file.name, { type: "image/png" }));
-      for (const type of file.types) element.dispatchEvent(new DragEvent(type, { bubbles: true, cancelable: true, dataTransfer: transfer }));
+      for (const type of file.types)
+        element.dispatchEvent(
+          new DragEvent(type, {
+            bubbles: true,
+            cancelable: true,
+            dataTransfer: transfer,
+          }),
+        );
     },
     { base64: buffer.toString("base64"), name, types },
   );
@@ -37,13 +45,23 @@ export async function dragFile(target, name, buffer, types) {
  */
 export async function landed(ctx, folders, name, as) {
   /** @param {string} id */
-  const names = async (id) => (await folderAssets(ctx, id, { as })).assets.map((asset) => text(asset, "name"));
+  const names = async (id) =>
+    (await folderAssets(ctx, id, { as })).assets.map((asset) =>
+      text(asset, "name"),
+    );
   const list = async () => {
-    const [bound, sub] = await Promise.all([names(folders.bound), names(folders.sub)]);
+    const [bound, sub] = await Promise.all([
+      names(folders.bound),
+      names(folders.sub),
+    ]);
     return { bound, sub };
   };
   let listed = await list();
-  for (let attempt = 0; attempt < 20 && ![...listed.bound, ...listed.sub].includes(name); attempt += 1) {
+  for (
+    let attempt = 0;
+    attempt < 20 && ![...listed.bound, ...listed.sub].includes(name);
+    attempt += 1
+  ) {
     await new Promise((resolve) => setTimeout(resolve, 1000));
     listed = await list();
   }

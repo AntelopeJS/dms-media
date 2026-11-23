@@ -31,6 +31,7 @@ own range; that is enough. The `dependency:ranges` step of `pnpm run checks`
 now checks the `@antelopejs/*` ranges in its place.
 
 **Q1.3 What breaks in the frontend layer?**
+
 - Components are prefixed (`dms-frontend` 0.5): the layer declares
   `componentPrefix: "DmsMedia"` and registers bare names (`Explorer`,
   `AssetPicker`, …). The backend keeps sending full names (`DmsMediaExplorer`);
@@ -63,25 +64,25 @@ module registers a **root category** instead (`RootCategory("media")`,
 mockup's nav groups, and every page permission grantable in Roles. This
 answers M01 (Media is no longer filed under Settings).
 
-*Reversed on 2026-10-12 (section 10): Media registers with `RegisterModule`
-like every other DMS module.*
+_Reversed on 2026-10-12 (section 10): Media registers with `RegisterModule`
+like every other DMS module._
 
 **Q2.2 Which pages ship?**
 
 As of 2026-10-13 (section 10, labels from Q10.7):
 
-| Nav group | Page | URL | Content |
-| --- | --- | --- | --- |
-| Library | Overview | `/modules/media/overview` | Upload strip, KPIs, storage by type, needs attention, recent files, activity, first run |
-| Library | Library | `/modules/media/files` | The explorer (tree, grid/list/columns, inspector, bulk bar, search, menus, drag and drop, shortcuts) |
-| Library | Uploads | `/modules/media/uploads` | Current upload queue and the recent batches |
-| (hidden) | File | `/modules/media/file?asset=` | File details: viewer, filmstrip, details, delivery, history, usage |
-| (hidden) | Edit image | `/modules/media/editor?asset=` | Staged crop and rotate with presets preview, Save and Save as copy |
-| (hidden) | Activity | `/modules/media/activity` | Every library event, filtered by kind of action, reached from the overview feed |
-| Settings | Image sizes | `/modules/media/presets` | Preset sizes, URLs, render counts, cache and configuration |
-| *(set aside)* | Access & visibility | None | Was `/media/access`: folder rules editor. Removed with its routes; the ACL engine stays for linked folders |
-| *(set aside)* | Linked folders | None | Was `/media/linked`. Removed with its routes; the bindings stay |
-| *(moved out)* | Asset field & picker | None | Was `/media/field`. The picker demo lives in the playground (`/media-demo`) |
+| Nav group     | Page                 | URL                            | Content                                                                                                    |
+| ------------- | -------------------- | ------------------------------ | ---------------------------------------------------------------------------------------------------------- |
+| Library       | Overview             | `/modules/media/overview`      | Upload strip, KPIs, storage by type, needs attention, recent files, activity, first run                    |
+| Library       | Library              | `/modules/media/files`         | The explorer (tree, grid/list/columns, inspector, bulk bar, search, menus, drag and drop, shortcuts)       |
+| Library       | Uploads              | `/modules/media/uploads`       | Current upload queue and the recent batches                                                                |
+| (hidden)      | File                 | `/modules/media/file?asset=`   | File details: viewer, filmstrip, details, delivery, history, usage                                         |
+| (hidden)      | Edit image           | `/modules/media/editor?asset=` | Staged crop and rotate with presets preview, Save and Save as copy                                         |
+| (hidden)      | Activity             | `/modules/media/activity`      | Every library event, filtered by kind of action, reached from the overview feed                            |
+| Settings      | Image sizes          | `/modules/media/presets`       | Preset sizes, URLs, render counts, cache and configuration                                                 |
+| _(set aside)_ | Access & visibility  | None                           | Was `/media/access`: folder rules editor. Removed with its routes; the ACL engine stays for linked folders |
+| _(set aside)_ | Linked folders       | None                           | Was `/media/linked`. Removed with its routes; the bindings stay                                            |
+| _(moved out)_ | Asset field & picker | None                           | Was `/media/field`. The picker demo lives in the playground (`/media-demo`)                                |
 
 The mockup's Search screen is a mode of the explorer (`/modules/media/files?q=`), not
 a page: the search box lives in the explorer toolbar and searching from any
@@ -91,8 +92,8 @@ folder must not navigate away. The "Design review" group is mockup-only.
 Three label categories (`library`, `manage`, `developers`) under the root, each
 with `urlSlug: "/"`, so URLs stay `/media/<page>` and permission ids read
 `media.library.files`, `media.manage.access`, …
-*Since 2026-10-12 (Q10.1): two categories (`library`, `manage`) under the
-module, URLs `/modules/media/<page>`, ids `modules.media.library.files`, …*
+_Since 2026-10-12 (Q10.1): two categories (`library`, `manage`) under the
+module, URLs `/modules/media/<page>`, ids `modules.media.library.files`, …_
 
 **Q2.4 The old page permission was `settings.media.assets`. What happens to it?**
 It is gone with the settings page; the default root ACL now grants `read` to
@@ -100,17 +101,17 @@ It is gone with the settings page; the default root ACL now grants `read` to
 grant the new one: this is a breaking change, called out in the PR and the
 changelog. Folder ACLs stored in the database that name the old id keep
 working only if a role still holds it, so the README says to update them.
-*Since 2026-10-12 the id is `modules.media.library.files`, which the DMS grants
-to owners only (Q10.2).*
+_Since 2026-10-12 the id is `modules.media.library.files`, which the DMS grants
+to owners only (Q10.2)._
 
 **Q2.5 Do the static permissions change?**
 No: `media.upload`, `media.folders.manage` and `media.permissions.manage` keep
 their ids (configs and stored ACLs reference them). They get translated titles
 and descriptions (`$dms_media.permissions.*`) and depend on the All files
 page. They now sit under the `media` root in the Roles tree, next to the pages.
-*Since 2026-10-12 there is no `media` root permission any more: the Roles tree
+_Since 2026-10-12 there is no `media` root permission any more: the Roles tree
 lists the three permissions at its top level, and their dependency on the All
-files page is inert, the DMS never registering a module page permission.*
+files page is inert, the DMS never registering a module page permission._
 
 **Q2.6 How are the pages declared?**
 Every page is a backend tree. Stock blocks where they fit: `StatGroup` (KPIs,
@@ -263,13 +264,13 @@ Edits are staged (crop with aspect presets Free, 1:1 thumb, 3:2 original, 4:3,
 Save (⌘S) sends a single `transform` (M13). The preview of each delivery
 preset updates live. Revert to original stays available when an original is
 preserved. Failures keep the pending changes.
-*Since 2026-10-13 (Q10.8): Save warns that it changes the image everywhere it
-is used, and Save as copy keeps the source untouched.*
+_Since 2026-10-13 (Q10.8): Save warns that it changes the image everywhere it
+is used, and Save as copy keeps the source untouched._
 
 ## 6. Manage
 
-*Access & visibility and Linked folders are set aside since 2026-10-12
-(Q10.3); Delivery presets stays.*
+_Access & visibility and Linked folders are set aside since 2026-10-12
+(Q10.3); Delivery presets stays._
 
 **Q6.1 Access & visibility?**
 A folder tree with markers (public, own rules, linked), and for the selected
@@ -293,13 +294,13 @@ One card per preset (box, fit, format, quality, URL pattern, cache key, how
 many files have it rendered), the cache rules (nightly sweep, public CDN
 lifetime, private signed links) and the configuration snippet. Presets stay
 read-only: they are project configuration.
-*Since 2026-10-13 the page is Settings › Image sizes (Q10.7), and the
-`/media/...` redirect is no longer cacheable (Q10.14).*
+_Since 2026-10-13 the page is Settings › Image sizes (Q10.7), and the
+`/media/...` redirect is no longer cacheable (Q10.14)._
 
 ## 7. Developers
 
-*The page left the module on 2026-10-12: the picker demo lives in the
-playground (Q10.4).*
+_The page left the module on 2026-10-12: the picker demo lives in the
+playground (Q10.4)._
 
 **Q7.1 Asset field & picker page?**
 A real `Form` with three `AssetType` fields (cover image, gallery of up to 8,
@@ -321,14 +322,14 @@ text (warning tone, links to the smart view).
 A `Card` holding a segmented `Meter` (images, videos, PDF, documents,
 spreadsheets, vectors, other) fetched from `/api/media/stats/storage` and a
 `KeyValueList` of the five largest folders.
-*The largest folders and the folder cards left the overview on 2026-10-13
-(Q10.7).*
+_The largest folders and the folder cards left the overview on 2026-10-13
+(Q10.7)._
 
 **Q8.3 Needs attention?**
 A `KeyValueList` fetched from `/api/media/stats/attention`: images without
 alt text, failed uploads of the last day, files over 20 MB. An empty list
-shows "Nothing needs attention". *Folders with their own rules left the list on
-2026-10-12 with the rules editor they linked to (Q10.3).*
+shows "Nothing needs attention". _Folders with their own rules left the list on
+2026-10-12 with the rules editor they linked to (Q10.3)._
 
 **Q8.4 Activity?**
 An `ActivityFeed` over a `media_events` table written by every write route

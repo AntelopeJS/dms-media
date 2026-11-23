@@ -3,7 +3,8 @@ import { spawnSync } from "node:child_process";
 /** @typedef {import("./media.mjs").Ctx} Ctx */
 /** @typedef {import("./media.mjs").Tab} Tab */
 
-const GONE = /signs in and leaves \/auth|ECONNREFUSED|ECONNRESET|fetch failed|socket hang up|Target closed|has been closed|browser has disconnected|terminated|UND_ERR/i;
+const GONE =
+  /signs in and leaves \/auth|ECONNREFUSED|ECONNRESET|fetch failed|socket hang up|Target closed|has been closed|browser has disconnected|terminated|UND_ERR/i;
 
 /**
  * Whether the run's backend and dashboard still answer, probed synchronously so any recorded step can be judged.
@@ -12,8 +13,15 @@ const GONE = /signs in and leaves \/auth|ECONNREFUSED|ECONNRESET|fetch failed|so
  * @returns {boolean} False when either is gone
  */
 function environmentUp(ctx) {
-  for (const url of [`${ctx.state.apiUrl}/api/onboarding/informations`, `${ctx.state.webUrl}/dms-preview`]) {
-    const probe = spawnSync("curl", ["-fsS", "-m", "5", "-o", "/dev/null", url], { encoding: "utf8" });
+  for (const url of [
+    `${ctx.state.apiUrl}/api/onboarding/informations`,
+    `${ctx.state.webUrl}/dms-preview`,
+  ]) {
+    const probe = spawnSync(
+      "curl",
+      ["-fsS", "-m", "5", "-o", "/dev/null", url],
+      { encoding: "utf8" },
+    );
     if (probe.status !== 0) return false;
   }
   return true;
@@ -37,9 +45,20 @@ const SIGN_IN_TIMEOUT_MS = 60_000;
  */
 async function waitForHydration(tab) {
   for (let attempt = 0; attempt < HYDRATION_ATTEMPTS; attempt += 1) {
-    await tab.page.getByRole(SHOW_PASSWORD.role, { name: SHOW_PASSWORD.name }).click({ timeout: HYDRATION_POLL_MS }).catch(() => undefined);
-    const hidden = tab.page.getByRole(HIDE_PASSWORD.role, { name: HIDE_PASSWORD.name });
-    if (await hidden.waitFor({ timeout: HYDRATION_POLL_MS }).then(() => true).catch(() => false)) return true;
+    await tab.page
+      .getByRole(SHOW_PASSWORD.role, { name: SHOW_PASSWORD.name })
+      .click({ timeout: HYDRATION_POLL_MS })
+      .catch(() => undefined);
+    const hidden = tab.page.getByRole(HIDE_PASSWORD.role, {
+      name: HIDE_PASSWORD.name,
+    });
+    if (
+      await hidden
+        .waitFor({ timeout: HYDRATION_POLL_MS })
+        .then(() => true)
+        .catch(() => false)
+    )
+      return true;
   }
   return false;
 }
@@ -56,16 +75,39 @@ async function waitForHydration(tab) {
 async function signInHydrated(ctx, tab, account) {
   const credentials = ctx.state.accounts?.[account];
   if (!credentials) {
-    ctx.record(ctx.step(`${tab.label} signed in as ${account}`), [{ name: `${account} signs in and leaves /auth`, pass: false, detail: `no account ${account}` }], { critical: true });
+    ctx.record(
+      ctx.step(`${tab.label} signed in as ${account}`),
+      [
+        {
+          name: `${account} signs in and leaves /auth`,
+          pass: false,
+          detail: `no account ${account}`,
+        },
+      ],
+      { critical: true },
+    );
     return;
   }
   await tab.goto("/auth");
   await waitForHydration(tab);
   await tab.fill({ role: "textbox", name: "Email address" }, credentials.email);
-  await tab.fill({ role: "textbox", name: "Password", exact: true }, credentials.password);
+  await tab.fill(
+    { role: "textbox", name: "Password", exact: true },
+    credentials.password,
+  );
   await tab.click({ role: "button", name: "Login", exact: true });
   const left = await tab.at(/^(?!\/auth)/, { timeoutMs: SIGN_IN_TIMEOUT_MS });
-  ctx.record(ctx.step(`${tab.label} signed in as ${account}`), [{ name: `${account} signs in and leaves /auth`, pass: left.pass === true, detail: String(left.detail) }], { critical: true });
+  ctx.record(
+    ctx.step(`${tab.label} signed in as ${account}`),
+    [
+      {
+        name: `${account} signs in and leaves /auth`,
+        pass: left.pass === true,
+        detail: String(left.detail),
+      },
+    ],
+    { critical: true },
+  );
 }
 
 /**
@@ -84,22 +126,35 @@ export function guarded(journeys) {
       const openTab = ctx.tab.bind(ctx);
       ctx.tab = async (account, label) => {
         const tab = await openTab(account, label);
-        tab.signIn = (/** @type {string} */ who) => signInHydrated(ctx, tab, who);
+        tab.signIn = (/** @type {string} */ who) =>
+          signInHydrated(ctx, tab, who);
         return tab;
       };
       const record = ctx.record.bind(ctx);
       ctx.record = (folder, checks, options) => {
         const failing = checks.filter((check) => !check.pass);
-        if (failing.length > 0 && (failing.some((check) => GONE.test(`${check.name} ${check.detail}`)) || !environmentUp(ctx))) {
-          throw new Error(`NOT VERIFIED: the environment went away (${failing[0]?.detail.slice(0, 200)})`);
+        if (
+          failing.length > 0 &&
+          (failing.some((check) =>
+            GONE.test(`${check.name} ${check.detail}`),
+          ) ||
+            !environmentUp(ctx))
+        ) {
+          throw new Error(
+            `NOT VERIFIED: the environment went away (${failing[0]?.detail.slice(0, 200)})`,
+          );
         }
         return record(folder, checks, options);
       };
       const verify = ctx.verify.bind(ctx);
       ctx.verify = async (label, checks, options) => {
-        const results = await Promise.all(checks.map((check) => Promise.resolve(check)));
+        const results = await Promise.all(
+          checks.map((check) => Promise.resolve(check)),
+        );
         if (results.some((check) => !check.pass) && !environmentUp(ctx)) {
-          throw new Error(`NOT VERIFIED: the environment went away before "${label}" could be judged`);
+          throw new Error(
+            `NOT VERIFIED: the environment went away before "${label}" could be judged`,
+          );
         }
         return verify(label, results, options);
       };
