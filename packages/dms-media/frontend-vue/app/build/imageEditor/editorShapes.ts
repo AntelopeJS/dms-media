@@ -84,7 +84,6 @@ export const SAME_ASPECT_TOLERANCE = 0.02;
 export const NUDGE_RATIO = 0.01;
 export const VECTOR_MIMETYPE = "image/svg+xml";
 export const KEY_STEPS: KeyStepTable = {
-  __proto__: null,
   ArrowLeft: { x: -1, y: 0 },
   ArrowRight: { x: 1, y: 0 },
   ArrowUp: { x: 0, y: -1 },
