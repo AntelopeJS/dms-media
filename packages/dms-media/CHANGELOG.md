@@ -1,5 +1,31 @@
 # Changelog
 
+## v0.9.0
+
+[compare changes](https://github.com/AntelopeJS/dms-media/compare/v0.8.3...v0.9.0)
+
+### 📦 Build
+
+- **deps:** Move off the dms previews and drop the dms-control names ([#212](https://github.com/AntelopeJS/dms-media/pull/212))
+- **deps:** Move to zod 4 and interface-dms 0.16 ([#217](https://github.com/AntelopeJS/dms-media/pull/217))
+
+### 🏡 Chore
+
+- Lint every file under the org comment rule with tooling-configs 0.10 ([#218](https://github.com/AntelopeJS/dms-media/pull/218))
+
+### 🤖 CI
+
+- Re-sync the AntelopeJS pack for the release app ([#213](https://github.com/AntelopeJS/dms-media/pull/213))
+- Stop forwarding the retired RELEASE_GITHUB_TOKEN ([#215](https://github.com/AntelopeJS/dms-media/pull/215))
+
+#### ⚠️ Breaking Changes
+
+- **deps:** Move to zod 4 and interface-dms 0.16 ([#217](https://github.com/AntelopeJS/dms-media/pull/217))
+
+### ❤️ Contributors
+
+- Antony Rizzitelli
+
 ## v0.8.3
 
 [compare changes](https://github.com/AntelopeJS/dms-media/compare/v0.8.2...v0.8.3)
