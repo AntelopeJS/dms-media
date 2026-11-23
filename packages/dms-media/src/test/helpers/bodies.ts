@@ -1,9 +1,9 @@
-import { z, type ZodType, type ZodTypeDef } from "zod";
+import { z, type ZodType } from "zod";
 
 /** A response body checked against the shape its route answers. */
 export function readBody<Output>(
   response: { data: unknown },
-  schema: ZodType<Output, ZodTypeDef, unknown>,
+  schema: ZodType<Output, unknown>,
 ): Output {
   return schema.parse(response.data);
 }
@@ -14,7 +14,7 @@ export const createdBody = z.object({ id: z.string() });
 /** What presigning an upload answers. */
 export const presignBody = z.object({
   uploadUrl: z.string(),
-  headers: z.record(z.string()),
+  headers: z.record(z.string(), z.string()),
   resourceKey: z.string(),
 });
 

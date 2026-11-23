@@ -4,7 +4,7 @@ import type {
   MediaAssetDeclaration,
   MediaFolderDeclaration,
 } from "@antelopejs/interface-dms-media";
-import type { ZodType, ZodTypeDef } from "zod";
+import type { ZodType } from "zod";
 import { fixedId } from "../fixed-id";
 import { isObjectLike, isString } from "../guards";
 import {
@@ -55,7 +55,7 @@ export function declaredModels(tenantId: string): DeclaredModels {
 export function parseDeclaration<Output>(
   kind: MediaDeclarationKind,
   input: MediaFolderDeclaration | MediaAssetDeclaration,
-  schema: ZodType<Output, ZodTypeDef, unknown>,
+  schema: ZodType<Output, unknown>,
 ): Output {
   const parsed = schema.safeParse(input);
   if (parsed.success) return parsed.data;

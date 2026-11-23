@@ -27,7 +27,7 @@ const entriesBody = z.object({
   items: z.array(
     z.object({
       title: z.string(),
-      params: z.record(z.unknown()),
+      params: z.record(z.string(), z.unknown()),
     }),
   ),
 });
