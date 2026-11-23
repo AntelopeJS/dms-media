@@ -1,16 +1,36 @@
 import type { MediaAsset, MediaFolder } from "../../types/media";
+import type { RequestError } from "../../utils/httpStatus";
 import type { MediaLibraryOptions } from "../../composables/library/useMediaLibrary";
 import {
   type LibraryLocation,
   sameLocation,
 } from "../../composables/library/useLibraryListing";
 
+/** What a picker takes: the types it accepts, the files it already holds, and why it refuses another. */
+function createPickRules(
+  options: MediaLibraryOptions,
+  t: ReturnType<typeof useI18n>["t"],
+) {
+  const accept = options.accept ?? [];
+  const alreadyPicked = new Set(options.alreadyPicked ?? []);
+  const acceptedTypes = computed(() => fieldTypesLabel(accept, t));
+
+  function rejectionOf(asset: MediaAsset): string | undefined {
+    if (alreadyPicked.has(asset.id)) return t("dms_media.picker.already_added");
+    if (!acceptedTypes.value) return undefined;
+    if (matchesUploadType(asset.mimetype, accept)) return undefined;
+    return t("dms_media.picker.not_accepted", { types: acceptedTypes.value });
+  }
+
+  return { accept, acceptedTypes, rejectionOf };
+}
+
 /** The explorer state and every action on the library, shared by its parts. */
 export function createMediaLibrary(options: MediaLibraryOptions) {
   const api = useMediaApi();
   const { t } = useI18n();
   const toast = useToast();
-  const { presentError } = useApiErrorPresenter();
+  const errors = useApiErrorPresenter();
   const previews = useMediaPreviews();
   const uploads = useUploadQueue();
   const tree = useLibraryTree({ scopeFolderId: options.scopeFolderId });
@@ -31,8 +51,7 @@ export function createMediaLibrary(options: MediaLibraryOptions) {
   const beforeSearch = ref<LibraryLocation>(
     start.kind === "search" ? { kind: "root" } : start,
   );
-  const accept = options.accept ?? [];
-  const alreadyPicked = new Set(options.alreadyPicked ?? []);
+  const { accept, acceptedTypes, rejectionOf } = createPickRules(options, t);
 
   const currentFolder = computed(() => {
     const current = listing.location.value;
@@ -48,18 +67,8 @@ export function createMediaLibrary(options: MediaLibraryOptions) {
     return listing.extraFolders.value;
   });
 
-  const acceptedTypes = computed(() => fieldTypesLabel(accept, t));
-
-  /** Why a picker cannot take a file, or nothing when it can. */
-  function rejectionOf(asset: MediaAsset): string | undefined {
-    if (alreadyPicked.has(asset.id)) return t("dms_media.picker.already_added");
-    if (!acceptedTypes.value) return undefined;
-    if (matchesUploadType(asset.mimetype, accept)) return undefined;
-    return t("dms_media.picker.not_accepted", { types: acceptedTypes.value });
-  }
-
-  function notifyFailure(error: unknown, titleKey: string): void {
-    presentError(error, { fallbackKey: titleKey });
+  function notifyFailure(error: RequestError, titleKey: string): void {
+    errors.presentError(error, { fallbackKey: titleKey });
   }
 
   async function open(next: LibraryLocation, remember = true): Promise<void> {

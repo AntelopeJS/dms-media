@@ -1,4 +1,5 @@
 import type { RequestError } from "../utils/httpStatus";
+import { isCount, isText, isTextList } from "../utils/typeGuards";
 import type { UploadFailure, UploadRefusalDetails } from "./useUploadQueue";
 
 export interface FailureOutcome {
@@ -67,18 +68,6 @@ export async function networkFailure(
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null;
-}
-
-function isText(value: unknown): value is string {
-  return typeof value === "string";
-}
-
-function isCount(value: unknown): value is number {
-  return typeof value === "number";
-}
-
-function isTextList(value: unknown): value is string[] {
-  return Array.isArray(value) && value.every(isText);
 }
 
 function refusalOf(error: unknown): ServerRefusal {

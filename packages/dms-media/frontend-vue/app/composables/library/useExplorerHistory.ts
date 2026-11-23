@@ -1,3 +1,4 @@
+import { isCount, isTextList } from "../../utils/typeGuards";
 import type { ExplorerHistory } from "./useExplorerLayout";
 
 /** Field of the browser's history entries that holds their place in the trail. */
@@ -16,9 +17,9 @@ function isStoredTrail(value: unknown): value is StoredTrail {
     value !== null &&
     "entries" in value &&
     Array.isArray(value.entries) &&
-    value.entries.every(isString) &&
+    isTextList(value.entries) &&
     "position" in value &&
-    isNumber(value.position)
+    isCount(value.position)
   );
 }
 
@@ -61,7 +62,7 @@ function isReload(): boolean {
 
 function markedPosition(): number | undefined {
   const marked: unknown = window.history.state?.[STATE_KEY];
-  return isNumber(marked) ? marked : undefined;
+  return isCount(marked) ? marked : undefined;
 }
 
 /**

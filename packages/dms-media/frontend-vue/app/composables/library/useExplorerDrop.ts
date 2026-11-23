@@ -1,5 +1,6 @@
 import type { InjectionKey } from "vue";
 import type { MediaAsset, MediaFolder } from "../../types/media";
+import { isTextList } from "../../utils/typeGuards";
 import type { MediaLibrary } from "./useMediaLibrary";
 
 const ASSET_DRAG_TYPE = "application/x-dms-media-assets";
@@ -129,8 +130,7 @@ export function createExplorerDrop(library: MediaLibrary, upload: DropUpload) {
     if (carries(event, FOLDER_DRAG_TYPE)) return moveDraggedFolder(folder);
     const raw = event.dataTransfer?.getData(ASSET_DRAG_TYPE);
     const draggedIds: unknown = raw ? JSON.parse(raw) : undefined;
-    if (Array.isArray(draggedIds) && draggedIds.every(isString))
-      return moveDragged(draggedIds, folder);
+    if (isTextList(draggedIds)) return moveDragged(draggedIds, folder);
     const files = Array.from(event.dataTransfer?.files ?? []);
     if (files.length) upload(files, folder);
   }

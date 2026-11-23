@@ -4,6 +4,7 @@ import type {
   SortDirection,
 } from "../types/media";
 import type { FileListingOrder } from "../utils/mediaFiles";
+import { isText } from "../utils/typeGuards";
 import MediaLightbox from "../components/shared/MediaLightbox.vue";
 
 const SORT_KEYS: readonly AssetSortKey[] = ["name", "date", "size", "type"];
@@ -32,7 +33,7 @@ export function useCurrentFile() {
   const createLightbox = () => overlay.create(MediaLightbox);
   let lightbox: ReturnType<typeof createLightbox> | undefined;
   const assetId = computed(() =>
-    isString(route.query.asset) ? route.query.asset : undefined,
+    isText(route.query.asset) ? route.query.asset : undefined,
   );
   const order = computed<FileListingOrder>(() => ({
     sort: queryValue(route.query.sort, SORT_KEYS),
