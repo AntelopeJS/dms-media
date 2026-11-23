@@ -99,9 +99,20 @@ export async function evaluateQuotaGrowth(
 }
 
 /**
+ * Where usage must drop for a crossed threshold to fire again:
+ * {@link REARM_MARGIN_PERCENT} points below it, or half of it for a
+ * threshold at or under the margin, which would otherwise never re-arm.
+ */
+export function rearmPercent(percent: number): number {
+  return percent > REARM_MARGIN_PERCENT
+    ? percent - REARM_MARGIN_PERCENT
+    : percent / 2;
+}
+
+/**
  * After a write that shrank the library: forgets each crossed threshold
- * usage is now {@link REARM_MARGIN_PERCENT} points below, so it fires again
- * on the next crossing.
+ * usage is now below the {@link rearmPercent} of, so it fires again on the
+ * next crossing.
  */
 export async function evaluateQuotaShrink(tenantId: string): Promise<void> {
   const quota = getMediaConfig().storageQuotaBytes;
@@ -111,8 +122,7 @@ export async function evaluateQuotaShrink(tenantId: string): Promise<void> {
   if (crossed.length === 0) return;
   const usedBytes = await sumStoredBytes(GetModel(MediaAssetModel, tenantId));
   const rearmed = crossed.filter(
-    (alert) =>
-      usedBytes < thresholdBytes(quota, alert.percent - REARM_MARGIN_PERCENT),
+    (alert) => usedBytes < thresholdBytes(quota, rearmPercent(alert.percent)),
   );
   await Promise.all(rearmed.map((alert) => alerts.delete(alert._id)));
 }

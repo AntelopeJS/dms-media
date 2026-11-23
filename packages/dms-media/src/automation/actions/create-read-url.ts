@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { getMediaConfig } from "../../config";
+import { getMediaConfig, MIN_READ_URL_TTL_SECONDS } from "../../config";
 import { resolveEffectiveVisibility } from "../../routes/media/dto";
 import { createFileReadUrl } from "../../services/reads";
 import {
@@ -12,7 +12,6 @@ import {
   tenantIdField,
 } from "./support";
 
-const MIN_TTL_SECONDS = 60;
 const DEFAULT_TTL_SECONDS = 3600;
 
 const input = z
@@ -28,7 +27,7 @@ const input = z
     expiresInSeconds: z
       .number()
       .int()
-      .min(MIN_TTL_SECONDS)
+      .min(MIN_READ_URL_TTL_SECONDS)
       .default(DEFAULT_TTL_SECONDS),
   })
   .superRefine((value, ctx) => {
@@ -59,7 +58,7 @@ export const createReadUrlAction = readAction({
       },
       expiresInSeconds: {
         type: "integer",
-        minimum: MIN_TTL_SECONDS,
+        minimum: MIN_READ_URL_TTL_SECONDS,
         default: DEFAULT_TTL_SECONDS,
         description:
           "Lifetime of the link; at most the module's `automation.readUrlMaxTtlSeconds` (7 days by default)",

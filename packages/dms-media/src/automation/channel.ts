@@ -114,24 +114,24 @@ export class TriggerChannel<
   /**
    * Emits a change: one a procedure's write caused carries the procedure and
    * its run and, on a `filtered` channel, passes the circuit breaker on
-   * `subject` first.
+   * `subject` first, counted only when a subscription takes it.
    */
   emit(subject: string, event: ChannelEvent<TPayload>): void {
     const origin = automationOriginFields();
     const isFiltered = this.automationWrites === "filtered";
     const isAutomationWrite =
       isFiltered && origin.originProcedureId !== undefined;
-    if (isAutomationWrite && !admitAutomationEvent(this.id, subject)) return;
     const payload = { ...event.payload, ...origin };
-    for (const [handle, subscription] of this.subscriptions) {
-      const { config } = subscription;
-      if (
+    const receivers = [...this.subscriptions].filter(
+      ([, { config }]) =>
         acceptsTenant(config, payload.tenantId) &&
         acceptsOrigin(config, isAutomationWrite) &&
-        this.accepts(config, { ...event, payload })
-      )
-        this.deliver(handle, subscription, payload);
-    }
+        this.accepts(config, { ...event, payload }),
+    );
+    if (receivers.length === 0) return;
+    if (isAutomationWrite && !admitAutomationEvent(this.id, subject)) return;
+    for (const [handle, subscription] of receivers)
+      this.deliver(handle, subscription, payload);
   }
 
   clear(): void {

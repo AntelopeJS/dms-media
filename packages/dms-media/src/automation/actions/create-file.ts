@@ -43,6 +43,8 @@ import {
 const ACTION_ID = "media.create-file";
 /** Content travels as a port value stored in the run: bigger files belong to uploads. */
 const MAX_CREATED_FILE_BYTES = 1024 * 1024;
+/** Base64 of the largest file, with room for line breaks: anything longer cannot decode within the cap. */
+const MAX_CONTENT_LENGTH = 1_450_000;
 const MAX_KEY_LENGTH = 200;
 const HTTP_CONFLICT = 409;
 const BASE64 = /^[A-Za-z0-9+/]*={0,2}$/;
@@ -54,7 +56,9 @@ const input = z
     tenantId: tenantIdField,
     ...folderTargetFields,
     name: fileNameSchema,
-    content: z.string(),
+    content: z.string().max(MAX_CONTENT_LENGTH, {
+      message: `at most ${MAX_CONTENT_LENGTH} characters`,
+    }),
     encoding: z.enum(["utf8", "base64"]).default("utf8"),
     mimetype: z.string().trim().min(1).max(100),
     alt: altSchema.optional(),

@@ -25,11 +25,15 @@ export const DEFAULT_ALLOWED_MIMETYPES: readonly string[] = [
 /** Default and ceiling of a signed link's lifetime: 7 days, the presigned-URL limit of S3-compatible storages. */
 export const DEFAULT_READ_URL_MAX_TTL_SECONDS = 7 * 24 * 60 * 60;
 
+/** Shortest lifetime a signed link may have. */
+export const MIN_READ_URL_TTL_SECONDS = 60;
+
 /** Settings of the module's automation nodes. */
 export interface DmsMediaAutomationConfig {
   /**
    * Longest lifetime, in seconds, of a link `media.create-read-url` signs.
-   * At most the default, 7 days.
+   * At most the default, 7 days; a value under 60 or not a number falls back
+   * to the default.
    */
   readUrlMaxTtlSeconds?: number;
 }
@@ -78,6 +82,19 @@ let currentConfig: ResolvedMediaConfig = {
   readUrlMaxTtlSeconds: DEFAULT_READ_URL_MAX_TTL_SECONDS,
 };
 
+/**
+ * The configured lifetime ceiling when it is a number of seconds between
+ * {@link MIN_READ_URL_TTL_SECONDS} and the default, else the default.
+ */
+function readUrlCeiling(configured: number | undefined): number {
+  const isUsable =
+    Number.isFinite(configured) &&
+    (configured ?? 0) >= MIN_READ_URL_TTL_SECONDS;
+  return isUsable
+    ? Math.min(configured ?? 0, DEFAULT_READ_URL_MAX_TTL_SECONDS)
+    : DEFAULT_READ_URL_MAX_TTL_SECONDS;
+}
+
 export function configureMediaModule(config: DmsMediaConfig): void {
   currentConfig = {
     rootAcl: config.rootAcl ?? DEFAULT_ROOT_ACL,
@@ -86,10 +103,8 @@ export function configureMediaModule(config: DmsMediaConfig): void {
     storageQuotaBytes: config.storageQuotaBytes,
     allowedMimetypes: config.allowedMimetypes ?? DEFAULT_ALLOWED_MIMETYPES,
     publicBaseUrl: config.publicBaseUrl?.trim() || undefined,
-    readUrlMaxTtlSeconds: Math.min(
-      config.automation?.readUrlMaxTtlSeconds ??
-        DEFAULT_READ_URL_MAX_TTL_SECONDS,
-      DEFAULT_READ_URL_MAX_TTL_SECONDS,
+    readUrlMaxTtlSeconds: readUrlCeiling(
+      config.automation?.readUrlMaxTtlSeconds,
     ),
   };
 }
