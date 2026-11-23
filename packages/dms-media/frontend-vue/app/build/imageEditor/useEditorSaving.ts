@@ -29,7 +29,7 @@ export function useEditorSaving({
   confirm,
 }: EditorSaving) {
   const isLeavingSaved = ref(false);
-  const { presentError } = useApiErrorPresenter();
+  const errors = useApiErrorPresenter();
 
   useUnsavedChanges({ dirty: () => hasChanges() && !isLeavingSaved.value });
 
@@ -38,21 +38,25 @@ export function useEditorSaving({
     await navigateDms(path);
   }
 
-  async function saveWith(run: () => Promise<void>): Promise<void> {
-    if (!asset.value || !hasChanges() || isSaving.value) return;
+  async function saveWith(
+    run: (current: AssetDetails["asset"]) => Promise<void>,
+  ): Promise<void> {
+    const current = asset.value;
+    if (!current || !hasChanges() || isSaving.value) return;
     isSaving.value = true;
     try {
-      await run();
+      await run(current);
     } catch (error) {
-      presentError(error, { fallbackKey: "dms_media.editor.save_failed" });
+      errors.presentError(error, {
+        fallbackKey: "dms_media.editor.save_failed",
+      });
     } finally {
       isSaving.value = false;
     }
   }
 
   function save(): Promise<void> {
-    return saveWith(async () => {
-      const current = asset.value!;
+    return saveWith(async (current) => {
       await api.transform(current.id, operations());
       toast.add({
         title: t("dms_media.editor.saved"),
@@ -71,11 +75,8 @@ export function useEditorSaving({
   }
 
   function saveCopy(): Promise<void> {
-    return saveWith(async () => {
-      const { asset: copy } = await api.transformCopy(
-        asset.value!.id,
-        operations(),
-      );
+    return saveWith(async (current) => {
+      const { asset: copy } = await api.transformCopy(current.id, operations());
       toast.add({
         title: t("dms_media.editor.copy_saved", { name: copy.name }),
         color: "success",
@@ -98,8 +99,10 @@ export function useEditorSaving({
       await leaveTo(fileLink(current.id));
     };
     if (skipConfirm)
-      return run().catch((error) =>
-        presentError(error, { fallbackKey: "dms_media.editor.revert_failed" }),
+      return run().catch((error: unknown) =>
+        errors.presentError(error, {
+          fallbackKey: "dms_media.editor.revert_failed",
+        }),
       );
     await confirm({
       title: t("dms_media.editor.revert_title"),

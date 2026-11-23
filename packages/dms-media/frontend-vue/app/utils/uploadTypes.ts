@@ -30,10 +30,13 @@ const REFUSED_EXTENSIONS = new Set([
   "phar",
 ]);
 /** Extensions a file picker understands for prefix patterns it cannot take as such. */
-const PREFIX_EXTENSIONS: Record<string, string[]> = {
-  "application/vnd.openxmlformats-officedocument.": [".docx", ".xlsx", ".pptx"],
-  "application/vnd.oasis.opendocument.": [".odt", ".ods", ".odp"],
-};
+const PREFIX_EXTENSIONS = new Map([
+  [
+    "application/vnd.openxmlformats-officedocument.",
+    [".docx", ".xlsx", ".pptx"],
+  ],
+  ["application/vnd.oasis.opendocument.", [".odt", ".ods", ".odp"]],
+]);
 
 /** The mimetype the upload routes receive for this file, normalized. */
 export function uploadMimetype(file: File): string {
@@ -72,7 +75,7 @@ function acceptTokens(pattern: string): string[] {
   const normalized = pattern.trim().toLowerCase();
   if (!normalized.endsWith(WILDCARD) || normalized.endsWith(FAMILY_WILDCARD))
     return [normalized];
-  return PREFIX_EXTENSIONS[normalized.slice(0, -WILDCARD.length)] ?? [];
+  return PREFIX_EXTENSIONS.get(normalized.slice(0, -WILDCARD.length)) ?? [];
 }
 
 /** `accept` attribute of a file input for these patterns; empty when any file goes. */

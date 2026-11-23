@@ -63,7 +63,8 @@ export function createAssetNavigation(
     if (event.key === " ") return onSpace(event);
     if (!isGridKey(event.key) || event.altKey || event.metaKey || event.ctrlKey)
       return;
-    const container = event.currentTarget as HTMLElement;
+    const container = event.currentTarget;
+    if (!(container instanceof HTMLElement)) return;
     const items = Array.from(
       container.querySelectorAll<HTMLElement>(ITEM_SELECTOR),
     );

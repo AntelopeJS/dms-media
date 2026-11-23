@@ -1,26 +1,17 @@
 import type { DropdownMenuItem } from "@nuxt/ui";
-import type {
-  AssetSortKey,
-  AssetTypeGroup,
-  ModifiedWindow,
-  OrientationFilter,
-  VisibilityFilter,
-} from "../../types/media";
+import type { AssetSortKey, AssetTypeGroup } from "../../types/media";
 import type { ListingFilters } from "./useLibraryListing";
 import type { MediaLibrary } from "./useMediaLibrary";
 
 type ChoiceFilter = "visibility" | "modified" | "orientation";
 
 const SORT_KEYS: AssetSortKey[] = ["name", "date", "size", "type"];
-const FILTER_CHOICES: Record<ChoiceFilter, string[]> = {
-  visibility: ["any", "public", "private"] satisfies VisibilityFilter[],
-  modified: ["any", "7d", "30d", "year"] satisfies ModifiedWindow[],
-  orientation: [
-    "any",
-    "landscape",
-    "portrait",
-    "square",
-  ] satisfies OrientationFilter[],
+type FilterChoices = { [F in ChoiceFilter]: ListingFilters[F][] };
+
+const FILTER_CHOICES: FilterChoices = {
+  visibility: ["any", "public", "private"],
+  modified: ["any", "7d", "30d", "year"],
+  orientation: ["any", "landscape", "portrait", "square"],
 };
 const FILTER_LABEL_PREFIXES: Record<ChoiceFilter, string> = {
   visibility: "dms_media.search.visibility_",
@@ -90,13 +81,21 @@ export function useListingFilterItems(library: MediaLibrary) {
     })),
   ]);
 
+  function choiceChange<F extends ChoiceFilter>(
+    filter: F,
+    value: ListingFilters[F],
+  ): Partial<ListingFilters> {
+    const change: Partial<ListingFilters> = {};
+    change[filter] = value;
+    return change;
+  }
+
   function choiceItems(filter: ChoiceFilter): DropdownMenuItem[] {
     return FILTER_CHOICES[filter].map((value) => ({
       label: t(`${FILTER_LABEL_PREFIXES[filter]}${value}`),
       type: "checkbox" as const,
       checked: filters.value[filter] === value,
-      onSelect: () =>
-        setFilters({ [filter]: value } as Partial<ListingFilters>),
+      onSelect: () => setFilters(choiceChange(filter, value)),
     }));
   }
 

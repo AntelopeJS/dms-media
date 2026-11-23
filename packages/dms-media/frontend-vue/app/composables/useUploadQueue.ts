@@ -1,5 +1,19 @@
 import type { MediaAsset } from "../types/media";
-import type { UploadBatchReport, UploadFailureReport } from "./useUploadApi";
+import {
+  buildReport,
+  FAILED_UPLOAD_STATUSES,
+  groupByBatch,
+  outcomeOf,
+} from "./uploadBatchReports";
+import {
+  describeFailure,
+  networkFailure,
+  storageFailure,
+  UploadError,
+} from "./uploadFailures";
+import { createKeepBothPrompt, type KeepBothPrompt } from "./uploadKeepBoth";
+import { initialRefusal, splitByFieldType } from "./uploadRefusals";
+import type { RequestError } from "../utils/httpStatus";
 
 export type UploadStatus =
   | "waiting"
@@ -83,20 +97,6 @@ type UploadListener = (asset: MediaAsset) => void;
 type BatchListener = (outcome: UploadBatchOutcome) => void;
 type UploadApi = ReturnType<typeof useUploadApi>;
 
-interface FailureOutcome {
-  status: "failed" | "rejected";
-  failure: UploadFailure;
-  message?: string;
-  details?: UploadRefusalDetails;
-}
-
-interface ServerRefusal {
-  reason?: string;
-  message?: string;
-  accepted?: readonly string[];
-  remaining?: number;
-}
-
 const CONCURRENCY = 2;
 const FINAL_STATUSES = new Set<UploadStatus>([
   "done",
@@ -105,40 +105,13 @@ const FINAL_STATUSES = new Set<UploadStatus>([
   "cancelled",
 ]);
 const CANCELLABLE_STATUSES = new Set<UploadStatus>(["waiting", "uploading"]);
-const FAILED_STATUSES = new Set<UploadStatus>(["failed", "rejected"]);
 const HTTP_SUCCESS_LIMIT = 300;
-const HTTP_CLIENT_ERROR_MIN = 400;
-const HTTP_SERVER_ERROR_MIN = 500;
-const HTTP_PAYLOAD_TOO_LARGE = 413;
-/** Failures the same file would meet again: no retry is offered. */
-const FINAL_FAILURES = new Set<UploadFailure>([
-  "storage_limit",
-  "storage_blocked",
-  "storage_unreachable",
-]);
-const MAX_REPORTED_FAILURES = 50;
-const VISIBLE_DUPLICATE_NAMES = 6;
-const MAX_REASON_LENGTH = 500;
 /** Headers a browser sets itself and refuses from a script. */
 const FORBIDDEN_REQUEST_HEADERS = new Set([
   "content-length",
   "host",
   "connection",
   "accept-encoding",
-]);
-const REFUSALS_BY_STATUS: Record<number, UploadFailure> = {
-  400: "invalid",
-  403: "no_access",
-  404: "folder_gone",
-  413: "quota",
-  415: "type_not_allowed",
-  422: "invalid_image",
-};
-const SERVER_REASONS = new Set<UploadFailure>([
-  "type_not_allowed",
-  "field_type",
-  "quota",
-  "invalid_image",
 ]);
 
 const items = ref<UploadItem[]>([]);
@@ -166,8 +139,9 @@ function findItem(id: string): UploadItem | undefined {
 
 function patch(id: string, changes: Partial<UploadItem>): void {
   const index = items.value.findIndex((item) => item.id === id);
-  if (index < 0) return;
-  items.value[index] = { ...items.value[index]!, ...changes };
+  const current = items.value[index];
+  if (!current) return;
+  items.value[index] = { ...current, ...changes };
 }
 
 function isFinal(item: UploadItem): boolean {
@@ -182,30 +156,6 @@ function api(): UploadApi {
   if (!uploadApi)
     throw new Error("useUploadQueue() must run in a component setup first");
   return uploadApi;
-}
-
-function storageFailure(status: number): UploadFailure {
-  return status === HTTP_PAYLOAD_TOO_LARGE ? "storage_limit" : "storage";
-}
-
-class UploadError extends Error {
-  constructor(
-    readonly failure: UploadFailure,
-    message?: string,
-    readonly details?: UploadRefusalDetails,
-  ) {
-    super(message ?? failure);
-  }
-}
-
-/** A network error tells a dropped link from a storage this site may not reach (CORS, wrong address). */
-async function networkFailure(
-  url: string,
-  hasSentBytes: boolean,
-): Promise<UploadError> {
-  const { failure, address } = await diagnoseStorageFailure(url, hasSentBytes);
-  if (failure === "connection") return new UploadError("connection");
-  return new UploadError(failure, address, { address });
 }
 
 function putFile(
@@ -243,38 +193,6 @@ function putFile(
   }).finally(() => requests.delete(id));
 }
 
-function refusalOf(error: unknown): ServerRefusal {
-  const data = (error as { data?: unknown } | undefined)?.data;
-  if (typeof data === "string") return { message: data };
-  return (data as ServerRefusal | undefined) ?? {};
-}
-
-/** A 4xx is final (retrying sends the same file again); network and 5xx can be retried. */
-function describeFailure(error: unknown): FailureOutcome {
-  if (error instanceof UploadError)
-    return {
-      status: FINAL_FAILURES.has(error.failure) ? "rejected" : "failed",
-      failure: error.failure,
-      message: error.message,
-      details: error.details,
-    };
-  const status = apiErrorStatus(error);
-  const refusal = refusalOf(error);
-  if (!status) return { status: "failed", failure: "connection" };
-  if (status < HTTP_CLIENT_ERROR_MIN || status >= HTTP_SERVER_ERROR_MIN)
-    return { status: "failed", failure: "server", message: refusal.message };
-  const reason = refusal.reason as UploadFailure | undefined;
-  return {
-    status: "rejected",
-    failure:
-      reason && SERVER_REASONS.has(reason)
-        ? reason
-        : (REFUSALS_BY_STATUS[status] ?? "invalid"),
-    message: refusal.message,
-    details: { accepted: refusal.accepted, remaining: refusal.remaining },
-  };
-}
-
 function discardStaged(item: UploadItem): void {
   if (item.resourceKey)
     void api()
@@ -289,11 +207,16 @@ async function run(item: UploadItem): Promise<void> {
   try {
     const presign = await api().presign(item.folderId, file);
     patch(item.id, { resourceKey: presign.resourceKey });
-    if (isCancelled(item.id)) return discardStaged(findItem(item.id)!);
+    const staged = findItem(item.id);
+    if (staged?.status !== "uploading") {
+      if (staged) discardStaged(staged);
+      return;
+    }
     await putFile(item.id, presign.uploadUrl, presign.headers, file);
     if (isCancelled(item.id)) return;
     patch(item.id, { status: "checking", loaded: item.size });
-    const current = findItem(item.id)!;
+    const current = findItem(item.id);
+    if (!current) return;
     const { asset } = await api().confirm({
       folderId: current.folderId,
       resourceKey: presign.resourceKey,
@@ -331,55 +254,8 @@ function pump(): void {
   }
 }
 
-function failureReason(item: UploadItem): string {
-  return (
-    item.message && item.message !== item.failure
-      ? `${item.failure}: ${item.message}`
-      : (item.failure ?? "server")
-  ).slice(0, MAX_REASON_LENGTH);
-}
-
-function buildReport(batchId: string, batch: UploadItem[]): UploadBatchReport {
-  const done = batch.filter((item) => item.status === "done");
-  const failures: UploadFailureReport[] = batch
-    .filter((item) => FAILED_STATUSES.has(item.status))
-    .slice(0, MAX_REPORTED_FAILURES)
-    .map((item) => ({ name: item.name, reason: failureReason(item) }));
-  return {
-    batchId,
-    folderId: batch[0]!.folderId,
-    total: batch.length,
-    uploaded: done.length,
-    failed: batch.filter((item) => FAILED_STATUSES.has(item.status)).length,
-    size: done.reduce((total, item) => total + item.size, 0),
-    failures,
-  };
-}
-
-function outcomeOf(
-  report: UploadBatchReport,
-  batch: UploadItem[],
-): UploadBatchOutcome {
-  return {
-    batchId: report.batchId,
-    folderId: report.folderId,
-    folderName: batch[0]!.folderName,
-    total: report.total,
-    uploaded: report.uploaded,
-    failed: report.failed,
-    cancelled: batch.filter((item) => item.status === "cancelled").length,
-  };
-}
-
-function batchesById(): Map<string, UploadItem[]> {
-  const batches = new Map<string, UploadItem[]>();
-  for (const item of items.value)
-    batches.set(item.batchId, [...(batches.get(item.batchId) ?? []), item]);
-  return batches;
-}
-
 function reportSettledBatches(): void {
-  for (const [batchId, batch] of batchesById()) {
+  for (const [batchId, batch] of groupByBatch(items.value)) {
     if (reportedBatches.has(batchId) || !batch.every(isFinal)) continue;
     reportedBatches.add(batchId);
     const report = buildReport(batchId, batch);
@@ -393,7 +269,7 @@ function reportSettledBatches(): void {
 
 /** The page is going away mid-upload: record what never made it. */
 function reportInterruptedBatches(): void {
-  for (const [batchId, batch] of batchesById()) {
+  for (const [batchId, batch] of groupByBatch(items.value)) {
     if (reportedBatches.has(batchId) || batch.every(isFinal)) continue;
     reportedBatches.add(batchId);
     const settled = batch.map((item) =>
@@ -426,50 +302,6 @@ function guardUnload(): void {
   window.addEventListener("pagehide", reportInterruptedBatches);
 }
 
-function isTypeRefused(file: File): boolean {
-  if (isActiveDocument(file)) return true;
-  const allowed = uploadLimits.value.allowedMimetypes;
-  return Boolean(allowed && !matchesUploadType(uploadMimetype(file), allowed));
-}
-
-function refusesFieldType(
-  file: File,
-  accepts: readonly string[] | null | undefined,
-): boolean {
-  return (
-    Boolean(accepts?.length) &&
-    !matchesUploadType(uploadMimetype(file), accepts ?? [])
-  );
-}
-
-/** Splits the files a field taking `accepts` (any file when empty) refuses from those it takes. */
-function splitByFieldType(
-  selected: readonly File[],
-  accepts?: readonly string[] | null,
-): FileSplit {
-  const refused = selected.filter((file) => refusesFieldType(file, accepts));
-  return { kept: selected.filter((file) => !refused.includes(file)), refused };
-}
-
-/** Refusals known before sending: the server would answer the same. */
-function initialRefusal(
-  file: File,
-  destination: UploadDestination,
-): Pick<UploadItem, "status" | "failure" | "details"> {
-  if (file.size === 0) return { status: "rejected", failure: "empty" };
-  if (file.size > uploadLimits.value.maxUploadBytes)
-    return { status: "rejected", failure: "too_large" };
-  if (isTypeRefused(file))
-    return { status: "rejected", failure: "type_not_allowed" };
-  if (refusesFieldType(file, destination.accepts))
-    return {
-      status: "rejected",
-      failure: "field_type",
-      details: { accepted: destination.accepts ?? [] },
-    };
-  return { status: "waiting" };
-}
-
 function revokePreview(item: UploadItem): void {
   if (item.previewUrl) URL.revokeObjectURL(item.previewUrl);
 }
@@ -497,52 +329,9 @@ function createItem(
   };
 }
 
-type KeepBothPrompt = (folderName: string, names: string[]) => Promise<boolean>;
-
 let askKeepBoth: KeepBothPrompt = () => Promise.resolve(false);
 
-/** "Keep both" asked with the DMS confirm dialog, listing the names already taken. */
-function createKeepBothPrompt(): KeepBothPrompt {
-  const { confirm } = useConfirm();
-  const { t } = useI18n();
-  return (folderName, names) => {
-    const hidden = names.length - VISIBLE_DUPLICATE_NAMES;
-    return confirm({
-      title: t(
-        "dms_media.dialogs.duplicates.title",
-        { count: names.length },
-        names.length,
-      ),
-      description: t("dms_media.dialogs.duplicates.description", {
-        name: folderName,
-      }),
-      color: "warning",
-      icon: "i-ph-copy",
-      confirmIcon: "i-ph-copy",
-      confirmLabel: t("dms_media.dialogs.duplicates.keep_both"),
-      cancelLabel: t("dms_media.actions.cancel"),
-      impact: [
-        ...names
-          .slice(0, VISIBLE_DUPLICATE_NAMES)
-          .map((name) => ({ icon: "i-ph-file", label: name })),
-        ...(hidden > 0
-          ? [
-              {
-                icon: "i-ph-dots-three",
-                label: t(
-                  "dms_media.dialogs.duplicates.more",
-                  { count: hidden },
-                  hidden,
-                ),
-              },
-            ]
-          : []),
-      ],
-    });
-  };
-}
-
-function rejectBatch(waiting: UploadItem[], error: unknown): void {
+function rejectBatch(waiting: UploadItem[], error: RequestError): void {
   const outcome = describeFailure(error);
   if (outcome.status !== "rejected") return;
   waiting.forEach((item) =>
@@ -555,18 +344,20 @@ async function resolveDuplicates(batchId: string): Promise<void> {
   const waiting = items.value.filter(
     (item) => item.batchId === batchId && item.status === "waiting",
   );
-  if (!waiting.length) return;
+  const [first] = waiting;
+  if (!first) return;
   try {
     const { names } = await api().freeNames(
-      waiting[0]!.folderId,
+      first.folderId,
       waiting.map((item) => item.name),
     );
-    const duplicates = waiting.flatMap((item, index) =>
-      names[index] ? [{ item, free: names[index]! }] : [],
-    );
+    const duplicates = waiting.flatMap((item, index) => {
+      const free = names[index];
+      return free ? [{ item, free }] : [];
+    });
     if (!duplicates.length) return;
     const keepBoth = await askKeepBoth(
-      waiting[0]!.folderName,
+      first.folderName,
       duplicates.map(({ item }) => item.name),
     );
     for (const { item, free } of duplicates) {
@@ -655,7 +446,7 @@ function clearFinished(): void {
 }
 
 function clearFailed(): void {
-  removeWhere((item) => FAILED_STATUSES.has(item.status));
+  removeWhere((item) => FAILED_UPLOAD_STATUSES.has(item.status));
 }
 
 function dismiss(id: string): void {

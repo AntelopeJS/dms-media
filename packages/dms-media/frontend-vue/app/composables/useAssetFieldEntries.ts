@@ -26,7 +26,6 @@ export function useAssetFieldEntries(ids: Ref<string[]>) {
   const assets = reactive(new Map<string, MediaAsset>());
   const missing = reactive(new Set<string>());
 
-  /** Only a confirmed 404 makes a file missing; any other failure leaves it loading, retried on the next refresh. */
   async function loadOne(id: string): Promise<void> {
     try {
       const { asset } = await api.asset(id);

@@ -6,7 +6,7 @@ type Translate = ReturnType<typeof useI18n>["t"];
 
 interface Announcer {
   toast: ToastApi;
-  presentError: ReturnType<typeof useApiErrorPresenter>["presentError"];
+  errors: ReturnType<typeof useApiErrorPresenter>;
   t: Translate;
   failureText: (item: UploadFailureSource) => string;
   failedItems: (batchId: string) => readonly UploadItem[];
@@ -95,7 +95,7 @@ function settle(outcome: UploadBatchOutcome): void {
   const failed = announcer.failedItems(outcome.batchId);
   for (const item of failed) {
     if (item.requestError === undefined) continue;
-    announcer.presentError(item.requestError, {
+    announcer.errors.presentError(item.requestError, {
       fallbackKey: "dms_media.toasts.upload_failed_one",
       params: { name: item.name },
       actions: announcer.showUploadsLink
@@ -134,7 +134,7 @@ function settle(outcome: UploadBatchOutcome): void {
  */
 export function useUploadToasts() {
   const toast = useToast();
-  const { presentError } = useApiErrorPresenter();
+  const errors = useApiErrorPresenter();
   const { t } = useI18n();
   const uploads = useUploadQueue();
   const failureText = useUploadFailureText();
@@ -151,7 +151,7 @@ export function useUploadToasts() {
   ): void {
     const announcer: Announcer = {
       toast,
-      presentError,
+      errors,
       t,
       failureText,
       failedItems: (id) =>
@@ -174,7 +174,6 @@ export function useUploadToasts() {
     });
   }
 
-  /** Names the files a field refused for their type, and says what it takes. */
   function announceRefusedTypes(
     refused: readonly File[],
     accept: readonly string[],

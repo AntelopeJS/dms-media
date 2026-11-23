@@ -12,7 +12,7 @@ export function useUploadFailureText() {
   const uploads = useUploadQueue();
   const format = useMediaFormat();
   const { t } = useI18n();
-  const { resolveError } = useApiErrorPresenter();
+  const errors = useApiErrorPresenter();
 
   function typesLabel(accepted: readonly string[] | undefined): string {
     if (!accepted?.length) return "";
@@ -37,7 +37,7 @@ export function useUploadFailureText() {
     };
     if (item.requestError !== undefined)
       return (
-        resolveError(item.requestError, {
+        errors.resolveError(item.requestError, {
           fallbackKey: `dms_media.queue.reason.${failure}`,
           params,
         })?.message ?? ""

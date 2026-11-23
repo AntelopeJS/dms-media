@@ -51,7 +51,6 @@ export function useExplorerUploads(
     return current.kind === "folder" && current.folderId === folderId;
   }
 
-  /** A picker that uploaded elsewhere, through the destination dialog, opens that folder and ticks the files. */
   async function pickUploadedElsewhere(
     outcome: UploadBatchOutcome,
   ): Promise<void> {

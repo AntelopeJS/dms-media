@@ -1,3 +1,4 @@
+import { isCount, isTextList } from "../../utils/typeGuards";
 import type { ExplorerHistory } from "./useExplorerLayout";
 
 /** Field of the browser's history entries that holds their place in the trail. */
@@ -10,6 +11,18 @@ interface StoredTrail {
   position: number;
 }
 
+function isStoredTrail(value: unknown): value is StoredTrail {
+  return (
+    typeof value === "object" &&
+    value !== null &&
+    "entries" in value &&
+    Array.isArray(value.entries) &&
+    isTextList(value.entries) &&
+    "position" in value &&
+    isCount(value.position)
+  );
+}
+
 const entries = ref<string[]>([]);
 const position = ref(0);
 let isRestored = false;
@@ -18,10 +31,10 @@ function restoreStored(): void {
   if (isRestored) return;
   isRestored = true;
   try {
-    const stored = JSON.parse(
+    const stored: unknown = JSON.parse(
       window.sessionStorage.getItem(STORAGE_KEY) ?? "null",
-    ) as StoredTrail | null;
-    if (!stored || !Array.isArray(stored.entries)) return;
+    );
+    if (!isStoredTrail(stored)) return;
     entries.value = stored.entries;
     position.value = stored.position;
   } catch {
@@ -41,15 +54,15 @@ function store(): void {
 }
 
 function isReload(): boolean {
-  const navigation = performance.getEntriesByType("navigation")[0] as
-    | PerformanceNavigationTiming
-    | undefined;
+  const navigation = performance
+    .getEntriesByType("navigation")
+    .find((entry) => entry instanceof PerformanceNavigationTiming);
   return navigation?.type === "reload";
 }
 
 function markedPosition(): number | undefined {
   const marked: unknown = window.history.state?.[STATE_KEY];
-  return typeof marked === "number" ? marked : undefined;
+  return isCount(marked) ? marked : undefined;
 }
 
 /**
@@ -67,7 +80,6 @@ export function useExplorerHistory(currentKey: () => string) {
     position.value = 0;
   }
 
-  /** Moves to the entry the browser shows, as its history entry or else the nearest one tells. */
   function follow(key: string): void {
     const marked = markedPosition();
     if (marked !== undefined && entries.value[marked] === key) {
@@ -97,7 +109,6 @@ export function useExplorerHistory(currentKey: () => string) {
     position.value += 1;
   }
 
-  /** Writes the trail's place into the history entry the browser now shows. */
   function mark(): void {
     window.history.replaceState(
       { ...window.history.state, [STATE_KEY]: position.value },
@@ -109,7 +120,6 @@ export function useExplorerHistory(currentKey: () => string) {
     return key === entries.value[position.value];
   }
 
-  /** The page shown after a reload is the trail's current entry, as long as it is the same location. */
   function resume(key: string): void {
     const isFirstMount = !isRestored;
     restoreStored();

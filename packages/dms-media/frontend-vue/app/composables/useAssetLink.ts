@@ -8,7 +8,7 @@ export interface CopyAssetLinkOptions {
    * caller may change the file's visibility: the warning of a private file
    * then offers « Make public… ».
    */
-  makePublic?: () => Promise<unknown>;
+  makePublic?: () => Promise<void>;
 }
 
 const TRAILING_SLASHES = /\/+$/;
@@ -49,13 +49,12 @@ export function useAssetLink() {
   const { t } = useI18n();
   const toast = useToast();
   const { confirm } = useConfirm();
-  const { presentError } = useApiErrorPresenter();
+  const errors = useApiErrorPresenter();
 
   async function linkOf(asset: Pick<MediaAsset, "url">): Promise<string> {
     return `${await resolveLinksOrigin(() => $authFetch<LinksOrigin>(LINKS_ORIGIN_API))}${asset.url}`;
   }
 
-  /** Asks before a file becomes reachable by anyone holding its link. */
   function confirmMakePublic(
     asset: Pick<MediaAsset, "name">,
   ): Promise<boolean> {
@@ -125,11 +124,6 @@ export function useAssetLink() {
     });
   }
 
-  /**
-   * Saves the file under its name without leaving the page: the read URL is on
-   * the storage's origin, where the browser ignores a link's `download`, so the
-   * file is fetched and saved from memory.
-   */
   async function download(
     asset: Pick<MediaAsset, "id" | "name">,
   ): Promise<boolean> {
@@ -142,12 +136,13 @@ export function useAssetLink() {
       setTimeout(() => URL.revokeObjectURL(objectUrl), OBJECT_URL_LIFETIME_MS);
       return true;
     } catch (cause) {
-      presentError(cause, { fallbackKey: "dms_media.toasts.download_failed" });
+      errors.presentError(cause, {
+        fallbackKey: "dms_media.toasts.download_failed",
+      });
       return false;
     }
   }
 
-  /** Opens the file as the browser shows it, in a new tab. */
   async function openInNewTab(asset: Pick<MediaAsset, "id">): Promise<void> {
     const opened = window.open("", "_blank");
     try {
@@ -157,7 +152,9 @@ export function useAssetLink() {
       opened.location.href = url;
     } catch (cause) {
       opened?.close();
-      presentError(cause, { fallbackKey: "dms_media.asset_link.open_failed" });
+      errors.presentError(cause, {
+        fallbackKey: "dms_media.asset_link.open_failed",
+      });
     }
   }
 

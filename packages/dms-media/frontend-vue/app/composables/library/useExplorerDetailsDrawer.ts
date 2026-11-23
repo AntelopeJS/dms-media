@@ -30,7 +30,6 @@ export function useExplorerDetailsDrawer(
     if (target) selection.select(target.id, { extend: false, toggle: false });
   }
 
-  /** The focused file's header; the drawer's own title on a folder, several files or none. */
   const rowHeader = computed<DrawerRowHeader>(() => {
     const asset = selection.focusedAsset.value;
     const assets = listing.assets.value;
@@ -56,8 +55,6 @@ export function useExplorerDetailsDrawer(
     const instance = open({
       direction: "right",
       title: t("dms_media.explorer.details"),
-      // Its body injects the explorer's library and commands: call this in
-      // the setup of the component that provides them.
       component: ExplorerDetailsDrawer,
       rowHeader: rowHeader.value,
     });
@@ -80,6 +77,5 @@ export function useExplorerDetailsDrawer(
   );
   watch(isShown, (shown) => (shown ? show() : hide()));
   watch(rowHeader, (header) => drawer?.patch({ rowHeader: header }));
-  // The explorer goes (a page left, a picker closed): its drawer with it.
   onScopeDispose(hide);
 }

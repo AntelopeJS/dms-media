@@ -1,4 +1,5 @@
 import type { MediaAsset, PresignResponse } from "../types/media";
+import type { MediaRequestBody } from "./useMediaApi";
 
 const API = "/api/media/upload";
 
@@ -31,8 +32,11 @@ interface RequestOptions {
 /** The upload routes the queue drives: presign, confirm, abort, names and batch reports. */
 export function useUploadApi() {
   const { $authFetch } = useAuthFetch();
-  const post = <T>(path: string, body: object, options: RequestOptions = {}) =>
-    $authFetch<T>(`${API}${path}`, { method: "POST", body, ...options });
+  const post = <T>(
+    path: string,
+    body: MediaRequestBody,
+    options: RequestOptions = {},
+  ) => $authFetch<T>(`${API}${path}`, { method: "POST", body, ...options });
 
   return {
     presign: (folderId: string, file: File) =>
