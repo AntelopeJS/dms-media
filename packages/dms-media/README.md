@@ -68,7 +68,7 @@ new AssetType({
 | ------------------------------------------- | ------------------ | ----------- |
 | `@antelopejs/interface-api`                 | `>=0.3.3 <0.4.0`   | `0.3.3`     |
 | `@antelopejs/interface-api-util`            | `>=0.3.2 <0.4.0`   | `0.3.2`     |
-| `@antelopejs/interface-core`                | `>=0.5.1 <0.6.0`   | `0.5.1`     |
+| `@antelopejs/interface-core`                | `>=0.5.2 <0.6.0`   | `0.5.2`     |
 | `@antelopejs/interface-database`            | `>=0.4.0 <0.5.0`   | `0.4.0`     |
 | `@antelopejs/interface-database-decorators` | `>=0.5.2 <0.6.0`   | `0.5.2`     |
 | `@antelopejs/interface-dms`                 | `>=0.16.0 <0.17.0` | `0.16.0`    |
