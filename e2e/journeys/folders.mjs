@@ -1,6 +1,7 @@
 import { guarded } from "../guard.mjs";
 import { media, text } from "../media.mjs";
 import { folderMenuJourneys } from "./parts/folder-menus.mjs";
+import { folderZipJourneys } from "./parts/folder-zip.mjs";
 
 /** @typedef {import("../media.mjs").Ctx} Ctx */
 
@@ -22,4 +23,7 @@ export async function boundFolder(ctx, bindingId) {
 }
 
 /** Folders: the explorer menus. */
-export const journeys = guarded([...folderMenuJourneys()]);
+export const journeys = guarded([
+  ...folderMenuJourneys(),
+  ...folderZipJourneys(),
+]);

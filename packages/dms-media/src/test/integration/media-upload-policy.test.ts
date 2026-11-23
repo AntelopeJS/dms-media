@@ -1,5 +1,5 @@
 import axios, { type AxiosInstance } from "axios";
-import { expect } from "chai";
+import { assert, expect } from "chai";
 import { FileExists } from "@antelopejs/interface-file-storage";
 import { GetModel } from "@antelopejs/interface-database-decorators";
 import { DEFAULT_TENANT_ID } from "@antelopejs/interface-dms/constants";
@@ -140,8 +140,8 @@ function describeTypeRules(): void {
       const linked = (await fetchFolderNodes(client)).find(
         (folder) => folder.binding === PDF_BINDING_ID,
       );
-      expect(linked, "linked folder").to.not.equal(undefined);
-      const image = await presign(linked!.id, "photo.png", "image/png");
+      assert.isDefined(linked, "linked folder");
+      const image = await presign(linked.id, "photo.png", "image/png");
       expect(image.status).to.equal(HTTP_UNSUPPORTED_MEDIA_TYPE);
       expectRefusal(
         image,
@@ -150,7 +150,7 @@ function describeTypeRules(): void {
       );
       expect(image.data.accepted).to.deep.equal(["application/pdf"]);
       expect(
-        (await presign(linked!.id, "sheet.pdf", "application/pdf")).status,
+        (await presign(linked.id, "sheet.pdf", "application/pdf")).status,
       ).to.equal(HTTP_OK);
     });
   });

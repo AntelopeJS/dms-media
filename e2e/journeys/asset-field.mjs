@@ -4,11 +4,8 @@ import { createFolder, folderAssets, member, uploaded } from "../library.mjs";
 import { check, image, pick, text } from "../media.mjs";
 import { boundFolder } from "./folders.mjs";
 import { fieldEntryJourneys } from "./parts/field-entries.mjs";
-import {
-  openPicker,
-  pickerDestinationJourneys,
-  pickerUploadJourneys,
-} from "./parts/picker-uploads.mjs";
+import { pickerDestinationJourneys } from "./parts/picker-destinations.mjs";
+import { openPicker, pickerUploadJourneys } from "./parts/picker-uploads.mjs";
 
 /** @typedef {import("../media.mjs").Ctx} Ctx */
 

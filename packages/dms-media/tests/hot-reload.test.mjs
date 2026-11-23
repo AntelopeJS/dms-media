@@ -1,16 +1,3 @@
-/**
- * Hot reload ownership (AntelopeJS/dms-media#26).
- *
- * Runs a real project with `@antelopejs/core`'s `launch` in watch mode: two
- * consumer modules declared BEFORE dms-media declare an AssetType field at load
- * time through `@antelopejs/interface-dms-media`. Then it reloads the consumer
- * and dms-media itself, and checks that dms-media's routes, pages and page
- * topics stay owned by dms-media, survive the consumer's reload, and are
- * evaluated again from the edited file when dms-media reloads.
- *
- * Expects `pnpm run build` to have run: it loads the module from `dist`.
- */
-
 import { launch } from "@antelopejs/core";
 import dmsManifest from "@antelopejs/dms/package.json" with { type: "json" };
 import { MongoMemoryReplSet } from "mongodb-memory-server-core";

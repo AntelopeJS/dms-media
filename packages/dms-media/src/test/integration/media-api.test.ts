@@ -1,5 +1,5 @@
 import type { AxiosInstance } from "axios";
-import { expect } from "chai";
+import { assert, expect } from "chai";
 import { GetModel } from "@antelopejs/interface-database-decorators";
 import { DEFAULT_TENANT_ID } from "@antelopejs/interface-dms/constants";
 import { FileExists } from "@antelopejs/interface-file-storage";
@@ -310,11 +310,13 @@ describe("[integration] media API — folder changes read back", () => {
         "image/png",
         bytes,
       );
-      const storageKey = (
-        await GetModel(MediaAssetModel, DEFAULT_TENANT_ID).get(gone.id)
-      )?.storageKey;
-      expect(storageKey, "stored file of the doomed asset").to.be.a("string");
-      expect(await FileExists(storageKey!)).to.equal(true);
+      const doomedAsset = await GetModel(
+        MediaAssetModel,
+        DEFAULT_TENANT_ID,
+      ).get(gone.id);
+      assert.isDefined(doomedAsset, "the doomed asset");
+      const { storageKey } = doomedAsset;
+      expect(await FileExists(storageKey)).to.equal(true);
       const impact = await client.get(`/api/media/folders/${doomed}/impact`);
       expect(impact.data).to.include({
         subfolders: 1,
@@ -330,7 +332,7 @@ describe("[integration] media API — folder changes read back", () => {
       expect((await client.get(`/media/${gone.id}/gone.png`)).status).to.equal(
         HTTP_NOT_FOUND,
       );
-      expect(await FileExists(storageKey!)).to.equal(false);
+      expect(await FileExists(storageKey)).to.equal(false);
       const served = await client.get(`/media/${stays.id}/stays.png`, {
         responseType: "arraybuffer",
       });

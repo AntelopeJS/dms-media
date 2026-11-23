@@ -23,6 +23,171 @@ function itemValue(body, id) {
   );
 }
 
+/**
+ * Fills a folder with files, a failed batch and an edit, and notes the storage before the edit.
+ *
+ * @param {Ctx} ctx The journey context
+ * @returns {Promise<{ huge: { id: string }, storageBefore: number }>} The newest file and the storage before the edit
+ */
+async function seedStatisticsLibrary(ctx) {
+  const folder = await createFolder(ctx, ctx.unique("Stats"));
+  const a = await uploaded(ctx, {
+    folderId: folder.id,
+    name: "a.png",
+    mimetype: "image/png",
+    bytes: await image(ctx, { width: 40, height: 40 }),
+  });
+  await uploaded(ctx, {
+    folderId: folder.id,
+    name: "b.png",
+    mimetype: "image/png",
+    bytes: await image(ctx, { width: 40, height: 40 }),
+  });
+  const described = await uploaded(ctx, {
+    folderId: folder.id,
+    name: "c.png",
+    mimetype: "image/png",
+    bytes: await image(ctx, { width: 40, height: 40 }),
+  });
+  await media(ctx, "describe c", "POST", `/assets/${described.id}/update`, {
+    body: { alt: "C" },
+  });
+  await setVisibility(ctx, "assets", a.id, "public");
+  const huge = await uploaded(ctx, {
+    folderId: folder.id,
+    name: "lourd.pdf",
+    mimetype: "application/pdf",
+    bytes: Buffer.alloc(21 * 1000 * 1000, 37),
+  });
+  await media(ctx, "report a batch with a failure", "POST", "/upload/batches", {
+    body: {
+      batchId: ctx.unique("b"),
+      folderId: folder.id,
+      total: 2,
+      uploaded: 1,
+      failed: 1,
+      size: 3,
+      failures: [{ name: "x.html", reason: "type_not_allowed" }],
+    },
+  });
+  const storageBefore = Number(
+    pick(
+      (await media(ctx, "storage before an edit", "GET", "/stats/storage"))
+        .body,
+      "value",
+    ),
+  );
+  await media(ctx, "rotate b", "POST", `/assets/${described.id}/transform`, {
+    body: { rotate: 90 },
+  });
+  return { huge, storageBefore };
+}
+
+/**
+ * Reads the statistics routes and checks every figure.
+ *
+ * @param {Ctx} ctx The journey context
+ * @param {{ huge: { id: string }, storageBefore: number }} library What the seed left
+ * @returns {Promise<void>}
+ */
+async function verifyStatistics(ctx, library) {
+  const { huge, storageBefore } = library;
+  const kpis = await media(ctx, "KPIs", "GET", "/stats/kpis");
+  const attention = await media(
+    ctx,
+    "needs attention",
+    "GET",
+    "/stats/attention",
+  );
+  const storage = await media(ctx, "storage by type", "GET", "/stats/storage");
+  const recent = await media(ctx, "recent", "GET", "/stats/recent");
+  await ctx.verify("the statistics", [
+    check(
+      "files: four plus the provisioned one",
+      itemValue(kpis.body, "files") === 5,
+      kpis.body,
+    ),
+    check(
+      "added in the last 30 days",
+      JSON.stringify(
+        list(kpis.body, "items").find((row) => pick(row, "id") === "files"),
+      ).includes('"value":5'),
+      kpis.body,
+    ),
+    check("public files", itemValue(kpis.body, "public") === 1, kpis.body),
+    check("missing alt", itemValue(kpis.body, "missing-alt") === 2, kpis.body),
+    check(
+      "attention: two images without alt, one of them public",
+      itemValue(attention.body, "missing-alt") === 2 &&
+        JSON.stringify(
+          list(attention.body, "items").find(
+            (row) => pick(row, "id") === "missing-alt",
+          ),
+        ).includes('"value":1'),
+      attention.body,
+    ),
+    check(
+      "attention: a failed upload today",
+      JSON.stringify(attention.body).includes("failed"),
+      attention.body,
+    ),
+    check(
+      "attention: a file over 20 MB",
+      JSON.stringify(attention.body).includes("large") ||
+        JSON.stringify(attention.body).includes("20"),
+      attention.body,
+    ),
+    check(
+      "storage counts the original of the edited image",
+      Number(pick(storage.body, "value")) > storageBefore,
+      [storageBefore, pick(storage.body, "value")],
+    ),
+    check(
+      "recently added starts with the newest",
+      text(list(recent.body, "assets")[0], "id") === huge.id,
+      recent.body,
+    ),
+  ]);
+}
+
+/**
+ * Checks the blocks of the Overview page and its two links.
+ *
+ * @param {Ctx} ctx The journey context
+ * @returns {Promise<void>}
+ */
+async function verifyOverviewPage(ctx) {
+  const tab = await ctx.tab();
+  await tab.signIn("admin");
+  await tab.goto("/modules/media/overview");
+  await ctx.verify("the page's blocks, top to bottom", [
+    tab.visible({ role: "link", name: "Open library" }, { timeoutMs: 30_000 }),
+    tab.visible({ role: "group", name: "Live updates" }),
+    tab.shows(/needs attention/i),
+    tab.shows(/Describe the 2 images without alt text/),
+    tab.visible({ role: "link", name: /^Files 5/ }),
+    tab.visible({ role: "link", name: /^Public files 1/ }),
+    tab.shows(/originals of edited images included/i),
+    tab.visible({ role: "link", name: "See the largest files" }),
+    tab.shows(/recently added/i),
+    tab.shows(/lourd\.pdf/),
+  ]);
+  await tab.click({ role: "link", name: "See the largest files" });
+  await ctx.verify("See the largest files opens that view", [
+    tab.at(/^\/modules\/media\/files/),
+    check(
+      "view=largest",
+      tab.page.url().includes("view=largest"),
+      tab.page.url(),
+    ),
+  ]);
+  await tab.goto("/modules/media/overview");
+  await tab.click({ role: "link", name: "Open library" });
+  await ctx.verify("Open library opens the Library", [
+    tab.at(/^\/modules\/media\/files$/),
+  ]);
+}
+
 /** The Overview: what needs attention, the figures, storage by type, activity, recent files, the drop zone. */
 export const journeys = guarded([
   {
@@ -31,163 +196,9 @@ export const journeys = guarded([
       "Needs attention counts images without alt and the public ones, failed uploads of the last 24 hours and files over 20 MB; the KPIs count files, files added in 30 days, storage, public files and missing alt; storage by type counts edited originals; activity and recently added list the newest",
     entryPoint: "/modules/media/overview, GET /api/media/stats/*",
     async run(/** @type {Ctx} */ ctx) {
-      const folder = await createFolder(ctx, ctx.unique("Stats"));
-      const a = await uploaded(ctx, {
-        folderId: folder.id,
-        name: "a.png",
-        mimetype: "image/png",
-        bytes: await image(ctx, { width: 40, height: 40 }),
-      });
-      await uploaded(ctx, {
-        folderId: folder.id,
-        name: "b.png",
-        mimetype: "image/png",
-        bytes: await image(ctx, { width: 40, height: 40 }),
-      });
-      const described = await uploaded(ctx, {
-        folderId: folder.id,
-        name: "c.png",
-        mimetype: "image/png",
-        bytes: await image(ctx, { width: 40, height: 40 }),
-      });
-      await media(ctx, "describe c", "POST", `/assets/${described.id}/update`, {
-        body: { alt: "C" },
-      });
-      await setVisibility(ctx, "assets", a.id, "public");
-      const huge = await uploaded(ctx, {
-        folderId: folder.id,
-        name: "lourd.pdf",
-        mimetype: "application/pdf",
-        bytes: Buffer.alloc(21 * 1000 * 1000, 37),
-      });
-      await media(
-        ctx,
-        "report a batch with a failure",
-        "POST",
-        "/upload/batches",
-        {
-          body: {
-            batchId: ctx.unique("b"),
-            folderId: folder.id,
-            total: 2,
-            uploaded: 1,
-            failed: 1,
-            size: 3,
-            failures: [{ name: "x.html", reason: "type_not_allowed" }],
-          },
-        },
-      );
-      const storageBefore = Number(
-        pick(
-          (await media(ctx, "storage before an edit", "GET", "/stats/storage"))
-            .body,
-          "value",
-        ),
-      );
-      await media(
-        ctx,
-        "rotate b",
-        "POST",
-        `/assets/${described.id}/transform`,
-        { body: { rotate: 90 } },
-      );
-      const kpis = await media(ctx, "KPIs", "GET", "/stats/kpis");
-      const attention = await media(
-        ctx,
-        "needs attention",
-        "GET",
-        "/stats/attention",
-      );
-      const storage = await media(
-        ctx,
-        "storage by type",
-        "GET",
-        "/stats/storage",
-      );
-      const recent = await media(ctx, "recent", "GET", "/stats/recent");
-      await ctx.verify("the statistics", [
-        check(
-          "files: four plus the provisioned one",
-          itemValue(kpis.body, "files") === 5,
-          kpis.body,
-        ),
-        check(
-          "added in the last 30 days",
-          JSON.stringify(
-            list(kpis.body, "items").find((row) => pick(row, "id") === "files"),
-          ).includes('"value":5'),
-          kpis.body,
-        ),
-        check("public files", itemValue(kpis.body, "public") === 1, kpis.body),
-        check(
-          "missing alt",
-          itemValue(kpis.body, "missing-alt") === 2,
-          kpis.body,
-        ),
-        check(
-          "attention: two images without alt, one of them public",
-          itemValue(attention.body, "missing-alt") === 2 &&
-            JSON.stringify(
-              list(attention.body, "items").find(
-                (row) => pick(row, "id") === "missing-alt",
-              ),
-            ).includes('"value":1'),
-          attention.body,
-        ),
-        check(
-          "attention: a failed upload today",
-          JSON.stringify(attention.body).includes("failed"),
-          attention.body,
-        ),
-        check(
-          "attention: a file over 20 MB",
-          JSON.stringify(attention.body).includes("large") ||
-            JSON.stringify(attention.body).includes("20"),
-          attention.body,
-        ),
-        check(
-          "storage counts the original of the edited image",
-          Number(pick(storage.body, "value")) > storageBefore,
-          [storageBefore, pick(storage.body, "value")],
-        ),
-        check(
-          "recently added starts with the newest",
-          text(list(recent.body, "assets")[0], "id") === huge.id,
-          recent.body,
-        ),
-      ]);
-      const tab = await ctx.tab();
-      await tab.signIn("admin");
-      await tab.goto("/modules/media/overview");
-      await ctx.verify("the page's blocks, top to bottom", [
-        tab.visible(
-          { role: "link", name: "Open library" },
-          { timeoutMs: 30_000 },
-        ),
-        tab.visible({ role: "group", name: "Live updates" }),
-        tab.shows(/needs attention/i),
-        tab.shows(/Describe the 2 images without alt text/),
-        tab.visible({ role: "link", name: /^Files 5/ }),
-        tab.visible({ role: "link", name: /^Public files 1/ }),
-        tab.shows(/originals of edited images included/i),
-        tab.visible({ role: "link", name: "See the largest files" }),
-        tab.shows(/recently added/i),
-        tab.shows(/lourd\.pdf/),
-      ]);
-      await tab.click({ role: "link", name: "See the largest files" });
-      await ctx.verify("See the largest files opens that view", [
-        tab.at(/^\/modules\/media\/files/),
-        check(
-          "view=largest",
-          tab.page.url().includes("view=largest"),
-          tab.page.url(),
-        ),
-      ]);
-      await tab.goto("/modules/media/overview");
-      await tab.click({ role: "link", name: "Open library" });
-      await ctx.verify("Open library opens the Library", [
-        tab.at(/^\/modules\/media\/files$/),
-      ]);
+      const library = await seedStatisticsLibrary(ctx);
+      await verifyStatistics(ctx, library);
+      await verifyOverviewPage(ctx);
     },
   },
   {
