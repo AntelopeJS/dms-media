@@ -172,24 +172,24 @@ function activate(row: Row | undefined, key: string | undefined): void {
 }
 
 function onKeydown(event: KeyboardEvent): void {
-  const element = (event.target as HTMLElement).closest<HTMLElement>(
-    ROW_SELECTOR,
-  );
+  const { target } = event;
+  if (!(target instanceof HTMLElement)) return;
+  const element = target.closest<HTMLElement>(ROW_SELECTOR);
   if (!element) return;
   const index = rowElements().indexOf(element);
   const key = element.dataset.key;
   const row = rowOf(key);
-  const handlers: Record<string, () => void> = {
-    ArrowDown: () => focusAt(index + 1),
-    ArrowUp: () => focusAt(index - 1),
-    Home: () => focusAt(0),
-    End: () => focusAt(rowElements().length - 1),
-    ArrowRight: () => stepInto(row, index),
-    ArrowLeft: () => stepOut(row),
-    Enter: () => activate(row, key),
-    " ": () => activate(row, key),
-  };
-  const handler = handlers[event.key];
+  const handlers = new Map<string, () => void>([
+    ["ArrowDown", () => focusAt(index + 1)],
+    ["ArrowUp", () => focusAt(index - 1)],
+    ["Home", () => focusAt(0)],
+    ["End", () => focusAt(rowElements().length - 1)],
+    ["ArrowRight", () => stepInto(row, index)],
+    ["ArrowLeft", () => stepOut(row)],
+    ["Enter", () => activate(row, key)],
+    [" ", () => activate(row, key)],
+  ]);
+  const handler = handlers.get(event.key);
   if (!handler) return;
   event.preventDefault();
   handler();

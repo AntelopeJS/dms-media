@@ -14,7 +14,6 @@ const toasts = useUploadToasts();
 const route = useDmsRoute();
 const router = useDmsRouter();
 const { t } = useI18n();
-// Read with the page: a client navigation waits for the folders, so the drop zone shows with it, saying whether files can go.
 await ready();
 const canUpload = computed(() =>
   Boolean(tree.value?.folders.some((folder) => folder.rights.write)),
@@ -143,7 +142,8 @@ async function pickFiles(): Promise<void> {
 }
 
 function onFilesChosen(event: Event): void {
-  const input = event.target as HTMLInputElement;
+  const input = event.target;
+  if (!(input instanceof HTMLInputElement)) return;
   const files = Array.from(input.files ?? []);
   if (destination.value && files.length) send(files, destination.value);
   input.value = "";
@@ -179,26 +179,21 @@ async function onDrop(event: DragEvent): Promise<void> {
   if (folder) send(files, folder);
 }
 
-const DRAG_EVENTS = {
-  dragenter: onDragEnter,
-  dragleave: onDragLeave,
-  dragover: onDragOver,
-  drop: onDrop,
-} as const;
-
 onMounted(() => {
-  Object.entries(DRAG_EVENTS).forEach(([name, handler]) =>
-    window.addEventListener(name, handler as EventListener),
-  );
+  window.addEventListener("dragenter", onDragEnter);
+  window.addEventListener("dragleave", onDragLeave);
+  window.addEventListener("dragover", onDragOver);
+  window.addEventListener("drop", onDrop);
   if (route.query.pick) {
     void router.replace({ path: route.path, query: {} });
     void pickFiles();
   }
 });
 onBeforeUnmount(() => {
-  Object.entries(DRAG_EVENTS).forEach(([name, handler]) =>
-    window.removeEventListener(name, handler as EventListener),
-  );
+  window.removeEventListener("dragenter", onDragEnter);
+  window.removeEventListener("dragleave", onDragLeave);
+  window.removeEventListener("dragover", onDragOver);
+  window.removeEventListener("drop", onDrop);
 });
 </script>
 

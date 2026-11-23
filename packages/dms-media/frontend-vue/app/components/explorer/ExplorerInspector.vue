@@ -33,9 +33,6 @@ const canEdit = computed(() =>
 );
 const isBrowse = library.mode === "browse";
 const PREVIEW_PRESET = "preview";
-// The preview uncropped, at the file's own ratio, and who added it, for the
-// file in view: read while it is in view, shared with the other blocks
-// reading the same file.
 const assetId = computed(() => asset.value?.id);
 const previewRead = useApiData<ReadUrl>(
   () =>

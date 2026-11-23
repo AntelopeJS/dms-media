@@ -46,11 +46,13 @@ const hasNoFiles = computed(
     library.listing.total.value === 0 &&
     !error.value,
 );
-/** Filters narrow the files, so an empty result says so rather than "this folder is empty". */
 const isNarrowed = computed(() => {
   const filters = library.listing.filters.value;
-  return Object.entries(NO_NARROWING).some(
-    ([name, idle]) => filters[name as keyof ListingFilters] !== idle,
+  return (
+    filters.type !== NO_NARROWING.type ||
+    filters.visibility !== NO_NARROWING.visibility ||
+    filters.modified !== NO_NARROWING.modified ||
+    filters.orientation !== NO_NARROWING.orientation
   );
 });
 const isFilteredOut = computed(
@@ -80,7 +82,6 @@ const limits = computed(() => {
   return t("dms_media.empty.limits", { size });
 });
 
-/** A page emptied by a move or a delete brings in the files that were waiting behind it. */
 watch(
   () => assets.value.length,
   (count, before) => {

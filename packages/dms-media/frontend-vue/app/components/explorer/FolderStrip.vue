@@ -35,10 +35,10 @@ function tabIndexOf(index: number): 0 | -1 {
 function onKeydown(event: KeyboardEvent): void {
   if (!isGridKey(event.key) || event.altKey || event.metaKey || event.ctrlKey)
     return;
+  const { currentTarget } = event;
+  if (!(currentTarget instanceof HTMLElement)) return;
   const cards = Array.from(
-    (event.currentTarget as HTMLElement).querySelectorAll<HTMLElement>(
-      CARD_SELECTOR,
-    ),
+    currentTarget.querySelectorAll<HTMLElement>(CARD_SELECTOR),
   );
   const current = cards.findIndex((card) => card === document.activeElement);
   const next = gridIndexAfter(

@@ -44,7 +44,6 @@ const library = provideMediaLibrary({
   remaining: props.remaining,
   scopeFolderId: props.scopeFolderId,
   alreadyPicked: props.alreadyPicked,
-  // Started here rather than once mounted, so that a server render reads a link's folder with the page.
   initialLocation: props.initialLocation ?? startLocation(),
   initialFilters: props.initialFilters,
 });
@@ -107,7 +106,8 @@ const uploadFolder = computed(() => {
 });
 
 function onFilesChosen(event: Event): void {
-  const input = event.target as HTMLInputElement;
+  const input = event.target;
+  if (!(input instanceof HTMLInputElement)) return;
   const files = Array.from(input.files ?? []);
   if (pendingDestination.value) enqueue(files, pendingDestination.value);
   input.value = "";
@@ -174,6 +174,19 @@ function checkedLocation(target: LibraryLocation): LibraryLocation {
     : startLocation();
 }
 
+const FILTER_KEYS = {
+  type: true,
+  visibility: true,
+  modified: true,
+  orientation: true,
+  sort: true,
+  direction: true,
+} satisfies Record<keyof ListingFilters, true>;
+
+function isFilterKey(name: string): name is keyof ListingFilters {
+  return Object.hasOwn(FILTER_KEYS, name);
+}
+
 /** Shows a location with its filters, as a link or the browser's history gives them. */
 async function navigate(
   target: LibraryLocation,
@@ -184,7 +197,7 @@ async function navigate(
   const changes = Object.fromEntries(
     Object.entries(filters).filter(
       ([name, value]) =>
-        value !== undefined && value !== current[name as keyof ListingFilters],
+        value !== undefined && isFilterKey(name) && value !== current[name],
     ),
   );
   if (Object.keys(changes).length) await library.listing.setFilters(changes);
@@ -193,8 +206,6 @@ async function navigate(
 onMounted(async () => {
   await library.tree.ready();
   const start = checkedLocation(props.initialLocation ?? startLocation());
-  // The listing started there, with its filters: opening it again would only reset them. The
-  // page still hears where it starts, as it does after a navigation.
   if (!sameLocation(start, library.listing.location.value))
     return navigate(start, props.initialFilters);
   emit("location", library.listing.location.value);
@@ -217,8 +228,8 @@ function openParent(): void {
   void library.openFolder(folder.parentId);
 }
 
-function onKey(run: () => unknown) {
-  return () => void run();
+function onKey(run: () => void) {
+  return () => run();
 }
 
 definePageShortcuts(

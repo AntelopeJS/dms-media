@@ -18,7 +18,7 @@ const props = defineProps<{
 const emit = defineEmits<{ close: [string | null] }>();
 const { t } = useI18n();
 const api = useMediaApi();
-const { presentError } = useApiErrorPresenter();
+const errors = useApiErrorPresenter();
 const format = useMediaFormat();
 const nameDialog = useOverlay().create(NameDialog);
 const {
@@ -63,8 +63,9 @@ const acceptedLabel = computed(() =>
     : "",
 );
 const remaining = computed(() => {
-  const quota = tree.value?.quotaBytes;
-  return quota ? Math.max(quota - tree.value!.root.size, 0) : null;
+  const current = tree.value;
+  const quota = current?.quotaBytes;
+  return current && quota ? Math.max(quota - current.root.size, 0) : null;
 });
 const confirmLabel = computed(() => {
   if (props.mode === "pick")
@@ -102,7 +103,7 @@ async function createFolder(): Promise<void> {
     await reload();
     target.value = id;
   } catch (error) {
-    presentError(error, {
+    errors.presentError(error, {
       fallbackKey: "dms_media.toasts.folder_create_failed",
     });
   } finally {

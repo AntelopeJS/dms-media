@@ -10,7 +10,6 @@ const { tree, refresh: reload, ready } = useLibraryTree();
 const { t } = useI18n();
 const toast = useUploadToasts();
 const fileInput = useTemplateRef<HTMLInputElement>("fileInput");
-// Read with the page: a client navigation waits for the folders, so the strip shows with it rather than after.
 await ready();
 const isDragging = ref(false);
 let dragDepth = 0;
@@ -135,7 +134,8 @@ async function chooseFiles(): Promise<void> {
 }
 
 function onFilesChosen(event: Event): void {
-  const input = event.target as HTMLInputElement;
+  const input = event.target;
+  if (!(input instanceof HTMLInputElement)) return;
   const files = Array.from(input.files ?? []);
   if (destination.value && files.length) send(files, destination.value);
   input.value = "";

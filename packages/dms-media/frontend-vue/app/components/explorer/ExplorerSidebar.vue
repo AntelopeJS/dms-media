@@ -102,27 +102,39 @@ function focusItem(item: Element | null | undefined): void {
 }
 
 /** WAI-ARIA tree keys: ↑ ↓ move, → opens or goes in, ← closes or goes up, Enter opens the folder. */
-const TREE_KEYS: Record<string, (context: TreeKeyContext) => void> = {
-  ArrowDown: ({ items, index }) => focusItem(items[index + 1]),
-  ArrowUp: ({ items, index }) => focusItem(items[index - 1]),
-  Home: ({ items }) => focusItem(items[0]),
-  End: ({ items }) => focusItem(items.at(-1)),
-  ArrowRight: ({ items, index, current, id }) => {
-    const state = current.getAttribute("aria-expanded");
-    if (state === "false") toggle(id);
-    if (state === "true") focusItem(items[index + 1]);
-  },
-  ArrowLeft: ({ current, id }) => {
-    if (current.getAttribute("aria-expanded") === "true") return toggle(id);
-    focusItem(current.parentElement?.closest(TREE_ITEM));
-  },
-  Enter: ({ id }) => openTreeItem(id),
-  " ": ({ id }) => openTreeItem(id),
-};
+const TREE_KEYS = new Map<string, (context: TreeKeyContext) => void>([
+  ["ArrowDown", ({ items, index }) => focusItem(items[index + 1])],
+  ["ArrowUp", ({ items, index }) => focusItem(items[index - 1])],
+  ["Home", ({ items }) => focusItem(items[0])],
+  ["End", ({ items }) => focusItem(items.at(-1))],
+  [
+    "ArrowRight",
+    ({ items, index, current, id }) => {
+      const state = current.getAttribute("aria-expanded");
+      if (state === "false") toggle(id);
+      if (state === "true") focusItem(items[index + 1]);
+    },
+  ],
+  [
+    "ArrowLeft",
+    ({ current, id }) => {
+      if (current.getAttribute("aria-expanded") === "true") return toggle(id);
+      focusItem(current.parentElement?.closest(TREE_ITEM));
+    },
+  ],
+  ["Enter", ({ id }) => openTreeItem(id)],
+  [" ", ({ id }) => openTreeItem(id)],
+]);
 
 function onTreeKeydown(event: KeyboardEvent): void {
-  const handle = TREE_KEYS[event.key];
-  const current = (event.target as HTMLElement).closest<HTMLElement>(TREE_ITEM);
+  const handle = TREE_KEYS.get(event.key);
+  const { target, currentTarget } = event;
+  if (
+    !(target instanceof HTMLElement) ||
+    !(currentTarget instanceof HTMLElement)
+  )
+    return;
+  const current = target.closest<HTMLElement>(TREE_ITEM);
   if (
     !handle ||
     !current?.dataset.treeId ||
@@ -134,9 +146,7 @@ function onTreeKeydown(event: KeyboardEvent): void {
   event.preventDefault();
   event.stopPropagation();
   const items = Array.from(
-    (event.currentTarget as HTMLElement).querySelectorAll<HTMLElement>(
-      TREE_ITEM,
-    ),
+    currentTarget.querySelectorAll<HTMLElement>(TREE_ITEM),
   );
   handle({
     items,
@@ -147,8 +157,9 @@ function onTreeKeydown(event: KeyboardEvent): void {
 }
 
 function onTreeFocus(event: FocusEvent): void {
-  const id = (event.target as HTMLElement).closest<HTMLElement>(TREE_ITEM)
-    ?.dataset.treeId;
+  const { target } = event;
+  if (!(target instanceof HTMLElement)) return;
+  const id = target.closest<HTMLElement>(TREE_ITEM)?.dataset.treeId;
   if (id) focusedId.value = id;
 }
 </script>

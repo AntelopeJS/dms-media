@@ -33,11 +33,10 @@ interface PresetFact {
 }
 
 const format = useMediaFormat();
-const { t, te } = useI18n();
-// Read with the page: a client navigation waits for the cards rather than swapping skeletons for them.
+const i18n = useI18n();
+const { t } = i18n;
 const presets = await useApiData<ImageSizesResponse>(MEDIA_READS.presets);
 const data = presets.data;
-// A failed refresh keeps the cards on screen; only a first read that failed shows the error.
 const failed = computed(() => !data.value && Boolean(presets.error.value));
 const SKELETON_CARDS = 3;
 const brokenExamples = ref(new Set<string>());
@@ -92,7 +91,7 @@ function boxLabel(preset: DeliveryPreset): string {
 }
 
 /** The rendered size drawn to one scale for every card, so sizes compare at a glance. */
-function frame(preset: DeliveryPreset): { width: string; height: string } {
+function frame(preset: DeliveryPreset) {
   const size = renderedSize(preset);
   const scale = BOX_SIZE / largestSide.value;
   const side = (value: number) =>
@@ -102,7 +101,7 @@ function frame(preset: DeliveryPreset): { width: string; height: string } {
 
 function fitLabel(fit: string | undefined): string {
   const key = `dms_media.presets.fits.${fit ?? DEFAULT_FIT}`;
-  return te(key) ? t(key) : (fit ?? DEFAULT_FIT);
+  return i18n.te(key) ? t(key) : (fit ?? DEFAULT_FIT);
 }
 
 function facts(preset: DeliveryPreset): PresetFact[] {

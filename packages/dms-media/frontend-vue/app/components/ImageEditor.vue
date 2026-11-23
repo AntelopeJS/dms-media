@@ -32,22 +32,21 @@ import {
   type PendingChange,
   PRESET_PREVIEW_SIZE,
   type PresetPreview,
-  QUARTER_TURN,
   VECTOR_MIMETYPE,
-  ZOOM_STEP,
 } from "../build/imageEditor/editorShapes";
 import { useEditorSaving } from "../build/imageEditor/useEditorSaving";
+import ImageEditorAspects from "./ImageEditorAspects.vue";
+import ImageEditorFooter from "./ImageEditorFooter.vue";
+import ImageEditorToolbar from "./ImageEditorToolbar.vue";
 
 const route = useDmsRoute();
 const api = useMediaApi();
 const { t } = useI18n();
-const { keyLabel } = useKeyboardPlatform();
 const toast = useToast();
 const format = useMediaFormat();
 const { confirm } = useConfirm();
 const cropper = useTemplateRef<CropperHandle>("cropper");
 const stage = useTemplateRef<HTMLElement>("stage");
-const aspectGroup = useTemplateRef<HTMLElement>("aspectGroup");
 const isMounted = useMounted();
 const source = ref<string | null>(null);
 const sourceFailed = ref(false);
@@ -59,9 +58,10 @@ const change = ref<CropperChange | null>(null);
 const isSaving = ref(false);
 const isCropperReady = ref(false);
 
-const assetId = computed(() =>
-  typeof route.query.asset === "string" ? route.query.asset : undefined,
-);
+const assetId = computed(() => {
+  const value = route.query.asset;
+  return Array.isArray(value) ? undefined : (value ?? undefined);
+});
 /** The file's details, read with the page: a server render shows its name and whether it can be edited. */
 const detailsRead = useApiData<AssetDetails>(() =>
   assetId.value ? MEDIA_READS.details(assetId.value) : null,
@@ -182,10 +182,11 @@ const presetPreviews = computed<PresetPreview[]>(() => {
   const coordinates = change.value?.coordinates;
   if (!coordinates) return [];
   return presets.value.map((preset) => {
-    const isCropped = preset.fit === "cover" && preset.width && preset.height;
-    const region = isCropped
-      ? centeredRegion(coordinates, preset.width! / preset.height!)
-      : coordinates;
+    const { width, height } = preset;
+    const region =
+      preset.fit === "cover" && width && height
+        ? centeredRegion(coordinates, width / height)
+        : coordinates;
     const scale = PRESET_PREVIEW_SIZE / Math.max(region.width, region.height);
     return {
       id: preset.id,
@@ -282,24 +283,6 @@ function nudgeCrop(event: KeyboardEvent): void {
   );
 }
 
-function chooseAspect(id: string): void {
-  aspect.value = id;
-  void nextTick(() =>
-    aspectGroup.value
-      ?.querySelector<HTMLElement>(`[data-aspect="${id}"]`)
-      ?.focus(),
-  );
-}
-
-function moveAspect(event: KeyboardEvent): void {
-  const step = KEY_STEPS[event.key];
-  if (!step) return;
-  event.preventDefault();
-  const ids = aspects.value.map((option) => option.id);
-  const index = ids.indexOf(aspect.value);
-  chooseAspect(ids[(index + step.x + step.y + ids.length) % ids.length]!);
-}
-
 function normalizedCrop() {
   const coordinates = change.value?.coordinates;
   const size = rotatedSize.value;
@@ -357,7 +340,6 @@ watch(
   },
   { immediate: true },
 );
-/** A fixed ratio starts as the largest frame of that ratio, centred on the image. */
 watch(stencilRatio, async (ratio) => {
   await nextTick();
   cropper.value?.refresh();
@@ -471,118 +453,21 @@ definePageShortcuts(() => ({
           />
           <USkeleton v-else class="h-[56vh] w-full" />
         </div>
-        <div class="flex justify-center pb-4">
-          <fieldset
-            class="dms-card flex items-center gap-1 p-1"
-            :disabled="!isCropperReady"
-          >
-            <UTooltip :text="t('dms_media.editor.rotate_left')">
-              <UButton
-                icon="i-ph-arrow-counter-clockwise"
-                color="neutral"
-                variant="ghost"
-                size="sm"
-                square
-                :aria-label="t('dms_media.editor.rotate_left')"
-                @click="rotate(-QUARTER_TURN)"
-              />
-            </UTooltip>
-            <UTooltip :text="t('dms_media.editor.rotate_right')">
-              <UButton
-                icon="i-ph-arrow-clockwise"
-                color="neutral"
-                variant="ghost"
-                size="sm"
-                square
-                :aria-label="t('dms_media.editor.rotate_right')"
-                @click="rotate(QUARTER_TURN)"
-              />
-            </UTooltip>
-            <span class="bg-(--ui-border) mx-1 h-5 w-px" />
-            <UTooltip :text="t('dms_media.editor.zoom_out')">
-              <UButton
-                icon="i-ph-magnifying-glass-minus"
-                color="neutral"
-                variant="ghost"
-                size="sm"
-                square
-                :aria-label="t('dms_media.editor.zoom_out')"
-                @click="cropper?.zoom(1 / ZOOM_STEP)"
-              />
-            </UTooltip>
-            <UTooltip :text="t('dms_media.editor.zoom_in')">
-              <UButton
-                icon="i-ph-magnifying-glass-plus"
-                color="neutral"
-                variant="ghost"
-                size="sm"
-                square
-                :aria-label="t('dms_media.editor.zoom_in')"
-                @click="cropper?.zoom(ZOOM_STEP)"
-              />
-            </UTooltip>
-            <span class="bg-(--ui-border) mx-1 h-5 w-px" />
-            <UButton
-              icon="i-ph-arrow-u-up-left"
-              color="neutral"
-              variant="ghost"
-              size="sm"
-              :label="t('dms_media.editor.reset')"
-              @click="reset"
-            />
-          </fieldset>
-        </div>
+        <ImageEditorToolbar
+          :disabled="!isCropperReady"
+          @rotate="rotate"
+          @zoom="cropper?.zoom($event)"
+          @reset="reset"
+        />
       </div>
       <aside
         class="border-default flex flex-col border-s max-lg:border-s-0 max-lg:border-t"
       >
-        <section class="border-default border-b p-4">
-          <DmsEyebrowLabel
-            :label="t('dms_media.editor.aspect_ratio')"
-            tone="muted"
-            class="mb-2"
-          />
-          <div
-            ref="aspectGroup"
-            class="grid grid-cols-3 gap-1.5"
-            role="radiogroup"
-            :aria-label="t('dms_media.editor.aspect_ratio')"
-            @keydown="moveAspect"
-          >
-            <button
-              v-for="option in aspects"
-              :key="option.id"
-              type="button"
-              role="radio"
-              :data-aspect="option.id"
-              :aria-checked="aspect === option.id"
-              :tabindex="aspect === option.id ? 0 : -1"
-              class="border-default flex flex-col items-center gap-1 rounded-md border px-1 py-2 text-[12px]"
-              :class="
-                aspect === option.id
-                  ? 'border-(--ui-primary) bg-(--dms-accent-tint) text-highlighted'
-                  : 'text-muted hover:bg-(--dms-bg-muted)'
-              "
-              @click="aspect = option.id"
-            >
-              <UIcon
-                :name="
-                  option.id === FREE_ASPECT_ID
-                    ? 'i-ph-selection'
-                    : option.ratio === 1
-                      ? 'i-ph-square'
-                      : 'i-ph-rectangle'
-                "
-                class="size-4"
-                :class="{ 'rotate-90': (option.ratio ?? 1) < 1 }"
-              />
-              <span class="font-mono">{{ aspectLabel(option) }}</span>
-              <span v-if="option.hint" class="text-dimmed text-[10px]">{{
-                t(`dms_media.editor.aspect_hints.${option.hint}`)
-              }}</span>
-            </button>
-          </div>
-        </section>
+        <ImageEditorAspects
+          v-model="aspect"
+          :options="aspects"
+          :label-of="aspectLabel"
+        />
         <section v-if="change" class="border-default border-b p-4">
           <DmsEyebrowLabel
             :label="t('dms_media.editor.crop_area')"
@@ -692,57 +577,13 @@ definePageShortcuts(() => ({
             @click="revert()"
           />
         </section>
-        <footer class="mt-auto flex flex-col gap-2 p-4">
-          <p class="text-muted flex items-start gap-2 text-[12px]">
-            <UIcon
-              name="i-ph-warning"
-              class="text-warning mt-0.5 size-4 shrink-0"
-            />
-            {{ t("dms_media.editor.save_overwrites") }}
-          </p>
-          <UButton
-            block
-            icon="i-ph-check"
-            :loading="isSaving"
-            :disabled="pending.length === 0"
-            :label="
-              pending.length
-                ? t(
-                    'dms_media.editor.save',
-                    { count: pending.length },
-                    pending.length,
-                  )
-                : t('dms_media.editor.save_none')
-            "
-            @click="save"
-          >
-            <template #trailing
-              ><UKbd
-                :value="keyLabel('meta')"
-                size="sm"
-                variant="subtle" /><UKbd value="S" size="sm" variant="subtle"
-            /></template>
-          </UButton>
-          <div class="grid grid-cols-2 gap-2">
-            <UButton
-              block
-              color="neutral"
-              variant="outline"
-              :label="t('dms_media.editor.discard')"
-              @click="leave"
-            />
-            <UButton
-              block
-              color="neutral"
-              variant="outline"
-              icon="i-ph-copy"
-              :loading="isSaving"
-              :disabled="pending.length === 0"
-              :label="t('dms_media.editor.save_copy')"
-              @click="saveCopy"
-            />
-          </div>
-        </footer>
+        <ImageEditorFooter
+          :pending-count="pending.length"
+          :is-saving="isSaving"
+          @save="save"
+          @save-copy="saveCopy"
+          @discard="leave"
+        />
       </aside>
     </div>
   </div>
