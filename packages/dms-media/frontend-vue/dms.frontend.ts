@@ -8,10 +8,7 @@ interface VueModule {
 const blocks = import.meta.glob<VueModule>("./app/components/*.vue");
 
 function componentName(path: string): string {
-  return path
-    .split("/")
-    .at(-1)!
-    .replace(/\.vue$/, "");
+  return path.slice(path.lastIndexOf("/") + 1).replace(/\.vue$/, "");
 }
 
 const frontendModule: DmsFrontendModule = {
@@ -22,7 +19,9 @@ const frontendModule: DmsFrontendModule = {
         await import("./app/utils/assetDataType");
       registerAssetDataType();
     });
-    for (const [path, loader] of Object.entries(blocks).sort()) {
+    for (const [path, loader] of Object.entries(blocks).sort(
+      ([left], [right]) => (left < right ? -1 : 1),
+    )) {
       sdk.registerComponent(
         componentName(path),
         defineAsyncComponent(async () => (await loader()).default),

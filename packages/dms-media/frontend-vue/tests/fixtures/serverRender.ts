@@ -1,38 +1,32 @@
-/**
- * Server renders of the module's blocks on the renderer's real data layer
- * (`#dms/frontend-module`) and the DMS's real `useApiData`, as the generated
- * application runs them: what each render reads from the backend, and what it
- * hands the browser with the page.
- */
 import * as vue from "vue";
-import { createSSRApp, h, type Component } from "vue";
+import { createSSRApp, h, type App, type Component } from "vue";
 import { renderToString } from "vue/server-renderer";
 import { vi } from "vitest";
-import type { DmsPayload } from "#dms/frontend-module";
+import { z } from "zod";
+import type { DmsPayload, DmsRequestKeyOptions } from "#dms/frontend-module";
 
 const engine = await import("#dms/frontend-module");
+
+type Query = NonNullable<DmsRequestKeyOptions["query"]>;
 
 /** A backend request a render made. */
 export interface BackendRead {
   url: string;
   method: string;
-  query: Record<string, unknown>;
+  query: Query;
 }
 
-export type Backend = (read: BackendRead) => unknown;
+export type Backend = (read: BackendRead) => object;
 
 let backend: Backend = () => ({});
 const reads: BackendRead[] = [];
 
 /** The query a request was given, as the renderer keys its response: none when it had none. */
-const givenQueries = new WeakMap<
-  BackendRead,
-  Record<string, unknown> | undefined
->();
+const givenQueries = new WeakMap<BackendRead, Query | undefined>();
 
 const $authFetch = async (
   url: string,
-  options: { method?: string; query?: Record<string, unknown> } = {},
+  options: { method?: string; query?: Query } = {},
 ) => {
   const read = {
     url,
@@ -47,14 +41,15 @@ const $authFetch = async (
 const noop = () => undefined;
 
 /** The auto-imports, which templates reach through the application's global properties. */
-const autoImports: Record<string, unknown> = {};
-function provideGlobal(name: string, value: unknown): void {
-  autoImports[name] = value;
+const globalProviders: ((app: App) => void)[] = [];
+function provideGlobal<T>(name: string, value: T): T {
+  globalProviders.push((app) => {
+    app.config.globalProperties[name] = value;
+  });
   vi.stubGlobal(name, value);
+  return value;
 }
 
-// The application's auto-imports: Vue's API, the renderer's, the DMS layers'
-// the module calls, and the module's own composables and utilities.
 for (const [name, value] of Object.entries(vue))
   if (/^[a-z]/.test(name)) vi.stubGlobal(name, value);
 for (const name of [
@@ -72,7 +67,7 @@ provideGlobal("useApiData", useApiData);
 provideGlobal("useApiPagedData", useApiPagedData);
 provideGlobal("useAuthFetch", () => ({ $authFetch }));
 provideGlobal("useI18n", () => ({
-  t: (key: string, params?: Record<string, unknown>) =>
+  t: (key: string, params?: Record<string, string | number>) =>
     params ? `${key} ${Object.values(params).join(" ")}` : key,
   te: () => false,
   locale: vue.ref("en"),
@@ -95,7 +90,6 @@ provideGlobal("usePageLiveRefresh", noop);
 provideGlobal("defineShortcuts", noop);
 const keyboard =
   await import("#dms-ui/app/composables/global/keyboardPlatform");
-// The labels a server render prints before the browser names its platform.
 provideGlobal("useKeyboardPlatform", () => ({
   keyLabel: (key: string) =>
     keyboard.keyboardKeyLabel(key, keyboard.DEFAULT_KEYBOARD_PLATFORM),
@@ -108,7 +102,7 @@ for (const util of [
   await import("#dms-core/app/composables/useFieldErrors"),
 ])
   for (const [name, value] of Object.entries(util)) provideGlobal(name, value);
-const own = import.meta.glob<Record<string, unknown>>([
+const own = import.meta.glob<object>([
   "../../app/composables/**/*.ts",
   "../../app/utils/**/*.ts",
 ]);
@@ -116,8 +110,7 @@ for (const load of Object.values(own))
   for (const [name, value] of Object.entries(await load()))
     provideGlobal(name, value);
 
-// The DMS's and Nuxt UI's components the module's templates use: each renders
-// its default slot, its props as attributes.
+/** The DMS's and Nuxt UI's components the module's templates use: each renders its default slot, its props as attributes. */
 const UI_COMPONENTS = [
   "DmsCardPanel",
   "DmsCopyButton",
@@ -138,6 +131,8 @@ const UI_COMPONENTS = [
   "UTooltip",
 ];
 
+const attributeValue = z.union([z.string(), z.number(), z.boolean()]);
+
 const uiStub = (name: string): Component =>
   vue.defineComponent({
     name,
@@ -150,12 +145,11 @@ const uiStub = (name: string): Component =>
           {
             "data-stub": name,
             ...Object.fromEntries(
-              Object.entries(attrs).filter(([, value]) =>
-                ["string", "number", "boolean"].includes(typeof value),
+              Object.entries(attrs).filter(
+                ([, value]) => attributeValue.safeParse(value).success,
               ),
             ),
           },
-          // Every slot, named ones included: a field's trailing hint renders with it.
           Object.values(slots).flatMap((slot) => slot?.() ?? []),
         ),
   });
@@ -172,11 +166,7 @@ export interface ServerRender {
   handed: string[];
 }
 
-const describeRead = (
-  method: string,
-  url: string,
-  query: Record<string, unknown> | null,
-) => {
+const describeRead = (method: string, url: string, query: Query | null) => {
   const sent = Object.entries(query ?? {}).filter(
     ([, value]) => value !== undefined,
   );
@@ -199,13 +189,19 @@ function handedKey(key: string, made: BackendRead[]): string {
   return read ? describeRead(read.method, read.url, read.query) : key;
 }
 
+/** What the module's blocks are rendered with: the files a field holds. */
+export type RenderProps = Record<string, string[]>;
+
 /**
- * Renders `component` with `props` as a server renders the page `url`,
- * answering each backend request with `respond`.
+ * Server render of the module's blocks on the renderer's real data layer
+ * (`#dms/frontend-module`) and the DMS's real `useApiData`, as the generated
+ * application runs them: what each render reads from the backend, and what it
+ * hands the browser with the page. Renders `component` with `props` as a
+ * server renders the page `url`, answering each backend request with `respond`.
  */
 export async function serverRender(
   component: Component,
-  props: Record<string, unknown> = {},
+  props: RenderProps = {},
   options: { url?: string; respond?: Backend } = {},
 ): Promise<ServerRender> {
   backend = options.respond ?? (() => ({}));
@@ -214,9 +210,7 @@ export async function serverRender(
   runtime.route.fullPath = options.url ?? "/";
   const app = createSSRApp({ render: () => h(component, props) });
   engine.provideDmsFrontendRuntime(app, runtime);
-  for (const name of UI_COMPONENTS) app.component(name, uiStub(name));
-  Object.assign(app.config.globalProperties, autoImports);
-  app.config.warnHandler = noop;
+  equip(app);
   const html = await renderToString(app);
   const payload = engine.serializeDmsPayload(runtime);
   return {
@@ -227,6 +221,12 @@ export async function serverRender(
       handedKey(key, reads),
     ),
   };
+}
+
+function equip(app: App): void {
+  for (const name of UI_COMPONENTS) app.component(name, uiStub(name));
+  for (const provide of globalProviders) provide(app);
+  app.config.warnHandler = noop;
 }
 
 /** What `inBrowserApp` gives back: what `setup` returned, and the backend requests made so far. */
@@ -265,7 +265,7 @@ export interface SuspendedMount {
   readsBeforeShown: string[];
 }
 
-// Vue's renderer on bare objects: a browser mount and its Suspense, without a DOM.
+/** Vue's renderer on bare objects: a browser mount and its Suspense, without a DOM. */
 const blankRenderer = vue.createRenderer<object, object>({
   createElement: () => ({}),
   createText: () => ({}),
@@ -317,12 +317,8 @@ export async function suspendedMount(
       ),
   });
   engine.provideDmsFrontendRuntime(app, runtime);
-  // What the server build of a component records of itself, while it renders nowhere.
   app.provide(vue.ssrContextKey, {});
-  for (const name of UI_COMPONENTS) app.component(name, uiStub(name));
-  Object.assign(app.config.globalProperties, autoImports);
-  app.config.warnHandler = noop;
-  // The window the blocks listen on once mounted (a drop of files) and the history the library follows, for the time of the mount.
+  equip(app);
   vi.stubGlobal("window", {
     addEventListener: noop,
     removeEventListener: noop,

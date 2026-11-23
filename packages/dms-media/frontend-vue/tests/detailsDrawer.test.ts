@@ -1,3 +1,4 @@
+import { strict as assert } from "node:assert";
 import { computed, effectScope, nextTick, ref } from "vue";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import "./fixtures/serverRender";
@@ -6,10 +7,6 @@ import { useExplorerDetailsDrawer } from "../app/composables/library/useExplorer
 import type { ExplorerLayout } from "../app/composables/library/useExplorerLayout";
 import type { DrawerRowHeader } from "#dms-ui/app/composables/containers/types";
 
-// Narrower than the inline details panel, the explorer shows its details in
-// the DMS drawer: it opens and closes with the layout's state, closing it
-// turns the state off, and it follows the explorer's width and lifetime.
-
 interface OpenedDrawer {
   options: {
     direction: string;
@@ -17,7 +14,9 @@ interface OpenedDrawer {
     rowHeader: DrawerRowHeader;
   };
   close: ReturnType<typeof vi.fn>;
-  patch: ReturnType<typeof vi.fn>;
+  patch: ReturnType<
+    typeof vi.fn<(options: { rowHeader: DrawerRowHeader }) => void>
+  >;
   settle: () => Promise<void>;
 }
 
@@ -28,13 +27,19 @@ interface TestFile {
 
 let opened: OpenedDrawer[] = [];
 
+function firstDrawer(): OpenedDrawer {
+  const [drawer] = opened;
+  assert.ok(drawer);
+  return drawer;
+}
+
 function openDrawer(options: OpenedDrawer["options"]) {
   let resolve!: () => void;
   const result = new Promise<void>((done) => (resolve = done));
   const drawer: OpenedDrawer = {
     options,
     close: vi.fn(() => resolve()),
-    patch: vi.fn(),
+    patch: vi.fn<(options: { rowHeader: DrawerRowHeader }) => void>(),
     settle: async () => {
       resolve();
       await result;
@@ -52,10 +57,18 @@ const FILES: TestFile[] = [
 ];
 
 function setup(isWide = false) {
-  const layout = {
+  const isInline = ref(isWide);
+  const layout: ExplorerLayout = {
+    width: computed(() => (isInline.value ? "wide" : "narrow")),
+    hasInlineSidebar: computed(() => true),
+    hasInlineDetails: computed(() => isInline.value),
+    opensOnTap: computed(() => false),
+    isSidebarDrawerOpen: ref(false),
     isDetailsDrawerOpen: ref(false),
-    hasInlineDetails: ref(isWide),
-  } as unknown as ExplorerLayout;
+    scopeFolderId: undefined,
+    accept: [],
+    history: computed(() => undefined),
+  };
   const assets = ref(FILES);
   const selectedIds = ref<string[]>([]);
   const select = vi.fn((id: string) => (selectedIds.value = [id]));
@@ -68,7 +81,7 @@ function setup(isWide = false) {
   const context = { library, commands: {} } as unknown as ExplorerContext;
   const scope = effectScope();
   scope.run(() => useExplorerDetailsDrawer(layout, context));
-  return { layout, scope, selectedIds, select };
+  return { layout, isInline, scope, selectedIds, select };
 }
 
 async function toggle(layout: ExplorerLayout, isOpen: boolean): Promise<void> {
@@ -86,31 +99,30 @@ describe("details drawer", () => {
     const { layout } = setup();
     await toggle(layout, true);
     expect(opened).toHaveLength(1);
-    expect(opened[0]!.options.direction).toBe("right");
-    // Nothing handed as props: the body injects what the explorer provides.
-    expect(opened[0]!.options.componentOptions).toBeUndefined();
+    expect(firstDrawer().options.direction).toBe("right");
+    expect(firstDrawer().options.componentOptions).toBeUndefined();
     await toggle(layout, false);
-    expect(opened[0]!.close).toHaveBeenCalledOnce();
+    expect(firstDrawer().close).toHaveBeenCalledOnce();
   });
 
   it("turns the state off when the drawer is dismissed", async () => {
     const { layout } = setup();
     await toggle(layout, true);
-    await opened[0]!.settle();
+    await firstDrawer().settle();
     expect(layout.isDetailsDrawerOpen.value).toBe(false);
     await toggle(layout, true);
     expect(opened).toHaveLength(2);
   });
 
   it("puts the drawer away while the details sit inline, and brings it back", async () => {
-    const { layout } = setup();
+    const { layout, isInline } = setup();
     await toggle(layout, true);
-    layout.hasInlineDetails.value = true;
+    isInline.value = true;
     await nextTick();
-    expect(opened[0]!.close).toHaveBeenCalledOnce();
+    expect(firstDrawer().close).toHaveBeenCalledOnce();
     await nextTick();
     expect(layout.isDetailsDrawerOpen.value).toBe(true);
-    layout.hasInlineDetails.value = false;
+    isInline.value = false;
     await nextTick();
     expect(opened).toHaveLength(2);
   });
@@ -125,14 +137,14 @@ describe("details drawer", () => {
     const { layout, scope } = setup();
     await toggle(layout, true);
     scope.stop();
-    expect(opened[0]!.close).toHaveBeenCalledOnce();
+    expect(firstDrawer().close).toHaveBeenCalledOnce();
   });
 
   it("heads a single file with its name and place among the files shown", async () => {
     const { layout, selectedIds } = setup();
     selectedIds.value = ["b"];
     await toggle(layout, true);
-    const header = opened[0]!.options.rowHeader;
+    const header = firstDrawer().options.rowHeader;
     expect(header.title).toBe("b.pdf");
     expect(header.navigation).toMatchObject({
       index: 1,
@@ -146,21 +158,19 @@ describe("details drawer", () => {
     const { layout, selectedIds } = setup();
     selectedIds.value = ["a", "b"];
     await toggle(layout, true);
-    expect(opened[0]!.options.rowHeader).toEqual({});
+    expect(firstDrawer().options.rowHeader).toEqual({});
   });
 
   it("steps through the files by selecting them, and follows the selection", async () => {
     const { layout, selectedIds, select } = setup();
     selectedIds.value = ["a"];
     await toggle(layout, true);
-    expect(opened[0]!.options.rowHeader.navigation?.hasPrev).toBe(false);
-    opened[0]!.options.rowHeader.navigation?.next();
+    expect(firstDrawer().options.rowHeader.navigation?.hasPrev).toBe(false);
+    firstDrawer().options.rowHeader.navigation?.next();
     expect(select).toHaveBeenCalledWith("b", { extend: false, toggle: false });
     await nextTick();
-    const patched = opened[0]!.patch.mock.lastCall?.[0] as {
-      rowHeader: DrawerRowHeader;
-    };
-    expect(patched.rowHeader.title).toBe("b.pdf");
-    expect(patched.rowHeader.navigation?.index).toBe(1);
+    const patched = firstDrawer().patch.mock.lastCall?.[0];
+    expect(patched?.rowHeader.title).toBe("b.pdf");
+    expect(patched?.rowHeader.navigation?.index).toBe(1);
   });
 });
