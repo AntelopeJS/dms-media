@@ -27,7 +27,6 @@ const TYPED_EXTENSION = /\.[a-z0-9]{2,5}$/i;
 
 let wasOpen = attrs.open !== false;
 
-// The overlay may reuse a mounted dialog: start afresh each time it opens.
 onBeforeUpdate(() => {
   const isOpen = attrs.open !== false;
   if (isOpen && !wasOpen) {

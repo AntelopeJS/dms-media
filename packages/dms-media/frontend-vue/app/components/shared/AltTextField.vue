@@ -27,15 +27,13 @@ watch(
 const isDirty = computed(
   () => draft.value.trim() !== (props.asset.alt ?? "").trim(),
 );
-// Instant-save feedback as a DMS form row shows it: "Saved" only while the text is the saved one.
 const saveState = computed(() =>
   state.value === "saved" && isDirty.value ? "idle" : state.value,
 );
 
 function revert(event: KeyboardEvent): void {
-  const field = event.target as HTMLElement;
   draft.value = props.asset.alt ?? "";
-  field.blur();
+  if (event.target instanceof HTMLElement) event.target.blur();
 }
 
 async function commit(): Promise<void> {

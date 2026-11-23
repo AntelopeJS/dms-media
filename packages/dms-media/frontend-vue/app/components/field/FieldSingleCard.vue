@@ -10,7 +10,7 @@ defineProps<{
   canEditAlt: (asset: MediaAsset) => boolean;
   /** Id and ARIA attributes of the field, carried by the Replace button. */
   controlId?: string;
-  controlAria?: Record<string, unknown>;
+  controlAria?: Record<string, string | boolean | undefined>;
 }>();
 const emit = defineEmits<{
   replace: [];

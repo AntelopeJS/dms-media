@@ -12,7 +12,7 @@ const emit = defineEmits<{ saved: [MediaAsset] }>();
 const isOpen = defineModel<boolean>("open", { default: false });
 const { t } = useI18n();
 const api = useMediaApi();
-const { presentError } = useApiErrorPresenter();
+const errors = useApiErrorPresenter();
 
 const hasAlt = computed(() => !needsAltText(props.asset));
 
@@ -22,7 +22,7 @@ async function save(alt: string): Promise<boolean> {
     emit("saved", { ...props.asset, alt });
     return true;
   } catch (error) {
-    presentError(error, {
+    errors.presentError(error, {
       fallbackKey: "dms_media.field_widget.alt.save_failed",
     });
     return false;

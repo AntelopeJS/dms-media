@@ -39,7 +39,7 @@ const title = computed(() => {
 });
 
 /** Files and bytes stored in the folder itself, its subfolders' share taken out. */
-function directContent(current: MediaFolder): { files: number; size: number } {
+function directContent(current: MediaFolder) {
   const children = library.tree.childrenOf(current.id);
   return {
     files: Math.max(

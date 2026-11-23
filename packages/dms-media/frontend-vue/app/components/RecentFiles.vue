@@ -4,13 +4,11 @@ import AssetThumb from "./shared/AssetThumb.vue";
 
 const format = useMediaFormat();
 const { t } = useI18n();
-// Read again on each library change, its own trigger: the page's refreshes leave it alone.
 const recent = useApiData<{ assets: MediaAsset[] }>(MEDIA_READS.recent, {
   refreshOnPageRefresh: false,
 });
 const assets = computed(() => recent.data.value?.assets ?? []);
 const { tree, ready } = useLibraryTree();
-// Read with the page, with the folders the files' lines name: a client navigation waits for both.
 await Promise.all([recent, ready()]);
 const isLoading = computed(() => !recent.data.value && !recent.error.value);
 const isFailed = computed(

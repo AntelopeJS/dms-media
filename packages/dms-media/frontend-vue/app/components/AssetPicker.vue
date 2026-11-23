@@ -50,9 +50,9 @@ const announcement = ref("");
 
 const ids = computed<string[]>(() => {
   if (!props.modelValue) return [];
-  return typeof props.modelValue === "string"
-    ? [props.modelValue]
-    : props.modelValue;
+  return Array.isArray(props.modelValue)
+    ? props.modelValue
+    : [props.modelValue];
 });
 const { entries, remember } = useAssetFieldEntries(ids);
 const room = computed(() => {
@@ -85,7 +85,6 @@ const uploads = useAssetFieldUploads({
 });
 
 const form = useEnclosingForm();
-/** Saving mid-upload would save the field without the files still on their way: the form waits, showing them. */
 form?.addValidator(() => {
   if (!uploads.isUploading.value) return true;
   if (field.id.value) void form.focusField(field.id.value);
@@ -196,7 +195,11 @@ function focusControl(trigger: HTMLElement | null): void {
 
 function applyPicked(picked: MediaAsset[]): void {
   picked.forEach(remember);
-  if (!props.multiple) return commit([picked[0]!.id]);
+  const [first] = picked;
+  if (!props.multiple) {
+    if (first) commit([first.id]);
+    return;
+  }
   const added = picked
     .map((asset) => asset.id)
     .filter((id) => !ids.value.includes(id));
@@ -209,8 +212,10 @@ function remove(id: string): void {
 
 function move(from: number, to: number): void {
   const next = [...ids.value];
-  const [moved] = next.splice(from, 1);
-  next.splice(to, 0, moved!);
+  const moved = next[from];
+  if (moved === undefined) return;
+  next.splice(from, 1);
+  next.splice(to, 0, moved);
   const name = entries.value[from]?.asset?.name ?? "";
   commit(next);
   announcement.value = t("dms_media.field_widget.moved", {
@@ -287,7 +292,8 @@ useEventListener(defaultWindow, "drop", endDrag, { capture: true });
 useEventListener(defaultWindow, "dragend", endDrag, { capture: true });
 
 function onFilesChosen(event: Event): void {
-  const input = event.target as HTMLInputElement;
+  const input = event.target;
+  if (!(input instanceof HTMLInputElement)) return;
   void uploads.upload(Array.from(input.files ?? []));
   input.value = "";
 }

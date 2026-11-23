@@ -35,7 +35,6 @@ const failedUploads = computed(
 const progress = computed(() => runningUploadProgress(uploads.items.value));
 const sizeControl = useTemplateRef<HTMLElement>("sizeControl");
 
-/** The slider names its handle "Thumb": the handle is what a screen reader lands on, so it takes the label. */
 watchEffect(
   () =>
     sizeControl.value

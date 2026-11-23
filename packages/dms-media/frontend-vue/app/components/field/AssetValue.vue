@@ -7,11 +7,13 @@ const { t } = useI18n();
 
 const SHOWN_NAMES = 2;
 
+function isId(entry: unknown): entry is string {
+  return typeof entry === "string";
+}
+
 const ids = computed<string[]>(() => {
-  if (typeof props.value === "string") return [props.value];
-  return Array.isArray(props.value)
-    ? props.value.filter((entry): entry is string => typeof entry === "string")
-    : [];
+  if (isId(props.value)) return [props.value];
+  return Array.isArray(props.value) ? props.value.filter(isId) : [];
 });
 const shownIds = computed(() => ids.value.slice(0, SHOWN_NAMES));
 const hidden = computed(() => Math.max(ids.value.length - SHOWN_NAMES, 0));

@@ -58,7 +58,8 @@ function focusTarget(content: HTMLElement): boolean {
 /** The body's DMS components mount after the dialog opens: its target takes the focus as soon as it is in the page. */
 function focusInitial(event: Event): void {
   event.preventDefault();
-  const content = event.target as HTMLElement;
+  const content = event.target;
+  if (!(content instanceof HTMLElement)) return;
   if (focusTarget(content)) return;
   content.querySelector<HTMLElement>(FOCUSABLE)?.focus();
   const { stop } = useMutationObserver(

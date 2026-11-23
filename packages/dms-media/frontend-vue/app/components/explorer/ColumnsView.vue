@@ -33,8 +33,8 @@ const chain = computed(() => {
 });
 
 const columns = computed<FolderColumn[]>(() => {
-  const startId =
-    layout.scopeFolderId && chain.value.length ? chain.value[0]!.id : null;
+  const first = chain.value[0];
+  const startId = layout.scopeFolderId && first ? first.id : null;
   const parents: Array<string | null> = startId
     ? chain.value.map((folder) => folder.id)
     : [null, ...chain.value.map((folder) => folder.id)];

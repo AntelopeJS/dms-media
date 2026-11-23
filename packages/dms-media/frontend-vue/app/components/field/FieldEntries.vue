@@ -26,12 +26,12 @@ const list = useTemplateRef<HTMLElement>("list");
 const draggedIndex = ref<number | null>(null);
 const keysHintId = useId();
 
-const KEY_STEPS: Record<string, number> = {
-  ArrowLeft: -1,
-  ArrowUp: -1,
-  ArrowRight: 1,
-  ArrowDown: 1,
-};
+const KEY_STEPS = new Map<string, number>([
+  ["ArrowLeft", -1],
+  ["ArrowUp", -1],
+  ["ArrowRight", 1],
+  ["ArrowDown", 1],
+]);
 
 function nameOf(entry: AssetFieldEntry): string {
   if (entry.asset) return entry.asset.name;
@@ -61,7 +61,7 @@ async function move(from: number, to: number): Promise<void> {
 }
 
 function onKeydown(event: KeyboardEvent, index: number): void {
-  const step = KEY_STEPS[event.key];
+  const step = KEY_STEPS.get(event.key);
   if (!event.altKey || step === undefined) return;
   event.preventDefault();
   void move(index, index + step);

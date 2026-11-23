@@ -25,7 +25,6 @@ watch(
 const source = computed(() =>
   hasFailed.value ? undefined : previews.previewOf(props.asset.id),
 );
-// A vector is mostly a logo: cropping it to the tile would cut its ends off.
 const effectiveFit = computed(() =>
   props.asset.typeGroup === "vector" ? "contain" : props.fit,
 );
