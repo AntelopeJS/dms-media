@@ -4,13 +4,13 @@
 
 A pnpm workspace with two published packages. The root holds the tool configs and the CI workflows; the code lives in the packages.
 
-| Path                              | What it is                                                                                                                             |
-| --------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------- |
-| `packages/dms-media`              | `@antelopejs/dms-media`, the DMS media module: uploads, folders with per-folder permissions, derivatives and image editing             |
-| `packages/dms-media/frontend-vue` | The Vue layer, shipped as source. ESLint and Prettier own it, not oxlint and oxfmt. It keeps its own lockfile for standalone consumers |
-| `packages/dms-media/playground`   | An AntelopeJS project that runs the module against MongoDB. It is not a workspace package: install it with `--ignore-workspace`        |
-| `packages/dms-media/skills`       | Agent skills published with the module                                                                                                 |
-| `packages/interface-dms-media`    | `@antelopejs/interface-dms-media`, the interface the module implements: the `AssetType` field, folder bindings and declared content    |
+| Path                              | What it is                                                                                                                                                                                   |
+| --------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `packages/dms-media`              | `@antelopejs/dms-media`, the DMS media module: uploads, folders with per-folder permissions, derivatives and image editing                                                                   |
+| `packages/dms-media/frontend-vue` | The Vue layer, shipped as source. oxlint and oxfmt cover it like the rest; ESLint adds the template and type-aware rules on `.vue` files. It keeps its own lockfile for standalone consumers |
+| `packages/dms-media/playground`   | An AntelopeJS project that runs the module against MongoDB. It is not a workspace package: install it with `--ignore-workspace`                                                              |
+| `packages/dms-media/skills`       | Agent skills published with the module                                                                                                                                                       |
+| `packages/interface-dms-media`    | `@antelopejs/interface-dms-media`, the interface the module implements: the `AssetType` field, folder bindings and declared content                                                          |
 
 Run a package script from its own directory: `pnpm --dir packages/dms-media <script>`.
 
@@ -43,6 +43,7 @@ CI runs `pnpm run checks` in full on every pull request and reports what failed.
 
 - `pnpm run typecheck` after you change types or signatures.
 - `pnpm exec oxlint <files>` and `pnpm exec oxfmt <files>` on the files you changed.
+- In `frontend-vue`, `pnpm run types` once, so type-aware lint resolves the `#dms-*` imports through `.dms-types`, then `pnpm exec eslint <files>` on the `.vue` files you changed.
 - One test file, not the suite. In a module that tests with `ajs module test`: `pnpm run build`, then `pnpm exec ajs module test . -f dist/<path>.test.js`.
 
 ### Comments
