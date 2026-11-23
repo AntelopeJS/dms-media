@@ -1,11 +1,3 @@
-/**
- * The exports map has to describe the built package: one explicit entry per
- * directory index, and every explicit entry pointing at something that
- * exists. Node does not fall back to a directory index inside an exports map
- * and a `./*` pattern only matches files, so every directory index needs its
- * own entry — today `dist/` is flat and this is a tripwire for the first
- * subdirectory someone adds.
- */
 import { createRequire } from "node:module";
 import fs from "node:fs";
 import path from "node:path";
