@@ -115,6 +115,7 @@ const ROWS: MediaAsset[] = [
 
 const TIE_ROW_COUNT = 400;
 const STARRED_TIE_EVERY = 20;
+const STARRED_ROW_INDEXES = [1, 11, 15];
 
 const TIE_ROWS = Array.from({ length: TIE_ROW_COUNT }, (_, index) =>
   row(index % 2 === 0 ? "b-ties" : "a-ties", { name: "same.png" }),
@@ -125,9 +126,9 @@ const BULK_ROWS = BULK_FOLDERS.map((entry) =>
 const ALL_ROWS = [...ROWS, ...TIE_ROWS, ...BULK_ROWS];
 
 const STARRED = new Set([
-  ROWS[1]!._id,
-  ROWS[11]!._id,
-  ROWS[15]!._id,
+  ...ROWS.filter((_, index) => STARRED_ROW_INDEXES.includes(index)).map(
+    (entry) => entry._id,
+  ),
   ...TIE_ROWS.filter((_, index) => index % STARRED_TIE_EVERY === 0).map(
     (entry) => entry._id,
   ),
@@ -147,20 +148,27 @@ const COLLATOR = new Intl.Collator(undefined, {
   sensitivity: "base",
 });
 type Comparator = (left: MediaAsset, right: MediaAsset) => number;
-const OLD_COMPARATORS = new Map<AssetSortKey, Comparator>([
-  ["name", (left, right) => COLLATOR.compare(left.name, right.name)],
-  [
-    "date",
-    (left, right) => left.createdAt.getTime() - right.createdAt.getTime(),
-  ],
-  ["size", (left, right) => left.size - right.size],
-  [
-    "type",
-    (left, right) =>
-      COLLATOR.compare(left.mimetype, right.mimetype) ||
-      COLLATOR.compare(left.name, right.name),
-  ],
-]);
+const OLD_COMPARATORS: Record<AssetSortKey, Comparator> = {
+  name: (left, right) => COLLATOR.compare(left.name, right.name),
+  date: (left, right) => left.createdAt.getTime() - right.createdAt.getTime(),
+  size: (left, right) => left.size - right.size,
+  type: (left, right) =>
+    COLLATOR.compare(left.mimetype, right.mimetype) ||
+    COLLATOR.compare(left.name, right.name),
+};
+
+function orientationMatches(
+  asset: MediaAsset,
+  orientation: "landscape" | "portrait" | "square",
+): boolean {
+  const { width, height } = asset;
+  if (!width || !height) return false;
+  return {
+    landscape: width > height,
+    portrait: width < height,
+    square: width === height,
+  }[orientation];
+}
 const VIEW_DEFAULT_SORTS = new Map<
   SmartView,
   { sort: AssetSortKey; direction: "asc" | "desc" }
@@ -182,15 +190,16 @@ async function oldAnswer(
 ) {
   const query = listingQuerySchema.parse(params);
   const term = route.kind === "search" ? searchQuerySchema.parse(params).q : "";
+  const { folderId } = query;
   const scope =
     route.kind === "folder"
       ? [route.folderId]
-      : query.folderId
+      : folderId
         ? [
-            query.folderId,
-            ...FOLDERS.filter((entry) =>
-              entry.path.includes(query.folderId!),
-            ).map((entry) => entry._id),
+            folderId,
+            ...FOLDERS.filter((entry) => entry.path.includes(folderId)).map(
+              (entry) => entry._id,
+            ),
           ].filter((id) => READABLE.includes(id))
         : READABLE;
   const assets = await loadAssetsInFolders(model, scope);
@@ -206,13 +215,7 @@ async function oldAnswer(
       (query.visibility === "any" ||
         visibilityOf(asset) === query.visibility) &&
       (query.orientation === "any" ||
-        (Boolean(asset.width) &&
-          Boolean(asset.height) &&
-          {
-            landscape: asset.width! > asset.height!,
-            portrait: asset.width! < asset.height!,
-            square: asset.width === asset.height,
-          }[query.orientation])),
+        orientationMatches(asset, query.orientation)),
   );
   let matching = filtered;
   const matchedOn = new Map<string, string>();
@@ -242,7 +245,8 @@ async function oldAnswer(
   if (route.kind === "search") {
     const words = searchWords(term);
     matching = filtered.filter((asset) => {
-      const parent = FOLDERS.find((entry) => entry._id === asset.folderId)!;
+      const parent = FOLDERS.find((entry) => entry._id === asset.folderId);
+      if (!parent) throw new Error(`no folder ${asset.folderId}`);
       const path = [...parent.path, parent._id]
         .map((id) => FOLDERS.find((entry) => entry._id === id)?.name ?? "")
         .join(" ");
@@ -258,7 +262,7 @@ async function oldAnswer(
     : matching;
   const factor = sortQuery.direction === "asc" ? 1 : -1;
   const sorted = [...typed].sort(
-    (left, right) => OLD_COMPARATORS.get(sortQuery.sort)!(left, right) * factor,
+    (left, right) => OLD_COMPARATORS[sortQuery.sort](left, right) * factor,
   );
   const answer = {
     assets: sorted

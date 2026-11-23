@@ -18,11 +18,13 @@ function search(q: string, folderPath = "") {
   return searchAssets(assets, q, () => folderPath).map((hit) => hit.asset._id);
 }
 
+const summer = asset("summer", { name: "Été à Liège – vacances (1).jpg" });
+const desk = asset("desk", { name: "desk.jpg", alt: "Chêne clair" });
 const assets = [
-  asset("summer", { name: "Été à Liège – vacances (1).jpg" }),
+  summer,
   asset("photo-14", { name: "photo-14.png" }),
   asset("photo-01", { name: "photo-01.png" }),
-  asset("desk", { name: "desk.jpg", alt: "Chêne clair" }),
+  desk,
 ];
 
 describe("[unit] library/search — accent-free, multi-word search", () => {
@@ -48,8 +50,8 @@ describe("[unit] library/search — accent-free, multi-word search", () => {
   });
 
   it("matches alt text without accents and says so", () => {
-    expect(matchAsset(assets[3]!, searchWords("chene"))).to.equal("alt");
-    expect(matchAsset(assets[0]!, searchWords("liege"))).to.equal("name");
+    expect(matchAsset(desk, searchWords("chene"))).to.equal("alt");
+    expect(matchAsset(summer, searchWords("liege"))).to.equal("name");
   });
 
   it("lets a folder name narrow a search, never list a folder alone", () => {
