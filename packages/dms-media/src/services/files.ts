@@ -1,7 +1,7 @@
 import { assert } from "@antelopejs/interface-api-util";
 import { deleteMediaAsset } from "../asset-lifecycle";
 import { feedingBinding } from "../bindings";
-import type { MediaAsset, MediaFolder } from "../db";
+import { type MediaAsset, MediaAssetModel, type MediaFolder } from "../db";
 import { bindingAccepts } from "../library/binding-labels";
 import { recordMediaEvent } from "../library/events";
 import { forgetFavorites } from "../library/favorites";
@@ -65,12 +65,11 @@ export async function requireReadableAsset(
   return asset;
 }
 
-/** The row as written, else the row as it was: what a trigger reports. */
-async function reread(
-  context: MediaRequestContext,
-  asset: MediaAsset,
-): Promise<MediaAsset> {
-  return (await context.assetModel.get(asset._id)) ?? asset;
+/** The row as the write left it, built from the row it read: no read after the write. */
+function asWritten(asset: MediaAsset, patch: Partial<MediaAsset>): MediaAsset {
+  return MediaAssetModel.fromPlainData(
+    Object.assign(MediaAssetModel.toDatabase(asset), patch),
+  );
 }
 
 /** Refuses a name another file of `folderId` already has, regardless of case. */
@@ -110,11 +109,19 @@ export async function planAssetDetails(
   return { asset, changes, isRename, isAltChange };
 }
 
+/** The changes as a patch: a key left unset is left out, so the stored value stays. */
+function detailsPatch(changes: AssetChanges): AssetChanges {
+  const patch: AssetChanges = {};
+  if (changes.name !== undefined) patch.name = changes.name;
+  if (changes.alt !== undefined) patch.alt = changes.alt;
+  return patch;
+}
+
 export async function applyAssetDetails(
   context: MediaRequestContext,
   { asset, changes, isRename, isAltChange }: DetailsPlan,
 ): Promise<void> {
-  await context.assetModel.update(asset._id, changes);
+  await context.assetModel.update(asset._id, detailsPatch(changes));
   if (isRename) {
     await recordMediaEvent(context, {
       kind: "asset.rename",
@@ -184,7 +191,7 @@ export async function applyAssetMove(
       details: { source: source.name, destination: target.name },
     },
     {
-      assets: [await reread(context, asset)],
+      assets: [asWritten(asset, { folderId: target._id })],
       foldersById: context.foldersById,
       previousEffective: () => plan.previousEffective,
     },
@@ -231,7 +238,7 @@ export async function applyAssetVisibility(
       details: { visibility: `$dms_media.visibility.${visibility}` },
     },
     {
-      assets: [await reread(context, asset)],
+      assets: [asWritten(asset, { visibility })],
       foldersById: context.foldersById,
       previousEffective: () => plan.previousEffective,
     },

@@ -3,7 +3,7 @@ import { IsDuplicateKeyError } from "@antelopejs/interface-database";
 import { randomUUID } from "node:crypto";
 import { deleteMediaAsset } from "../asset-lifecycle";
 import { holdsSubfolders } from "../bindings";
-import type { MediaAsset, MediaFolder } from "../db";
+import { type MediaAsset, type MediaFolder, MediaFolderModel } from "../db";
 import { fixedId } from "../fixed-id";
 import { recordMediaEvent } from "../library/events";
 import { forgetFavorites } from "../library/favorites";
@@ -240,9 +240,13 @@ export async function applyFolderVisibility(
   { folder, visibility }: FolderVisibilityPlan,
 ): Promise<void> {
   await context.folderModel.update(folder._id, { visibility });
-  const updated = await context.folderModel.get(folder._id);
   const foldersById = new Map(context.foldersById);
-  if (updated) foldersById.set(folder._id, updated);
+  foldersById.set(
+    folder._id,
+    MediaFolderModel.fromPlainData(
+      Object.assign(MediaFolderModel.toDatabase(folder), { visibility }),
+    ),
+  );
   await recordMediaEvent(
     context,
     {
