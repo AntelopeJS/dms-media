@@ -3,11 +3,6 @@ import { inBrowserApp, type BackendRead } from "./fixtures/serverRender";
 import { useLibraryListing } from "../app/composables/library/useLibraryListing";
 import type { MediaAsset } from "../app/types/media";
 
-// The explorer's listing is one paged read keyed by the location and the
-// filters: "load more" appends a page, a revalidation reads every loaded page
-// again with the sizes they had, and the local patches keep the next page's
-// offset in step with the server.
-
 const FOLDER_FILES = 650;
 const FOLDER_URL = "/api/media/folders/catalog/assets";
 
@@ -29,7 +24,7 @@ const file = (index: number): MediaAsset => ({
 });
 
 function folderBackend(files: MediaAsset[]) {
-  return ({ url, query }: BackendRead): unknown => {
+  return ({ url, query }: BackendRead) => {
     if (url !== FOLDER_URL) return {};
     const offset = Number(query.offset);
     const limit = Number(query.limit);

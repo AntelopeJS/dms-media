@@ -1,27 +1,21 @@
-import { defineComponent, h } from "vue";
 import { describe, expect, it } from "vitest";
 import {
   serverRender,
   suspendedMount,
   type BackendRead,
+  type RenderProps,
 } from "./fixtures/serverRender";
+import { BoundFieldProbe } from "./fixtures/BoundFieldProbe";
+import { FilePage } from "./fixtures/FilePage";
 import AssetValue from "../app/components/field/AssetValue.vue";
 import Explorer from "../app/components/Explorer.vue";
-import FileHeader from "../app/components/FileHeader.vue";
-import FilePreview from "../app/components/FilePreview.vue";
-import FileProperties from "../app/components/FileProperties.vue";
 import FirstRun from "../app/components/FirstRun.vue";
 import ImageEditor from "../app/components/ImageEditor.vue";
 import PresetCards from "../app/components/PresetCards.vue";
 import RecentFiles from "../app/components/RecentFiles.vue";
 import UploadQueue from "../app/components/UploadQueue.vue";
 import UploadStrip from "../app/components/UploadStrip.vue";
-import { useFieldFolders } from "../app/composables/useFieldFolders";
 import type { MediaAsset, MediaFolder } from "../app/types/media";
-
-// What a server render of each block reads, and that it hands every read to
-// the browser: a read the page does not hand over is made again by the
-// browser, after a server request for nothing.
 
 const RIGHTS = { read: true, write: true, manage: true };
 
@@ -74,7 +68,7 @@ const FILES = [
   file("a3", "dunes.png"),
 ];
 
-function backend({ url }: BackendRead): unknown {
+function backend({ url }: BackendRead) {
   const details = url.match(/^\/api\/media\/assets\/([^/]+)\/details$/);
   if (details) {
     const found = FILES.find((entry) => entry.id === details[1]);
@@ -89,7 +83,7 @@ function backend({ url }: BackendRead): unknown {
   }
   const one = url.match(/^\/api\/media\/assets\/([^/]+)$/);
   if (one) return { asset: FILES.find((entry) => entry.id === one[1]) };
-  if (/\/read-url$/.test(url))
+  if (url.endsWith("/read-url"))
     return { url: `https://storage.test${url}`, expiresAt: 0 };
   switch (url) {
     case "/api/media/tree":
@@ -148,15 +142,9 @@ function backend({ url }: BackendRead): unknown {
 
 const render = (
   component: Parameters<typeof serverRender>[0],
-  props: Record<string, unknown> = {},
+  props: RenderProps = {},
   url = "/",
 ) => serverRender(component, props, { url, respond: backend });
-
-/** The file page's blocks, as the page lays them out. */
-const FilePage = defineComponent({
-  setup: () => () =>
-    h("div", [h(FileHeader), h(FilePreview), h(FileProperties)]),
-});
 
 describe("server render: the blocks read with the page and hand it over", () => {
   it("recent files: the files and the folder tree", async () => {
@@ -216,7 +204,9 @@ describe("server render: the blocks read with the page and hand it over", () => 
     expect(page.html).not.toContain(`src="${exampleUrl}"`);
     expect(page.html).toContain(exampleUrl);
   });
+});
 
+describe("server render: the file page reads once for its three blocks", () => {
   it("file page: one read of the file and its neighbours for the three blocks, and the image read URL", async () => {
     const page = await render(FilePage, {}, "/modules/media/file?asset=a2");
     expect(page.reads.sort()).toEqual(
@@ -234,7 +224,6 @@ describe("server render: the blocks read with the page and hand it over", () => 
         "dms-media:content:a2:2026-10-01T10:00:00.000Z",
       ]),
     );
-    // The header's name and position, the viewer's image, the name field.
     expect(page.html).toContain("lighthouse.png");
     expect(page.html).toContain("dms_media.lightbox.position 2 3");
     expect(page.html).toContain(
@@ -262,7 +251,9 @@ describe("server render: the blocks read with the page and hand it over", () => 
     ]);
     expect(page.html).toContain("dms_media.file.not_found");
   });
+});
 
+describe("server render: the library, the editor and the fields hand over their reads", () => {
   it("library: a link to a folder reads its files with the page", async () => {
     const page = await render(
       Explorer,
@@ -320,22 +311,14 @@ describe("server render: the blocks read with the page and hand it over", () => 
   });
 
   it("bound asset field: its folder", async () => {
-    const Field = defineComponent({
-      setup() {
-        const { boundFolder } = useFieldFolders("demo.cover");
-        return () => h("p", boundFolder.value?.name ?? "no folder");
-      },
-    });
-    const page = await render(Field);
+    const page = await render(BoundFieldProbe);
     expect(page.reads).toEqual(["GET /api/media/bindings/demo.cover/folder"]);
     expect(page.handed).toEqual(page.reads);
     expect(page.html).toContain("Demo covers");
   });
 });
 
-// A page block that waits for its reads in `setup` is part of the page's
-// Suspense: a client navigation shows it with its data, never a skeleton that
-// the data then pushes around.
+/** A page block that waits for its reads in `setup` is part of the page's Suspense: a client navigation shows it with its data, never a skeleton that the data then pushes around. */
 const PAGE_BLOCKS: [
   string,
   Parameters<typeof serverRender>[0],

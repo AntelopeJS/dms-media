@@ -53,7 +53,10 @@ describe("storage PUT network failures", () => {
 describe("diagnosing a storage PUT", () => {
   afterEach(() => vi.unstubAllGlobals());
 
-  function stubBrowser(isOnline: boolean, probe: () => Promise<unknown>) {
+  function stubBrowser(
+    isOnline: boolean,
+    probe: () => Promise<{ type?: "opaque" }>,
+  ) {
     const fetch = vi.fn(probe);
     vi.stubGlobal("navigator", { onLine: isOnline });
     vi.stubGlobal("location", {

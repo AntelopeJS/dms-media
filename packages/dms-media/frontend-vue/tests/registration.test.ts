@@ -1,3 +1,4 @@
+import type { Component } from "vue";
 import { expect, it, vi } from "vitest";
 import frontendModule from "../dms.frontend";
 
@@ -5,7 +6,8 @@ import frontendModule from "../dms.frontend";
 const EXPLORER_IMPORT_TIMEOUT_MS = 30_000;
 
 it("registers every block under the DmsMedia prefix by its file name", async () => {
-  const registerComponent = vi.fn();
+  const registerComponent =
+    vi.fn<(name: string, component: Component) => void>();
   await frontendModule.setup({
     options: { public: {} },
     registerComponent,
@@ -14,10 +16,11 @@ it("registers every block under the DmsMedia prefix by its file name", async () 
     registerLayout: vi.fn(),
     registerErrorPage: vi.fn(),
     registerPlugin: vi.fn(),
+    registerAccessRedirect: vi.fn(),
     registerMiddleware: vi.fn(),
     provide: vi.fn(),
     use: vi.fn(),
-  } as never);
+  });
   const names = registerComponent.mock.calls.map(([name]) => name);
   expect(frontendModule.componentPrefix).toBe("DmsMedia");
   expect(names).toEqual(
