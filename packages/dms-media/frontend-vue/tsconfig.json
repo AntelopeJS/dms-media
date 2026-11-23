@@ -1,12 +1,9 @@
 {
-	"compilerOptions": {
-		"target": "ESNext",
-		"module": "ESNext",
-		"moduleResolution": "Bundler",
-		"strict": true,
-		"noEmit": true,
-		"types": ["vite/client"],
-		"resolveJsonModule": true
-	},
-	"include": ["**/*.ts", "**/*.vue"]
+  "extends": "./.dms-types/tsconfig.json",
+  "compilerOptions": {
+    "allowJs": true,
+    "types": ["vite/client"]
+  },
+  "include": ["**/*.ts", "**/*.vue", "**/*.mjs"],
+  "exclude": ["node_modules", ".dms-types"]
 }

@@ -4,18 +4,14 @@
   "private": true,
   "type": "module",
   "main": "./dms.frontend.ts",
-  "packageManager": "pnpm@10.6.5",
-  "engines": {
-    "@antelopejs/dms-frontend": ">=0.11.4 <0.12.0"
-  },
   "scripts": {
     "dev": "pnpm --dir ../playground frontend:dev",
     "build": "pnpm --dir ../playground exec ajs dms build",
     "typecheck": "pnpm --dir \"${DMS_FRONTEND_WORKSPACE:?Set DMS_FRONTEND_WORKSPACE to the generated Inertia workspace}\" typecheck",
-    "format": "prettier --write .",
-    "lint": "eslint . && node --input-type=module -e \"import { assertApiErrorPresentation } from '@antelopejs/dms/checks/api-error-presentation'; import { assertDmsComponents } from '@antelopejs/dms/checks/dms-components'; assertApiErrorPresentation(['app']); await assertDmsComponents({ layer: '.', sources: ['../src'] });\"",
-    "lint:fix": "eslint . --fix",
-    "test": "vitest run"
+    "lint": "pnpm -s run types && eslint . && node --input-type=module -e \"import { assertApiErrorPresentation } from '@antelopejs/dms/checks/api-error-presentation'; import { assertDmsComponents } from '@antelopejs/dms/checks/dms-components'; assertApiErrorPresentation(['app']); await assertDmsComponents({ layer: '.', sources: ['../src'] });\"",
+    "lint:fix": "pnpm -s run types && eslint . --fix",
+    "test": "vitest run",
+    "types": "pnpm --dir .. exec ajs dms prepare-types -q --layer node_modules/@antelopejs/dms/frontend-vue --module frontend-vue --out frontend-vue/.dms-types"
   },
   "dependencies": {
     "@vueuse/core": "^14.3.0",
@@ -26,16 +22,17 @@
     "zod": "^4.5.0"
   },
   "devDependencies": {
-    "@antelopejs/tooling-configs": ">=0.9.4 <0.10.0",
+    "@antelopejs/tooling-configs": ">=0.10.0 <0.11.0",
+    "@nuxt/eslint-config": "^1.17.0",
     "@nuxt/ui": "4.10.0",
-    "@typescript-eslint/parser": "^8.0.0",
     "@vitejs/plugin-vue": "^6.0.10",
-    "eslint": "^9.0.0",
-    "eslint-plugin-vue": "^10.0.0",
-    "prettier": "^3.5.3",
-    "prettier-plugin-tailwindcss": "^0.6.11",
+    "eslint": "^10.9.1",
     "typescript": "^6.0.3",
     "vite": "^7.3.6",
     "vitest": "^3.2.4"
-  }
+  },
+  "engines": {
+    "@antelopejs/dms-frontend": ">=0.11.4 <0.12.0"
+  },
+  "packageManager": "pnpm@10.6.5"
 }
