@@ -1,6 +1,6 @@
 /** Each covered function's fingerprint, and the last commit that changed the covered code when the model was confirmed against it. Written by `check.mjs --sync`. */
 export default {
-  "sync": "263cb52",
+  "sync": "885ceec",
   "functions": {
     "packages/dms-media/src/asset-lifecycle.ts#retiredFiles": "a517f3883f82fe3d",
     "packages/dms-media/src/asset-lifecycle.ts#updateAssetMedia": "c0b5759e2c55b9cb",

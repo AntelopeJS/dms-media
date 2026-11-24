@@ -1,6 +1,6 @@
 /** Each covered function's fingerprint, and the last commit that changed the covered code when the model was confirmed against it. Written by `check.mjs --sync`. */
 export default {
-  "sync": "263cb52",
+  "sync": "885ceec",
   "functions": {
     "packages/dms-media/src/declared/folders.ts#createFolder": "f73d5bdbca76c445",
     "packages/dms-media/src/declared/folders.ts#applyFolderDeclaration": "abd31f729e8ea4dd",
