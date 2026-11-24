@@ -6,7 +6,7 @@ import type {
   JsonObject,
   JsonSchema,
 } from "@antelopejs/interface-dms-automation";
-import { type ZodType, type ZodTypeDef, z } from "zod";
+import { type ZodType, z } from "zod";
 import { bindingFolderId } from "../../bindings";
 import type { MediaAsset, MediaFolder } from "../../db";
 import { AUTOMATION_AUTHOR } from "../../declared/records";
@@ -114,7 +114,7 @@ export const ONE_FOLDER_TARGET = {
  */
 export function parseInput<T>(
   actionId: string,
-  schema: ZodType<T, ZodTypeDef, unknown>,
+  schema: ZodType<T, unknown>,
   value: JsonObject,
 ): T {
   const parsed = schema.safeParse(value);
@@ -193,7 +193,7 @@ export interface WriteSpec<
   TPlan,
   TOutput,
 > extends ActionSpec {
-  input: ZodType<TInput, ZodTypeDef, unknown>;
+  input: ZodType<TInput, unknown>;
   /** Every read and check, no write. */
   plan(context: MediaRequestContext, input: TInput): Promise<TPlan>;
   /** The writes and the activity entry. */
@@ -258,7 +258,7 @@ export function readAction<
   TOutput extends JsonObject,
 >(
   spec: ActionSpec & {
-    input: ZodType<TInput, ZodTypeDef, unknown>;
+    input: ZodType<TInput, unknown>;
     read(context: MediaRequestContext, input: TInput): Promise<TOutput>;
   },
 ): ActionType<JsonObject, TOutput> {

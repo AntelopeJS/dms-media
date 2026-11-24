@@ -30,7 +30,7 @@ export const ORIGIN_INPUT = {
 /** Throws the first refused field, failing the step that reads the node. */
 export function parseData<T>(
   nodeId: string,
-  schema: z.ZodType<T, z.ZodTypeDef, unknown>,
+  schema: z.ZodType<T, unknown>,
   value: JsonObject,
 ): T {
   const parsed = schema.safeParse(value);
