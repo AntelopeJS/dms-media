@@ -1,9 +1,12 @@
 import { randomUUID } from "node:crypto";
 import { GetModel } from "@antelopejs/interface-database-decorators";
+import { FileExists } from "@antelopejs/interface-file-storage";
 import { expect } from "chai";
+import { deleteFolderAction } from "../../automation/actions/delete-folder";
 import { MediaAssetModel, MediaFolderModel } from "../../db";
 import { uploadStorageBytes } from "../../derivatives";
 import { deleteFolderTree } from "../../routes/media/folders";
+import { declaredFolder, newTenant, stepCtx } from "../helpers/automation";
 
 const TENANT = "folder-cascade";
 const TEST_TIMEOUT_MS = 20 * 1000;
@@ -79,5 +82,47 @@ describe("[integration] folder deletion cascade", function () {
     expect(folders.map((folder) => folder._id)).to.deep.equal(["kept"]);
     const assets = await assetModel.getAll();
     expect(assets.map((asset) => asset._id)).to.deep.equal([keptAsset]);
+  });
+});
+
+describe("[integration] folder deletion of a file already being deleted", function () {
+  this.timeout(TEST_TIMEOUT_MS);
+
+  it("finishes the cleanup of a tombstoned file and counts only the files it deleted", async () => {
+    const tenantId = await newTenant();
+    const folderId = await declaredFolder(tenantId, "half-deleted");
+    const assets = GetModel(MediaAssetModel, tenantId);
+    const live = await insertAsset(assets, folderId);
+    const storageKey = await uploadStorageBytes(
+      Buffer.from("tombstoned"),
+      "tombstoned.txt",
+      "text/plain",
+      randomUUID(),
+      undefined,
+    );
+    const tombstoned = randomUUID();
+    await assets.insert({
+      _id: tombstoned,
+      folderId,
+      name: "tombstoned.txt",
+      mimetype: "text/plain",
+      size: 10,
+      storageKey,
+      createdBy: "test",
+      visibility: "inherit",
+      isDeleting: true,
+      mediaRevision: randomUUID(),
+      json_retiredFiles: JSON.stringify([storageKey]),
+    });
+
+    const deleted = await deleteFolderAction.execute(
+      { tenantId, folderId },
+      stepCtx(),
+    );
+
+    expect(deleted).to.deep.include({ deletedFiles: 1, deletedFolders: 1 });
+    expect(await assets.get(live)).to.equal(undefined);
+    expect(await assets.get(tombstoned)).to.equal(undefined);
+    expect(await FileExists(storageKey)).to.equal(false);
   });
 });
