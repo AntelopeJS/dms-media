@@ -18,6 +18,7 @@ import { ensureTenantBindings } from "../../bindings";
 import { getMediaConfig } from "../../config";
 import { OWNER_WILDCARD_PERMISSION } from "../../constants";
 import type { MediaAssetModel, MediaFolder, MediaFolderModel } from "../../db";
+import type { MediaEventAuthor } from "../../library/events";
 import type { AclRight } from "../../types";
 
 export interface ActorAccessDeps {
@@ -47,8 +48,11 @@ export interface MediaContextDeps {
   memberModel: TenantMemberModel;
 }
 
+/** Who acts: a member, or the module itself for declared content and procedures. */
+export type MediaContextUser = MediaEventAuthor & { language?: string };
+
 export interface MediaRequestContext {
-  user: User;
+  user: MediaContextUser;
   tenantId: string;
   permissions: Set<string>;
   actor: AclActor;
@@ -75,12 +79,30 @@ export async function resolveActorAccess(
     deps.roleModel,
   );
   const permissions = await filterGrantablePermissions(rawPermissions);
+  return loadFolderAccess(
+    deps.tenantId,
+    deps.folderModel,
+    permissions,
+    roleIds,
+  );
+}
+
+/**
+ * The tenant's folders, its linked folders provisioned first, and what an
+ * actor holding `permissions` and `roleIds` may do in each.
+ */
+export async function loadFolderAccess(
+  tenantId: string,
+  folderModel: MediaFolderModel,
+  permissions: Set<string>,
+  roleIds: readonly string[],
+): Promise<ActorAccess> {
   const actor: AclActor = { permissions, roleIds };
   const rootAcl = getMediaConfig().rootAcl;
-  await ensureTenantBindings(deps.tenantId, deps.folderModel);
-  const folders = await deps.folderModel.getAll();
+  await ensureTenantBindings(tenantId, folderModel);
+  const folders = await folderModel.getAll();
   return {
-    tenantId: deps.tenantId,
+    tenantId,
     permissions,
     actor,
     folders,

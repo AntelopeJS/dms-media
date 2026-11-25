@@ -1,11 +1,18 @@
 import { GetModel } from "@antelopejs/interface-database-decorators";
 import { Logging } from "@antelopejs/interface-core/logging";
 import type { User } from "@antelopejs/interface-dms/auth/db";
-import { type MediaEvent, MediaEventModel } from "../db";
+import { currentAutomationOrigin } from "../automation/origin";
+import {
+  type MediaAsset,
+  type MediaEvent,
+  MediaEventModel,
+  type MediaFolder,
+} from "../db";
+import type { FolderVisibility } from "../types";
 import { z } from "zod";
 import { announceLibraryChange, UPLOAD_ANNOUNCE_WINDOW_MS } from "./realtime";
 
-const MEDIA_EVENT_KINDS = [
+export const MEDIA_EVENT_KINDS = [
   "asset.upload",
   "upload.batch",
   "asset.delete",
@@ -49,6 +56,45 @@ export interface MediaEventActor {
   user: MediaEventAuthor;
 }
 
+/** How a new file reached the library. */
+export type MediaFileSource = "upload" | "copy" | "declared" | "automation";
+
+/**
+ * What a write knows besides its activity entry, for the automation triggers
+ * the entry feeds: the rows it changed as they are now (or a loader, run only
+ * when a trigger needs them) and the folders it saw.
+ */
+export interface MediaEventFacts {
+  assets?: MediaAsset[];
+  /** Reads the changed rows, for a write that did not load them. */
+  loadAssets?: () => Promise<MediaAsset[]>;
+  foldersById?: ReadonlyMap<string, MediaFolder>;
+  source?: MediaFileSource;
+  copiedFromAssetId?: string;
+  /** Effective visibility of a file before the write, for a visibility change. */
+  previousEffective?: (asset: MediaAsset) => FolderVisibility;
+  /** The folder whose deletion removed the files. */
+  deletedFolder?: MediaFolder;
+}
+
+/** An activity entry as recorded, with what the write knew besides it. */
+export interface RecordedMediaEvent {
+  actor: MediaEventActor;
+  input: MediaEventInput;
+  eventId?: string;
+  facts: MediaEventFacts;
+  at: Date;
+}
+
+type MediaEventObserver = (event: RecordedMediaEvent) => Promise<void>;
+
+let observer: MediaEventObserver | undefined;
+
+/** Hands every recorded entry to `next`, or to nobody when it is undefined. */
+export function observeMediaEvents(next: MediaEventObserver | undefined): void {
+  observer = next;
+}
+
 /** Uploads arrive in bursts: they are announced on a longer window than other writes. */
 const ANNOUNCE_DELAYS: Partial<Record<MediaEventKind, number>> = {
   "asset.upload": UPLOAD_ANNOUNCE_WINDOW_MS,
@@ -57,13 +103,29 @@ const ANNOUNCE_DELAYS: Partial<Record<MediaEventKind, number>> = {
 export const UPLOAD_KIND: MediaEventKind = "asset.upload";
 export const BATCH_REPORT_KIND: MediaEventKind = "upload.batch";
 
-/** Records an activity entry; a failure is logged and never fails the write. */
+/** The entry's details, with the procedure step that made the write when one did. */
+function detailsWithOrigin(
+  details: MediaEventDetails | undefined,
+): MediaEventDetails | undefined {
+  const origin = currentAutomationOrigin();
+  if (!origin) return details;
+  return { ...details, procedureId: origin.procedureId, runId: origin.runId };
+}
+
+/**
+ * Records an activity entry and hands it to the automation triggers; a
+ * failure of either is logged and never fails the write. Resolves with the
+ * entry's id, or `undefined` when the insert failed.
+ */
 export async function recordMediaEvent(
   actor: MediaEventActor,
   input: MediaEventInput,
-): Promise<void> {
+  facts: MediaEventFacts = {},
+): Promise<string | undefined> {
+  const details = detailsWithOrigin(input.details);
+  let eventId: string | undefined;
   try {
-    await GetModel(MediaEventModel, actor.tenantId).insert({
+    [eventId] = await GetModel(MediaEventModel, actor.tenantId).insert({
       kind: input.kind,
       actorId: actor.user._id,
       actorName: actor.user.name || actor.user.email,
@@ -72,12 +134,20 @@ export async function recordMediaEvent(
       targetName: input.targetName,
       count: input.count,
       size: input.size,
-      json_details: input.details ? JSON.stringify(input.details) : undefined,
+      json_details: details ? JSON.stringify(details) : undefined,
     });
   } catch (error) {
     Logging.Error("Failed to record a media event", error);
   }
   announceLibraryChange(ANNOUNCE_DELAYS[input.kind]);
+  await observer?.({
+    actor,
+    input: { ...input, details },
+    eventId,
+    facts,
+    at: new Date(),
+  });
+  return eventId;
 }
 
 export function readEventDetails(event: MediaEvent): MediaEventDetails {

@@ -1,10 +1,13 @@
 import { MediaApiController } from "./controller";
+
+export { requireReadableAsset } from "../../services/files";
 import {
   moveAsset,
   removeAsset,
+  requireReadableAsset,
   setAssetVisibility,
   updateAssetDetails,
-} from "./asset-actions";
+} from "../../services/files";
 import {
   Delete,
   Get,
@@ -14,7 +17,6 @@ import {
   Post,
   type QueryValue,
 } from "@antelopejs/interface-api";
-import { assert } from "@antelopejs/interface-api-util";
 import { CreateReadUrl } from "@antelopejs/interface-file-storage";
 import { getMediaConfig } from "../../config";
 import { type MediaAsset, MediaAssetModel } from "../../db";
@@ -22,7 +24,6 @@ import { ensureDerivative } from "../../derivatives";
 import { type MediaPresetConfig, SVG_MIMETYPE } from "../../presets";
 import {
   assetVisibilitySchema,
-  MEDIA_ERRORS,
   moveAssetSchema,
   rejectInvalid,
   previewIdsSchema,
@@ -36,7 +37,6 @@ import { type MediaRequestContext, requireFolderRight } from "./context";
 import { assertDerivableAsset, requirePreset } from "./delivery";
 import { buildAssetDto } from "./dto";
 
-const HTTP_NOT_FOUND = 404;
 const MAX_SEARCH_RESULTS = 100;
 const MAX_LISTING_RESULTS = 1000;
 const THUMB_PRESET_ID = "thumb";
@@ -98,19 +98,6 @@ async function buildPreviewEntry(
   } catch {
     return null;
   }
-}
-
-export async function requireReadableAsset(
-  context: MediaRequestContext,
-  assetId: string,
-): Promise<MediaAsset> {
-  const asset = await context.assetModel.get(assetId);
-  assert(
-    asset && !asset.isDeleting && context.access.readable.has(asset.folderId),
-    HTTP_NOT_FOUND,
-    MEDIA_ERRORS.assetNotFound,
-  );
-  return asset;
 }
 
 function matchesSearch(asset: MediaAsset, term: string, mime: string): boolean {

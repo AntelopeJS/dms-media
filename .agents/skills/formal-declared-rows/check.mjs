@@ -76,7 +76,7 @@ const SEEDED = [
   },
   {
     id: "declared-asset-under-a-random-id",
-    code: "declared/assets.ts insertAsset before #173: assetModel.insert without _id, so every importer that found no record inserts its own asset",
+    code: "services/add-file.ts insertAsset: assetModel.insert without _id, as before #173, so every importer that found no record inserts its own asset",
     config: "assets",
     rules: {
       OneRowPerKey: 15,
@@ -86,7 +86,7 @@ const SEEDED = [
   },
   {
     id: "asset-loser-keeps-its-stored-file",
-    code: "declared/assets.ts createAsset: no discardFile() when insertAsset returned false",
+    code: "services/add-file.ts storeNewFile: no discardFile() when insertAsset returned false",
     config: "assets",
     rules: { LoserLeavesNoFile: 15 },
     edits: [

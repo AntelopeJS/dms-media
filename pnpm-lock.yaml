@@ -135,6 +135,10 @@ importers:
       typescript:
         specifier: ^6.0.3
         version: 6.0.3
+    optionalDependencies:
+      '@antelopejs/interface-dms-automation':
+        specifier: '>=0.7.0 <0.8.0'
+        version: 0.7.0(@antelopejs/interface-core@0.5.2)
 
   packages/dms-media/frontend-vue:
     dependencies:

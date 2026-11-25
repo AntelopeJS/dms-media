@@ -42,14 +42,17 @@ export const COVERED = {
     "compareMedia",
     "deleteCleanedAsset",
   ],
-  [`${SRC}/routes/media/transform.ts`]: [
+  [`${SRC}/routes/media/transform.ts`]: ["transform", "revert"],
+  [`${SRC}/services/transform.ts`]: [
     "requireEditableAsset",
-    "transform",
-    "revert",
+    "transformInPlace",
   ],
-  [`${SRC}/routes/media/assets.ts`]: ["requireReadableAsset"],
-  [`${SRC}/routes/media/asset-actions.ts`]: ["removeAsset"],
-  [`${SRC}/routes/media/folders.ts`]: ["deleteFolderAssets"],
+  [`${SRC}/services/files.ts`]: [
+    "requireReadableAsset",
+    "removeAsset",
+    "applyAssetRemoval",
+  ],
+  [`${SRC}/services/folders.ts`]: ["deleteFolderAssets", "deleteFolderTree"],
 };
 
 /** The repository paths of the covered files. */

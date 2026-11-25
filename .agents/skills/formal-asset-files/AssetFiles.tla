@@ -17,7 +17,7 @@ CONSTANTS
   Derivers,     \* requests of the image size Preset (delivery.ts, assets.ts)
   Editors,      \* Save of an image edit (routes/media/transform.ts transform)
   Reverters,    \* Revert to original (routes/media/transform.ts revert)
-  Deleters,     \* file deletion (asset-actions.ts, folders.ts)
+  Deleters,     \* file deletion (services/files.ts, services/folders.ts)
   Sweepers,     \* the sweep cron (crons/sweep-derivatives.ts)
   Preset,       \* an image size the configuration declares
   StalePreset,  \* an image size the configuration no longer declares

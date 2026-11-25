@@ -155,14 +155,14 @@ FRecord(p) ==
 
 ----------------------------------------------------------------------------
 \* ImportMediaAsset: applyAssetDeclaration and createAsset
-\* (declared/assets.ts).
+\* (declared/assets.ts), storing through storeNewFile (services/add-file.ts).
 
 AFind(p) ==
   /\ pc[p] = "a_find"
   /\ IF aRecs # {} THEN Go(p, "done") ELSE Go(p, "a_write")
   /\ UNCHANGED <<foldVars, assetVars, bindVars, won, listing>>
 
-\* writeFile (uploadStorageBytes) of the file's bytes under a new key
+\* storeNewFile: uploadStorageBytes of the file's bytes under a new key
 AWrite(p) ==
   /\ pc[p] = "a_write"
   /\ files' = files \cup {p}

@@ -1,6 +1,6 @@
 ---
 name: formal-declared-rows
-description: TLA+ model of the rows one tenant gets for one declared key (a folder from EnsureMediaFolder, a file from ImportMediaAsset, the content root and the folder linked to an asset binding from provisionTenant) while several backend processes write them at once, checked with TLC. Use when a change touches a function in its coverage record (declared/folders.ts, declared/assets.ts, declared/records.ts, bindings.ts, fixed-id.ts and hasSiblingNamed) or when a change to how dms-media inserts, identifies or records declared content needs proof that no ordering of processes breaks a rule.
+description: TLA+ model of the rows one tenant gets for one declared key (a folder from EnsureMediaFolder, a file from ImportMediaAsset, the content root and the folder linked to an asset binding from provisionTenant) while several backend processes write them at once, checked with TLC. Use when a change touches a function in its coverage record (declared/folders.ts, declared/assets.ts, declared/records.ts, services/add-file.ts, bindings.ts, fixed-id.ts and hasSiblingNamed) or when a change to how dms-media inserts, identifies or records declared content needs proof that no ordering of processes breaks a rule.
 ---
 
 # Formal check: processes declaring one key at once
@@ -51,7 +51,7 @@ Each rule is checked once every process has finished.
 | `folder-loser-records-an-event` | `createFolder` records `folder.create` after a duplicate key | `LoserRecordsNoEvent` |
 | `declaration-record-under-a-random-id` | `rememberDeclaration` inserts a record without `_id: targetId` | `OneRecordPerKey` |
 | `declared-asset-under-a-random-id` | `insertAsset` inserts an asset without `_id` (before #173) | `OneRowPerKey`, `LoserRecordsNoEvent` |
-| `asset-loser-keeps-its-stored-file` | `createAsset` skips `discardFile()` after a duplicate key | `LoserLeavesNoFile` |
+| `asset-loser-keeps-its-stored-file` | `storeNewFile` skips `discardFile()` after a duplicate key | `LoserLeavesNoFile` |
 | `asset-loser-records-an-upload-event` | `createAsset` records `asset.upload` after a duplicate key | `LoserRecordsNoEvent` |
 | `provision-lists-then-inserts` | `provisionTenant` lists the folders, then inserts the missing ones under random ids (before #174); `seeded/provision-lists-then-inserts.tla` replaces the `provisioning` section | `OneRowPerKey` |
 | `linked-folder-kept-without-its-acl` | `ensureBindingFolder` skips `folderModel.update(id, { json_acl })` after a duplicate key | `BindingAclApplied` |
@@ -76,8 +76,8 @@ Replay the counterexample against the code, one action per step, using the cover
 
 | Model action | Code |
 | --- | --- |
-| `FFind`, `FList`, `FInsert`, `FEvent`, `FRecord` | `ensureDeclaredFolder`, `applyFolderDeclaration`, `createFolder` (declared/folders.ts), `hasSiblingNamed` (routes/media/folders.ts) |
-| `AFind`, `AWrite`, `AInsert`, `AGet`, `ADrop`, `AEvent`, `ARecord` | `importDeclaredAsset`, `applyAssetDeclaration`, `createAsset`, `insertAsset`, `writeFile` (declared/assets.ts) |
+| `FFind`, `FList`, `FInsert`, `FEvent`, `FRecord` | `ensureDeclaredFolder`, `applyFolderDeclaration`, `createFolder` (declared/folders.ts), `hasSiblingNamed` (services/folders.ts) |
+| `AFind`, `AWrite`, `AInsert`, `AGet`, `ADrop`, `AEvent`, `ARecord` | `importDeclaredAsset`, `applyAssetDeclaration`, `createAsset` (declared/assets.ts), `storeNewFile`, `insertAsset` (services/add-file.ts) |
 | `FolderId`, `AssetId`, `BindId`, `FolderRecordId`, `AssetRecordId` | `declaredId`, `rememberDeclaration` (declared/records.ts), `bindingFolderId` (bindings.ts), `fixedId` (fixed-id.ts) |
 | `PRoot`, `PLink`, `PGet`, `PUpd` | `ensureTenantBindings`, `provisionTenant`, `ensureBindingFolder`, `insertOnce` (bindings.ts) |
 

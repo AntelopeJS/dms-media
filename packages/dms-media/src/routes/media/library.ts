@@ -36,6 +36,7 @@ import {
   typeGroupPredicate,
 } from "../../library/listing";
 import { searchAssets, searchFolders, searchWords } from "../../library/search";
+import { folderPathName } from "../../services/listing";
 import {
   newestFirst,
   SMART_VIEW_DEFAULT_SORTS,
@@ -71,16 +72,6 @@ const HTTP_FORBIDDEN = 403;
 const HTTP_CONFLICT = 409;
 /** What a search without any word answers: nothing, rather than the whole library. */
 const EMPTY_SEARCH = { assets: [], total: 0, facets: { all: 0 }, folders: [] };
-
-function folderPathName(
-  context: MediaRequestContext,
-  folder: MediaFolder | undefined,
-): string {
-  if (!folder) return "";
-  return [...folder.path, folder._id]
-    .map((id) => context.foldersById.get(id)?.name ?? "")
-    .join(" ");
-}
 
 function folderVisibilities(
   context: MediaRequestContext,
