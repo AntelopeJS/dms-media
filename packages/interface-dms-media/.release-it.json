@@ -10,14 +10,8 @@
   },
   "hooks": {
     "before:init": [
-      "pnpm --filter @antelopejs/interface-dms-media build",
       "pnpm --dir ../.. run lint",
       "pnpm --dir ../.. run format:check"
-    ],
-    "after:bump": [
-      "pnpm --dir ../.. run sync",
-      "git add -u ../..",
-      "git add CHANGELOG.md"
     ]
   },
   "plugins": {
