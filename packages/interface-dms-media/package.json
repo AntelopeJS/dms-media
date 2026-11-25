@@ -46,7 +46,7 @@
   "scripts": {
     "build": "rimraf dist && tsc",
     "typecheck": "tsc --noEmit",
-    "release": "pnpm run typecheck && pnpm run build && pnpm --dir ../.. run lint && pnpm run check:exports && release-it",
+    "release": "pnpm run typecheck && pnpm --dir ../.. run lint && pnpm run check:exports && release-it",
     "prepack": "pnpm run build",
     "check:exports": "node scripts/check-exports.mjs",
     "knip": "knip --dependencies",
@@ -56,13 +56,13 @@
     "zod": "^4.5.0"
   },
   "devDependencies": {
-    "@antelopejs/interface-api": ">=0.3.3 <0.4.0",
-    "@antelopejs/interface-api-util": ">=0.3.2 <0.4.0",
+    "@antelopejs/interface-api": ">=0.3.5 <0.4.0",
+    "@antelopejs/interface-api-util": ">=0.3.3 <0.4.0",
     "@antelopejs/interface-core": ">=0.5.2 <0.6.0",
-    "@antelopejs/interface-data-api": ">=0.8.0 <0.9.0",
-    "@antelopejs/interface-database": ">=0.4.0 <0.5.0",
-    "@antelopejs/interface-database-decorators": ">=0.5.2 <0.6.0",
-    "@antelopejs/interface-dms": ">=0.16.0 <0.17.0",
+    "@antelopejs/interface-data-api": ">=0.8.2 <0.9.0",
+    "@antelopejs/interface-database": ">=0.4.4 <0.5.0",
+    "@antelopejs/interface-database-decorators": ">=0.5.4 <0.6.0",
+    "@antelopejs/interface-dms": ">=0.17.0 <0.18.0",
     "@antelopejs/tooling-configs": ">=0.10.0 <0.11.0",
     "@types/node": "^24.0.0",
     "knip": "^6.34.0",
@@ -72,9 +72,9 @@
     "typescript": "^6.0.3"
   },
   "peerDependencies": {
-    "@antelopejs/interface-api": ">=0.3.3 <0.4.0",
+    "@antelopejs/interface-api": ">=0.3.5 <0.4.0",
     "@antelopejs/interface-core": ">=0.5.2 <0.6.0",
-    "@antelopejs/interface-dms": ">=0.16.0 <0.17.0"
+    "@antelopejs/interface-dms": ">=0.17.0 <0.18.0"
   },
   "packageManager": "pnpm@10.2.0",
   "antelopeJs": {}

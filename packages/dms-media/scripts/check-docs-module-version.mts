@@ -8,7 +8,7 @@ import { join, relative } from "node:path";
  * this module in the READMEs, the docs and the skills of the workspace must
  * name a caret range that admits the version of this package. Prints the
  * violations only; exits 1 when there are any. With `--write`, rewrites every
- * example to `^<version>` instead; the release runs it after the bump.
+ * example to `^<version>` instead.
  */
 
 const PACKAGE_ROOT = join(import.meta.dirname, "..");
