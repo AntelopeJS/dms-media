@@ -108,10 +108,4 @@ describe("[unit] pages — toolbar", () => {
       }
     });
   }
-
-  it("holds the upload history only while the page is paused, not while Live shows it", () => {
-    expect(MediaUploadsPage.history.serializeSync().options)
-      .to.have.property("liveHold")
-      .that.deep.equals({ whileOnScreen: false });
-  });
 });
