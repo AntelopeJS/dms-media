@@ -1,5 +1,9 @@
 # Changelog
 
+## v0.5.1
+
+[compare changes](https://github.com/AntelopeJS/dms-media/compare/interface-v0.5.0...interface-v0.5.1)
+
 ## v0.5.0
 
 [compare changes](https://github.com/AntelopeJS/dms-media/compare/interface-v0.4.2...interface-v0.5.0)
