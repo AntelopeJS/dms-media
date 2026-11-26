@@ -1,5 +1,25 @@
 # Changelog
 
+## v0.9.1
+
+[compare changes](https://github.com/AntelopeJS/dms-media/compare/v0.9.0...v0.9.1)
+
+### 📦 Build
+
+- **deps:** Update the AntelopeJS module locks ([#216](https://github.com/AntelopeJS/dms-media/pull/216))
+
+### 🏡 Chore
+
+- **deps:** Update antelopejs modules ([#222](https://github.com/AntelopeJS/dms-media/pull/222))
+
+### ✅ Tests
+
+- Drop the liveHold option pin now that whileOnScreen is required ([#220](https://github.com/AntelopeJS/dms-media/pull/220))
+
+### ❤️ Contributors
+
+- Antony Rizzitelli
+
 ## v0.9.0
 
 [compare changes](https://github.com/AntelopeJS/dms-media/compare/v0.8.3...v0.9.0)
