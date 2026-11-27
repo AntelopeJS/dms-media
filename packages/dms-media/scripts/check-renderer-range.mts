@@ -7,7 +7,6 @@ import { join } from "node:path";
  * `@antelopejs/dms-frontend` range of this layer. Prints the violation only;
  * exits 1 when there is one.
  */
-
 const PACKAGE = join(import.meta.dirname, "..");
 const RENDERER = "@antelopejs/dms-frontend";
 const LAYER = join(PACKAGE, "frontend-vue");

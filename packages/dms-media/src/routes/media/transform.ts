@@ -32,17 +32,17 @@ async function translatingTransformErrors<T>(work: Promise<T>): Promise<T> {
     assert(
       !(error instanceof AnimatedImageTransformError),
       HTTP_UNPROCESSABLE_ENTITY,
-      "Animated images cannot be edited",
+      "$dms_media.refusals.image_animated",
     );
     assert(
       !(error instanceof OversizedImageTransformError),
       HTTP_UNPROCESSABLE_ENTITY,
-      "This image is too large to be edited",
+      "$dms_media.refusals.image_too_large",
     );
     assert(
       !(error instanceof MediaAssetChangedError),
       HTTP_CONFLICT,
-      "This image was changed by someone else in the meantime. Reload the page to see the latest version.",
+      "$dms_media.refusals.image_changed_meanwhile",
     );
     throw error;
   }
@@ -119,7 +119,7 @@ export class MediaTransformController extends MediaApiController {
       applyImageTransform(context.assetModel, asset, ops),
     );
     const updated = await context.assetModel.get(assetId);
-    assert(updated, HTTP_CONFLICT, "Asset disappeared during transform");
+    assert(updated, HTTP_CONFLICT, "$dms_media.refusals.asset_gone_transform");
     await this.record(context, {
       kind: "asset.transform",
       targetName: updated.name,
@@ -163,13 +163,13 @@ export class MediaTransformController extends MediaApiController {
     assert(
       Boolean(asset.originalKey),
       HTTP_CONFLICT,
-      "Asset has no original to revert to",
+      "$dms_media.refusals.no_original",
     );
     await translatingTransformErrors(
       revertImageTransform(context.assetModel, asset),
     );
     const updated = await context.assetModel.get(assetId);
-    assert(updated, HTTP_CONFLICT, "Asset disappeared during revert");
+    assert(updated, HTTP_CONFLICT, "$dms_media.refusals.asset_gone_revert");
     await this.record(context, {
       kind: "asset.revert",
       targetName: updated.name,

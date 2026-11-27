@@ -1,5 +1,6 @@
 import {
   HTTPResult,
+  IsHTTPResult,
   JSONBody,
   Parameter,
   Post,
@@ -69,7 +70,7 @@ async function applyToEach(
       await operation(context, asset);
       outcome.done.push(id);
     } catch (error) {
-      if (error instanceof HTTPResult) {
+      if (IsHTTPResult(error)) {
         const body: unknown = error.getBody();
         const message = isString(body) ? body : JSON.stringify(body);
         outcome.refused.push({

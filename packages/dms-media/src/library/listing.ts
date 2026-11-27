@@ -30,16 +30,28 @@ const NAME_COLLATOR = new Intl.Collator(undefined, {
   sensitivity: "base",
 });
 
-const ASSET_COMPARATORS: Record<AssetSortKey, AssetComparator> = {
-  name: (left, right) => NAME_COLLATOR.compare(left.name, right.name),
-  date: (left, right) => left.createdAt.getTime() - right.createdAt.getTime(),
-  size: (left, right) => left.size - right.size,
-  type: (left, right) =>
-    NAME_COLLATOR.compare(left.mimetype, right.mimetype) ||
-    NAME_COLLATOR.compare(left.name, right.name),
-};
+const compareByName: AssetComparator = (left, right) =>
+  NAME_COLLATOR.compare(left.name, right.name);
 
-const DIRECTION_FACTORS: Record<SortDirection, number> = { asc: 1, desc: -1 };
+const ASSET_COMPARATORS = new Map<AssetSortKey, AssetComparator>([
+  ["name", compareByName],
+  [
+    "date",
+    (left, right) => left.createdAt.getTime() - right.createdAt.getTime(),
+  ],
+  ["size", (left, right) => left.size - right.size],
+  [
+    "type",
+    (left, right) =>
+      NAME_COLLATOR.compare(left.mimetype, right.mimetype) ||
+      compareByName(left, right),
+  ],
+]);
+
+const DIRECTION_FACTORS = new Map<SortDirection, number>([
+  ["asc", 1],
+  ["desc", -1],
+]);
 
 interface AssetsTableModel {
   table: MediaAssetModel["table"];
@@ -204,8 +216,8 @@ function sortAssets<T extends AssetSortFields>(
   sort: AssetSortKey,
   direction: SortDirection,
 ): T[] {
-  const compare = ASSET_COMPARATORS[sort];
-  const factor = DIRECTION_FACTORS[direction];
+  const compare = ASSET_COMPARATORS.get(sort) ?? compareByName;
+  const factor = DIRECTION_FACTORS.get(direction) ?? 1;
   return [...assets].sort((left, right) => compare(left, right) * factor);
 }
 

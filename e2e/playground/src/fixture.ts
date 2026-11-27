@@ -274,7 +274,8 @@ export class VerifyFixtureController extends Controller("/e2e-media") {
     return {
       dataType: ASSET_DATA_TYPE_ID,
       component: ASSET_PICKER_COMPONENT,
-      registered: CreateDataType(ASSET_DATA_TYPE_ID, {}) instanceof AssetType,
+      registered:
+        CreateDataType(ASSET_DATA_TYPE_ID, {}).constructor === AssetType,
       serialized: serializeType(bound),
     };
   }

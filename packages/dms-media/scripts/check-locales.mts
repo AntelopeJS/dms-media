@@ -7,7 +7,6 @@ import { join, relative } from "node:path";
  * languages, and every literal `t('dms_media.…')` key the layer uses has an
  * English message. Prints the violations only; exits 1 when there are any.
  */
-
 type Messages = { [key: string]: string | Messages };
 
 const PACKAGE = join(import.meta.dirname, "..");

@@ -23,15 +23,15 @@ export const DECLARED_CONTENT_AUTHOR: MediaEventAuthor = {
   email: "",
 };
 
-const KIND_LABELS: Record<MediaDeclarationKind, string> = {
-  folder: "Media folder",
-  asset: "Media file",
-};
+const KIND_LABELS = new Map<MediaDeclarationKind, string>([
+  ["folder", "Media folder"],
+  ["asset", "Media file"],
+]);
 
 /** A declaration the media module refuses, named by its kind and key. */
 export class MediaDeclarationError extends Error {
   constructor(kind: MediaDeclarationKind, key: string, reason: string) {
-    super(`${KIND_LABELS[kind]} '${key}': ${reason}`);
+    super(`${KIND_LABELS.get(kind) ?? kind} '${key}': ${reason}`);
   }
 }
 

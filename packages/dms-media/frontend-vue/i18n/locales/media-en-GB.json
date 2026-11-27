@@ -1105,6 +1105,31 @@
       "private_warning": "{name} is private: the link only opens for signed-in teammates with access to its folder.",
       "open_in_new_tab": "Open in a new tab",
       "open_failed": "Couldn't open the file"
+    },
+    "refusals": {
+      "asset_gone_revert": "Asset disappeared during revert",
+      "asset_gone_transform": "Asset disappeared during transform",
+      "asset_not_found": "Asset not found",
+      "asset_read_denied": "Missing read access on this asset",
+      "derivatives_images_only": "Derivatives only exist for images",
+      "file_name_required": "File name required",
+      "folder_linked": "Linked folders cannot be restructured",
+      "folder_not_found": "Folder not found",
+      "image_animated": "Animated images cannot be edited",
+      "image_changed_meanwhile": "This image was changed by someone else in the meantime. Reload the page to see the latest version.",
+      "image_format_not_editable": "This image format cannot be edited",
+      "image_too_large": "This image is too large to be edited",
+      "image_unreadable": "This file is not a readable image",
+      "manage_root_denied": "Missing 'manage' right at the media root",
+      "manage_subfolder_denied": "Missing 'manage' right on a subfolder",
+      "no_original": "Asset has no original to revert to",
+      "overview_owner_only": "The overview is reserved to owners",
+      "owner_only": "Reserved to the owner",
+      "preset_unknown": "Unknown preset",
+      "right_manage": "Missing 'manage' right on this folder",
+      "right_read": "Missing 'read' right on this folder",
+      "right_write": "Missing 'write' right on this folder",
+      "root_name_taken": "A root folder already has this name"
     }
   }
 }

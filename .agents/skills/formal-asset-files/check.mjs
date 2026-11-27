@@ -22,8 +22,11 @@ const CONFIGS = [
   "sweep-delete",
 ];
 
-/** Rules today's code breaks, per configuration, with the states in TLC's shortest counterexample. */
-/** @type {Partial<Record<string, Record<string, number>>>} */
+/**
+ * Rules today's code breaks, per configuration, with the states in TLC's shortest counterexample.
+ *
+ * @type {Partial<Record<string, Record<string, number>>>}
+ */
 const FINDINGS = {};
 
 /**

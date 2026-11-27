@@ -1,4 +1,4 @@
-import { HTTPResult } from "@antelopejs/interface-api";
+import { HTTPResult, IsHTTPResult } from "@antelopejs/interface-api";
 import { expect } from "chai";
 import { z } from "zod";
 import { portableName, uniqueEntryName } from "../../../library/zip";
@@ -50,7 +50,7 @@ describe("[unit] library/zip — entry names and name rules", () => {
       try {
         parse();
       } catch (error) {
-        if (error instanceof HTTPResult) return error;
+        if (IsHTTPResult(error)) return error;
         throw error;
       }
       throw new Error("expected the body to be refused");
