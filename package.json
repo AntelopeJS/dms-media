@@ -46,7 +46,10 @@
       "sharp",
       "mongodb-memory-server-core",
       "esbuild"
-    ]
+    ],
+    "overrides": {
+      "vite": ">=8.3.4 <8.4.0"
+    }
   },
   "antelopeJs": {
     "docs": {
