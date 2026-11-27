@@ -1,6 +1,6 @@
 /** Each covered function's fingerprint, and the last commit that changed the covered code when the model was confirmed against it. Written by `check.mjs --sync`. */
 export default {
-  "sync": "a9387ca",
+  "sync": "0c42a21",
   "functions": {
     "packages/dms-media/src/asset-lifecycle.ts#retiredFiles": "a517f3883f82fe3d",
     "packages/dms-media/src/asset-lifecycle.ts#updateAssetMedia": "c0b5759e2c55b9cb",
@@ -23,8 +23,8 @@ export default {
     "packages/dms-media/src/db/models/mediaAssets.model.ts#compareMedia": "fdb5544fbc9c998a",
     "packages/dms-media/src/db/models/mediaAssets.model.ts#deleteCleanedAsset": "4c71d93151b88bac",
     "packages/dms-media/src/routes/media/transform.ts#requireEditableAsset": "6212175bcaf4e354",
-    "packages/dms-media/src/routes/media/transform.ts#transform": "3448b133017da066",
-    "packages/dms-media/src/routes/media/transform.ts#revert": "bf8cf68da6f79236",
+    "packages/dms-media/src/routes/media/transform.ts#transform": "447189473e66be75",
+    "packages/dms-media/src/routes/media/transform.ts#revert": "c67333a45d36db1d",
     "packages/dms-media/src/routes/media/assets.ts#requireReadableAsset": "61327d06a865e50e",
     "packages/dms-media/src/routes/media/asset-actions.ts#removeAsset": "bec37fef4122f993",
     "packages/dms-media/src/routes/media/folders.ts#deleteFolderAssets": "09313d5db97c9f10"
