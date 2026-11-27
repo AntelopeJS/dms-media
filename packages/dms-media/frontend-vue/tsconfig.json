@@ -2,6 +2,7 @@
   "extends": "./.dms-types/tsconfig.json",
   "compilerOptions": {
     "allowJs": true,
+    "moduleDetection": "force",
     "types": ["vite/client"]
   },
   "include": ["**/*.ts", "**/*.vue", "**/*.mjs"],

@@ -378,7 +378,7 @@ export class MediaLibraryController extends MediaApiController {
       assert(
         asset && context.access.readable.has(asset.folderId),
         404,
-        "Asset not found",
+        "$dms_media.refusals.asset_not_found",
       );
     }
     await setStarred(this.owner(context), kind, targetId, starred);
@@ -418,7 +418,7 @@ export class MediaLibraryController extends MediaApiController {
     assert(
       context.rootRights.has("manage"),
       HTTP_FORBIDDEN,
-      "Missing 'manage' right at the media root",
+      "$dms_media.refusals.manage_root_denied",
     );
     const rootNames = new Set(
       context.folders
@@ -428,7 +428,7 @@ export class MediaLibraryController extends MediaApiController {
     assert(
       folders.every((folder) => !rootNames.has(folder.name)),
       HTTP_CONFLICT,
-      "A root folder already has this name",
+      "$dms_media.refusals.root_name_taken",
     );
     const ids = await context.folderModel.insert(
       folders.map((folder) => ({

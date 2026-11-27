@@ -60,7 +60,7 @@ function assertCanPlaceUnder(
     assert(
       context.rootRights.has("manage"),
       HTTP_FORBIDDEN,
-      "Missing 'manage' right at the media root",
+      "$dms_media.refusals.manage_root_denied",
     );
     return undefined;
   }
@@ -261,7 +261,7 @@ export class MediaFoldersController extends MediaApiController {
       assert(
         context.access.manageable.has(descendant._id),
         HTTP_FORBIDDEN,
-        "Missing 'manage' right on a subfolder",
+        "$dms_media.refusals.manage_subfolder_denied",
       );
     }
     const folderIds = [folderId, ...descendants.map((child) => child._id)];

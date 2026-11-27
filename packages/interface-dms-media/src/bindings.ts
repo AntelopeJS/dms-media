@@ -8,11 +8,6 @@ export interface AssetPermissionMapping {
   write?: string[];
 }
 
-/**
- * A media folder linked to an asset field. The implementer provisions it under
- * the `Content` root of each tenant, keyed by `id`, with an ACL derived from
- * the mapping below.
- */
 /** What the asset field bound to a folder accepts, as declared on `AssetType`. */
 export interface AssetBindingField {
   multiple?: boolean;
@@ -20,6 +15,11 @@ export interface AssetBindingField {
   mimetypes?: string[];
 }
 
+/**
+ * A media folder linked to an asset field. The implementer provisions it under
+ * the `Content` root of each tenant, keyed by `id`, with an ACL derived from
+ * the mapping below.
+ */
 export interface AssetBindingConfig {
   id: string;
   folderName?: string;

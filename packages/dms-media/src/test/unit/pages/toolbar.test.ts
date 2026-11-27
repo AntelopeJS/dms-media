@@ -25,7 +25,7 @@ type LivePage = (typeof LIVE_PAGES)[keyof typeof LIVE_PAGES];
 function pageBlocks(page: LivePage): ComponentBuilder<unknown>[] {
   return Object.values(page).filter(
     (value): value is ComponentBuilder<unknown> =>
-      value instanceof ComponentBuilder,
+      value.constructor === ComponentBuilder,
   );
 }
 

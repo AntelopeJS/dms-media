@@ -82,7 +82,7 @@ async function assertUserReadsFolder(
   assert(
     access.readable.has(folderId),
     HTTP_FORBIDDEN,
-    "Missing read access on this asset",
+    "$dms_media.refusals.asset_read_denied",
   );
 }
 
@@ -131,7 +131,11 @@ async function resolveDeliverableAsset(
   const tenantId = getRequestTenantId(ctx);
   const assetModel = GetModel(MediaAssetModel, tenantId);
   const asset = await assetModel.get(assetId);
-  assert(asset && !asset.isDeleting, HTTP_NOT_FOUND, "Asset not found");
+  assert(
+    asset && !asset.isDeleting,
+    HTTP_NOT_FOUND,
+    "$dms_media.refusals.asset_not_found",
+  );
   const folderModel = GetModel(MediaFolderModel, tenantId);
   const folder = await folderModel.get(asset.folderId);
   const visibility = resolveEffectiveVisibility(asset, folder ?? undefined);
@@ -202,13 +206,13 @@ function assertNamedSegment(ctx: RequestContext): void {
   assert(
     !ctx.url.pathname.endsWith(PATH_SEPARATOR),
     HTTP_NOT_FOUND,
-    "File name required",
+    "$dms_media.refusals.file_name_required",
   );
 }
 
 export function requirePreset(presetId: string): MediaPresetConfig {
   const preset = getMediaConfig().presets.get(presetId);
-  assert(preset, HTTP_NOT_FOUND, "Unknown preset");
+  assert(preset, HTTP_NOT_FOUND, "$dms_media.refusals.preset_unknown");
   return preset;
 }
 
@@ -216,7 +220,7 @@ export function assertDerivableAsset(asset: MediaAsset): void {
   assert(
     asset.mimetype.startsWith("image/"),
     HTTP_NOT_FOUND,
-    "Derivatives only exist for images",
+    "$dms_media.refusals.derivatives_images_only",
   );
 }
 
@@ -224,7 +228,7 @@ export function assertEditableAsset(asset: MediaAsset): void {
   assert(
     EDITABLE_IMAGE_MIMETYPES.has(asset.mimetype),
     HTTP_UNPROCESSABLE_ENTITY,
-    "This image format cannot be edited",
+    "$dms_media.refusals.image_format_not_editable",
   );
 }
 
@@ -237,7 +241,7 @@ async function requireDerivative(
     assert(
       !(error instanceof UnreadableImageError),
       HTTP_UNPROCESSABLE_ENTITY,
-      "This file is not a readable image",
+      "$dms_media.refusals.image_unreadable",
     );
     Logging.Error(`Media size '${preset.id}' of ${asset._id} failed:`, error);
     throw new HTTPResult(

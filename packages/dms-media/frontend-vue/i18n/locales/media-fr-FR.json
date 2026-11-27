@@ -1105,6 +1105,31 @@
       "private_warning": "{name} est privé : le lien ne s'ouvre que pour les membres connectés qui ont accès à son dossier.",
       "open_in_new_tab": "Ouvrir dans un nouvel onglet",
       "open_failed": "Impossible d'ouvrir le fichier"
+    },
+    "refusals": {
+      "asset_gone_revert": "Le fichier a disparu pendant la restauration",
+      "asset_gone_transform": "Le fichier a disparu pendant la transformation",
+      "asset_not_found": "Fichier introuvable",
+      "asset_read_denied": "Accès en lecture refusé sur ce fichier",
+      "derivatives_images_only": "Les variantes n'existent que pour les images",
+      "file_name_required": "Nom de fichier requis",
+      "folder_linked": "Un dossier lié ne peut pas être restructuré",
+      "folder_not_found": "Dossier introuvable",
+      "image_animated": "Les images animées ne peuvent pas être modifiées",
+      "image_changed_meanwhile": "Cette image a été modifiée entre-temps par quelqu'un d'autre. Rechargez la page pour voir la dernière version.",
+      "image_format_not_editable": "Ce format d'image ne peut pas être modifié",
+      "image_too_large": "Cette image est trop grande pour être modifiée",
+      "image_unreadable": "Ce fichier n'est pas une image lisible",
+      "manage_root_denied": "Droit « gérer » manquant à la racine des médias",
+      "manage_subfolder_denied": "Droit « gérer » manquant sur un sous-dossier",
+      "no_original": "Ce fichier n'a pas d'original à restaurer",
+      "overview_owner_only": "La vue d'ensemble est réservée aux propriétaires",
+      "owner_only": "Réservé au propriétaire",
+      "preset_unknown": "Taille inconnue",
+      "right_manage": "Droit « gérer » manquant sur ce dossier",
+      "right_read": "Droit « lecture » manquant sur ce dossier",
+      "right_write": "Droit « écriture » manquant sur ce dossier",
+      "root_name_taken": "Un dossier racine porte déjà ce nom"
     }
   }
 }

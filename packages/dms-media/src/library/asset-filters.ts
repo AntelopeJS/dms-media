@@ -27,14 +27,14 @@ const MODIFIED_SINCE: Record<ModifiedWindow, ModifiedSince> = {
 
 type Dimension = ValueProxy<number>;
 
-const ORIENTATION_TESTS: Record<
+const ORIENTATION_TESTS = new Map<
   Exclude<OrientationFilter, "any">,
   (width: Dimension, height: Dimension) => ValueProxy<boolean>
-> = {
-  landscape: (width, height) => width.gt(height),
-  portrait: (width, height) => width.lt(height),
-  square: (width, height) => width.eq(height),
-};
+>([
+  ["landscape", (width, height) => width.gt(height)],
+  ["portrait", (width, height) => width.lt(height)],
+  ["square", (width, height) => width.eq(height)],
+]);
 
 /** True when `value` is one of `options`, tested as one flat `$in` whatever the option count. */
 export function isOneOf(
@@ -56,10 +56,10 @@ function orientationPredicate(
       .ne(0)
       .and(dimension(row, "height").ne(0))
       .and(
-        ORIENTATION_TESTS[orientation](
+        ORIENTATION_TESTS.get(orientation)?.(
           dimension(row, "width"),
           dimension(row, "height"),
-        ),
+        ) ?? false,
       );
 }
 

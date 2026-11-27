@@ -117,7 +117,11 @@ export function requireVisibleFolder(
   const isVisible =
     context.access.readable.has(folderId) ||
     context.access.shells.has(folderId);
-  assert(folder && isVisible, HTTP_NOT_FOUND, "Folder not found");
+  assert(
+    folder && isVisible,
+    HTTP_NOT_FOUND,
+    "$dms_media.refusals.folder_not_found",
+  );
   return folder;
 }
 
@@ -135,7 +139,7 @@ export function requireFolderRight(
   assert(
     rightSets[right].has(folderId),
     HTTP_FORBIDDEN,
-    `Missing '${right}' right on this folder`,
+    `$dms_media.refusals.right_${right}`,
   );
   return folder;
 }
@@ -146,15 +150,15 @@ export function isMediaOwner(context: MediaRequestContext): boolean {
 }
 
 export function assertMediaOwner(context: MediaRequestContext): void {
-  assert(isMediaOwner(context), HTTP_FORBIDDEN, "Reserved to the owner");
+  assert(
+    isMediaOwner(context),
+    HTTP_FORBIDDEN,
+    "$dms_media.refusals.owner_only",
+  );
 }
 
 export function assertNotBound(folder: MediaFolder): void {
-  assert(
-    !folder.binding,
-    HTTP_FORBIDDEN,
-    "Linked folders cannot be restructured",
-  );
+  assert(!folder.binding, HTTP_FORBIDDEN, "$dms_media.refusals.folder_linked");
 }
 
 export function getDescendantFolders(

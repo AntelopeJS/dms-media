@@ -158,7 +158,7 @@ export class MediaOverviewController extends MediaApiController {
       context.permissions,
       MEDIA_PAGE_PERMISSION,
     );
-    assert(isOwner, HTTP_FORBIDDEN, "The overview is reserved to owners");
+    assert(isOwner, HTTP_FORBIDDEN, "$dms_media.refusals.overview_owner_only");
     return context;
   }
 

@@ -8,7 +8,6 @@ import { join, relative } from "node:path";
  * `GET /api/media/folders/:id/assets` matches `@Get("/folders/:folderId/assets")`.
  * Prints the violations only; exits 1 when there are any.
  */
-
 const PACKAGE_ROOT = join(import.meta.dirname, "..");
 const DOC = join(PACKAGE_ROOT, "docs", "5.extending.md");
 const ROUTES = join(PACKAGE_ROOT, "src", "routes");

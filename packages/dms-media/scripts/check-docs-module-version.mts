@@ -10,7 +10,6 @@ import { join, relative } from "node:path";
  * violations only; exits 1 when there are any. With `--write`, rewrites every
  * example to `^<version>` instead.
  */
-
 const PACKAGE_ROOT = join(import.meta.dirname, "..");
 const WORKSPACE_ROOT = join(PACKAGE_ROOT, "..", "..");
 const SOURCE =
