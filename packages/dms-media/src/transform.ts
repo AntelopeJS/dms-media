@@ -23,15 +23,11 @@ const NO_ROTATION = 0;
  * Re-encoding settings of an edited image: high enough that a crop does not
  * visibly degrade the photo. PNG stays lossless (a quality would quantize it).
  */
-type EditOutputOptions =
-  | sharp.JpegOptions
-  | sharp.WebpOptions
-  | sharp.AvifOptions;
+type EditOutputOptions = sharp.JpegOptions | sharp.WebpOptions;
 
 const EDIT_OUTPUT_OPTIONS = new Map<keyof sharp.FormatEnum, EditOutputOptions>([
   ["jpeg", { quality: 92, mozjpeg: true }],
   ["webp", { quality: 92 }],
-  ["avif", { quality: 80 }],
 ]);
 
 export class AnimatedImageTransformError extends Error {}

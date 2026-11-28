@@ -2,7 +2,7 @@ import { createHash } from "node:crypto";
 import { readFileSync, writeFileSync } from "node:fs";
 import { inflateRawSync } from "node:zlib";
 import { join } from "node:path";
-import sharp from "../packages/dms-media/node_modules/sharp/lib/index.js";
+import sharp from "sharp";
 
 /**
  * @typedef {import("../node_modules/@antelopejs/dms/e2e/journey.mjs").JourneyContext} Ctx
@@ -239,7 +239,7 @@ export function sha256(bytes) {
 }
 
 /**
- * sharp, from the module's own dependencies, to make test images and read the ones the module renders.
+ * sharp, to make test images and read the ones the module renders.
  *
  * @returns {typeof sharp} sharp
  */
