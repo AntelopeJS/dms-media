@@ -1,5 +1,45 @@
 # Changelog
 
+## v0.9.2
+
+[compare changes](https://github.com/AntelopeJS/dms-media/compare/v0.9.1...v0.9.2)
+
+### 🚀 Enhancements
+
+- Make the private signed-URL lifetime configurable ([#245](https://github.com/AntelopeJS/dms-media/pull/245))
+
+### 📦 Build
+
+- Update tooling-configs to 0.10.7 and pnpm to 10.34.9 with a 24-hour release age ([0c42a21](https://github.com/AntelopeJS/dms-media/commit/0c42a21dd117cc2fa16e02ee93c0fd96337d53de))
+- **deps:** Refresh dms-frontend to 0.11.11 ([030d93a](https://github.com/AntelopeJS/dms-media/commit/030d93ace9f63f9b010ab5691e8c2d640d8fb9ad))
+- **deps:** Update the AntelopeJS module locks ([#232](https://github.com/AntelopeJS/dms-media/pull/232))
+- **deps:** Update the AntelopeJS module locks ([#241](https://github.com/AntelopeJS/dms-media/pull/241))
+- **deps:** Move to @antelopejs/dms 0.25.0 ([#242](https://github.com/AntelopeJS/dms-media/pull/242))
+- **deps:** Move to @antelopejs/tooling-configs 0.10.14 ([#244](https://github.com/AntelopeJS/dms-media/pull/244))
+
+### 🏡 Chore
+
+- **deps:** Update antelopejs tooling configs ([#230](https://github.com/AntelopeJS/dms-media/pull/230))
+- **deps:** Update dependency rimraf to v6.1.4 ([#228](https://github.com/AntelopeJS/dms-media/pull/228))
+- **deps:** Update antelopejs modules ([#227](https://github.com/AntelopeJS/dms-media/pull/227))
+- **deps:** Update dependency @antelopejs/core to v1.24.9 ([#235](https://github.com/AntelopeJS/dms-media/pull/235))
+- **deps:** Update dependency @types/chai to v5 ([#239](https://github.com/AntelopeJS/dms-media/pull/239))
+- **deps:** Update dependency chai to v6 ([#240](https://github.com/AntelopeJS/dms-media/pull/240))
+- **deps:** Update dependency @antelopejs/tooling-configs to v0.10.12 ([#236](https://github.com/AntelopeJS/dms-media/pull/236))
+
+### ✅ Tests
+
+- Give each test and hook 10 s ([#229](https://github.com/AntelopeJS/dms-media/pull/229))
+
+### 🤖 CI
+
+- Bump tooling-configs to 0.10.11 and fix the CI drift ([#234](https://github.com/AntelopeJS/dms-media/pull/234))
+
+### ❤️ Contributors
+
+- Antony Rizzitelli
+- dada-sudo
+
 ## v0.9.1
 
 [compare changes](https://github.com/AntelopeJS/dms-media/compare/v0.9.0...v0.9.1)
