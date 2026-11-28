@@ -1,5 +1,6 @@
 import { DEFAULT_ROOT_ACL } from "./acl/defaults";
 import { DEFAULT_PRESETS, type MediaPresetConfig } from "./presets";
+import { PRIVATE_READ_URL_TTL_SECONDS } from "./routes/media/constants";
 import type { AclEntry } from "./types";
 
 /**
@@ -40,6 +41,11 @@ export interface DmsMediaConfig {
    * With neither set, links stay relative.
    */
   publicBaseUrl?: string;
+  /**
+   * Lifetime, in seconds, of the signed URL a private file's link and its
+   * download hand out. The link gives the same URL for half of it.
+   */
+  privateLinkSeconds?: number;
 }
 
 interface ResolvedMediaConfig {
@@ -49,6 +55,7 @@ interface ResolvedMediaConfig {
   storageQuotaBytes?: number;
   allowedMimetypes: readonly string[];
   publicBaseUrl?: string;
+  privateLinkSeconds: number;
 }
 
 function buildPresetMap(
@@ -61,6 +68,7 @@ let currentConfig: ResolvedMediaConfig = {
   rootAcl: DEFAULT_ROOT_ACL,
   presets: buildPresetMap(DEFAULT_PRESETS),
   allowedMimetypes: DEFAULT_ALLOWED_MIMETYPES,
+  privateLinkSeconds: PRIVATE_READ_URL_TTL_SECONDS,
 };
 
 export function configureMediaModule(config: DmsMediaConfig): void {
@@ -71,6 +79,8 @@ export function configureMediaModule(config: DmsMediaConfig): void {
     storageQuotaBytes: config.storageQuotaBytes,
     allowedMimetypes: config.allowedMimetypes ?? DEFAULT_ALLOWED_MIMETYPES,
     publicBaseUrl: config.publicBaseUrl?.trim() || undefined,
+    privateLinkSeconds:
+      config.privateLinkSeconds ?? PRIVATE_READ_URL_TTL_SECONDS,
   };
 }
 
