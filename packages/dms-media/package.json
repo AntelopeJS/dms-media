@@ -81,7 +81,7 @@
     "@antelopejs/dms": ">=0.25.0 <0.26.0",
     "@antelopejs/dms-frontend": ">=0.11.8 <0.12.0",
     "@antelopejs/interface-data-api": ">=0.8.2 <0.9.0",
-    "@antelopejs/tooling-configs": "^0.10.13",
+    "@antelopejs/tooling-configs": "^0.10.14",
     "@types/chai": "^5.0.0",
     "@types/mocha": "^10",
     "@types/node": "^24.0.0",
