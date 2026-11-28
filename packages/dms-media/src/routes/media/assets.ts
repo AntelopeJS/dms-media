@@ -28,10 +28,7 @@ import {
   previewIdsSchema,
   updateAssetSchema,
 } from "../../validation/media.schema";
-import {
-  PREVIEW_URL_TTL_SECONDS,
-  PRIVATE_READ_URL_TTL_SECONDS,
-} from "./constants";
+import { PREVIEW_URL_TTL_SECONDS } from "./constants";
 import { type MediaRequestContext, requireFolderRight } from "./context";
 import { assertDerivableAsset, requirePreset } from "./delivery";
 import { buildAssetDto } from "./dto";
@@ -211,7 +208,7 @@ export class MediaAssetsController extends MediaApiController {
     }
     const readUrl = await CreateReadUrl(
       storageKey,
-      PRIVATE_READ_URL_TTL_SECONDS,
+      getMediaConfig().privateLinkSeconds,
       asset.storage,
     );
     return { url: readUrl.url, expiresAt: readUrl.expiresAt };

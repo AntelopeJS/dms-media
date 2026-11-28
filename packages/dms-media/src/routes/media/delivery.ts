@@ -21,7 +21,6 @@ import { fileLink } from "../../library/links";
 import type { MediaPresetConfig } from "../../presets";
 import { signedReadUrl } from "../../read-urls";
 import {
-  PRIVATE_READ_URL_TTL_SECONDS,
   PRIVATE_REDIRECT_CACHE_CONTROL,
   PUBLIC_READ_URL_TTL_SECONDS,
   PUBLIC_REDIRECT_CACHE_CONTROL,
@@ -192,7 +191,7 @@ async function redirectToStorage(
 ): Promise<HTTPResult> {
   const ttl = isPublic
     ? PUBLIC_READ_URL_TTL_SECONDS
-    : PRIVATE_READ_URL_TTL_SECONDS;
+    : getMediaConfig().privateLinkSeconds;
   const location = await signedReadUrl(storageKey, storage, ttl);
   if (isPublic) openPublicCors(ctx.response);
   return redirectTo(

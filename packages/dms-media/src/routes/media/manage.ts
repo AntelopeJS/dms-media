@@ -15,10 +15,7 @@ import {
 } from "../../library/presets-page";
 import { type MediaPresetConfig, presetCacheKey } from "../../presets";
 import { batchSummarySchema } from "../../validation/library.schema";
-import {
-  PRIVATE_READ_URL_TTL_SECONDS,
-  PUBLIC_READ_URL_TTL_SECONDS,
-} from "./constants";
+import { PUBLIC_READ_URL_TTL_SECONDS } from "./constants";
 import { MediaApiController } from "./controller";
 import { requireFolderRight } from "./context";
 
@@ -166,7 +163,7 @@ export class MediaManageController extends MediaApiController {
     return {
       items: buildPresetCacheItems({
         publicLinkSeconds: PUBLIC_READ_URL_TTL_SECONDS,
-        privateLinkSeconds: PRIVATE_READ_URL_TTL_SECONDS,
+        privateLinkSeconds: getMediaConfig().privateLinkSeconds,
         sweepSchedule: SWEEP_DERIVATIVES_SCHEDULE,
         lastSweep: getLastSweep(),
         now: new Date(),
@@ -215,7 +212,7 @@ export class MediaManageController extends MediaApiController {
         lastSweepAt: sweep?.finishedAt ?? null,
         lastSweepRemoved: sweep?.removedFiles ?? null,
         publicTtlSeconds: PUBLIC_READ_URL_TTL_SECONDS,
-        privateTtlSeconds: PRIVATE_READ_URL_TTL_SECONDS,
+        privateTtlSeconds: getMediaConfig().privateLinkSeconds,
       },
     };
   }

@@ -40,6 +40,7 @@ interface MediaConfig {
   storageQuotaBytes?: number;
   publicBaseUrl?: string;
   presets?: PresetConfig[];
+  privateLinkSeconds?: number;
 }
 
 const FITS: readonly PresetFit[] = ["cover", "contain", "inside"];
@@ -104,6 +105,8 @@ function mediaConfig(): MediaConfig {
     config.publicBaseUrl = env.VERIFY_MEDIA_PUBLIC_BASE_URL;
   if (env.VERIFY_MEDIA_PRESETS)
     config.presets = parsePresets(env.VERIFY_MEDIA_PRESETS);
+  if (env.VERIFY_MEDIA_PRIVATE_LINK_SECONDS)
+    config.privateLinkSeconds = Number(env.VERIFY_MEDIA_PRIVATE_LINK_SECONDS);
   return config;
 }
 
