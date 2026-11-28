@@ -129,14 +129,14 @@ jobs:
             packages/dms-media/frontend-vue/pnpm-lock.yaml
       # The playground's modules, the mongod binary, Chromium and the
       # dashboard builds the e2e kit caches.
-      - uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 # v4
+      - uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6
         with:
           path: |
             ~/.cache/mongodb-binaries
             ~/.cache/ms-playwright
             e2e/playground/.antelope/cache
           key: e2e-${{ runner.os }}-${{ hashFiles('pnpm-lock.yaml', 'e2e/playground/antelope.config.ts') }}
-      - uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 # v4
+      - uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6
         with:
           path: |
             ~/.cache/dms-e2e/frontend
