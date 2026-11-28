@@ -1,4 +1,5 @@
 import { resolve } from "node:path";
+import { testTimeouts } from "@antelopejs/tooling-configs/vitest";
 import vue from "@vitejs/plugin-vue";
 import { defineConfig } from "vitest/config";
 
@@ -40,5 +41,9 @@ export default defineConfig({
       ...BROWSER_ONLY_FIXTURES,
     },
   },
-  test: { environment: "node", include: ["tests/**/*.test.ts"] },
+  test: {
+    ...testTimeouts,
+    environment: "node",
+    include: ["tests/**/*.test.ts"],
+  },
 });

@@ -22,7 +22,7 @@
     "zod": "^4.5.0"
   },
   "devDependencies": {
-    "@antelopejs/tooling-configs": "^0.10.7",
+    "@antelopejs/tooling-configs": "^0.10.11",
     "@nuxt/eslint-config": "^1.17.0",
     "@nuxt/ui": "4.10.0",
     "@vitejs/plugin-vue": "^6.0.10",
